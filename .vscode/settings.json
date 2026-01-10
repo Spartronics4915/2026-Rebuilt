@@ -61,5 +61,6 @@
   "java.format.settings.url": "eclipse-formatter.xml",
   "[java]": {
     "editor.detectIndentation": false
-  }
+  },
+  "wpilib.skipSelectSimulateExtension": true
 }
