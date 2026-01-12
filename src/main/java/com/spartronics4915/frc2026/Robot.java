@@ -7,6 +7,7 @@ package com.spartronics4915.frc2026;
 import edu.wpi.first.net.WebServer;
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
+import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -44,6 +45,16 @@ public class Robot extends TimedRobot {
     @Override
     public void robotInit() {
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
+
+        NetworkTable metaData = NetworkTableInstance.getDefault().getTable("Metadata");
+        metaData.getStringTopic("Git: SHA").publish().accept(BuildConstants.GIT_SHA);
+        metaData.getStringTopic("Git: Branch").publish().accept(BuildConstants.GIT_BRANCH);
+        metaData.getStringTopic("Git: Commit Date").publish().accept(BuildConstants.GIT_DATE);
+        metaData.getStringTopic("Git: Build Date").publish().accept(BuildConstants.BUILD_DATE);
+        metaData.getBooleanTopic("Git: Dirty").publish().accept(BuildConstants.DIRTY == 1);
+        metaData.getDoubleTopic("Git: Revision").publish().accept(BuildConstants.GIT_REVISION);
+        metaData.getBooleanTopic("Robot: IsSim").publish().accept(Robot.isSimulation());
+        metaData.getStringTopic("DS: EventName").publish().accept(DriverStation.getEventName());
 
         DriverStation.silenceJoystickConnectionWarning(true);
     }

@@ -186,3 +186,6 @@ compile_commands.json
 
 # Eclipse generated file for annotation processors
 .factorypath
+
+# Git generated metadata
+src/main/java/com/spartronics4915/frc2025/BuildConstants.java
