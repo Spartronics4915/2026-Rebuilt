@@ -5,7 +5,11 @@
 package com.spartronics4915.frc2026;
 
 import edu.wpi.first.net.WebServer;
+import edu.wpi.first.networktables.BooleanPublisher;
+import edu.wpi.first.networktables.DoublePublisher;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -20,6 +24,11 @@ public class Robot extends TimedRobot {
     private Command autonomousCommand;
 
     private final RobotContainer robotContainer;
+    private final BooleanPublisher hubEnabledPub = NetworkTableInstance.getDefault().getBooleanTopic("IO/Hub Enabled").publish();
+    private final DoublePublisher timeUntilSwitchPub = NetworkTableInstance.getDefault().getDoubleTopic("IO/Time Left Until Switch").publish();
+    private boolean currentAllianceSelected = false;
+    public static boolean hubEnabled;
+    public static double timeUntilSwitch;
 
     /**
      * This function is run when the robot is first started up and should be used for any
@@ -65,6 +74,8 @@ public class Robot extends TimedRobot {
     @Override
     public void autonomousInit() {
         autonomousCommand = robotContainer.getAutonomousCommand();
+        hubEnabledPub.set(true);
+        hubEnabled = true;
 
         // schedule the autonomous command (example)
         if (autonomousCommand != null) {
@@ -87,7 +98,45 @@ public class Robot extends TimedRobot {
 
     /** This function is called periodically during operator control. */
     @Override
-    public void teleopPeriodic() {}
+    public void teleopPeriodic() {
+
+        // Hub enable/disable flashing logic
+        String gameData = DriverStation.getGameSpecificMessage();
+        if (gameData.length() > 0) {
+            if (gameData.charAt(0) == 'R') {
+                currentAllianceSelected = true;
+            } else if (gameData.charAt(0) == 'B') {
+                currentAllianceSelected = false;
+            }
+
+            currentAllianceSelected ^= DriverStation.getAlliance().orElse(Alliance.Red) == Alliance.Blue;
+
+            double matchTime = DriverStation.getMatchTime();
+
+            if (matchTime > 130.0) { // (2:20 - 2:10) Transition shift, both hubs are enabled
+                hubEnabled = true;
+                timeUntilSwitch = matchTime - 130.0 + (currentAllianceSelected ? 0 : 25.0);
+            } else if (matchTime > 105) { // (2:10 - 1:45) Shift 1
+                hubEnabled = !currentAllianceSelected;
+                timeUntilSwitch = matchTime - 105.0;
+            } else if (matchTime > 80.0) {// (1:45 - 1:20) Shift 2
+                hubEnabled = currentAllianceSelected;
+                timeUntilSwitch = matchTime - 80.0;
+            } else if (matchTime > 55.0) { // (1:20 - 0:55) Shift 3
+                hubEnabled = !currentAllianceSelected;
+                timeUntilSwitch = matchTime - 55.0;
+            } else if (matchTime > 30.0) { // (0:55 - 0:30) Shift 4
+                hubEnabled = currentAllianceSelected;
+                timeUntilSwitch = matchTime - 30.0;
+            } else if (matchTime > 0.0) { // (0:30 - 0:00) Endgame, both hubs are enabled
+                hubEnabled = true;
+                timeUntilSwitch = matchTime;
+            } 
+
+            hubEnabledPub.set(hubEnabled);
+            timeUntilSwitchPub.set(timeUntilSwitch);
+        }
+    }
 
     @Override
     public void testInit() {
