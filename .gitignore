@@ -188,4 +188,4 @@ compile_commands.json
 .factorypath
 
 # Git generated metadata
-src/main/java/com/spartronics4915/frc2025/BuildConstants.java
+src/main/java/com/spartronics4915/frc2026/BuildConstants.java
