@@ -56,6 +56,15 @@ jobs:
                   echo "--- Simulation run: $(date -u) ---" > simulate.log
                   timeout 15s ./gradlew simulateJava >> simulate.log 2>&1
                   rc=$?
+                  
+                  # Detect if "The robot program quit unexpectedly" exists in log
+                  # (indicates a crash even if Gradle returned 0)
+                  if grep -q "The robot program quit unexpectedly" simulate.log || grep -q "Unhandled exception" simulate.log; then
+                      echo "CRASH_DETECTED=true" >> "$GITHUB_ENV"
+                  else
+                      echo "CRASH_DETECTED=false" >> "$GITHUB_ENV"
+                  fi
+
                   echo $rc > sim_exit_code
                   if [ "$rc" -eq 0 ]; then
                       echo "Simulation completed successfully (rc=$rc)."
@@ -71,10 +80,16 @@ jobs:
               run: |
                   rc=0
                   if [ -f sim_exit_code ]; then rc=$(cat sim_exit_code); fi
-                  # If simulation failed with a non-timeout non-zero exit code, warn and add a job summary
-                  if [ "$rc" -ne 0 ] && [ "$rc" -ne 124 ]; then
-                      echo "::warning::Build succeeded but simulation failed (exit code $rc)."
+                  
+                  crash_detected="${CRASH_DETECTED:-false}"
+                  
+                  # If simulation failed with a non-timeout non-zero exit code, OR we saw a crash in the logs
+                  if ([ "$rc" -ne 0 ] && [ "$rc" -ne 124 ]) || [ "$crash_detected" = "true" ]; then
+                      echo "::warning::Build succeeded but robot simulation crashed or failed (rc=$rc, crash_detected=$crash_detected)."
                       echo "## Simulation smoke test: FAILED" >> "$GITHUB_STEP_SUMMARY"
+                      if [ "$crash_detected" = "true" ]; then
+                          echo "**Result**: Crash detected in logs." >> "$GITHUB_STEP_SUMMARY"
+                      fi
                       echo "**Exit code**: $rc" >> "$GITHUB_STEP_SUMMARY"
                       echo "" >> "$GITHUB_STEP_SUMMARY"
                       echo '### Simulation log (tail - 200 lines):' >> "$GITHUB_STEP_SUMMARY"
@@ -82,8 +97,8 @@ jobs:
                       tail -n 200 simulate.log >> "$GITHUB_STEP_SUMMARY" || true
                       echo '```' >> "$GITHUB_STEP_SUMMARY"
                   else
-                      echo "Simulation passed or timed out (rc=$rc)."
-                      echo "## Simulation smoke test: Passed or timed out (rc=$rc)" >> "$GITHUB_STEP_SUMMARY"
+                      echo "Simulation passed with code (rc=$rc)."
+                      echo "## Simulation smoke test: Passed with code (rc=$rc)" >> "$GITHUB_STEP_SUMMARY"
                   fi
 
             - name: Upload simulation log
@@ -99,8 +114,15 @@ jobs:
               run: |
                   rc=0
                   if [ -f sim_exit_code ]; then rc=$(cat sim_exit_code); fi
-                  if [ "$rc" -ne 0 ] && [ "$rc" -ne 124 ]; then
-                      echo "::error::Simulation smoke test failed (exit code $rc). Failing job after uploading logs."
-                      exit $rc
+                  crash_detected="${CRASH_DETECTED:-false}"
+                  
+                  if ([ "$rc" -ne 0 ] && [ "$rc" -ne 124 ]) || [ "$crash_detected" = "true" ]; then
+                      echo "::error::Simulation smoke test failed. Failing job after uploading logs."
+                      # If we have a non-zero exit code, use it; otherwise exit with 1
+                      if [ "$rc" -ne 0 ] && [ "$rc" -ne 124 ]; then
+                          exit $rc
+                      else
+                          exit 1
+                      fi
                   fi
                   echo "No simulation failure detected (rc=$rc)."
