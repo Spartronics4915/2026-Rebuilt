@@ -33,7 +33,7 @@ public class RobotContainer {
      * {@link edu.wpi.first.wpilibj2.command.button.CommandJoystick Flight joysticks}.
      */
     private void configureBindings() {
-
+        throw new RuntimeException("This is sample bad code");
     }
 
     /**
