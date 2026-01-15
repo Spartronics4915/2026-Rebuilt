@@ -171,6 +171,7 @@ out/
 # Simulation GUI and other tools window save file
 networktables.json
 simgui.json
+simgui-ds.json
 *-window.json
 
 # Simulation data log directory
@@ -185,3 +186,6 @@ compile_commands.json
 
 # Eclipse generated file for annotation processors
 .factorypath
+
+# Git generated metadata
+src/main/java/com/spartronics4915/frc2026/BuildConstants.java
