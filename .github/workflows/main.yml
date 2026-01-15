@@ -24,6 +24,10 @@ jobs:
             - name: Add repository to git safe directories
               run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
+            # Grant execute permission for gradlew
+            - name: Grant execute permission for gradlew
+              run: chmod +x gradlew
+
             # Cache Gradle packages
             - name: Cache Gradle packages
               uses: actions/cache@v4
