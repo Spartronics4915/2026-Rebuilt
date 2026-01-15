@@ -19,81 +19,84 @@ jobs:
         steps:
             # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
             - uses: actions/checkout@v4
+
             # Declares the repository safe and not under dubious ownership.
             - name: Add repository to git safe directories
-            - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+              run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
             # Cache Gradle packages
             - name: Cache Gradle packages
-                uses: actions/cache@v4
-                with:
-                    path: |
-                        ~/.gradle/caches
-                        ~/.gradle/wrapper
-                    key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle/wrapper/gradle-wrapper.properties') }}
-                    restore-keys: ${{ runner.os }}-gradle-
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.gradle/caches
+                      ~/.gradle/wrapper
+                  key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle/wrapper/gradle-wrapper.properties') }}
+                  restore-keys: ${{ runner.os }}-gradle-
+
             - name: Compile and run tests on robot code
-            - run: ./gradlew build
+              run: ./gradlew build
 
             # Simulation smoke test
             # Run simulation, capture exit code and logs. Treat timeout (124) as acceptable
             # for a smoke test but record and upload logs if the simulation crashes early.
             - name: Run simulation smoke test
-                shell: bash
-                continue-on-error: true
-            - run: |
-                set -o pipefail
-                echo "Starting simulation for 15s (smoke test)..."
-                # Ensure gradlew is executable (harmless if already set)
-                chmod +x gradlew || true
-                # Capture stdout+stderr to a log file for later inspection
-                echo "--- Simulation run: $(date -u) ---" > simulate.log
-                timeout 15s ./gradlew simulateJava >> simulate.log 2>&1
-                rc=$?
-                echo $rc > sim_exit_code
-                if [ "$rc" -eq 0 ]; then
-                    echo "Simulation completed successfully (rc=$rc)."
-                elif [ "$rc" -eq 124 ]; then
-                    echo "Simulation timed out after 15s (rc=$rc)."
-                else
-                    echo "Simulation crashed or failed early (rc=$rc). See simulate.log for details."
-                    fi
+              shell: bash
+              continue-on-error: true
+              run: |
+                  set -o pipefail
+                  echo "Starting simulation for 15s (smoke test)..."
+                  # Ensure gradlew is executable (harmless if already set)
+                  chmod +x gradlew || true
+                  # Capture stdout+stderr to a log file for later inspection
+                  echo "--- Simulation run: $(date -u) ---" > simulate.log
+                  timeout 15s ./gradlew simulateJava >> simulate.log 2>&1
+                  rc=$?
+                  echo $rc > sim_exit_code
+                  if [ "$rc" -eq 0 ]; then
+                      echo "Simulation completed successfully (rc=$rc)."
+                  elif [ "$rc" -eq 124 ]; then
+                      echo "Simulation timed out after 15s (rc=$rc)."
+                  else
+                      echo "Simulation crashed or failed early (rc=$rc). See simulate.log for details."
+                  fi
 
             - name: Report simulation result and attach logs
-                shell: bash
-                if: always()
-            - run: |
-                rc=0
-                if [ -f sim_exit_code ]; then rc=$(cat sim_exit_code); fi
-                # If simulation failed with a non-timeout non-zero exit code, warn and add a job summary
-                if [ "$rc" -ne 0 ] && [ "$rc" -ne 124 ]; then
-                    echo "::warning::Build succeeded but simulation failed (exit code $rc)."
-                    echo "## Simulation smoke test: FAILED" >> "$GITHUB_STEP_SUMMARY"
-                    echo "**Exit code**: $rc" >> "$GITHUB_STEP_SUMMARY"
-                    echo "" >> "$GITHUB_STEP_SUMMARY"
-                    echo '### Simulation log (tail - 200 lines):' >> "$GITHUB_STEP_SUMMARY"
-                    echo '```' >> "$GITHUB_STEP_SUMMARY"
-                    tail -n 200 simulate.log >> "$GITHUB_STEP_SUMMARY" || true
-                    echo '```' >> "$GITHUB_STEP_SUMMARY"
-                else
-                    echo "Simulation passed or timed out (rc=$rc)."
-                    echo "## Simulation smoke test: Passed or timed out (rc=$rc)" >> "$GITHUB_STEP_SUMMARY"
-                fi
+              shell: bash
+              if: always()
+              run: |
+                  rc=0
+                  if [ -f sim_exit_code ]; then rc=$(cat sim_exit_code); fi
+                  # If simulation failed with a non-timeout non-zero exit code, warn and add a job summary
+                  if [ "$rc" -ne 0 ] && [ "$rc" -ne 124 ]; then
+                      echo "::warning::Build succeeded but simulation failed (exit code $rc)."
+                      echo "## Simulation smoke test: FAILED" >> "$GITHUB_STEP_SUMMARY"
+                      echo "**Exit code**: $rc" >> "$GITHUB_STEP_SUMMARY"
+                      echo "" >> "$GITHUB_STEP_SUMMARY"
+                      echo '### Simulation log (tail - 200 lines):' >> "$GITHUB_STEP_SUMMARY"
+                      echo '```' >> "$GITHUB_STEP_SUMMARY"
+                      tail -n 200 simulate.log >> "$GITHUB_STEP_SUMMARY" || true
+                      echo '```' >> "$GITHUB_STEP_SUMMARY"
+                  else
+                      echo "Simulation passed or timed out (rc=$rc)."
+                      echo "## Simulation smoke test: Passed or timed out (rc=$rc)" >> "$GITHUB_STEP_SUMMARY"
+                  fi
 
             - name: Upload simulation log
-                if: always()
-                uses: actions/upload-artifact@v4
-                with:
-                    name: simulation-log
-                    path: simulate.log
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: simulation-log
+                  path: simulate.log
 
             - name: Fail job if simulation failed
-                if: always()
-                shell: bash
-            - run: |
-                    rc=0
-                    if [ -f sim_exit_code ]; then rc=$(cat sim_exit_code); fi
-                    if [ "$rc" -ne 0 ] && [ "$rc" -ne 124 ]; then
-                        echo "::error::Simulation smoke test failed (exit code $rc). Failing job after uploading logs."
-                        exit $rc
-                    fi
-                    echo "No simulation failure detected (rc=$rc)."
+              if: always()
+              shell: bash
+              run: |
+                  rc=0
+                  if [ -f sim_exit_code ]; then rc=$(cat sim_exit_code); fi
+                  if [ "$rc" -ne 0 ] && [ "$rc" -ne 124 ]; then
+                      echo "::error::Simulation smoke test failed (exit code $rc). Failing job after uploading logs."
+                      exit $rc
+                  fi
+                  echo "No simulation failure detected (rc=$rc)."
