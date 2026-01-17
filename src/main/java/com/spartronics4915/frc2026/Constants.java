@@ -9,4 +9,15 @@ public final class Constants {
         public static final int DRIVER_CONTROLLER_PORT = 0;
         public static final int OPERATOR_CONTROLLER_PORT = 1;
     }
+
+    public static class SwerveConstants {
+        public static final double frontLeftWheelDistanceInches = 0;
+        public static final double frontRightWheelDistanceInches = 0;
+        public static final double backLeftWheelDistanceInches = 0;
+        public static final double backRighttWheelDistanceInches = 0;
+
+        public static final double testSpeedsX = 0;
+        public static final double testSpeedsY = 0;
+        public static final double testSpeedsDeg = 0;
+    }
 }
