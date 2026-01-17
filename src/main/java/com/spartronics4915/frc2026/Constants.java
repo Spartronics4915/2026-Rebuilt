@@ -23,17 +23,25 @@ public final class Constants {
         public static final int driveMotorFLID = 0;
         public static final int angleMotorFLID = 0;
         public static final int absoluteEncoderFLID = 0;
+        public static final boolean driveMotorFLIverted = false;
+        public static final boolean angleMotorFLInverted = false;
 
         public static final int driveMotorFRID = 0;
         public static final int angleMotorFRID = 0;
         public static final int absoluteEncoderFRID = 0;
+        public static final boolean driveMotorFRInverted = false;
+        public static final boolean angleMotorFRInverted = false;
 
         public static final int driveMotorBLID = 0;
         public static final int angleMotorBLID = 0;
         public static final int absoluteEncoderBLID = 0;
+        public static final boolean driveMotorBLInverted = false;
+        public static final boolean angleMotorBLInverted = false;
 
         public static final int driveMotorBRID = 0;
         public static final int angleMotorBRID = 0;
         public static final int absoluteEncoderBRID = 0;
+        public static final boolean driveMotorBRInverted = false;
+        public static final boolean angleMotorBRInverted = false;
     }
 }

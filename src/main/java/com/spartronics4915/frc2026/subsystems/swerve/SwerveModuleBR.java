@@ -21,5 +21,17 @@ public class SwerveModuleBR {
         driveMotorBR.restoreFactoryDefaults();
         angleMotorBR.restoreFactoryDefaults();
         absoluteEncoderBR.getConfigurator().apply(new CANConfiguration());
+
+        CANcoderConfigurator cfg = encoder.getConfigurator();
+        cfg.apply(new CANcoderConfiguration());
+        MagnetSensorConfigs  magnetSensorConfiguration = new MagnetSensorConfigs();
+        cfg.refresh(magnetSensorConfiguration);
+        cfg.apply(magnetSensorConfiguration
+                  .withAbsoluteSensorRange(AbsoluteSensorRangeValue.Unsigned_0To1)
+                  .withSensorDirection(SensorDirectionValue.CounterClockwise_Positive));
+
+        driveMotorBR.setInverted(SwerveConstants.driveMotorBRInverted);
+
+        angleMotorBR.setInverted(SwerveConstants.angleMotorBRInverted);
     }
 }
