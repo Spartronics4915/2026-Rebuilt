@@ -67,14 +67,25 @@ public class TurretSubsystem extends SubsystemBase{
         turretMotor.setControl(request);
 
     }
-   
+
+   /**
+    * Sets the turrets rotation value
+    * @param input the desiered rotation value, in degrees
+    */
     public Command setTurret(Rotation2d input){
         return this.runOnce(()->currentSetPoint = input.getRotations());
     }
+    /**
+     * increments the turret's angle 
+     * @param input the amount you wish to modify the turret's angle by, in degrees 
+     */
     public Command incrementTurret(Rotation2d input){
         return this.runOnce(()->currentSetPoint += input.getRotations());
     }
-
+    /**
+     * Gets the angle of the turret in degrees
+     * @return the angle of the turret in degrees
+     */
     public Rotation2d getAngle(){
         return Rotation2d.fromDegrees(turretMotor.getPosition().getValue().in(Degrees));
     }
