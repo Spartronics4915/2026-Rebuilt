@@ -9,4 +9,17 @@ public final class Constants {
         public static final int DRIVER_CONTROLLER_PORT = 0;
         public static final int OPERATOR_CONTROLLER_PORT = 1;
     }
+    public static class IntakeConstants {
+        public static final int INTAKE_MOTOR_ID = 0;
+
+        public static final int INTAKE_P = 0;
+        public static final int INTAKE_I = 0;
+        public static final int INTAKE_D = 0;
+
+        public static final boolean INTAKE_CURRENT_LIMIT_ENABLE = true;
+        public static final int INTAKE_CURRENT_LIMIT = 0;
+        public static final int INTAKE_CURRENT_LOWER_LIMIT = 0;
+        public static final int INTAKE_CURRENT_LOWER_TIME = 0;
+        public static final int INTAKE_SENSOR_TO_MECH_RATIO = 0/1;
+    }
 }
