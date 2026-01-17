@@ -13,12 +13,17 @@ import edu.wpi.first.math.controller.ElevatorFeedforward;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
+import edu.wpi.first.networktables.DoublePublisher;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class ClimberSubsystem extends SubsystemBase{
     TalonFX primaryClimbMotor = new TalonFX(Constants.ClimberConstants.PRIMARY_CLIMB_MOTOR_ID);
     TalonFXConfigurator primaryClimbConfigurator = primaryClimbMotor.getConfigurator();
+    
+    DoublePublisher climberSetpointPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Climber Setpoint").publish();
+    DoublePublisher climberRequestedPosPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Climber ").publish();
 
     public ClimberSubsystem(){
       applyMotorConfigs(primaryClimbConfigurator);  
@@ -71,7 +76,11 @@ public class ClimberSubsystem extends SubsystemBase{
         );
 
         primaryClimbMotor.setControl(request);
+        publishData();
+    }
 
+    private void publishData(){
+        climberSetpointPublisher.accept(currentSetPoint);
     }
 
     public Command setPrimaryClimber(double input){
