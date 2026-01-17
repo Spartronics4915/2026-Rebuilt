@@ -15,10 +15,18 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
+import edu.wpi.first.networktables.DoublePublisher;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class TurretSubsystem extends SubsystemBase{
+    DoublePublisher turretSetpointPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Turret Current Setpoint").publish();
+    DoublePublisher turretAnglePublisher = NetworkTableInstance.getDefault().getDoubleTopic("Turret Angle").publish();
+    DoublePublisher turretOutputPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Turret Applied Output").publish();
+    DoublePublisher turretRequestedPosPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Turret Requested Position").publish();
+
+
     TalonFX turretMotor = new TalonFX(Constants.TurretConstants.TURRET_MOTOR_ID);
     TalonFXConfigurator turretConfigurator = turretMotor.getConfigurator();
 
@@ -65,7 +73,14 @@ public class TurretSubsystem extends SubsystemBase{
         PositionVoltage request = new PositionVoltage(currentState.position);
 
         turretMotor.setControl(request);
+        publishData();
+    }
 
+    private void publishData(){
+        turretSetpointPublisher.accept(currentSetPoint);
+        turretAnglePublisher.accept(turretMotor.getPosition().getValue().in(Degrees));
+        turretOutputPublisher.accept(turretMotor.getClosedLoopOutput().getValueAsDouble());
+        turretRequestedPosPublisher.accept(currentState.position);
     }
 
    /**
