@@ -19,5 +19,21 @@ public final class Constants {
         public static final double testSpeedsX = 0;
         public static final double testSpeedsY = 0;
         public static final double testSpeedsDeg = 0;
+
+        public static final int driveMotorFLID = 0;
+        public static final int angleMotorFLID = 0;
+        public static final int absoluteEncoderFLID = 0;
+
+        public static final int driveMotorFRID = 0;
+        public static final int angleMotorFRID = 0;
+        public static final int absoluteEncoderFRID = 0;
+
+        public static final int driveMotorBLID = 0;
+        public static final int angleMotorBLID = 0;
+        public static final int absoluteEncoderBLID = 0;
+
+        public static final int driveMotorBRID = 0;
+        public static final int angleMotorBRID = 0;
+        public static final int absoluteEncoderBRID = 0;
     }
 }
