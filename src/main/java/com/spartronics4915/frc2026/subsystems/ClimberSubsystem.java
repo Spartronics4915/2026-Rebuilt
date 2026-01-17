@@ -1,0 +1,67 @@
+package com.spartronics4915.frc2026.subsystems;
+
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
+import com.ctre.phoenix6.configs.FeedbackConfigs;
+import com.ctre.phoenix6.configs.SlotConfigs;
+import com.ctre.phoenix6.configs.TalonFXConfigurator;
+import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.spartronics4915.frc2026.Constants;
+
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.ElevatorFeedforward;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
+import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
+import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
+public class ClimberSubsystem extends SubsystemBase{
+    TalonFX primaryClimbMotor = new TalonFX(Constants.ClimberConstants.PRIMARY_CLIMB_MOTOR_ID);
+    TalonFXConfigurator primaryClimbConfigurator = primaryClimbMotor.getConfigurator();
+
+    
+
+    public ClimberSubsystem(){
+        primaryClimbConfigurator.apply(new SlotConfigs()
+            .withKP(Constants.ClimberConstants.CLIMBER_P)
+            .withKI(Constants.ClimberConstants.CLIMBER_I)
+            .withKD(Constants.ClimberConstants.CLIMBER_D));
+        primaryClimbConfigurator.apply(new CurrentLimitsConfigs()
+            .withSupplyCurrentLimitEnable(Constants.ClimberConstants.CURRENT_LIMIT_ENABLED)
+            .withSupplyCurrentLimit(Constants.ClimberConstants.SUPPLY_CURRENT_LIMIT)
+            .withSupplyCurrentLowerLimit(Constants.ClimberConstants.CURRENT_LOWER_LIMIT)
+            .withSupplyCurrentLowerTime(Constants.ClimberConstants.CUREENT_LOWER_TIME));
+        primaryClimbConfigurator.apply(new FeedbackConfigs()
+            .withSensorToMechanismRatio(Constants.ClimberConstants.SENSOR_TO_MECHANISM_RATIO));
+
+    }
+    
+
+    TrapezoidProfile trapProfile = new TrapezoidProfile(new Constraints(Constants.ClimberConstants.MAX_VELOCITY,Constants.ClimberConstants.MAX_ACCELERATION));
+    double position = 0.0; //This is very wrong, but I don't yet know enough about our climber meckansim to create a beter way
+    State currentState = new State(position,0);
+    double currentSetPoint = position;
+    ElevatorFeedforward FFCalculator = new ElevatorFeedforward(
+        Constants.ClimberConstants.CLIMBER_S, 
+        Constants.ClimberConstants.CLIMBER_J, 
+        Constants.ClimberConstants.CLIMBER_V,
+        Constants.ClimberConstants.CLIMBER_A
+    );
+    @Override
+    public void periodic(){
+        currentSetPoint = MathUtil.clamp(
+            currentSetPoint,
+            Constants.ClimberConstants.MIN_HIGHT,
+            Constants.ClimberConstants.MAX_HIGHT);
+        currentState = trapProfile.calculate(
+            Constants.ClimberConstants.DT, 
+            currentState, 
+            new State(currentSetPoint,0));
+        
+        PositionVoltage request = new PositionVoltage(currentState.position);
+
+        
+
+    }
+
+}
