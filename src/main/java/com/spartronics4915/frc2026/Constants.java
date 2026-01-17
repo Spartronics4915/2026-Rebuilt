@@ -30,7 +30,7 @@ public final class Constants {
 
         public static final double MIN_HIGHT = 0.0;
         public static final double MAX_HIGHT = 1.0;
-        public static final double DT = 0.0;
+        public static final double DeltaTime = 1/50;
 
 
     }
