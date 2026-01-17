@@ -23,7 +23,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 public class TurretSubsystem extends SubsystemBase{
     DoublePublisher turretSetpointPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Turret Current Setpoint").publish();
     DoublePublisher turretAnglePublisher = NetworkTableInstance.getDefault().getDoubleTopic("Turret Angle").publish();
-    DoublePublisher turretOutputPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Turret Applied Output").publish();
+    DoublePublisher turretOutputPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Turret Output").publish();
     DoublePublisher turretRequestedPosPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Turret Requested Position").publish();
 
 

@@ -6,6 +6,7 @@ package com.spartronics4915.frc2026;
 
 import com.spartronics4915.frc2026.Constants.OperatorConstants;
 import com.spartronics4915.frc2026.commands.Autos;
+import com.spartronics4915.frc2026.subsystems.superstructure.TurretSubsystem;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -23,6 +24,7 @@ public class RobotContainer {
 
     public RobotContainer() {
         configureBindings();
+        TurretSubsystem turretSubsystem = new TurretSubsystem();
     }
 
     /**
@@ -33,7 +35,7 @@ public class RobotContainer {
      * {@link edu.wpi.first.wpilibj2.command.button.CommandJoystick Flight joysticks}.
      */
     private void configureBindings() {
-
+        
     }
 
     /**
