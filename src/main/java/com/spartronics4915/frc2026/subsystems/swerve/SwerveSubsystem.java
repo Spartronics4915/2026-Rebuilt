@@ -6,6 +6,7 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 public class SwerveSubsystem {
 
     SwerveSubsytemKinematics kinematics;
+    private 
 
     public SwerveSubsystem() {
 
@@ -16,7 +17,7 @@ public class SwerveSubsystem {
             new Translation2d(Units.inchesToMeters(backRightWheelDistanceInches), Units.inchesToMeters(backRightWheelDistanceInches)), //Back Right
         );
     }
-
+ 
     public void drive() {
         ChassisSpeeds testSpeeds = new ChassisSpeeds(Units.inchesToMeters(testSpeedsX), Units.inchesToMeters(testSpeedsY), Units.degreesToRadians(testSpeedsDeg));
 
