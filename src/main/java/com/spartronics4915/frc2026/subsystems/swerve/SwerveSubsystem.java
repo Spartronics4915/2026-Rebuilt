@@ -9,6 +9,7 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -18,6 +19,9 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import swervelib.SwerveDrive;
 import swervelib.parser.SwerveParser;
@@ -30,7 +34,7 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 public class SwerveSubsystem extends SubsystemBase {
     public final SwerveDrive swerveDrive;
     public static Pose2d swervePose;
-    private final File directory = new File(Filesystem.getDeployDirectory(), "swerve/test-chassis");
+    private final File directory = new File(Filesystem.getDeployDirectory(), "swerve/chassis");
 
     StructPublisher<Pose2d> posePublisher = NetworkTableInstance.getDefault().getStructTopic("Pose", Pose2d.struct).publish();
 
@@ -38,8 +42,8 @@ public class SwerveSubsystem extends SubsystemBase {
         try {
             swerveDrive = new SwerveParser(directory).createSwerveDrive(
                 MAX_SPEED,
-                new Pose2d(new Translation2d(Meter.of(5), Meter.of(3)),
-                Rotation2d.fromDegrees(0))
+                new Pose2d(new Translation2d(Meter.of(2), Meter.of(5)),
+                Rotation2d.fromDegrees(120))
             );
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -131,5 +135,9 @@ public class SwerveSubsystem extends SubsystemBase {
             ChassisSpeeds chassisSpeeds = computeVelocitiesFromController(driverController, swerve).get();
             return chassisSpeeds;
         };
+    }
+
+    public Command driveCommand(ChassisSpeeds chassisSpeeds){
+        return Commands.runOnce(() -> drive(chassisSpeeds));
     }
 }

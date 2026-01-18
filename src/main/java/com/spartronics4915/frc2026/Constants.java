@@ -4,20 +4,25 @@
 
 package com.spartronics4915.frc2026;
 
+import static edu.wpi.first.units.Units.FeetPerSecond;
+import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.photonvision.simulation.SimCameraProperties;
 
 import com.spartronics4915.frc2026.subsystems.vision.cameras.Camera;
+import com.spartronics4915.frc2026.subsystems.vision.cameras.Luma;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.util.Units;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.LinearVelocity;
 
 public final class Constants {
     public static class OperatorConstants {
@@ -26,22 +31,47 @@ public final class Constants {
     }
 
     public static final class SwerveConstants {
-        public static final double TRACK_WIDTH = 22.475 / 12;
-        public static final double WHEEL_BASE = 22.475 / 12;
-        public static final double CHASSIS_RADIUS = Math.hypot(TRACK_WIDTH / 2, WHEEL_BASE / 2);
-
-        public static final double MAX_SPEED = Units.feetToMeters(24);
-        public static final AngularVelocity MAX_ANGULAR_SPEED = RadiansPerSecond.of(MAX_SPEED * Math.PI / CHASSIS_RADIUS);
+        public static final double MAX_SPEED = 18;
+        public static final AngularVelocity MAX_ANGULAR_SPEED = RadiansPerSecond.of(24);
 
         public static Rotation2d TELEOP_HEADING_OFFSET = Rotation2d.fromDegrees(0.0);
 
         public static boolean IS_FIELD_RELATIVE = false;
 
-        public static final double STICK_DEADBAND = 0.1;
+        public static final double STICK_DEADBAND = 0.05;
     }
 
     public static final class VisionConstants {
-        public static final List<Camera> cameraList = new ArrayList<>();
+        public static final AprilTagFieldLayout rebuiltApriltagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+
+        public static final List<Camera> cameraList = List.of(
+            new Luma(
+                "daniil", 
+                CameraType.LUMA, 
+                rebuiltApriltagFieldLayout, 
+                new Transform3d(
+                    new Translation3d(0.3556, 0, 0.0508),
+                    new Rotation3d(
+                        Rotation2d.fromDegrees(0).getRadians(), 
+                        Rotation2d.fromDegrees(-10).getRadians(), 
+                        Rotation2d.fromDegrees(0).getRadians()
+                    )
+                )
+            ),
+            new Luma(
+                "evan", 
+                CameraType.LUMA, 
+                rebuiltApriltagFieldLayout, 
+                new Transform3d(
+                    new Translation3d(-0.3556, 0, 0.0508),
+                    new Rotation3d(
+                        Rotation2d.fromDegrees(180).getRadians(), 
+                        Rotation2d.fromDegrees(-10).getRadians(), 
+                        Rotation2d.fromDegrees(180).getRadians()
+                    )
+                )
+            )
+        );
 
         public static final SimCameraProperties simCameraProperties = new SimCameraProperties();
             static {
@@ -51,8 +81,6 @@ public final class Constants {
                 simCameraProperties.setAvgLatencyMs(15);
                 simCameraProperties.setLatencyStdDevMs(5);
             }
-
-        public static final AprilTagFieldLayout rebuiltApriltagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
         
         public enum CameraType {
             LUMA, LIMELIGHT
