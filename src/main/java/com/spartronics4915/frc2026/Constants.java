@@ -17,5 +17,7 @@ public final class Constants {
         public static double MainI = 0;
         public static double MainD = 0;
 
+        public static boolean motorTurnsClockWise = true;
+
     }
 }
