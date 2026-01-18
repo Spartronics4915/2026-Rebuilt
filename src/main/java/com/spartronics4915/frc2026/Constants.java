@@ -9,4 +9,13 @@ public final class Constants {
         public static final int DRIVER_CONTROLLER_PORT = 0;
         public static final int OPERATOR_CONTROLLER_PORT = 1;
     }
+
+    public static class ShooterConstants {
+        public static int mainShooterMotorID = 100;
+        // Pid control of mainShooterMotor
+        public static double MainP = 0;
+        public static double MainI = 0;
+        public static double MainD = 0;
+
+    }
 }

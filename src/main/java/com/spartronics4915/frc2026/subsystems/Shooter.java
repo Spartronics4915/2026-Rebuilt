@@ -7,6 +7,7 @@ import com.ctre.phoenix6.configs.SlotConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.spartronics4915.frc2026.Constants;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import static edu.wpi.first.units.Units.Degrees;
@@ -22,12 +23,12 @@ public class Shooter extends SubsystemBase {
     
         
         public Shooter () {
-            mainShooterMotor = new TalonFX(100); // motor IIIDDDDDDD
+            mainShooterMotor = new TalonFX(Constants.ShooterConstants.mainShooterMotorID); // motor IIIDDDDDDD
             TalonFXConfigurator configForMainShooterMotor = mainShooterMotor.getConfigurator();
             configForMainShooterMotor.apply(new SlotConfigs()
-                .withKP(0)
-                .withKI(0)
-                .withKD(0)
+                .withKP(Constants.ShooterConstants.MainP)
+                .withKI(Constants.ShooterConstants.MainI)
+                .withKD(Constants.ShooterConstants.MainD)
             );
             configForMainShooterMotor.apply(new CurrentLimitsConfigs()
                 .withSupplyCurrentLimitEnable(true)
@@ -39,7 +40,7 @@ public class Shooter extends SubsystemBase {
                 .withSensorToMechanismRatio(1)
             );
             MotorOutputConfigs motorOutputConfigs = new MotorOutputConfigs();
-            motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
+            motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;  //what
             configForMainShooterMotor.apply(motorOutputConfigs);
         }
         
