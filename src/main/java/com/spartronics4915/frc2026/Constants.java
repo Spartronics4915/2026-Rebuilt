@@ -4,8 +4,6 @@
 
 package com.spartronics4915.frc2026;
 
-import static edu.wpi.first.units.Units.FeetPerSecond;
-import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 import java.util.List;
@@ -81,6 +79,18 @@ public final class Constants {
                 simCameraProperties.setAvgLatencyMs(15);
                 simCameraProperties.setLatencyStdDevMs(5);
             }
+
+        public static final double baseTransverseMultiTagStdDevs = 0.5;
+        public static final double baseAngularMultiTagStdDevs = 0.5;
+
+        public static final double baseTransverseSingleTagStdDevs = 0.5;
+        public static final double baseAngularSingleTagStdDevs = 0.5;
+
+        public static final double tagReward = 0;
+        public static final double distancePunishment = 0;
+        public static final double ambiguityPunishment = 0;
+        public static final double transverseVelocityPunishment = 0;
+        public static final double angularVelocityPunishment = 0;
         
         public enum CameraType {
             LUMA, LIMELIGHT

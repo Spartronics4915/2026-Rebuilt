@@ -5,11 +5,14 @@
 package com.spartronics4915.frc2026;
 
 import com.spartronics4915.frc2026.Constants.OperatorConstants;
+import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 import com.spartronics4915.frc2026.commands.Autos;
 import com.spartronics4915.frc2026.commands.DriveCommand;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
+import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
@@ -21,6 +24,12 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  */
 public class RobotContainer {
     public final SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
+    public final VisionSubsystem visionSubsystem = new VisionSubsystem(
+        swerveSubsystem::addVisionMeasurement,
+        () -> swerveSubsystem.getPose(),
+        () -> swerveSubsystem.getPastVisionPose(VisionSubsystem.poseTimestamp),
+        () -> swerveSubsystem.getFieldVelocity()
+    );
 
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
     private final CommandXboxController operatorController = new CommandXboxController(OperatorConstants.OPERATOR_CONTROLLER_PORT);
@@ -40,6 +49,18 @@ public class RobotContainer {
      */
     private void configureBindings() {
         swerveSubsystem.setDefaultCommand(driveCommand);
+
+        driverController.b().onTrue(
+            Commands.runOnce(() -> {
+                IS_FIELD_RELATIVE = !IS_FIELD_RELATIVE;
+            })
+        );
+
+        driverController.a().onTrue(
+            Commands.runOnce(() -> {
+                TELEOP_HEADING_OFFSET = swerveSubsystem.getPose().getRotation();
+            })
+        );
     }
 
     /**
