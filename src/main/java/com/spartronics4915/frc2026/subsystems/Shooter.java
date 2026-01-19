@@ -7,6 +7,7 @@ import com.ctre.phoenix6.configs.SlotConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.spartronics4915.frc2026.Constants;
 
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -18,7 +19,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 public class Shooter extends SubsystemBase {
 
     private TalonFX mainShooterMotor;
-
+    private NeutralModeValue neutralMode;
     
     
         
@@ -45,6 +46,12 @@ public class Shooter extends SubsystemBase {
                 mainShooterMotorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
             } else {mainShooterMotorOutputConfigs.Inverted = InvertedValue.CounterClockwise_Positive;}
             configForMainShooterMotor.apply(mainShooterMotorOutputConfigs);
+
+            if (Constants.ShooterConstants.motorCoast) {
+                neutralMode = NeutralModeValue.Coast;
+            } else {neutralMode = NeutralModeValue.Brake;}
+            mainShooterMotor.setNeutralMode(neutralMode);
+
         }
         
         public AngularVelocity getSpeed(){
