@@ -103,6 +103,15 @@ public class VisionSubsystem extends SubsystemBase {
     private static DoublePublisher translationStdDevsPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Translation Standard Deviation").publish();
     private static DoublePublisher rotationStdDevsPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Rotation Standard Deviation").publish();
 
+    private static int leftSideTargets;
+    private static int rightSideTargets;
+    private static double tx;
+    private static boolean isLeftSideTarget;
+
+    private static double[] rawTargets;
+
+    private static BooleanPublisher targetLocationPublisher = NetworkTableInstance.getDefault().getBooleanTopic("Target Location").publish();
+
     public VisionSubsystem(
         VisionConsumer consumer, 
         Supplier<Pose2d> poseSupplier, 
@@ -318,7 +327,37 @@ public class VisionSubsystem extends SubsystemBase {
                     break;
                 // Naomi's domain:
                 case LIMELIGHT:
-                    break;
+                    //stay tuned for updates :D
+                    //basic stuff rn, will test and choose a method:
+                    //method 1:
+                    if (LimelightHelpers.getTV(getName())){   
+                        rawTargets = NetworkTableInstance.getDefault()
+                        .getTable(getName())
+                        .getEntry("rawtargets")
+                        .getDoubleArray(new double[0]);
+                        leftSideTargets = 0;
+                        rightSideTargets = 0;
+                        for (int i = 0; i < rawTargets.length; i++){
+                            if (rawTargets[i] < 0){
+                            leftSideTargets++;
+                            } else if (rawTargets[i] > 0 ){
+                                rightSideTargets++;
+                            }
+                        }
+                        if (leftSideTargets > rightSideTargets){
+                            targetLocationPublisher.accept(isLeftSideTarget);
+                        } else if (rightSideTargets > leftSideTargets){
+                            targetLocationPublisher.accept(!isLeftSideTarget);
+                        }
+                        //method 2:
+                        /*tx = LimelightHelpers.getTX(getName());
+                        if (tx < 0){
+                            targetLocationPublisher.accept(isLeftSideTarget);
+                        } else if (tx > 0){
+                            targetLocationPublisher.accept(isLeftSideTarget);
+                        }*/
+                    }
+                break;
             }
         }
         if (isSimulation) {
