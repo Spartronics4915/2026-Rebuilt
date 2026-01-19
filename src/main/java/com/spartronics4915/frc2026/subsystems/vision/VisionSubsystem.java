@@ -22,6 +22,7 @@ import com.spartronics4915.frc2026.subsystems.vision.cameras.Limelight;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.Luma;
 import com.spartronics4915.frc2026.util.LimelightHelpers;
 
+
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.Matrix;
@@ -163,10 +164,16 @@ public class VisionSubsystem extends SubsystemBase {
                         limelight.getPitch().orElse(0.0), 
                         limelight.getRoll().orElse(0.0)
                     );
+                    LimelightHelpers.setPipelineIndex(
+                        limelight.getName(), 
+                        0
+                    );
                     cameras.put(limelight.getName(), limelight);
                     break;
             }
         }
+  
+        
     }
 
     // This is where the magic happens:
