@@ -5,6 +5,7 @@ import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.SlotConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
+import com.ctre.phoenix6.controls.StrictFollower;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
@@ -20,11 +21,11 @@ public class Shooter extends SubsystemBase {
 
     private TalonFX mainShooterMotor;
     private NeutralModeValue neutralMode;
-    
+    private TalonFX followerShooterMotor;
     
         
         public Shooter () {
-
+            //Main motor-----------------------------------------------------------------------------
             mainShooterMotor = new TalonFX(Constants.ShooterConstants.mainShooterMotorID); 
             TalonFXConfigurator configForMainShooterMotor = mainShooterMotor.getConfigurator();
             configForMainShooterMotor.apply(new SlotConfigs()
@@ -52,6 +53,37 @@ public class Shooter extends SubsystemBase {
             } else {neutralMode = NeutralModeValue.Brake;}
             mainShooterMotor.setNeutralMode(neutralMode);
 
+
+            //follower motor-----------------------------------------------------------------------------
+            followerShooterMotor = new TalonFX(Constants.ShooterConstants.followerShooterMotorID); 
+            TalonFXConfigurator configForFollowerShooterMotor = followerShooterMotor.getConfigurator();
+            configForFollowerShooterMotor.apply(new SlotConfigs()
+                .withKP(Constants.ShooterConstants.FollowerP)
+                .withKI(Constants.ShooterConstants.FollowerI)
+                .withKD(Constants.ShooterConstants.FollowerD)
+            );
+            configForFollowerShooterMotor.apply(new CurrentLimitsConfigs()
+                .withSupplyCurrentLimitEnable(true)
+                .withSupplyCurrentLimit(60)
+                .withSupplyCurrentLowerLimit(40)
+                .withSupplyCurrentLowerTime(1.0)
+            );
+            configForFollowerShooterMotor.apply(new FeedbackConfigs()
+                .withSensorToMechanismRatio(1)
+            );
+            MotorOutputConfigs followerShooterMotorOutputConfigs = new MotorOutputConfigs();
+            if (!Constants.ShooterConstants.motorTurnsClockWise) {
+                followerShooterMotorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
+            } else {followerShooterMotorOutputConfigs.Inverted = InvertedValue.CounterClockwise_Positive;}
+            configForFollowerShooterMotor.apply(followerShooterMotorOutputConfigs);
+
+            if (Constants.ShooterConstants.motorCoast) {
+                neutralMode = NeutralModeValue.Coast;
+            } else {neutralMode = NeutralModeValue.Brake;}
+            followerShooterMotor.setNeutralMode(neutralMode);
+            
+            followerShooterMotor.setControl(new StrictFollower(Constants.ShooterConstants.mainShooterMotorID));
+            
         }
         
         public AngularVelocity getSpeed(){

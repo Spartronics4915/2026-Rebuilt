@@ -11,13 +11,23 @@ public final class Constants {
     }
 
     public static class ShooterConstants {
+        
+        //Main motor----------------------------------
         public static int mainShooterMotorID = 100;
         // Pid control of mainShooterMotor
         public static double MainP = 0;
         public static double MainI = 0;
         public static double MainD = 0;
+        
+        //Follower motor-------------------------------
+        public static int followerShooterMotorID = 99;
+        // Pid control 
+        public static double FollowerP = 0;
+        public static double FollowerI = 0;
+        public static double FollowerD = 0;
 
         public static boolean motorTurnsClockWise = true;
+        //Main motor, looking at face of motor, true for clock wise , false for counter clock wise
         public static boolean motorCoast = true;
         //true for Coast, false for Brake
     }
