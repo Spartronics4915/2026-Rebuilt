@@ -23,8 +23,8 @@ public class Shooter extends SubsystemBase {
     
         
         public Shooter () {
-            
-            mainShooterMotor = new TalonFX(Constants.ShooterConstants.mainShooterMotorID); // motor IIIDDDDDDD
+
+            mainShooterMotor = new TalonFX(Constants.ShooterConstants.mainShooterMotorID); 
             TalonFXConfigurator configForMainShooterMotor = mainShooterMotor.getConfigurator();
             configForMainShooterMotor.apply(new SlotConfigs()
                 .withKP(Constants.ShooterConstants.MainP)
@@ -45,10 +45,6 @@ public class Shooter extends SubsystemBase {
                 mainShooterMotorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
             } else {mainShooterMotorOutputConfigs.Inverted = InvertedValue.CounterClockwise_Positive;}
             configForMainShooterMotor.apply(mainShooterMotorOutputConfigs);
-        }
-        
-        public Rotation2d getAngle(){
-            return Rotation2d.fromDegrees(mainShooterMotor.getPosition().getValue().in(Degrees));
         }
         
         public AngularVelocity getSpeed(){
