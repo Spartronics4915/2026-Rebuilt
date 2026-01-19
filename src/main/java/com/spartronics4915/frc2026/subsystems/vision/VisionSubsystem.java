@@ -113,6 +113,8 @@ public class VisionSubsystem extends SubsystemBase {
         this.pastPoseSupplier = pastPoseSupplier;
         this.chassisSpeedSupplier = chassisSpeedSupplier;
 
+        // Set up photon vision simulation:
+
         isSimulation = Robot.isSimulation();
         if (isSimulation) {
             photonSim = new VisionSystemSim("photon");
@@ -120,7 +122,8 @@ public class VisionSubsystem extends SubsystemBase {
             PhotonCamera.setVersionCheckEnabled(false);
         }
         
-        // TODO: Possibly add a check if the cameras are on and connected, so we could handle the issues ourselves without the robot code crashing
+        // Create cameras and add them to the camera map
+        
         for (Camera camera : cameraList) {
             switch (camera.getType()) {
                 case LUMA:
@@ -136,6 +139,7 @@ public class VisionSubsystem extends SubsystemBase {
                         lumaSim = new PhotonCameraSim(luma.getCamera().get(), simCameraProperties);
                         photonSim.addCamera(lumaSim, luma.getTransform().get());
                     }
+                    
                     System.out.println("Camera Loaded: " + luma.getCamera().get().getName());
                     break;
             
@@ -164,6 +168,8 @@ public class VisionSubsystem extends SubsystemBase {
             }
         }
     }
+
+    // This is where the magic happens:
 
     @Override
     public void periodic() {
@@ -292,11 +298,18 @@ public class VisionSubsystem extends SubsystemBase {
                                 break;
 
                             case LOCAL:
+                                /*
+                                    1. something tells us which camera to use and which tag
+                                    2. using 6328 mechanical advantage's cool pose stuff
+                                    3. add the heading of the robot
+                                    4. calculate the standard deviations (really low, we trust the hell out of this)
+                                    5. give it to the drive base to use for auto climb :)
+                                */
                                 break;
                         }
                     }
                     break;
-                
+                // Naomi's domain:
                 case LIMELIGHT:
                     break;
             }
@@ -305,6 +318,8 @@ public class VisionSubsystem extends SubsystemBase {
             if (poseSupplier != null) photonSim.update(poseSupplier.get());
         }
     }
+
+    // End of the magic :(
 
     @FunctionalInterface
     public static interface VisionConsumer {
