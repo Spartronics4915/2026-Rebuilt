@@ -17,11 +17,11 @@ import static com.spartronics4915.frc2026.Constants.VisionConstants.*;
 import com.spartronics4915.frc2026.Constants.VisionConstants.VisionState;
 import com.ctre.phoenix6.Utils;
 import com.spartronics4915.frc2026.Robot;
+import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem.RobotHeading;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.Camera;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.Limelight;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.Luma;
 import com.spartronics4915.frc2026.util.LimelightHelpers;
-
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
@@ -44,12 +44,13 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class VisionSubsystem extends SubsystemBase {
 
+    // TODO: Redo the way I calculate average ambiguity as it is currently for the tags not the pose
+
     private static final HashMap<String, Camera> cameras = new HashMap<>();
 
     private static Luma luma;
     private static Limelight limelight;
- 
-    private static boolean isSimulation;
+
     private static VisionSystemSim photonSim;
     private static PhotonCameraSim lumaSim;
  
@@ -57,13 +58,13 @@ public class VisionSubsystem extends SubsystemBase {
     private static PhotonPoseEstimator photonEstimator;
     private static List<PhotonPipelineResult> photonPipelineResults;
 
-    private static VisionState state = VisionState.GLOBAL;
+    public static VisionState visionState = VisionState.GLOBAL;
+    private static boolean isSimulation;
+    private static boolean isDebugging;
  
     private static int tagCount;
     private static EstimatedRobotPose photonEstimatedPose;
     private static Pose2d photonPose;
-    private static double x;
-    private static double y;
     
     private static int tagID;
     private static double distanceToTag;
@@ -85,11 +86,17 @@ public class VisionSubsystem extends SubsystemBase {
     private Supplier<Pose2d> pastPoseSupplier;
     private Supplier<Pose2d> poseSupplier;
     private Supplier<ChassisSpeeds> chassisSpeedSupplier;
+    private Supplier<RobotHeading> headingSupplier;
 
-    private double visionError;
-    private boolean isMultiTag;
-    private double totalAmbiguity;
-    private double avgAmbiguity;
+    private static double visionError;
+    private static boolean isMultiTag;
+    private static double totalAmbiguity;
+    private static double avgAmbiguity;
+    private static boolean isGlobal;
+
+    private static Camera localCamera;
+
+    private static Pose2d robotPose;
 
     private static StructPublisher<Pose2d> rawPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Raw Vision Pose", Pose2d.struct).publish();
     private static StructPublisher<Pose2d> compensatedPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Compensated Vision Pose", Pose2d.struct).publish();
@@ -102,6 +109,7 @@ public class VisionSubsystem extends SubsystemBase {
     private static StringPublisher cameraNamePublisher = NetworkTableInstance.getDefault().getStringTopic("Camera Name").publish();
     private static DoublePublisher translationStdDevsPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Translation Standard Deviation").publish();
     private static DoublePublisher rotationStdDevsPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Rotation Standard Deviation").publish();
+    private static BooleanPublisher visionStatePublisher = NetworkTableInstance.getDefault().getBooleanTopic("Is Global").publish();
 
     private static int leftSideTargets;
     private static int rightSideTargets;
@@ -116,12 +124,14 @@ public class VisionSubsystem extends SubsystemBase {
         VisionConsumer consumer, 
         Supplier<Pose2d> poseSupplier, 
         Supplier<Pose2d> pastPoseSupplier,
-        Supplier<ChassisSpeeds> chassisSpeedSupplier
+        Supplier<ChassisSpeeds> chassisSpeedSupplier,
+        Supplier<RobotHeading> headingSupplier
     ) {
         this.consumer = consumer;
         this.poseSupplier = poseSupplier;
         this.pastPoseSupplier = pastPoseSupplier;
         this.chassisSpeedSupplier = chassisSpeedSupplier;
+        this.headingSupplier = headingSupplier;
 
         // Set up photon vision simulation:
 
@@ -140,6 +150,7 @@ public class VisionSubsystem extends SubsystemBase {
                     luma = new Luma(
                         camera.getName(), 
                         camera.getType(), 
+                        camera.getPipelineIndex(),
                         camera.getLayout().get(), 
                         camera.getTransform().get()
                     );
@@ -157,6 +168,7 @@ public class VisionSubsystem extends SubsystemBase {
                     limelight = new Limelight(
                         camera.getName(), 
                         camera.getType(),
+                        camera.getPipelineIndex(),
                         camera.getX().get(), 
                         camera.getY().get(), 
                         camera.getZ().get(), 
@@ -164,6 +176,7 @@ public class VisionSubsystem extends SubsystemBase {
                         camera.getPitch().get(), 
                         camera.getRoll().get()
                     );
+
                     LimelightHelpers.setCameraPose_RobotSpace(
                         limelight.getName(),
                         limelight.getX().orElse(0.0), 
@@ -173,49 +186,56 @@ public class VisionSubsystem extends SubsystemBase {
                         limelight.getPitch().orElse(0.0), 
                         limelight.getRoll().orElse(0.0)
                     );
+
                     LimelightHelpers.setPipelineIndex(
                         limelight.getName(), 
-                        0
+                        limelight.getPipelineIndex()
                     );
                     cameras.put(limelight.getName(), limelight);
                     break;
             }
         }
-  
-        
     }
 
     // This is where the magic happens:
 
     @Override
     public void periodic() {
-        for (Camera camera: cameras.values()) {
+        for (Camera camera : cameras.values()) {
             switch (camera.getType()) {
                 case LUMA:
                     photonCamera = camera.getCamera().get();
                     photonEstimator = camera.getEstimator().get();
-                    photonPipelineResults = photonCamera.getAllUnreadResults();
 
-                    if (photonPipelineResults.isEmpty() || photonPipelineResults == null) continue;
-                    
-                    for (PhotonPipelineResult result : photonPipelineResults) {
-                        if (!result.hasTargets()) continue;
-                        tagCount = result.targets.size();
-                        countTrustedTags = 0;
+                    if (headingSupplier.get() != null) {
+                        photonEstimator.addHeadingData(
+                            headingSupplier.get().timestamp(), 
+                            headingSupplier.get().rotation()
+                        );
+                    }
 
-                        totalDistance = 0;
-                        translationStdDevs = 0;
-                        rotationStdDevs = 0;
+                    if (poseSupplier != null) robotPose = poseSupplier.get();
 
-                        totalAmbiguity = 0;
-                        
-                        trackedTagPoses = new ArrayList<>();
-                        trustedTagPoses = new ArrayList<>();
+                    switch (visionState) {
+                        case GLOBAL:
+                            isGlobal = true;
+                            photonPipelineResults = photonCamera.getAllUnreadResults();
 
-                        if (tagCount == 0) continue;
-                
-                        switch (state) {
-                            case GLOBAL:
+                            if (photonPipelineResults.isEmpty() || photonPipelineResults == null) continue;
+
+                            for (PhotonPipelineResult result : photonPipelineResults) {
+                                if (!result.hasTargets()) continue;
+                                tagCount = result.targets.size();
+                                countTrustedTags = 0;
+
+                                totalDistance = 0;
+                                totalAmbiguity = 0;
+
+                                trackedTagPoses.clear();
+                                trustedTagPoses.clear();;
+
+                                if (tagCount == 0) continue;
+                            
                                 switch (tagCount) {
                                     case 1:
                                         photonEstimatedPose = photonEstimator.estimateLowestAmbiguityPose(result).get();
@@ -229,21 +249,14 @@ public class VisionSubsystem extends SubsystemBase {
                                 }
 
                                 photonPose = photonEstimatedPose.estimatedPose.toPose2d();
-                                    x = photonPose.getX();
-                                    y = photonPose.getY();
+                                if (robotPose.getTranslation().getDistance(photonPose.getTranslation()) > 0.5) continue;
 
-                                if (
-                                    x < 0 || x > 17 || 
-                                    y < 0 || y > 8.2 
-                                ) continue;
-                                
                                 for (PhotonTrackedTarget trackedTag : photonEstimatedPose.targetsUsed) {
                                     tagID = trackedTag.fiducialId;
-
                                     distanceToTag = trackedTag.getBestCameraToTarget().getTranslation().getNorm();
+                                    
                                     if (tagCount == 1) trustedDistance = Units.feetToMeters(100);
                                         else trustedDistance = Units.feetToMeters(100);
-
                                     if (distanceToTag > trustedDistance) continue;
                                         else {
                                             countTrustedTags++;
@@ -252,16 +265,16 @@ public class VisionSubsystem extends SubsystemBase {
 
                                     totalDistance += distanceToTag;
                                     rebuiltApriltagFieldLayout.getTagPose(tagID).ifPresent(pose -> trackedTagPoses.add(pose));
-
                                     totalAmbiguity += trackedTag.poseAmbiguity;
                                 }
-                                
+
+                                // TODO: Implement my custom algorithm here and make sure to change stuff based off of single or multitag
                                 avgAmbiguity = totalAmbiguity / tagCount;
                                 avgDistance = totalDistance / tagCount;
                                 switch (countTrustedTags) {
                                     case 0:
                                         continue;
-
+                                    
                                     case 1:
                                         translationStdDevs = baseTransverseSingleTagStdDevs;
                                         rotationStdDevs = baseAngularSingleTagStdDevs;
@@ -273,11 +286,11 @@ public class VisionSubsystem extends SubsystemBase {
                                             Math.pow(chassisSpeedSupplier.get().vyMetersPerSecond, 2)
                                         ) * transverseVelocityPunishment;
                                         break;
-
+                                    
                                     default:
                                         translationStdDevs = baseTransverseMultiTagStdDevs;
                                         rotationStdDevs = baseAngularMultiTagStdDevs;
-
+                                        
                                         translationStdDevs -= tagCount * tagReward;
                                         translationStdDevs += avgDistance * distancePunishment;
                                         translationStdDevs += avgAmbiguity * ambiguityPunishment;
@@ -285,45 +298,80 @@ public class VisionSubsystem extends SubsystemBase {
                                             Math.pow(chassisSpeedSupplier.get().vxMetersPerSecond, 2) + 
                                             Math.pow(chassisSpeedSupplier.get().vyMetersPerSecond, 2)
                                         ) * transverseVelocityPunishment;
-
+                                        
                                         rotationStdDevs += chassisSpeedSupplier.get().omegaRadiansPerSecond * angularVelocityPunishment;
                                         break;
                                 }
 
                                 poseTimestamp = Utils.fpgaToCurrentTime(photonEstimatedPose.timestampSeconds);
                                 currentStdDevs = VecBuilder.fill(translationStdDevs, translationStdDevs, rotationStdDevs);
+                                
                                 this.consumer.accept(
                                     photonPose,
                                     poseTimestamp,
                                     currentStdDevs
                                 );
 
-                                visionError = Math.sqrt(Math.pow(poseSupplier.get().minus(photonPose).getX(), 2) + Math.pow(poseSupplier.get().minus(photonPose).getY(), 2));
-
-                                rawPosePublisher.accept(photonPose);
-                                compensatedPosePublisher.accept(pastPoseSupplier.get());
                                 trackedTagsPublisher.accept(trackedTagPoses.toArray(new Pose3d[0]));
                                 trustedTagsPublisher.accept(trustedTagPoses.toArray(new Pose3d[0]));
-                                visionErrorPublisher.accept(visionError);
+                                
                                 visionPoseStrategyPublisher.accept(isMultiTag);
                                 amountOfTagsPublisher.accept(tagCount);
                                 visionAmbiguityPublisher.accept(avgAmbiguity);
-                                cameraNamePublisher.accept(camera.getName());
-                                translationStdDevsPublisher.accept(translationStdDevs);
-                                rotationStdDevsPublisher.accept(rotationStdDevs);
-                                break;
+                            }
+                            break;   
 
-                            case LOCAL:
-                                /*
-                                    1. something tells us which camera to use and which tag
-                                    2. using 6328 mechanical advantage's cool pose stuff
-                                    3. add the heading of the robot
-                                    4. calculate the standard deviations (really low, we trust the hell out of this)
-                                    5. give it to the drive base to use for auto climb :)
-                                */
-                                break;
-                        }
+                        case LOCAL:
+                            // TODO: In sim this is being funky, need to do some more testing
+                            if (localCamera != camera) continue;
+                            isGlobal = false;
+
+                            photonPipelineResults = photonCamera.getAllUnreadResults();
+                            if (photonPipelineResults.isEmpty() || photonPipelineResults == null) continue;
+
+                            for (PhotonPipelineResult result : photonPipelineResults) {
+                                if (!result.hasTargets()) continue;
+                                
+                                trackedTagPoses.clear();
+
+                                photonEstimatedPose = photonEstimator.estimatePnpDistanceTrigSolvePose(result).get();
+
+                                photonPose = photonEstimatedPose.estimatedPose.toPose2d();
+                                if (robotPose.getTranslation().getDistance(photonPose.getTranslation()) > 0.5) continue;
+
+                                translationStdDevs = localTransverseStdDevs;
+                                rotationStdDevs = localAngularStdDevs;
+
+                                currentStdDevs = VecBuilder.fill(translationStdDevs, translationStdDevs, rotationStdDevs);
+                                poseTimestamp = Utils.fpgaToCurrentTime(photonEstimatedPose.timestampSeconds);
+
+                                this.consumer.accept(
+                                    photonPose, 
+                                    poseTimestamp, 
+                                    currentStdDevs
+                                );
+
+                                trackedTagPoses.add(rebuiltApriltagFieldLayout.getTagPose(result.getBestTarget().fiducialId).get());
+
+                                visionAmbiguityPublisher.accept(result.getBestTarget().poseAmbiguity);
+                                visionPoseStrategyPublisher.accept(false);
+                                amountOfTagsPublisher.accept(1);
+                                trackedTagsPublisher.accept(trackedTagPoses.toArray(new Pose3d[0]));
+                                trustedTagsPublisher.accept(trackedTagPoses.toArray(new Pose3d[0]));
+                            }
+                            break;
                     }
+                    
+                    if (photonPose == null) continue;
+                    visionError = Math.sqrt(Math.pow(poseSupplier.get().minus(photonPose).getX(), 2) + Math.pow(poseSupplier.get().minus(photonPose).getY(), 2));
+
+                    rawPosePublisher.accept(photonPose);
+                    compensatedPosePublisher.accept(pastPoseSupplier.get());
+                    visionErrorPublisher.accept(visionError);
+                    cameraNamePublisher.accept(camera.getName());
+                    translationStdDevsPublisher.accept(translationStdDevs);
+                    rotationStdDevsPublisher.accept(rotationStdDevs);
+                    visionStatePublisher.accept(isGlobal);
                     break;
                 // Naomi's domain:
                 case LIMELIGHT:
@@ -361,8 +409,12 @@ public class VisionSubsystem extends SubsystemBase {
             }
         }
         if (isSimulation) {
-            if (poseSupplier != null) photonSim.update(poseSupplier.get());
+            photonSim.update(poseSupplier.get());
         }
+    }
+
+    public static void setLocalCamera(String name) {
+        localCamera = cameras.get(name);
     }
 
     // End of the magic :(

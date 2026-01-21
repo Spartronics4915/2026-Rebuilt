@@ -9,8 +9,8 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
@@ -18,11 +18,12 @@ import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
 import swervelib.SwerveDrive;
 import swervelib.parser.SwerveParser;
 import swervelib.telemetry.SwerveDriveTelemetry;
@@ -33,8 +34,10 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 public class SwerveSubsystem extends SubsystemBase {
     public final SwerveDrive swerveDrive;
-    public static Pose2d swervePose;
+    public static Pose2d pose;
     private final File directory = new File(Filesystem.getDeployDirectory(), "swerve/chassis");
+    
+    public static boolean isRightAlliance;
 
     StructPublisher<Pose2d> posePublisher = NetworkTableInstance.getDefault().getStructTopic("Pose", Pose2d.struct).publish();
 
@@ -49,11 +52,13 @@ public class SwerveSubsystem extends SubsystemBase {
             throw new RuntimeException(e);
         }
         SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
+        pose = getPose();
     }
 
     @Override
     public void periodic() {
         posePublisher.accept(getPose());
+        setAllianceSide();
     }
 
     public void drive(ChassisSpeeds chassisSpeeds) {
@@ -64,8 +69,17 @@ public class SwerveSubsystem extends SubsystemBase {
         return swerveDrive.getFieldVelocity();
     }
 
+    public RobotHeading getHeading() {
+        return new RobotHeading(swerveDrive.getGyroRotation3d(), Timer.getFPGATimestamp());
+    }
+
     public Pose2d getPose() {
         return swerveDrive.getPose();
+    }
+
+    public void setAllianceSide() {
+        if (pose.getX() >= 4.05) isRightAlliance = false;
+            else isRightAlliance = true;
     }
 
     public Pose2d getPastVisionPose(double timestamp) {
@@ -140,4 +154,6 @@ public class SwerveSubsystem extends SubsystemBase {
     public Command driveCommand(ChassisSpeeds chassisSpeeds){
         return Commands.runOnce(() -> drive(chassisSpeeds));
     }
+
+    public record RobotHeading(Rotation3d rotation, double timestamp) {}
 }

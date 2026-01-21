@@ -20,7 +20,6 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.units.measure.LinearVelocity;
 
 public final class Constants {
     public static class OperatorConstants {
@@ -46,6 +45,7 @@ public final class Constants {
             new Luma(
                 "daniil", 
                 CameraType.LUMA, 
+                0,
                 rebuiltApriltagFieldLayout, 
                 new Transform3d(
                     new Translation3d(0.3556, 0, 0.0508),
@@ -53,19 +53,6 @@ public final class Constants {
                         Rotation2d.fromDegrees(0).getRadians(), 
                         Rotation2d.fromDegrees(-10).getRadians(), 
                         Rotation2d.fromDegrees(0).getRadians()
-                    )
-                )
-            ),
-            new Luma(
-                "evan", 
-                CameraType.LUMA, 
-                rebuiltApriltagFieldLayout, 
-                new Transform3d(
-                    new Translation3d(-0.3556, 0, 0.0508),
-                    new Rotation3d(
-                        Rotation2d.fromDegrees(180).getRadians(), 
-                        Rotation2d.fromDegrees(-10).getRadians(), 
-                        Rotation2d.fromDegrees(180).getRadians()
                     )
                 )
             )
@@ -91,6 +78,9 @@ public final class Constants {
         public static final double ambiguityPunishment = 0;
         public static final double transverseVelocityPunishment = 0;
         public static final double angularVelocityPunishment = 0;
+
+        public static final double localTransverseStdDevs = 0.5;
+        public static final double localAngularStdDevs = 0.5;
         
         public enum CameraType {
             LUMA, LIMELIGHT

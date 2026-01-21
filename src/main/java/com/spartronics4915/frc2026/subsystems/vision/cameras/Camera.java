@@ -13,6 +13,7 @@ import edu.wpi.first.math.geometry.Transform3d;
 public interface Camera {
     String getName();
     CameraType getType();
+    int getPipelineIndex();
     
     default Optional<Double> getX() {return Optional.empty();}
     default Optional<Double> getY() {return Optional.empty();}

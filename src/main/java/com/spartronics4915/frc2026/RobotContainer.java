@@ -5,6 +5,8 @@
 package com.spartronics4915.frc2026;
 
 import com.spartronics4915.frc2026.Constants.OperatorConstants;
+import static com.spartronics4915.frc2026.Constants.VisionConstants.VisionState.*;
+
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 import com.spartronics4915.frc2026.commands.Autos;
 import com.spartronics4915.frc2026.commands.DriveCommand;
@@ -28,7 +30,8 @@ public class RobotContainer {
         swerveSubsystem::addVisionMeasurement,
         () -> swerveSubsystem.getPose(),
         () -> swerveSubsystem.getPastVisionPose(VisionSubsystem.poseTimestamp),
-        () -> swerveSubsystem.getFieldVelocity()
+        () -> swerveSubsystem.getFieldVelocity(),
+        () -> swerveSubsystem.getHeading()
     );
 
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
@@ -59,6 +62,16 @@ public class RobotContainer {
         driverController.a().onTrue(
             Commands.runOnce(() -> {
                 TELEOP_HEADING_OFFSET = swerveSubsystem.getPose().getRotation();
+            })
+        );
+
+        driverController.y().onTrue(
+            Commands.runOnce(() -> {
+                VisionSubsystem.visionState = (VisionSubsystem.visionState == GLOBAL) ? LOCAL : GLOBAL;
+                if (VisionSubsystem.visionState == LOCAL) {
+                    if (SwerveSubsystem.isRightAlliance == true) VisionSubsystem.setLocalCamera("daniil");
+                        else VisionSubsystem.setLocalCamera("daniil");
+                }
             })
         );
     }

@@ -8,6 +8,7 @@ import com.spartronics4915.frc2026.Constants.VisionConstants.CameraType;
 public class Limelight implements Camera {
     final String name;
     final CameraType type;
+    final int pipelineIndex;
     final double x;
     final double y;
     final double z;
@@ -18,6 +19,7 @@ public class Limelight implements Camera {
     public Limelight(
         String name, 
         CameraType type, 
+        int pipelineIndex,
         double x, 
         double y, 
         double z, 
@@ -27,6 +29,7 @@ public class Limelight implements Camera {
     ) { 
         this.name = name; 
         this.type = type;
+        this.pipelineIndex = pipelineIndex;
         this.x = x;
         this.y = y;
         this.z = z;
@@ -37,6 +40,8 @@ public class Limelight implements Camera {
 
     @Override public String getName() {return name;}
     @Override public CameraType getType() {return type;}
+    @Override public int getPipelineIndex() {return pipelineIndex;}
+
     @Override public Optional<Double> getX() {return Optional.of(x);}
     @Override public Optional<Double> getY() {return Optional.of(y);}
     @Override public Optional<Double> getZ() {return Optional.of(z);}
