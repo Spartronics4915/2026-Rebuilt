@@ -46,39 +46,39 @@ public class VisionSubsystem extends SubsystemBase {
 
     // TODO: Redo the way I calculate average ambiguity as it is currently for the tags not the pose
 
-    private static final HashMap<String, Camera> cameras = new HashMap<>();
+    private final static HashMap<String, Camera> cameras = new HashMap<>();
 
-    private static Luma luma;
-    private static Limelight limelight;
+    private Luma luma;
+    private Limelight limelight;
 
-    private static VisionSystemSim photonSim;
-    private static PhotonCameraSim lumaSim;
+    private VisionSystemSim photonSim;
+    private PhotonCameraSim lumaSim;
  
-    private static PhotonCamera photonCamera;
-    private static PhotonPoseEstimator photonEstimator;
-    private static List<PhotonPipelineResult> photonPipelineResults;
+    private PhotonCamera photonCamera;
+    private PhotonPoseEstimator photonEstimator;
+    private List<PhotonPipelineResult> photonPipelineResults;
 
     public static VisionState visionState = VisionState.GLOBAL;
-    private static boolean isSimulation;
-    private static boolean isDebugging;
+    private boolean isSimulation;
+    private boolean isDebugging;
  
     private static int tagCount;
     private static EstimatedRobotPose photonEstimatedPose;
     private static Pose2d photonPose;
     
-    private static int tagID;
-    private static double distanceToTag;
-    private static double trustedDistance;
-    private static double totalDistance;
-    private static double avgDistance;
-    private static int countTrustedTags;
+    private int tagID;
+    private double distanceToTag;
+    private double trustedDistance;
+    private double totalDistance;
+    private double avgDistance;
+    private int countTrustedTags;
 
-    private static List<Pose3d> trackedTagPoses = new ArrayList<>();
-    private static List<Pose3d> trustedTagPoses = new ArrayList<>();
+    private List<Pose3d> trackedTagPoses = new ArrayList<>();
+    private List<Pose3d> trustedTagPoses = new ArrayList<>();
 
-    private static double translationStdDevs;
-    private static double rotationStdDevs;
-    private static Matrix<N3, N1> currentStdDevs;
+    private double translationStdDevs;
+    private double rotationStdDevs;
+    private Matrix<N3, N1> currentStdDevs;
 
     public static double poseTimestamp;
     private final VisionConsumer consumer;
@@ -88,37 +88,36 @@ public class VisionSubsystem extends SubsystemBase {
     private Supplier<ChassisSpeeds> chassisSpeedSupplier;
     private Supplier<RobotHeading> headingSupplier;
 
-    private static double visionError;
-    private static boolean isMultiTag;
-    private static double totalAmbiguity;
-    private static double avgAmbiguity;
-    private static boolean isGlobal;
+    private double visionError;
+    private boolean isMultiTag;
+    private double totalAmbiguity;
+    private double avgAmbiguity;
+    private boolean isGlobal;
 
     private static Camera localCamera;
+    private Pose2d robotPose;
 
-    private static Pose2d robotPose;
+    private StructPublisher<Pose2d> rawPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Raw Vision Pose", Pose2d.struct).publish();
+    private StructPublisher<Pose2d> compensatedPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Compensated Vision Pose", Pose2d.struct).publish();
+    private StructArrayPublisher<Pose3d> trackedTagsPublisher = NetworkTableInstance.getDefault().getStructArrayTopic("Tracked Tags", Pose3d.struct).publish();
+    private StructArrayPublisher<Pose3d> trustedTagsPublisher = NetworkTableInstance.getDefault().getStructArrayTopic("Trusted Tags", Pose3d.struct).publish();
+    private DoublePublisher visionErrorPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Vision Error").publish();
+    private BooleanPublisher visionPoseStrategyPublisher = NetworkTableInstance.getDefault().getBooleanTopic("Is Multi Tag").publish();
+    private IntegerPublisher amountOfTagsPublisher = NetworkTableInstance.getDefault().getIntegerTopic("Amount of tags").publish();
+    private DoublePublisher visionAmbiguityPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Vision Ambiguity").publish();
+    private StringPublisher cameraNamePublisher = NetworkTableInstance.getDefault().getStringTopic("Camera Name").publish();
+    private DoublePublisher translationStdDevsPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Translation Standard Deviation").publish();
+    private DoublePublisher rotationStdDevsPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Rotation Standard Deviation").publish();
+    private BooleanPublisher visionStatePublisher = NetworkTableInstance.getDefault().getBooleanTopic("Is Global").publish();
 
-    private static StructPublisher<Pose2d> rawPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Raw Vision Pose", Pose2d.struct).publish();
-    private static StructPublisher<Pose2d> compensatedPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Compensated Vision Pose", Pose2d.struct).publish();
-    private static StructArrayPublisher<Pose3d> trackedTagsPublisher = NetworkTableInstance.getDefault().getStructArrayTopic("Tracked Tags", Pose3d.struct).publish();
-    private static StructArrayPublisher<Pose3d> trustedTagsPublisher = NetworkTableInstance.getDefault().getStructArrayTopic("Trusted Tags", Pose3d.struct).publish();
-    private static DoublePublisher visionErrorPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Vision Error").publish();
-    private static BooleanPublisher visionPoseStrategyPublisher = NetworkTableInstance.getDefault().getBooleanTopic("Is Multi Tag").publish();
-    private static IntegerPublisher amountOfTagsPublisher = NetworkTableInstance.getDefault().getIntegerTopic("Amount of tags").publish();
-    private static DoublePublisher visionAmbiguityPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Vision Ambiguity").publish();
-    private static StringPublisher cameraNamePublisher = NetworkTableInstance.getDefault().getStringTopic("Camera Name").publish();
-    private static DoublePublisher translationStdDevsPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Translation Standard Deviation").publish();
-    private static DoublePublisher rotationStdDevsPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Rotation Standard Deviation").publish();
-    private static BooleanPublisher visionStatePublisher = NetworkTableInstance.getDefault().getBooleanTopic("Is Global").publish();
+    private int leftSideTargets;
+    private int rightSideTargets;
+    private double tx;
+    private boolean isLeftSideTarget;
 
-    private static int leftSideTargets;
-    private static int rightSideTargets;
-    private static double tx;
-    private static boolean isLeftSideTarget;
+    private double[] rawTargets;
 
-    private static double[] rawTargets;
-
-    private static BooleanPublisher targetLocationPublisher = NetworkTableInstance.getDefault().getBooleanTopic("Target Location").publish();
+    private BooleanPublisher targetLocationPublisher = NetworkTableInstance.getDefault().getBooleanTopic("Target Location").publish();
 
     public VisionSubsystem(
         VisionConsumer consumer, 
