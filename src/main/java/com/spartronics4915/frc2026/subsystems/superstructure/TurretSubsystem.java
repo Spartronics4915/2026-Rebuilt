@@ -17,13 +17,14 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class TurretSubsystem extends SubsystemBase{
     DoublePublisher turretSetpointPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Turret Current Setpoint").publish();
     DoublePublisher turretAnglePublisher = NetworkTableInstance.getDefault().getDoubleTopic("Turret Angle").publish();
-    DoublePublisher turretOutputPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Turret Output").publish();
+    DoublePublisher turretVoltagePublisher = NetworkTableInstance.getDefault().getDoubleTopic("Turret Voltage").publish();
     DoublePublisher turretRequestedPosPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Turret Requested Position").publish();
 
 
@@ -32,6 +33,7 @@ public class TurretSubsystem extends SubsystemBase{
 
     public TurretSubsystem(){
       applyMotorConfigs(turretConfigurator);  
+      SmartDashboard.putNumber("Set Point", 0); 
 
     }
     
@@ -60,6 +62,7 @@ public class TurretSubsystem extends SubsystemBase{
    
     @Override
     public void periodic(){
+        currentSetPoint = SmartDashboard.getNumber("Set Point", 0);//temp code
         currentSetPoint = MathUtil.clamp(
             currentSetPoint,
             Constants.TurretConstants.MIN_ROTATION,
@@ -74,12 +77,13 @@ public class TurretSubsystem extends SubsystemBase{
 
         turretMotor.setControl(request);
         publishData();
+
     }
 
     private void publishData(){
         turretSetpointPublisher.accept(currentSetPoint);
-        turretAnglePublisher.accept(turretMotor.getPosition().getValue().in(Degrees));
-        turretOutputPublisher.accept(turretMotor.getClosedLoopOutput().getValueAsDouble());
+        turretAnglePublisher.accept(this.getAngle().getDegrees());
+        turretVoltagePublisher.accept(turretMotor.getMotorVoltage().getValueAsDouble());
         turretRequestedPosPublisher.accept(currentState.position);
     }
 
