@@ -28,5 +28,8 @@ public final class Constants {
         public static final double MAX_VELOCITY = 4.5;
         public static final double MAX_ACCELERATION = 2.5;
         public static final double DELTA_TIME = 1.0/50.0;
+
+        public static final int ENCODER_ONE_ID = 0;
+        public static final int ENCODER_TWO_ID = 0;
     }
 }

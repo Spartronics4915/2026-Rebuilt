@@ -7,6 +7,7 @@ import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.SlotConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.spartronics4915.frc2026.Constants;
 
@@ -27,9 +28,11 @@ public class TurretSubsystem extends SubsystemBase{
     DoublePublisher turretVoltagePublisher = NetworkTableInstance.getDefault().getDoubleTopic("Turret Voltage").publish();
     DoublePublisher turretRequestedPosPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Turret Requested Position").publish();
 
-
     TalonFX turretMotor = new TalonFX(Constants.TurretConstants.TURRET_MOTOR_ID);
     TalonFXConfigurator turretConfigurator = turretMotor.getConfigurator();
+
+    CANcoder encoderOne = new CANcoder(Constants.TurretConstants.ENCODER_ONE_ID);
+    CANcoder encoderTwo = new CANcoder(Constants.TurretConstants.ENCODER_TWO_ID);
 
     public TurretSubsystem(){
       applyMotorConfigs(turretConfigurator);  
@@ -55,7 +58,9 @@ public class TurretSubsystem extends SubsystemBase{
 
     }
 
-    TrapezoidProfile trapProfile = new TrapezoidProfile(new Constraints(Constants.TurretConstants.MAX_VELOCITY,Constants.TurretConstants.MAX_ACCELERATION));
+    TrapezoidProfile trapProfile = new TrapezoidProfile(
+        new Constraints(Constants.TurretConstants.MAX_VELOCITY,Constants.TurretConstants.MAX_ACCELERATION)
+    );
     double position = this.getAngle().getRotations();
     State currentState = new State(position,0);
     double currentSetPoint = position;
@@ -102,10 +107,12 @@ public class TurretSubsystem extends SubsystemBase{
         return this.runOnce(()->currentSetPoint += input.getRotations());
     }
     /**
-     * Gets the angle of the turret in degrees
-     * @return the angle of the turret in degrees
+     * Gets the angle of the turret 
+     * @return the angle of the turret as a rotation 2d
      */
     public Rotation2d getAngle(){
+        // Daniil claimed he would put fancy code here that will magically make it work 
+        
         return Rotation2d.fromDegrees(turretMotor.getPosition().getValue().in(Degrees));
     }
 
