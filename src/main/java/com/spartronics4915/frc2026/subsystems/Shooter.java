@@ -15,6 +15,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.spartronics4915.frc2026.Constants;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -29,6 +30,8 @@ public class Shooter extends SubsystemBase {
     private double currentSetPoint;
     private State currentState;
     private TrapezoidProfile trapProfile;
+    private SimpleMotorFeedforward FFCalculator;
+    
     
         
         public Shooter () {
@@ -90,6 +93,11 @@ public class Shooter extends SubsystemBase {
             followerShooterMotor.setNeutralMode(neutralMode);
             
             followerShooterMotor.setControl(new StrictFollower(Constants.ShooterConstants.mainShooterMotorID));
+
+            FFCalculator = new SimpleMotorFeedforward(
+                Constants.ShooterConstants.S,
+                Constants.ShooterConstants.V,
+                Constants.ShooterConstants.A);
             
         }
         
@@ -111,7 +119,15 @@ public class Shooter extends SubsystemBase {
                 new State(currentSetPoint, 0)
             );
 
-            VelocityVoltage request = new VelocityVoltage(currentState.position);
+            VelocityVoltage request = new VelocityVoltage(
+                currentState.position
+            ).withFeedForward(
+                FFCalculator.calculate(
+                    currentState.position, 
+                    currentState.velocity
+                )
+            );
+
                 
 
             mainShooterMotor.setControl(request);

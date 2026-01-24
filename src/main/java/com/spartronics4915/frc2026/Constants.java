@@ -26,6 +26,11 @@ public final class Constants {
         public static double FollowerI = 0;
         public static double FollowerD = 0;
 
+        //feed forward
+        public static double S = 0;
+        public static double V = 0;
+        public static double A = 0;
+
         public static boolean motorTurnsClockWise = true;
         //Main motor, looking at face of motor, true for clock wise , false for counter clock wise
         public static boolean motorCoast = true;
@@ -33,5 +38,6 @@ public final class Constants {
 
         public static double minSpeed = 10;
         public static double maxSpeed = 0;
+
     }
 }
