@@ -30,5 +30,8 @@ public final class Constants {
         //Main motor, looking at face of motor, true for clock wise , false for counter clock wise
         public static boolean motorCoast = true;
         //true for Coast, false for Brake
+
+        public static double minSpeed = 10;
+        public static double maxSpeed = 0;
     }
 }
