@@ -9,4 +9,9 @@ public final class Constants {
         public static final int DRIVER_CONTROLLER_PORT = 0;
         public static final int OPERATOR_CONTROLLER_PORT = 1;
     }
+    public static class HoodConstants {
+        public static final float P = 0;
+        public static final float I = 0;
+        public static final float D = 0;
+    }
 }
