@@ -17,6 +17,7 @@ import com.spartronics4915.frc2026.Constants;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
+import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -35,6 +36,15 @@ public class Shooter extends SubsystemBase {
     
         
         public Shooter () {
+
+            trapProfile = new TrapezoidProfile(
+	            new Constraints(Constants.ShooterConstants.MaxVelocity, Constants.ShooterConstants.MaxAcceleration)
+            );
+
+            currentState = new State(0, 0);
+
+
+            
             //Main motor-----------------------------------------------------------------------------
             mainShooterMotor = new TalonFX(Constants.ShooterConstants.mainShooterMotorID); 
             TalonFXConfigurator configForMainShooterMotor = mainShooterMotor.getConfigurator();
@@ -97,7 +107,8 @@ public class Shooter extends SubsystemBase {
             FFCalculator = new SimpleMotorFeedforward(
                 Constants.ShooterConstants.S,
                 Constants.ShooterConstants.V,
-                Constants.ShooterConstants.A);
+                Constants.ShooterConstants.A
+            );
             
         }
         
