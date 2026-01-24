@@ -34,6 +34,14 @@ jobs:
               with:
                   add-job-summary: never
 
+            - name: Update libstdc++ for GLIBCXX_3.4.32
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y software-properties-common
+                  sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+                  sudo apt-get update
+                  sudo apt-get install --only-upgrade libstdc++6 -y
+
             - name: Compile and run tests on robot code
               run: ./gradlew build --no-daemon
 
@@ -117,5 +125,6 @@ jobs:
                   
                   if ([ "$rc" -ne 0 ] && [ "$rc" -ne 124 ]) || [ "$crash_detected" = "true" ]; then
                       echo "::error::Simulation smoke test failed. Failing job after uploading logs."
+                      exit 1
                   fi
                   echo "No simulation failure detected (rc=$rc)."
