@@ -49,7 +49,7 @@ public class ClimberSubsystem extends SubsystemBase{
     }
 
     TrapezoidProfile trapProfile = new TrapezoidProfile(new Constraints(Constants.ClimberConstants.MAX_VELOCITY,Constants.ClimberConstants.MAX_ACCELERATION));
-    double position = 0.0; //This is very wrong, but I don't yet know enough about our climber meckansim to create a beter way
+    double position = getPosition();
     State currentState = new State(position,0);
     double currentSetPoint = position;
     ElevatorFeedforward FFCalculator = new ElevatorFeedforward(
@@ -86,8 +86,13 @@ public class ClimberSubsystem extends SubsystemBase{
     public Command setPrimaryClimber(double input){
         return this.runOnce(()->currentSetPoint = input);
     }
+
     public Command incrementPrimaryClimber(double input){
         return this.runOnce(()->currentSetPoint += input);
+    }
+
+    public double getPosition(){
+        return primaryClimbMotor.getRotorPosition().getValueAsDouble();
     }
 
 }
