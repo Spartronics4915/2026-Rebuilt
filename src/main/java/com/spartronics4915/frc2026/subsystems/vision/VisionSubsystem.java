@@ -22,6 +22,8 @@ import com.spartronics4915.frc2026.subsystems.vision.cameras.Camera;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.Limelight;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.Luma;
 import com.spartronics4915.frc2026.util.LimelightHelpers;
+import com.spartronics4915.frc2026.util.LimelightHelpers.LimelightResults;
+import com.spartronics4915.frc2026.util.LimelightHelpers.LimelightTarget_Retro;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
@@ -112,10 +114,19 @@ public class VisionSubsystem extends SubsystemBase {
 
     private int leftSideTargets;
     private int rightSideTargets;
-    private double tx;
-    private boolean isLeftSideTarget;
+    private boolean majorityTargetSide;
+    private boolean left = true;
+    private boolean right = false;
 
-    private double[] rawTargets;
+    private double bestTx;
+    private double bestTy;
+    private double bestTa;
+    private boolean bestSideDirection;
+
+    private static LimelightResults colorResults;
+    private static double tx;
+    private static double ty;
+    private static double ta;
 
     private BooleanPublisher targetLocationPublisher = NetworkTableInstance.getDefault().getBooleanTopic("Target Location").publish();
 
@@ -193,7 +204,70 @@ public class VisionSubsystem extends SubsystemBase {
                     cameras.put(limelight.getName(), limelight);
                     break;
             }
+        }    
+    }
+    //#region Color Detection 
+    /*private void findRawTargetDirection(double[] rawColorTargets){
+        leftSideTargets = 0;
+        rightSideTargets = 0;
+        for (int i = 0; i < rawColorTargets.length; i+= 3){
+            if (rawColorTargets[i] < 0){
+            leftSideTargets++;
+            } else if (rawColorTargets[i] > 0 ){
+                rightSideTargets++;
+            }
         }
+        if (leftSideTargets > rightSideTargets){
+            targetLocationPublisher.accept(isLeftSideTarget);
+        } else if (rightSideTargets > leftSideTargets){
+            targetLocationPublisher.accept(!isLeftSideTarget);
+        }  
+    }*/
+    /*private void basicTargetDirection(double tx){
+        bestTx = LimelightHelpers.getTX(getName());
+        if (bestTx < 0){
+            targetLocationPublisher.accept(isLeftSideTarget);
+        } else if (bestTx > 0){
+            targetLocationPublisher.accept(isLeftSideTarget);
+        }
+    }*/
+
+
+    private boolean getBestDirection(){
+        for (LimelightTarget_Retro colorTarget: colorResults.targets_Retro){
+            tx = colorTarget.tx;
+            ty = colorTarget.ty;
+            ta = colorTarget.ta;
+            if (tx < 0){
+                leftSideTargets++;
+            } else if (tx > 0){
+                rightSideTargets++;
+            }
+        }
+        if (leftSideTargets > rightSideTargets){
+            majorityTargetSide = left;
+        } else if (rightSideTargets > leftSideTargets){
+            majorityTargetSide = right;
+        } else if (rightSideTargets == leftSideTargets){
+            //still thinking about best way to execute this one
+        }
+        bestTx = LimelightHelpers.getTX(getName());
+        bestTy = LimelightHelpers.getTY(getName());
+        bestTa = LimelightHelpers.getTA(getName());
+        if (bestTx > 0){
+            bestSideDirection = right;
+        } else if (bestTx < 0){
+            bestSideDirection = left;
+        }
+        if (majorityTargetSide == bestSideDirection){
+            targetLocationPublisher.accept(bestSideDirection);
+        } else if (majorityTargetSide != bestSideDirection){
+            if (ta > bestTa){
+                targetLocationPublisher.accept(majorityTargetSide);
+                bestSideDirection = majorityTargetSide;
+            }
+        }
+        return bestSideDirection;
     }
 
     // This is where the magic happens:
@@ -374,36 +448,8 @@ public class VisionSubsystem extends SubsystemBase {
                     break;
                 // Naomi's domain:
                 case LIMELIGHT:
-                    //stay tuned for updates :D
-                    //basic stuff rn, will test and choose a method:
-                    //method 1:
-                    if (LimelightHelpers.getTV(getName())){   
-                        rawTargets = NetworkTableInstance.getDefault()
-                        .getTable(getName())
-                        .getEntry("rawtargets")
-                        .getDoubleArray(new double[0]);
-                        leftSideTargets = 0;
-                        rightSideTargets = 0;
-                        for (int i = 0; i < rawTargets.length; i++){
-                            if (rawTargets[i] < 0){
-                            leftSideTargets++;
-                            } else if (rawTargets[i] > 0 ){
-                                rightSideTargets++;
-                            }
-                        }
-                        if (leftSideTargets > rightSideTargets){
-                            targetLocationPublisher.accept(isLeftSideTarget);
-                        } else if (rightSideTargets > leftSideTargets){
-                            targetLocationPublisher.accept(!isLeftSideTarget);
-                        }
-                        //method 2:
-                        /*tx = LimelightHelpers.getTX(getName());
-                        if (tx < 0){
-                            targetLocationPublisher.accept(isLeftSideTarget);
-                        } else if (tx > 0){
-                            targetLocationPublisher.accept(isLeftSideTarget);
-                        }*/
-                    }
+                    colorResults = LimelightHelpers.getLatestResults(getName());
+                    getBestDirection(); 
                 break;
             }
         }
