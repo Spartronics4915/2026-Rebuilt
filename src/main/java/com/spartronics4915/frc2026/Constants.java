@@ -26,7 +26,7 @@ public final class Constants {
         public static final boolean CURRENT_LIMIT_ENABLED = true;
         public static final double SUPPLY_CURRENT_LIMIT = 25;
         public static final double CURRENT_LOWER_LIMIT = 10;
-        public static final double CUREENT_LOWER_TIME = 1.0;
+        public static final double CURRENT_LOWER_TIME = 1.0;
 
         public static final double MIN_HIGHT = 0.0;
         public static final double MAX_HIGHT = 1.0;

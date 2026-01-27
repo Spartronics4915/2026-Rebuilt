@@ -38,7 +38,7 @@ public class ClimberSubsystem extends SubsystemBase {
                 .withSupplyCurrentLimitEnable(Constants.ClimberConstants.CURRENT_LIMIT_ENABLED)
                 .withSupplyCurrentLimit(Constants.ClimberConstants.SUPPLY_CURRENT_LIMIT)
                 .withSupplyCurrentLowerLimit(Constants.ClimberConstants.CURRENT_LOWER_LIMIT)
-                .withSupplyCurrentLowerTime(Constants.ClimberConstants.CUREENT_LOWER_TIME));
+                .withSupplyCurrentLowerTime(Constants.ClimberConstants.CURRENT_LOWER_TIME));
         config.apply(new FeedbackConfigs()
                 .withSensorToMechanismRatio(Constants.ClimberConstants.SENSOR_TO_MECHANISM_RATIO));
 
