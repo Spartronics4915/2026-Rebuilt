@@ -40,8 +40,7 @@ public final class Constants {
         public static boolean motorCoast = true;
         //true for Coast, false for Brake
 
-        public static double minSpeed = 10;
-        public static double maxSpeed = 0;
+
 
     }
 }

@@ -44,7 +44,7 @@ public class Shooter extends SubsystemBase {
             currentState = new State(0, 0);
 
 
-            
+
             //Main motor-----------------------------------------------------------------------------
             mainShooterMotor = new TalonFX(Constants.ShooterConstants.mainShooterMotorID); 
             TalonFXConfigurator configForMainShooterMotor = mainShooterMotor.getConfigurator();
@@ -118,12 +118,7 @@ public class Shooter extends SubsystemBase {
 
         @Override
         public void periodic() {
-            currentSetPoint = MathUtil.clamp(
-                currentSetPoint,
-                Constants.ShooterConstants.minSpeed,
-                Constants.ShooterConstants.maxSpeed
-            );
-
+            
             currentState = trapProfile.calculate(
                 0.05, 
                 currentState, 
