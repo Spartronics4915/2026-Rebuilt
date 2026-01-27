@@ -17,9 +17,11 @@ public final class Constants {
         public static final int INTAKE_D = 0;
 
         public static final boolean INTAKE_CURRENT_LIMIT_ENABLE = true;
-        public static final int INTAKE_CURRENT_LIMIT = 0;
-        public static final int INTAKE_CURRENT_LOWER_LIMIT = 0;
+        public static final int INTAKE_CURRENT_LIMIT = 40;
+        public static final int INTAKE_CURRENT_LOWER_LIMIT = 20;
         public static final int INTAKE_CURRENT_LOWER_TIME = 0;
-        public static final int INTAKE_SENSOR_TO_MECH_RATIO = 0/1;
+        public static final int INTAKE_SENSOR_TO_MECH_RATIO = 1/1;
+
+        public static final double INTAKE_MOTOR_SPEED = 1.0;
     }
 }

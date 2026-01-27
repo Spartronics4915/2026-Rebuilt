@@ -12,6 +12,7 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.spartronics4915.frc2026.Constants;
 
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class IntakeSubsystem extends SubsystemBase {
@@ -20,7 +21,7 @@ public class IntakeSubsystem extends SubsystemBase {
     TalonFXConfigurator intakeMotorConfig = intakeMotor.getConfigurator();
 
     
-    //Configure that crap so the intake wont murder the insides of the robot
+    //Constructor
     public IntakeSubsystem() {
         intakeMotorConfig.apply(new SlotConfigs()
                 .withKP(Constants.IntakeConstants.INTAKE_P)
@@ -40,7 +41,49 @@ public class IntakeSubsystem extends SubsystemBase {
         motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
         intakeMotorConfig.apply(motorOutputConfigs);
     }
+
+    //Value returns
     public AngularVelocity getSpeed(){
+        //Returns RPM of the intakeMotor
         return RPM.of(intakeMotor.getVelocity().getValue().in(RPM));
+    }
+    public Voltage getIntakeVoltage(){
+        //Returns Voltage of the intakeMotor
+        return (Voltage) intakeMotor.getMotorVoltage();
+    }
+    public boolean isSpinning() {
+        //Returns if the motor is spinning
+        if (this.getSpeed().isEquivalent(RPM.of(0))) {
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+    public boolean hasPower() {
+        //Returns if the motor has voltage
+        if (this.getIntakeVoltage().isEquivalent(Voltage.ofBaseUnits(0.0, null))) {
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+
+    //Makes the motor do motor things
+    public void enableIntakeMotor() {
+        //runs the motor at the speed constant
+        intakeMotor.set(Constants.IntakeConstants.INTAKE_MOTOR_SPEED);
+    }
+    public void disableIntakeMotor() {
+        //stops the motor
+        intakeMotor.set(0.0);
+    }
+
+    //Logging
+    public void motorLog() {
+        //Prints out RPM and Voltage when called
+        System.out.println("Current RPM of IntakeMotor: " + this.getSpeed());
+        System.out.println("Current Voltage of IntakeMotor: " + this.getIntakeVoltage());
     }
 }
