@@ -36,7 +36,7 @@ public class TurretSubsystem extends SubsystemBase{
 
     public TurretSubsystem(){
       applyMotorConfigs(turretConfigurator);  
-      SmartDashboard.putNumber("Set Point", 0); 
+      SmartDashboard.putNumber("Set Point", 0); //temp code for testing
 
     }
     
@@ -50,7 +50,7 @@ public class TurretSubsystem extends SubsystemBase{
             .withSupplyCurrentLimitEnable(Constants.TurretConstants.CURRENT_LIMIT_ENABLED)
             .withSupplyCurrentLimit(Constants.TurretConstants.SUPPLY_CURRENT_LIMIT)
             .withSupplyCurrentLowerLimit(Constants.TurretConstants.CURRENT_LOWER_LIMIT)
-            .withSupplyCurrentLowerTime(Constants.TurretConstants.CUREENT_LOWER_TIME)
+            .withSupplyCurrentLowerTime(Constants.TurretConstants.CURRENT_LOWER_TIME)
         );
         config.apply(new FeedbackConfigs()
             .withSensorToMechanismRatio(Constants.TurretConstants.SENSOR_TO_MECHANISM_RATIO)
@@ -67,7 +67,7 @@ public class TurretSubsystem extends SubsystemBase{
    
     @Override
     public void periodic(){
-        currentSetPoint = SmartDashboard.getNumber("Set Point", 0);//temp code
+        currentSetPoint = SmartDashboard.getNumber("Set Point", 0);//temp code for testing 
         currentSetPoint = MathUtil.clamp(
             currentSetPoint,
             Constants.TurretConstants.MIN_ROTATION,
@@ -94,7 +94,7 @@ public class TurretSubsystem extends SubsystemBase{
 
    /**
     * Sets the turrets rotation value
-    * @param input the desiered rotation value, in degrees
+    * @param input the desired rotation value, in degrees
     */
     public Command setTurret(Rotation2d input){
         return this.runOnce(()->currentSetPoint = input.getRotations());
