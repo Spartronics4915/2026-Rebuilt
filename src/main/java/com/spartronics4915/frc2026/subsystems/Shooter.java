@@ -16,6 +16,7 @@ import com.spartronics4915.frc2026.Constants;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
@@ -28,7 +29,7 @@ public class Shooter extends SubsystemBase {
     private NeutralModeValue neutralMode;
     private TalonFX followerShooterMotor;
 
-    private double currentSetPoint;
+    private Rotation2d currentSetPoint;
     private State currentState;
     private TrapezoidProfile trapProfile;
     private SimpleMotorFeedforward FFCalculator;
@@ -44,7 +45,7 @@ public class Shooter extends SubsystemBase {
             currentState = new State(0, 0);
 
 
-
+            
             //Main motor-----------------------------------------------------------------------------
             mainShooterMotor = new TalonFX(Constants.ShooterConstants.mainShooterMotorID); 
             TalonFXConfigurator configForMainShooterMotor = mainShooterMotor.getConfigurator();
@@ -111,6 +112,18 @@ public class Shooter extends SubsystemBase {
             );
             
         }
+
+
+
+        private Rotation2d rawToAngle(double rotation) {
+            Rotation2d angle = Rotation2d.fromRotations(rotation);
+            return angle;
+        }
+
+        private double angleToRaw(Rotation2d angle) {
+            double rotation = angle.getRotations();
+            return rotation;
+        }
         
         public AngularVelocity getSpeed(){
             return RPM.of(mainShooterMotor.getVelocity().getValue().in(RPM));
@@ -122,7 +135,7 @@ public class Shooter extends SubsystemBase {
             currentState = trapProfile.calculate(
                 0.05, 
                 currentState, 
-                new State(currentSetPoint, 0)
+                new State(angleToRaw(currentSetPoint), 0)
             );
 
             VelocityVoltage request = new VelocityVoltage(
