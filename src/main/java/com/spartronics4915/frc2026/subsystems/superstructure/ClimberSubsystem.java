@@ -22,7 +22,9 @@ public class ClimberSubsystem extends SubsystemBase {
     TalonFXConfigurator primaryClimbConfigurator = primaryClimbMotor.getConfigurator();
 
     DoublePublisher climberSetpointPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Climber Setpoint").publish();
-    DoublePublisher climberRequestedPosPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Climber ").publish();
+    DoublePublisher climberRequestedPosPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Climber Requested Position").publish();
+    DoublePublisher climberVoltagePublisher = NetworkTableInstance.getDefault().getDoubleTopic("Climber Voltage").publish();
+    DoublePublisher climberVelocityPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Climber Velocity").publish();
 
     public ClimberSubsystem() {
         applyMotorConfigs(primaryClimbConfigurator);
@@ -75,6 +77,9 @@ public class ClimberSubsystem extends SubsystemBase {
 
     private void publishData() {
         climberSetpointPublisher.accept(currentSetPoint);
+        climberRequestedPosPublisher.accept(currentState.position);
+        climberVoltagePublisher.accept(primaryClimbMotor.getMotorVoltage().getValueAsDouble());
+        climberVelocityPublisher.accept(primaryClimbMotor.getVelocity().getValueAsDouble());
     }
 
     public Command setPrimaryClimber(double input) {
