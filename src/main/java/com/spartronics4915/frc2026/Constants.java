@@ -13,5 +13,17 @@ public final class Constants {
         public static final float P = 0;
         public static final float I = 0;
         public static final float D = 0;
+        //???
+        public static final double position = 0;
+        public static final double velocity = 0;
+        public static final double MaxVelocity = 0;
+        public static final double MaxAcceleration = 1;
+        public static final double MIN = 0;
+        public static final double MAX = 1;
+        public static final double dt = 0;
+        public static final double S = 0;
+        public static final double G = 0;
+        public static final double V = 0;
+        public static final double A = 0;
     }
 }
