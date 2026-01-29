@@ -1,1 +1,14 @@
-g
+{
+  "imu": {
+    "type": "",
+    "id": 0,
+    "canbus": ""
+  },
+  "invertedIMU": false,
+  "modules": [
+    "frontleft.json",
+    "frontright.json",
+    "backleft.json",
+    "backright.json"
+  ]
+}

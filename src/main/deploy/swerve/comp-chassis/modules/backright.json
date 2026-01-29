@@ -1,1 +1,26 @@
-g
+{
+  "angle": {
+    "type": "",
+    "id": 0,
+    "canbus": null
+  },
+  "drive": {
+    "type": "",
+    "id": 0,
+    "canbus": null
+  },
+  "encoder": {
+    "type": "",
+    "id": 0,
+    "canbus": null
+  },
+  "inverted": {
+    "drive": false,
+    "angle": false
+  },
+  "absoluteEncoderOffset": 0,
+  "location": {
+    "front": 0,
+    "left": 0
+  }
+}

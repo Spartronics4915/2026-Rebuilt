@@ -1,1 +1,16 @@
-g
+{
+  "conversionFactors": {
+    "angle": {"gearRatio": 0},
+    "drive": {"gearRatio": 0, "diameter": 0}
+  },
+  "currentLimit": {
+    "drive": 0,
+    "angle": 0
+  },
+  "rampRate": {
+    "drive": 0,
+    "angle": 0
+  },
+  "wheelGripCoefficientOfFriction": 0,
+  "optimalVoltage": 0
+}
