@@ -1,7 +1,5 @@
 package com.spartronics4915.frc2026.subsystems;
 
-import static edu.wpi.first.units.Units.RPM;
-
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
@@ -16,10 +14,10 @@ import com.spartronics4915.frc2026.Constants;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
+import static edu.wpi.first.units.Units.RPM;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -147,9 +145,9 @@ public class Shooter extends SubsystemBase {
             VelocityVoltage request = new VelocityVoltage(
                 currentState.position
             ).withFeedForward(
-                FFCalculator.calculate(
+                FFCalculator.calculateWithVelocities(
                     currentState.position, 
-                    currentState.velocity
+                    currentSetSpeed
                 )
             );
 
