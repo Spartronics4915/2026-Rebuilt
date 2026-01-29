@@ -124,6 +124,13 @@ public class Shooter extends SubsystemBase {
 
         @Override
         public void periodic() {
+
+            currentSetSpeed = MathUtil.clamp(
+                currentSetSpeed,
+                Constants.ShooterConstants.minSpeed,
+                Constants.ShooterConstants.maxSpeed
+            );
+            
             
             currentState = trapProfile.calculate(
                 0.05, 
