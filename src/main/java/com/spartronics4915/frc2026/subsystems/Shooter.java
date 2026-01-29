@@ -21,6 +21,8 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class Shooter extends SubsystemBase {
@@ -117,6 +119,10 @@ public class Shooter extends SubsystemBase {
             currentSetSpeed = zeroToOne * Constants.ShooterConstants.maxSpeed;
         }
 
+        public void setExactSpeed(double newSpeed){
+            currentSetSpeed = newSpeed;
+        }
+
         
         public AngularVelocity getSpeed(){
             return RPM.of(mainShooterMotor.getVelocity().getValue().in(RPM));
@@ -147,14 +153,17 @@ public class Shooter extends SubsystemBase {
                 )
             );
 
-                
-
             mainShooterMotor.setControl(request);
 
-                
-
         }
-    
+
+    public Command setSpeedCommand(double newSpeed) {
+        return Commands.runOnce(() -> setSpeed(newSpeed));
+    }
+
+    public Command setExactSpeedCommand(double newSpeed) {
+        return Commands.runOnce(() -> setExactSpeed(newSpeed));
+    }
     
 }  
 
