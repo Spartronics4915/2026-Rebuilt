@@ -113,8 +113,8 @@ public class Shooter extends SubsystemBase {
             
         }
         
-        public void setSpeed(double newSetpoint){
-            currentSetSpeed = newSetpoint;
+        public void setSpeed(double zeroToOne){
+            currentSetSpeed = zeroToOne * Constants.ShooterConstants.maxSpeed;
         }
 
         
