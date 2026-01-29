@@ -43,13 +43,54 @@ jobs:
                   sudo apt-get install --only-upgrade libstdc++6 -y
 
             - name: Compile and run tests on robot code
-              run: ./gradlew build --no-daemon
+              shell: bash
+              continue-on-error: true
+              run: |
+                  set -o pipefail
+                  echo "Starting build..."
+                  echo "--- Build run: $(date -u) ---" > build.log
+                  rc=0
+                  ./gradlew build --no-daemon >> build.log 2>&1 || rc=$?
+                  echo $rc > build_exit_code
+                  if [ "$rc" -ne 0 ]; then
+                      echo "BUILD_FAILED=true" >> "$GITHUB_ENV"
+                      echo "Build failed with exit code $rc."
+                  else
+                      echo "BUILD_FAILED=false" >> "$GITHUB_ENV"
+                      echo "Build succeeded."
+                  fi
+
+            - name: Report build result and attach logs
+              shell: bash
+              if: always()
+              run: |
+                  if [ "${BUILD_FAILED:-false}" = "true" ]; then
+                      rc=$(cat build_exit_code)
+                      echo "::error::Gradle build failed (rc=$rc)."
+                      echo "## Build: FAILED" >> "$GITHUB_STEP_SUMMARY"
+                      echo "**Exit code**: $rc" >> "$GITHUB_STEP_SUMMARY"
+                      echo "" >> "$GITHUB_STEP_SUMMARY"
+                      echo '### Build log (tail - 200 lines):' >> "$GITHUB_STEP_SUMMARY"
+                      echo '```' >> "$GITHUB_STEP_SUMMARY"
+                      tail -n 200 build.log >> "$GITHUB_STEP_SUMMARY" || true
+                      echo '```' >> "$GITHUB_STEP_SUMMARY"
+                  elif [ -f build.log ]; then
+                      echo "## Build: Passed" >> "$GITHUB_STEP_SUMMARY"
+                  fi
+
+            - name: Upload build log
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: build-log
+                  path: build.log
 
             # Simulation smoke test
             # Run simulation, capture exit code and logs. Treat timeout (124) as acceptable
             # for a smoke test but record and upload logs if the simulation crashes early.
             - name: Run simulation smoke test
               shell: bash
+              if: env.BUILD_FAILED == 'false'
               continue-on-error: true
               run: |
                   set -o pipefail
@@ -83,7 +124,7 @@ jobs:
 
             - name: Report simulation result and attach logs
               shell: bash
-              if: always()
+              if: env.BUILD_FAILED == 'false'
               run: |
                   rc=0
                   if [ -f sim_exit_code ]; then rc=$(cat sim_exit_code); fi
@@ -109,16 +150,21 @@ jobs:
                   fi
 
             - name: Upload simulation log
-              if: always()
+              if: env.BUILD_FAILED == 'false'
               uses: actions/upload-artifact@v4
               with:
                   name: simulation-log
                   path: simulate.log
 
-            - name: Fail job if simulation failed
+            - name: Fail job if build or simulation failed
               if: always()
               shell: bash
               run: |
+                  if [ "${BUILD_FAILED:-false}" = "true" ]; then
+                      echo "::error::Gradle build failed. Failing job."
+                      exit 1
+                  fi
+
                   rc=0
                   if [ -f sim_exit_code ]; then rc=$(cat sim_exit_code); fi
                   crash_detected="${CRASH_DETECTED:-false}"
@@ -127,4 +173,4 @@ jobs:
                       echo "::error::Simulation smoke test failed. Failing job after uploading logs."
                       exit 1
                   fi
-                  echo "No simulation failure detected (rc=$rc)."
+                  echo "No failures detected."
