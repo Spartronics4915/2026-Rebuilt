@@ -12,7 +12,7 @@ import static com.spartronics4915.frc2026.Constants.VisionConstants.VisionState.
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 
 import com.spartronics4915.frc2026.commands.DriveCommand;
-import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
+import com.spartronics4915.frc2026.subsystems.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 
 import edu.wpi.first.wpilibj2.command.Command;

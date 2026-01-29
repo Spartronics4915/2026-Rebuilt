@@ -17,7 +17,7 @@ import static com.spartronics4915.frc2026.Constants.VisionConstants.*;
 import com.spartronics4915.frc2026.Constants.VisionConstants.VisionState;
 import com.ctre.phoenix6.Utils;
 import com.spartronics4915.frc2026.Robot;
-import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem.RobotHeading;
+import com.spartronics4915.frc2026.subsystems.SwerveSubsystem.RobotHeading;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.Camera;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.Limelight;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.Luma;

@@ -1,7 +1,8 @@
 package com.spartronics4915.frc2026.commands;
 
-import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
-import static com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem.*;
+import static com.spartronics4915.frc2026.subsystems.SwerveSubsystem.*;
+
+import com.spartronics4915.frc2026.subsystems.SwerveSubsystem;
 
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.Command;
