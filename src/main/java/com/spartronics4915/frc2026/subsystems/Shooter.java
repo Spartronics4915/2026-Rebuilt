@@ -29,7 +29,7 @@ public class Shooter extends SubsystemBase {
     private NeutralModeValue neutralMode;
     private TalonFX followerShooterMotor;
 
-    private Rotation2d currentSetPoint;
+    private double currentSetSpeed;
     private State currentState;
     private TrapezoidProfile trapProfile;
     private SimpleMotorFeedforward FFCalculator;
@@ -112,18 +112,11 @@ public class Shooter extends SubsystemBase {
             );
             
         }
-
-
-
-        private Rotation2d rawToAngle(double rotation) {
-            Rotation2d angle = Rotation2d.fromRotations(rotation);
-            return angle;
+        
+        public void setSpeed(double newSetpoint){
+            currentSetSpeed = newSetpoint;
         }
 
-        private double angleToRaw(Rotation2d angle) {
-            double rotation = angle.getRotations();
-            return rotation;
-        }
         
         public AngularVelocity getSpeed(){
             return RPM.of(mainShooterMotor.getVelocity().getValue().in(RPM));
@@ -135,7 +128,7 @@ public class Shooter extends SubsystemBase {
             currentState = trapProfile.calculate(
                 0.05, 
                 currentState, 
-                new State(angleToRaw(currentSetPoint), 0)
+                new State(currentSetSpeed, 0)
             );
 
             VelocityVoltage request = new VelocityVoltage(

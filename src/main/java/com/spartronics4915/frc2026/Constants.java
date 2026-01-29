@@ -32,8 +32,8 @@ public final class Constants {
         public static double A = 0;
 
         //trap profile
-        public static double MaxVelocity = 40;
-        public static double MaxAcceleration = 10;
+        public static double MaxVelocity = 40;     //is accel
+        public static double MaxAcceleration = 10; //is jerk
 
         public static boolean motorTurnsClockWise = true;
         //Main motor, looking at face of motor, true for clock wise , false for counter clock wise
