@@ -5,13 +5,14 @@
 package com.spartronics4915.frc2026;
 
 import com.spartronics4915.frc2026.Constants.OperatorConstants;
-import static com.spartronics4915.frc2026.Constants.VisionConstants.VisionState.*;
+import com.spartronics4915.frc2026.Constants.VisionConstants;
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 import com.spartronics4915.frc2026.commands.Autos;
 import com.spartronics4915.frc2026.commands.DriveCommand;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
+import com.spartronics4915.frc2026.subsystems.vision.configurations.VisionConfiguration;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -26,13 +27,22 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  */
 public class RobotContainer {
     public final SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
-    public final VisionSubsystem visionSubsystem = new VisionSubsystem(
-        swerveSubsystem::addVisionMeasurement,
-        () -> swerveSubsystem.getPose(),
-        () -> swerveSubsystem.getPastVisionPose(VisionSubsystem.poseTimestamp),
-        () -> swerveSubsystem.getFieldVelocity(),
-        () -> swerveSubsystem.getHeading()
-    );
+    private final VisionSubsystem visionSubsystem = VisionSubsystem.builder()
+        .addCamera("right", VisionConstants.RIGHT_CAMERA)
+        .addCamera("left", VisionConstants.LEFT_CAMERA)
+        .addCamera("back", VisionConstants.BACK_CAMERA)
+        .setFieldLayout(VisionConstants.LAYOUT)
+        .setRobotPoseSupplier(() -> swerveSubsystem.getPose())
+        .setRobotVelocitySupplier(() -> swerveSubsystem.getFieldVelocity())
+        .setFusedPoseSupplier(() -> swerveSubsystem.getPastVisionPose(VisionSubsystem.getPoseTimestamp()))
+        .setPoseConsumer((pose, time, stdDevs) -> {
+            swerveSubsystem.addVisionMeasurement(pose, time, stdDevs);
+        })
+        .setObjectsConsumer((groupCenter, time) -> {
+            // Handle detected objects
+        })
+        .setConfiguration(new VisionConfiguration())
+        .build();
 
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
     private final CommandXboxController operatorController = new CommandXboxController(OperatorConstants.OPERATOR_CONTROLLER_PORT);
@@ -62,16 +72,6 @@ public class RobotContainer {
         driverController.a().onTrue(
             Commands.runOnce(() -> {
                 TELEOP_HEADING_OFFSET = swerveSubsystem.getPose().getRotation();
-            })
-        );
-
-        driverController.y().onTrue(
-            Commands.runOnce(() -> {
-                VisionSubsystem.visionState = (VisionSubsystem.visionState == GLOBAL) ? LOCAL : GLOBAL;
-                if (VisionSubsystem.visionState == LOCAL) {
-                    if (SwerveSubsystem.isRightAlliance == true) VisionSubsystem.setLocalCamera("daniil");
-                        else VisionSubsystem.setLocalCamera("daniil");
-                }
             })
         );
     }

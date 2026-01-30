@@ -1,0 +1,21 @@
+{
+    "name": "Luma",
+    "isFTC": false,
+    "position": [0, 0, 0],
+    "rotations": [
+        {
+            "axis": "x",
+            "degrees": 0
+        },
+        {
+            "axis": "y",
+            "degrees": 180
+        },
+        {
+            "axis": "z",
+            "degrees": 0
+        }
+    ],
+    "cameras": [],
+    "components": []
+}
