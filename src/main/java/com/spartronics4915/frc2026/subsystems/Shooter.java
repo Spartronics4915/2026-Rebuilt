@@ -38,7 +38,7 @@ public class Shooter extends SubsystemBase {
     private SimpleMotorFeedforward FFCalculator;
 
     private final DoublePublisher motorSpeed = 
-    NetworkTableInstance.getDefault().getDoubleTopic("folder/sillyPub").publish();
+    NetworkTableInstance.getDefault().getDoubleTopic("Actual shooter motor speed").publish();
     
     
         
