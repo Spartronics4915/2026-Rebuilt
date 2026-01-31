@@ -10,7 +10,7 @@ public final class Constants {
         public static final int OPERATOR_CONTROLLER_PORT = 1;
     }
     public static class TurretConstants{
-        public static final int TURRET_MOTOR_ID = 3;
+        public static final int TURRET_MOTOR_ID = 19;
 
         public static final double TURRET_P = 5.0;
         public static final double TURRET_I = 0.0;
