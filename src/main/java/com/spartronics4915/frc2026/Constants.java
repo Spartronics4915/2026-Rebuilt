@@ -128,24 +128,25 @@ public final class Constants {
 
         public static Transform3d RIGHT_CAMERA_TRANSFORM = new Transform3d(
             new Translation3d(
-                0.0208, 
-                -0.3348, 
-                0.2579
+                -0.34798, 
+                -0.0381, 
+                0.14605
             ),
             new Rotation3d(
-                26,
-                80,
-                -90
+                0, 
+                Math.toRadians(-28), 
+                Math.toRadians(72)
             )
         );
 
         public static PhotonVisionCamera RIGHT_CAMERA = new PhotonVisionCamera(
             "back", 
-            new PhotonPoseEstimator(LAYOUT, RIGHT_CAMERA_TRANSFORM), 
+            new PhotonPoseEstimator(LAYOUT, new Transform3d(new Translation3d(0, 0, 0), new Rotation3d(0, 0, 0))), 
             simCameraProperties,
             60
         );
 
+        /*
         public static Transform3d LEFT_CAMERA_TRANSFORM = new Transform3d(
             new Translation3d(
                 -0.1272, 
@@ -185,5 +186,6 @@ public final class Constants {
             simCameraProperties,
             60
         );
+        */
     }
 }
