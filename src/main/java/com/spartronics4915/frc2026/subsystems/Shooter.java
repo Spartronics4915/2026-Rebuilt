@@ -19,7 +19,6 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.units.Units;
 import static edu.wpi.first.units.Units.RPM;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -37,9 +36,10 @@ public class Shooter extends SubsystemBase {
     private TrapezoidProfile trapProfile;
     private SimpleMotorFeedforward FFCalculator;
 
-    private final DoublePublisher motorSpeed = 
+    private DoublePublisher motorSpeed = 
     NetworkTableInstance.getDefault().getDoubleTopic("Actual shooter motor speed").publish();
-    
+    private DoublePublisher motorTargetSpeed = 
+    NetworkTableInstance.getDefault().getDoubleTopic("Target shooter motor speed").publish();
     
         
         public Shooter () {
@@ -141,7 +141,9 @@ public class Shooter extends SubsystemBase {
                 Constants.ShooterConstants.maxSpeed
             );
 
-            motorSpeed.accept(getSpeed().in(Units.RotationsPerSecond));     
+            
+            motorSpeed.accept(currentState.position);  
+            motorTargetSpeed.accept(currentSetSpeed);   
             
             currentState = trapProfile.calculate(
                 0.05, 
