@@ -38,7 +38,7 @@ public class Shooter extends SubsystemBase {
     private SimpleMotorFeedforward FFCalculator;
 
     private final DoublePublisher motorSpeed = 
-            NetworkTableInstance.getDefault().getDoubleTopic("folder/sillyPub").publish();
+    NetworkTableInstance.getDefault().getDoubleTopic("folder/sillyPub").publish();
     
     
         
@@ -141,8 +141,7 @@ public class Shooter extends SubsystemBase {
                 Constants.ShooterConstants.maxSpeed
             );
 
-            motorSpeed.accept(getSpeed().in(Units.RadiansPerSecond));
-            
+            motorSpeed.accept(getSpeed().in(Units.RotationsPerSecond));     
             
             currentState = trapProfile.calculate(
                 0.05, 
