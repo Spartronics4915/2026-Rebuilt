@@ -11,13 +11,11 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
-import java.util.List;
-
+import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.simulation.SimCameraProperties;
 
+import com.spartronics4915.frc2026.subsystems.vision.cameras.PhotonVisionCamera;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.PathplannerConfigs;
-import com.spartronics4915.frc2026.subsystems.vision.cameras.Camera;
-import com.spartronics4915.frc2026.subsystems.vision.cameras.Luma;
 import com.pathplanner.lib.config.ModuleConfig;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
@@ -117,56 +115,75 @@ public final class Constants {
     }
 
     public static final class VisionConstants {
-        public static final AprilTagFieldLayout rebuiltApriltagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+        public static final AprilTagFieldLayout LAYOUT = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+        
+        public static final SimCameraProperties simCameraProperties = new SimCameraProperties();
+            static {
+                simCameraProperties.setCalibration(1280, 800, Rotation2d.fromDegrees(97.65));
+                simCameraProperties.setCalibError(0.84, 0.02);
+                simCameraProperties.setFPS(60);
+                simCameraProperties.setAvgLatencyMs(40);
+                simCameraProperties.setLatencyStdDevMs(10);
+            }
 
-        public static final List<Camera> cameraList = List.of(
-            new Luma(
-                "daniil", 
-                CameraType.LUMA, 
-                0,
-                rebuiltApriltagFieldLayout, 
-                new Transform3d(
-                    new Translation3d(0.3556, 0, 0.0508),
-                    new Rotation3d(
-                        Rotation2d.fromDegrees(0).getRadians(), 
-                        Rotation2d.fromDegrees(-10).getRadians(), 
-                        Rotation2d.fromDegrees(0).getRadians()
-                    )
-                )
+        public static Transform3d RIGHT_CAMERA_TRANSFORM = new Transform3d(
+            new Translation3d(
+                0.0208, 
+                -0.3348, 
+                0.2579
+            ),
+            new Rotation3d(
+                26,
+                80,
+                -90
             )
         );
 
-        public static final SimCameraProperties simCameraProperties = new SimCameraProperties();
-            static {
-                simCameraProperties.setCalibration(1280, 900, Rotation2d.fromDegrees(100));
-                simCameraProperties.setCalibError(0.12, 0.04);
-                simCameraProperties.setFPS(60);
-                simCameraProperties.setAvgLatencyMs(15);
-                simCameraProperties.setLatencyStdDevMs(5);
-            }
+        public static PhotonVisionCamera RIGHT_CAMERA = new PhotonVisionCamera(
+            "back", 
+            new PhotonPoseEstimator(LAYOUT, RIGHT_CAMERA_TRANSFORM), 
+            simCameraProperties,
+            60
+        );
 
-        public static final double baseTransverseMultiTagStdDevs = 0.5;
-        public static final double baseAngularMultiTagStdDevs = 0.5;
+        public static Transform3d LEFT_CAMERA_TRANSFORM = new Transform3d(
+            new Translation3d(
+                -0.1272, 
+                0.3294, 
+                0.407561
+            ),
+            new Rotation3d(
+                26,
+                70,
+                90
+            )
+        );
 
-        public static final double baseTransverseSingleTagStdDevs = 0.5;
-        public static final double baseAngularSingleTagStdDevs = 0.5;
+        public static PhotonVisionCamera LEFT_CAMERA = new PhotonVisionCamera(
+            "side", 
+            new PhotonPoseEstimator(LAYOUT, LEFT_CAMERA_TRANSFORM), 
+            simCameraProperties,
+            60
+        );
 
-        public static final double tagReward = 0;
-        public static final double distancePunishment = 0;
-        public static final double ambiguityPunishment = 0;
-        public static final double transverseVelocityPunishment = 0;
-        public static final double angularVelocityPunishment = 0;
+        public static Transform3d BACK_CAMERA_TRANSFORM = new Transform3d(
+            new Translation3d(
+                -0.307010, 
+                0.1270,
+                0.2765
+            ),
+            new Rotation3d(
+                23,
+                0.0,
+                180
+            )
+        );
 
-        public static final double localTransverseStdDevs = 0.5;
-        public static final double localAngularStdDevs = 0.5;
-        
-        public enum CameraType {
-            LUMA, LIMELIGHT
-        }
-
-        public enum VisionState {
-            GLOBAL, LOCAL
-        }
+        public static PhotonVisionCamera BACK_CAMERA = new PhotonVisionCamera(
+            "front", 
+            new PhotonPoseEstimator(LAYOUT, BACK_CAMERA_TRANSFORM), 
+            simCameraProperties,
+            60
+        );
     }
-
 }
