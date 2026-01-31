@@ -81,7 +81,6 @@ public class SwerveSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         posePublisher.accept(getPose());
-        setAllianceSide();
     }
 
     public void drive(ChassisSpeeds chassisSpeeds) {
@@ -98,11 +97,6 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public Pose2d getPose() {
         return swerveDrive.getPose();
-    }
-
-    public void setAllianceSide() {
-        if (pose.getX() >= 4.05) isRightAlliance = false;
-            else isRightAlliance = true;
     }
 
     public Pose2d getPastVisionPose(double timestamp) {
