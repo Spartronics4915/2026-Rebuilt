@@ -2,7 +2,12 @@ package com.spartronics4915.frc2026.subsystems;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.function.Supplier;
+
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants;
+import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 
@@ -17,6 +22,8 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
@@ -35,13 +42,14 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 public class SwerveSubsystem extends SubsystemBase {
     public final SwerveDrive swerveDrive;
     public static Pose2d pose;
-    private final File directory = new File(Filesystem.getDeployDirectory(), "swerve/chassis");
+    private final File directory;
     
     public static boolean isRightAlliance;
 
     StructPublisher<Pose2d> posePublisher = NetworkTableInstance.getDefault().getStructTopic("Pose", Pose2d.struct).publish();
 
-    public SwerveSubsystem() {
+    public SwerveSubsystem(SwerveConfigurations config) {
+        this.directory = new File(Filesystem.getDeployDirectory(), config.directory);
         try {
             swerveDrive = new SwerveParser(directory).createSwerveDrive(
                 MAX_SPEED,
@@ -52,7 +60,22 @@ public class SwerveSubsystem extends SubsystemBase {
             throw new RuntimeException(e);
         }
         SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
-        pose = getPose();
+        
+        AutoBuilder.configure(
+            this::getPose,
+            swerveDrive::resetOdometry,
+            swerveDrive::getRobotVelocity,
+            (Speeds, FF) -> {drive(Speeds);},
+            AutoConstants.kDriveController,
+            config.pathplannerConfig.config,
+            () -> {
+                Optional<Alliance> alliance = DriverStation.getAlliance();
+                if(alliance.isEmpty()) return false;
+                if (alliance.get() == Alliance.Red) {return true;}
+                return false;
+            },
+            this
+        );
     }
 
     @Override
