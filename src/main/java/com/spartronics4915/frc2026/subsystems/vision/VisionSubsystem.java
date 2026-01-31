@@ -28,6 +28,7 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
@@ -65,7 +66,7 @@ public class VisionSubsystem extends SubsystemBase {
     private StructPublisher<Pose2d> rawVisionPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Raw Vision Pose", Pose2d.struct).publish();
     private StructPublisher<Pose2d> fusedVisionPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Fused Vision Pose", Pose2d.struct).publish();
 
-    private StructPublisher<Pose3d> rightCameraPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Right Camera Pose", Pose3d.struct).publish();
+    private StructPublisher<Transform3d> rightCameraPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Right Camera Pose", Transform3d.struct).publish();
     private StructPublisher<Pose3d> leftCameraPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Left Camera Pose", Pose3d.struct).publish();
     private StructPublisher<Pose3d> backCameraPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Back Camera Pose", Pose3d.struct).publish();
 
@@ -189,9 +190,10 @@ public class VisionSubsystem extends SubsystemBase {
         
         fusedVisionPosePublisher.accept(fusedPoseSupplier.get());
 
-        rightCameraPosePublisher.accept(new Pose3d(robotPoseSupplier.get()).plus(VisionConstants.RIGHT_CAMERA_TRANSFORM));
-        leftCameraPosePublisher.accept(new Pose3d(robotPoseSupplier.get()).plus(VisionConstants.LEFT_CAMERA_TRANSFORM));
-        backCameraPosePublisher.accept(new Pose3d(robotPoseSupplier.get()).plus(VisionConstants.BACK_CAMERA_TRANSFORM));
+        //rightCameraPosePublisher.accept(new Pose3d(robotPoseSupplier.get()).plus(VisionConstants.RIGHT_CAMERA_TRANSFORM));
+        rightCameraPosePublisher.accept(VisionConstants.RIGHT_CAMERA_TRANSFORM);
+        //leftCameraPosePublisher.accept(new Pose3d(robotPoseSupplier.get()).plus(VisionConstants.LEFT_CAMERA_TRANSFORM));
+        //backCameraPosePublisher.accept(new Pose3d(robotPoseSupplier.get()).plus(VisionConstants.BACK_CAMERA_TRANSFORM));
         
         performanceTracker.stopTiming();
         performanceTracker.publishMetrics();

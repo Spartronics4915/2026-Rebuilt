@@ -29,8 +29,8 @@ public class RobotContainer {
     public final SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
     private final VisionSubsystem visionSubsystem = VisionSubsystem.builder()
         .addCamera("right", VisionConstants.RIGHT_CAMERA)
-        .addCamera("left", VisionConstants.LEFT_CAMERA)
-        .addCamera("back", VisionConstants.BACK_CAMERA)
+        //.addCamera("left", VisionConstants.LEFT_CAMERA)
+        //.addCamera("back", VisionConstants.BACK_CAMERA)
         .setFieldLayout(VisionConstants.LAYOUT)
         .setRobotPoseSupplier(() -> swerveSubsystem.getPose())
         .setRobotVelocitySupplier(() -> swerveSubsystem.getFieldVelocity())

@@ -35,7 +35,7 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 public class SwerveSubsystem extends SubsystemBase {
     public final SwerveDrive swerveDrive;
     public static Pose2d pose;
-    private final File directory = new File(Filesystem.getDeployDirectory(), "swerve/chassis");
+    private final File directory = new File(Filesystem.getDeployDirectory(), "swerve/test-chassis");
     
     public static boolean isRightAlliance;
 
