@@ -1,4 +1,4 @@
-package com.spartronics4915.frc2025.subsystems;
+package com.spartronics4915.frc2026.subsystems.swerve;
 
 import static edu.wpi.first.units.Units.MetersPerSecond;
 
@@ -8,9 +8,10 @@ import java.util.Optional;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
-import com.spartronics4915.frc2025.Constants.Drive;
-import com.spartronics4915.frc2025.Constants.Drive.SwerveDirectories;
-import com.spartronics4915.frc2025.util.ModeSwitchHandler.ModeSwitchInterface;
+import com.pathplanner.lib.controllers.PathFollowingController;
+import com.spartronics4915.frc2026.Constants.SwerveConstants;
+import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveDirectories;
+import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -38,9 +39,9 @@ public class SwerveSubsystem {
     public SwerveSubsystem(SwerveDirectories swerveDir) {
 
         try {
-            swerveDrive = new SwerveParse(new File(Filesystem.getDeployDirectory(), swerveDir.directory)).createSwerveDrive(SwerveConstants.kMaxSpeed.in(MetersPerSecond),
-                guessStartingPosition()
-            );
+            //swerveDrive = new SwerveParse(new File(Filesystem.getDeployDirectory(), swerveDir.directory)).createSwerveDrive(SwerveConstants.kMaxSpeed.in(MetersPerSecond),
+               // guessStartingPosition()
+            //);
 
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -50,7 +51,7 @@ public class SwerveSubsystem {
         swerveDrive.setChassisDiscretization(false, 0);
         swerveDrive.setHeadingCorrection(false);
         swerveDrive.setCosineCompensator(false);
-        swerveDrive.setAugularVelocityCompensation(false, false, 0);
+        swerveDrive.setAngularVelocityCompensation(false, false, 0);
         swerveDrive.setModuleEncoderAutoSynchronize(false, 0);
 
         AutoBuilder.configure(
@@ -58,9 +59,9 @@ public class SwerveSubsystem {
             swerveDrive::resetOdometry,
             swerveDrive::getRobotVelocity,
             (speeds, FF) -> {shimPublisher.accept(speeds); drive(speeds);},
-            new PPHolomicDriveController(
+            new PathFollowingController(
                 SwerveConstants.AutoConstants.kTranslationPID,
-                SwerveConstants.AutoCOnstants.kRotationPID),
+                SwerveConstants.AutoConstants.kRotationPID),
             SwerveConstants.AutoConstants.PathPlannerConfigs.COMP_CHASSIS.config,
             () -> {
                 Optional<Alliance> temp = DriverStation.getAlliance();
@@ -72,15 +73,15 @@ public class SwerveSubsystem {
         SmartDashboard.putData("set angle to 0", Commands.runOnce(() -> {
             var currPose = getPose();
             setPose(new Pose2d(
-                currPose.getX(),
-                currPose.getY(),
-                Rotation2d.kZero
-            ));
-        }));
-
-    }
-
-    private static Pose2d guessStartingPosition() {
+                            currPose.getX(),
+                            currPose.getY(),
+                            Rotation2d.kZero
+                        ));
+                    }));
+            
+                }
+            
+                private static Pose2d guessStartingPosition() {
 
         if (DriverStation.getAlliance().isPresent() && DriverStation.getAlliance().get() == Alliance.Blue) {
             return new Pose2d(0, 0, Rotation2d.fromDegrees(0));
@@ -116,14 +117,14 @@ public class SwerveSubsystem {
     public Rotation2d getHeading() {
         return getPose().getRotation();
     }
-    
-    @Override
-    public void onDisable() {
-        swerveDrive.setMotorIdleMode(false);
+
+    private void setPose(Pose2d pose2d) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'setPose'");
     }
 
-    @Override
-    public void periodic() {
-        posePublisher.accept(getPose());
-    }
+    //@Override
+    //public void periodic() {
+    //    posePublisher.accept(getPose());
+    //}
 }

@@ -11,8 +11,6 @@ import com.pathplanner.lib.config.ModuleConfig;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.path.PathConstraints;
-import com.spartronics4915.frc2025.util.Structures.LimelightConstants;
-import com.spartronics4915.frc2025.util.Structures.PIDFConstants;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -71,6 +69,7 @@ public final class Constants {
         public static final class AutoConstants {
             public static final PIDConstants kTranslationPID = new PIDConstants(0, 0, 0);
             public static final PIDConstants kRotationPID = new PIDConstants(0, 0, 0);
+            public static final String PathPlannerConfigs = null;
 
             public enum PathplannerConfigs{
                 COMP_CHASSIS(new RobotConfig(
