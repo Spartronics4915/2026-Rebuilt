@@ -80,7 +80,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        posePublisher.accept(getPose());
+        posePublisher.accept(getSimulatedPose());
     }
 
     public void drive(ChassisSpeeds chassisSpeeds) {
