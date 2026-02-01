@@ -1,12 +1,12 @@
 {
     "angle": {
       "type": "talonfx",
-      "id": 2,
+      "id": 1,
       "canbus": null
     },
     "drive": {
       "type": "talonfx",
-      "id": 4,
+      "id": 2,
       "canbus": null
     },
     "encoder": {

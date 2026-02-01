@@ -104,7 +104,7 @@ public final class Constants {
                     Pounds.of(15),
                     KilogramSquareMeters.of(3),
                     new ModuleConfig(
-                        Inches.of(3.75/2.0),
+                        Inches.of(2),
                         MetersPerSecond.of(5.4),
                         1.916,
                         DCMotor.getKrakenX60(1),
@@ -130,10 +130,10 @@ public final class Constants {
                         Amps.of(40),
                         1
                     ),
-                    new Translation2d(Inches.of(20.5).in(Meter), Inches.of(20.5).in(Meter)), // Front left
-                    new Translation2d(Inches.of(20.5).in(Meter), Inches.of(-20.5).in(Meter)), // Front right
-                    new Translation2d(Inches.of(-20.5).in(Meter), Inches.of(20.5).in(Meter)), // Back left
-                    new Translation2d(Inches.of(-20.5).in(Meter), Inches.of(-20.5).in(Meter))  // Back right
+                    new Translation2d(Inches.of(14).in(Meter), Inches.of(13).in(Meter)), // Front left
+                    new Translation2d(Inches.of(14).in(Meter), Inches.of(-13).in(Meter)), // Front right
+                    new Translation2d(Inches.of(-14).in(Meter), Inches.of(13).in(Meter)), // Back left
+                    new Translation2d(Inches.of(-14).in(Meter), Inches.of(-13).in(Meter))  // Back right
                 ));
 
                 public com.pathplanner.lib.config.RobotConfig config;
