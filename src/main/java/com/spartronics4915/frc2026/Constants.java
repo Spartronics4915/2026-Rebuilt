@@ -7,6 +7,7 @@ package com.spartronics4915.frc2026;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
+import static edu.wpi.first.units.Units.Meter;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
@@ -74,17 +75,17 @@ public final class Constants {
                     KilogramSquareMeters.of(3),
                     new ModuleConfig(
                         Inches.of(3.75/2.0),
-                        MetersPerSecond.of(0.5),
+                        MetersPerSecond.of(5.4),
                         1.916,
                         DCMotor.getKrakenX60(1),
-                        5.900,
+                        6.75,
                         Amps.of(40),
                         1
                     ),
-                    new Translation2d(12.634, 12.280), // Front left
-                    new Translation2d(12.634, -12.280), // Front right
-                    new Translation2d(-12.634, 12.280), // Back left
-                    new Translation2d(-12.634, -12.280)  // Back right
+                    new Translation2d(Inches.of(12.634).in(Meter), Inches.of(12.280).in(Meter)), // Front left
+                    new Translation2d(Inches.of(12.634).in(Meter), Inches.of(-12.280).in(Meter)), // Front right
+                    new Translation2d(Inches.of(-12.634).in(Meter), Inches.of(12.280).in(Meter)), // Back left
+                    new Translation2d(Inches.of(-12.634).in(Meter), Inches.of(-12.280).in(Meter))  // Back right
                 )),
 
                 COMP_CHASSIS(new RobotConfig(
@@ -94,15 +95,15 @@ public final class Constants {
                         Inches.of(3.75/2.0),
                         MetersPerSecond.of(0.5),
                         1.916,
-                        DCMotor.getNEO(1),
+                        DCMotor.getKrakenX60(1),
                         5.900,
                         Amps.of(40),
                         1
                     ),
-                    new Translation2d(20.5, 20.5), // Front left
-                    new Translation2d(20.5, -20.5), // Front right
-                    new Translation2d(-20.5, 20.5), // Back left
-                    new Translation2d(-20.5, -20.5)  // Back right
+                    new Translation2d(Inches.of(20.5).in(Meter), Inches.of(20.5).in(Meter)), // Front left
+                    new Translation2d(Inches.of(20.5).in(Meter), Inches.of(-20.5).in(Meter)), // Front right
+                    new Translation2d(Inches.of(-20.5).in(Meter), Inches.of(20.5).in(Meter)), // Back left
+                    new Translation2d(Inches.of(-20.5).in(Meter), Inches.of(-20.5).in(Meter))  // Back right
                 ));
 
                 public com.pathplanner.lib.config.RobotConfig config;
