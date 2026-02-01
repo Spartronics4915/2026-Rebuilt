@@ -14,7 +14,7 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.simulation.SimCameraProperties;
 
-import com.spartronics4915.frc2026.subsystems.vision.cameras.PhotonVisionCamera;
+import com.spartronics4915.frc2026.subsystems.vision.cameras.PhotonProcessor;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.PathplannerConfigs;
 import com.pathplanner.lib.config.ModuleConfig;
 import com.pathplanner.lib.config.PIDConstants;
@@ -117,13 +117,13 @@ public final class Constants {
     public static final class VisionConstants {
         public static final AprilTagFieldLayout LAYOUT = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
         
-        public static final SimCameraProperties simCameraProperties = new SimCameraProperties();
+        public static final SimCameraProperties SIM_CAMERA_PROPERTIES = new SimCameraProperties();
             static {
-                simCameraProperties.setCalibration(1280, 800, Rotation2d.fromDegrees(97.65));
-                simCameraProperties.setCalibError(0.84, 0.02);
-                simCameraProperties.setFPS(60);
-                simCameraProperties.setAvgLatencyMs(40);
-                simCameraProperties.setLatencyStdDevMs(10);
+                SIM_CAMERA_PROPERTIES.setCalibration(1280, 800, Rotation2d.fromDegrees(97.65));
+                SIM_CAMERA_PROPERTIES.setCalibError(0.84, 0.02);
+                SIM_CAMERA_PROPERTIES.setFPS(60);
+                SIM_CAMERA_PROPERTIES.setAvgLatencyMs(40);
+                SIM_CAMERA_PROPERTIES.setLatencyStdDevMs(10);
             }
 
         public static Transform3d RIGHT_CAMERA_TRANSFORM = new Transform3d(
@@ -139,53 +139,10 @@ public final class Constants {
             )
         );
 
-        public static PhotonVisionCamera RIGHT_CAMERA = new PhotonVisionCamera(
-            "back", 
-            new PhotonPoseEstimator(LAYOUT, new Transform3d(new Translation3d(0, 0, 0), new Rotation3d(0, 0, 0))), 
-            simCameraProperties,
-            60
+        public static PhotonProcessor RIGHT_PROCESSOR = new PhotonProcessor(
+            "evan", 
+            new PhotonPoseEstimator(LAYOUT, RIGHT_CAMERA_TRANSFORM), 
+            0
         );
-
-        /*
-        public static Transform3d LEFT_CAMERA_TRANSFORM = new Transform3d(
-            new Translation3d(
-                -0.1272, 
-                0.3294, 
-                0.407561
-            ),
-            new Rotation3d(
-                26,
-                70,
-                90
-            )
-        );
-
-        public static PhotonVisionCamera LEFT_CAMERA = new PhotonVisionCamera(
-            "side", 
-            new PhotonPoseEstimator(LAYOUT, LEFT_CAMERA_TRANSFORM), 
-            simCameraProperties,
-            60
-        );
-
-        public static Transform3d BACK_CAMERA_TRANSFORM = new Transform3d(
-            new Translation3d(
-                -0.307010, 
-                0.1270,
-                0.2765
-            ),
-            new Rotation3d(
-                23,
-                0.0,
-                180
-            )
-        );
-
-        public static PhotonVisionCamera BACK_CAMERA = new PhotonVisionCamera(
-            "front", 
-            new PhotonPoseEstimator(LAYOUT, BACK_CAMERA_TRANSFORM), 
-            simCameraProperties,
-            60
-        );
-        */
     }
 }

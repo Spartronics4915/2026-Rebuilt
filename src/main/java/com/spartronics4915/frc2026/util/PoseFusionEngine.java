@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.spartronics4915.frc2026.subsystems.vision.configurations.VisionConfiguration;
-import com.spartronics4915.frc2026.subsystems.vision.strategies.PipelineStrategyInterface.PoseEstimate;
+import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
@@ -13,49 +13,55 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 
-public class PoseFusionEngine {
+public class PoseFusionEngine { 
 
-    public PoseEstimate fusePoses(List<PoseEstimate> poseEstimates, VisionConfiguration config) {
-        if (poseEstimates.isEmpty()) return null;
-        if (poseEstimates.size() == 1) return poseEstimates.get(0);
-        if (!config.enablePoseFusion) return selectBestPose(poseEstimates);
-        if (poseEstimates.size() < config.minCamerasForFusion) return selectBestPose(poseEstimates);
+    public ApriltagResult fusePoses(List<ApriltagResult> apriltagResults, VisionConfiguration config) {
+        // Filter out results without poses
+        List<ApriltagResult> validResults = apriltagResults.stream()
+            .filter(ApriltagResult::hasPose)
+            .toList();
 
-        List<List<PoseEstimate>> groups = groupByTimestamp(poseEstimates, config.fusionTimestampThreshold);
-        List<PoseEstimate> largestGroup = groups.stream()
+        if (validResults.isEmpty()) return null;
+        if (validResults.size() == 1) return validResults.get(0);
+        if (!config.enablePoseFusion) return selectBestResult(validResults);
+        if (validResults.size() < config.minCamerasForFusion) return selectBestResult(validResults);
+
+        // Group by timestamp
+        List<List<ApriltagResult>> groups = groupByTimestamp(validResults, config.fusionTimestampThreshold);
+        List<ApriltagResult> largestGroup = groups.stream()
             .max((g1, g2) -> Integer.compare(g1.size(), g2.size()))
             .orElse(List.of());
 
         if (largestGroup.isEmpty()) return null;
 
-        List<PoseEstimate> filtered = rejectOutliers(largestGroup);
+        // Reject outliers
+        List<ApriltagResult> filtered = rejectOutliers(largestGroup);
         
         if (filtered.isEmpty()) return null;
 
         return performWeightedFusion(filtered);
     }
 
-    private List<List<PoseEstimate>> groupByTimestamp(
-        List<PoseEstimate> poses,
+    private List<List<ApriltagResult>> groupByTimestamp(
+        List<ApriltagResult> results,
         double timestampThreshold
     ) {
-        
-        List<List<PoseEstimate>> groups = new ArrayList<>();
-        List<PoseEstimate> sortedPoses = new ArrayList<>(poses);
-        sortedPoses.sort((p1, p2) -> Double.compare(p1.getTimestamp(), p2.getTimestamp()));
+        List<List<ApriltagResult>> groups = new ArrayList<>();
+        List<ApriltagResult> sortedResults = new ArrayList<>(results);
+        sortedResults.sort((r1, r2) -> Double.compare(r1.getTimestampSeconds(), r2.getTimestampSeconds()));
 
-        List<PoseEstimate> currentGroup = new ArrayList<>();
+        List<ApriltagResult> currentGroup = new ArrayList<>();
         double groupTimestamp = -1;
 
-        for (PoseEstimate pose : sortedPoses) {
-            if (groupTimestamp < 0 || Math.abs(pose.getTimestamp() - groupTimestamp) <= timestampThreshold) {
-                currentGroup.add(pose);
-                if (groupTimestamp < 0) groupTimestamp = pose.getTimestamp();
+        for (ApriltagResult result : sortedResults) {
+            if (groupTimestamp < 0 || Math.abs(result.getTimestampSeconds() - groupTimestamp) <= timestampThreshold) {
+                currentGroup.add(result);
+                if (groupTimestamp < 0) groupTimestamp = result.getTimestampSeconds();
             } else {
                 if (!currentGroup.isEmpty()) groups.add(new ArrayList<>(currentGroup));
                 currentGroup.clear();
-                currentGroup.add(pose);
-                groupTimestamp = pose.getTimestamp();
+                currentGroup.add(result);
+                groupTimestamp = result.getTimestampSeconds();
             }
         }
 
@@ -64,36 +70,41 @@ public class PoseFusionEngine {
         return groups;
     }
 
-    private List<PoseEstimate> rejectOutliers(List<PoseEstimate> poses) {
-        if (poses.size() <= 2) return poses;
+    private List<ApriltagResult> rejectOutliers(List<ApriltagResult> results) {
+        if (results.size() <= 2) return results;
 
-        Pose2d meanPose = calculateMeanPose(poses);
+        Pose2d meanPose = calculateMeanPose(results);
         
-        List<PoseEstimate> filtered = new ArrayList<>();
+        List<ApriltagResult> filtered = new ArrayList<>();
         double threshold = 3.0;
 
-        for (PoseEstimate pose : poses) {
-            double distance = calculateMahalanobisDistance(pose.getPose(), meanPose, pose.getStdDevs());
-            if (distance < threshold) filtered.add(pose);
+        for (ApriltagResult result : results) {
+            double distance = calculateMahalanobisDistance(
+                result.getEstimatedPose().get(), 
+                meanPose, 
+                result.getStdDevs()
+            );
+            if (distance < threshold) filtered.add(result);
         }
 
-        return filtered.isEmpty() ? poses : filtered;
+        return filtered.isEmpty() ? results : filtered;
     }
 
-    private Pose2d calculateMeanPose(List<PoseEstimate> poses) {
+    private Pose2d calculateMeanPose(List<ApriltagResult> results) {
         double sumX = 0;
         double sumY = 0;
         double sumSin = 0;
         double sumCos = 0;
 
-        for (PoseEstimate pose : poses) {
-            sumX += pose.getPose().getX();
-            sumY += pose.getPose().getY();
-            sumSin += Math.sin(pose.getPose().getRotation().getRadians());
-            sumCos += Math.cos(pose.getPose().getRotation().getRadians());
+        for (ApriltagResult result : results) {
+            Pose2d pose = result.getEstimatedPose().get();
+            sumX += pose.getX();
+            sumY += pose.getY();
+            sumSin += Math.sin(pose.getRotation().getRadians());
+            sumCos += Math.cos(pose.getRotation().getRadians());
         }
 
-        int num = poses.size();
+        int num = results.size();
         double meanTheta = Math.atan2(sumSin / num, sumCos / num);
 
         return new Pose2d(sumX / num, sumY / num, new Rotation2d(meanTheta));
@@ -106,9 +117,10 @@ public class PoseFusionEngine {
     ) {
         double dx = pose1.getX() - pose2.getX();
         double dy = pose1.getY() - pose2.getY();
-        double dtheta = pose1.getRotation().getRadians() - pose2.getRotation().getRadians();
-
-        dtheta = Math.IEEEremainder(pose1.getRotation().getRadians() - pose2.getRotation().getRadians(), 2 * Math.PI);
+        double dtheta = Math.IEEEremainder(
+            pose1.getRotation().getRadians() - pose2.getRotation().getRadians(), 
+            2 * Math.PI
+        );
 
         double distX = Math.abs(dx) / stdDevs.get(0, 0);
         double distY = Math.abs(dy) / stdDevs.get(1, 0);
@@ -117,7 +129,7 @@ public class PoseFusionEngine {
         return Math.sqrt(distX * distX + distY * distY + distTheta * distTheta);
     }
 
-    private PoseEstimate performWeightedFusion(List<PoseEstimate> poses) {
+    private ApriltagResult performWeightedFusion(List<ApriltagResult> results) {
         double totalWeightX = 0;
         double totalWeightY = 0;
         double totalWeightTheta = 0;
@@ -127,13 +139,29 @@ public class PoseFusionEngine {
         double weightedSin = 0;
         double weightedCos = 0;
 
-        double avgTimestamp = poses.stream()
-            .mapToDouble(PoseEstimate::getTimestamp)
+        double avgTimestamp = results.stream()
+            .mapToDouble(ApriltagResult::getTimestampSeconds)
             .average()
             .orElse(0);
 
-        for (PoseEstimate pose : poses) {
-            Matrix<N3, N1> stdDevs = pose.getStdDevs();
+        double avgLatency = results.stream()
+            .mapToDouble(ApriltagResult::getLatencyMs)
+            .average()
+            .orElse(0);
+
+        double avgDistance = results.stream()
+            .mapToDouble(ApriltagResult::getAverageDistanceToTargets)
+            .average()
+            .orElse(0);
+
+        double avgAmbiguity = results.stream()
+            .mapToDouble(ApriltagResult::getAmbiguity)
+            .average()
+            .orElse(0);
+
+        for (ApriltagResult result : results) {
+            Matrix<N3, N1> stdDevs = result.getStdDevs();
+            Pose2d pose = result.getEstimatedPose().get();
             
             double weightX = 1.0 / (stdDevs.get(0, 0) * stdDevs.get(0, 0));
             double weightY = 1.0 / (stdDevs.get(1, 0) * stdDevs.get(1, 0));
@@ -143,10 +171,10 @@ public class PoseFusionEngine {
             totalWeightY += weightY;
             totalWeightTheta += weightTheta;
 
-            weightedX += pose.getPose().getX() * weightX;
-            weightedY += pose.getPose().getY() * weightY;
+            weightedX += pose.getX() * weightX;
+            weightedY += pose.getY() * weightY;
             
-            double theta = pose.getPose().getRotation().getRadians();
+            double theta = pose.getRotation().getRadians();
             weightedSin += Math.sin(theta) * weightTheta;
             weightedCos += Math.cos(theta) * weightTheta;
         }
@@ -157,26 +185,46 @@ public class PoseFusionEngine {
 
         Pose2d fusedPose = new Pose2d(fusedX, fusedY, new Rotation2d(fusedTheta));
 
-        double fusedStdDevX = Math.sqrt(1.0 / totalWeightX);
-        double fusedStdDevY = Math.sqrt(1.0 / totalWeightY);
-        double fusedStdDevTheta = Math.sqrt(1.0 / totalWeightTheta);
+        //double fusedStdDevX = Math.sqrt(1.0 / totalWeightX);
+        //double fusedStdDevY = Math.sqrt(1.0 / totalWeightY);
+        //double fusedStdDevTheta = Math.sqrt(1.0 / totalWeightTheta);
+
+        double fusedStdDevX = 0.5;
+        double fusedStdDevY = 0.5;
+        double fusedStdDevTheta = 0.5;
 
         Matrix<N3, N1> fusedStdDevs = VecBuilder.fill(fusedStdDevX, fusedStdDevY, fusedStdDevTheta);
 
-        String source = "fused[" + poses.stream()
-            .map(PoseEstimate::getSource)
+        String fusedCameraName = "fused[" + results.stream()
+            .map(ApriltagResult::getCameraName)
             .reduce((s1, s2) -> s1 + "," + s2)
             .orElse("") + "]";
 
-        return new PoseEstimate(fusedPose, avgTimestamp, fusedStdDevs, source);
+        // Combine all targets from fused results
+        List<org.photonvision.targeting.PhotonTrackedTarget> allTargets = results.stream()
+            .flatMap(r -> r.getTargets().stream())
+            .toList();
+
+        return new ApriltagResult.Builder()
+            .cameraName(fusedCameraName)
+            .timestamp(avgTimestamp)
+            .latency(avgLatency)
+            .pose(fusedPose)
+            .stdDevs(fusedStdDevs)
+            .targets(allTargets)
+            .averageDistance(avgDistance)
+            .ambiguity(avgAmbiguity)
+            .build();
     }
 
-    private PoseEstimate selectBestPose(List<PoseEstimate> poses) {
-        return poses.stream()
-            .min((p1, p2) -> {
-                double std1 = p1.getStdDevs().get(0, 0) + p1.getStdDevs().get(1, 0) + p1.getStdDevs().get(2, 0);
-                double std2 = p2.getStdDevs().get(0, 0) + p2.getStdDevs().get(1, 0) + p2.getStdDevs().get(2, 0);
-                return Double.compare(std1, std2);
+    private ApriltagResult selectBestResult(List<ApriltagResult> results) {
+        return results.stream()
+            .min((r1, r2) -> {
+                Matrix<N3, N1> std1 = r1.getStdDevs();
+                Matrix<N3, N1> std2 = r2.getStdDevs();
+                double sum1 = std1.get(0, 0) + std1.get(1, 0) + std1.get(2, 0);
+                double sum2 = std2.get(0, 0) + std2.get(1, 0) + std2.get(2, 0);
+                return Double.compare(sum1, sum2);
             }).orElse(null);
     }
 }

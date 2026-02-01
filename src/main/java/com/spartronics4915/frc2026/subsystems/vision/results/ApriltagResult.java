@@ -1,4 +1,4 @@
-package com.spartronics4915.frc2026.subsystems.vision.configurations;
+package com.spartronics4915.frc2026.subsystems.vision.results;
 
 import java.util.List;
 import java.util.Optional;
@@ -10,7 +10,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 
-public class CameraResult {
+public class ApriltagResult implements ResultInterface {
     private final String cameraName;
     private final double timestampSeconds;
     private final double latencyMs;
@@ -20,9 +20,8 @@ public class CameraResult {
     private final int targetCount;
     private final double averageDistanceToTargets;
     private final double ambiguity;
-    private final ResultQuality quality;
 
-    public CameraResult(
+    public ApriltagResult(
         String cameraName,
         double timestampSeconds,
         double latencyMs,
@@ -30,8 +29,7 @@ public class CameraResult {
         Matrix<N3, N1> stdDevs,
         List<PhotonTrackedTarget> targets,
         double averageDistanceToTargets,
-        double ambiguity,
-        ResultQuality quality
+        double ambiguity
     ) {
         this.cameraName = cameraName;
         this.timestampSeconds = timestampSeconds;
@@ -42,17 +40,19 @@ public class CameraResult {
         this.targetCount = targets.size();
         this.averageDistanceToTargets = averageDistanceToTargets;
         this.ambiguity = ambiguity;
-        this.quality = quality;
     }
 
+    @Override
     public String getCameraName() {
         return cameraName;
     }
 
+    @Override
     public double getTimestampSeconds() {
         return timestampSeconds;
     }
 
+    @Override
     public double getLatencyMs() {
         return latencyMs;
     }
@@ -65,51 +65,45 @@ public class CameraResult {
         return stdDevs;
     }
 
+    @Override
     public List<PhotonTrackedTarget> getTargets() {
         return targets;
     }
 
+    @Override
     public int getTargetCount() {
         return targetCount;
     }
 
+    @Override
     public double getAverageDistanceToTargets() {
         return averageDistanceToTargets;
     }
 
+    @Override
     public double getAmbiguity() {
         return ambiguity;
     }
 
-    public ResultQuality getQuality() {
-        return quality;
-    }
-
+    @Override
     public boolean hasPose() {
         return estimatedPose.isPresent();
     }
 
-    public enum ResultQuality {
-        // Excellent quality: high confidence, low ambiguity
-        EXCELLENT,
-        // Good quality: acceptable for localization
-        GOOD,
-        // Fair quality: usable but with caution
-        FAIR,
-        // Poor quality: should be rejected
-        POOR
+    @Override
+    public boolean hasValidData() {
+        return hasPose();
     }
 
     public static class Builder {
         private String cameraName;
         private double timestampSeconds;
         private double latencyMs;
-        private Optional<Pose2d> estimatedPose = Optional.empty();
+        private Optional<Pose2d> estimatedPose;
         private Matrix<N3, N1> stdDevs;
-        private List<PhotonTrackedTarget> targets = List.of();
-        private double averageDistanceToTargets = 0.0;
-        private double ambiguity = 1.0;
-        private ResultQuality quality = ResultQuality.POOR;
+        private List<PhotonTrackedTarget> targets;
+        private double averageDistanceToTargets;
+        private double ambiguity;
 
         public Builder cameraName(String name) {
             this.cameraName = name;
@@ -151,13 +145,8 @@ public class CameraResult {
             return this;
         }
 
-        public Builder quality(ResultQuality quality) {
-            this.quality = quality;
-            return this;
-        }
-
-        public CameraResult build() {
-            return new CameraResult(
+        public ApriltagResult build() {
+            return new ApriltagResult(
                 cameraName,
                 timestampSeconds,
                 latencyMs,
@@ -165,8 +154,7 @@ public class CameraResult {
                 stdDevs,
                 targets,
                 averageDistanceToTargets,
-                ambiguity,
-                quality
+                ambiguity
             );
         }
     }

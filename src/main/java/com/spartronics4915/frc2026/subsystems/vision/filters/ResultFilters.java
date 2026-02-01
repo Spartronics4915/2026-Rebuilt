@@ -1,16 +1,13 @@
 package com.spartronics4915.frc2026.subsystems.vision.filters;
 
-import com.spartronics4915.frc2026.subsystems.vision.configurations.CameraResult;
-import com.spartronics4915.frc2026.subsystems.vision.configurations.CameraResult.ResultQuality;
+import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
+import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
 
 public class ResultFilters {
-
-    public static final ResultFilterInterface HAS_TARGETS = new HasTargetsFilter();
-    public static final ResultFilterInterface HAS_POSE = new HasPoseFilter();
     
     public static class HasTargetsFilter implements ResultFilterInterface {
         @Override
-        public boolean test(CameraResult result) {
+        public boolean test(ResultInterface result) {
             return result.getTargetCount() > 0;
         }
     }
@@ -23,7 +20,7 @@ public class ResultFilters {
         }
 
         @Override
-        public boolean test(CameraResult result) {
+        public boolean test(ResultInterface result) {
             return result.getLatencyMs() <= maxLatencyMs;
         }
     }
@@ -36,7 +33,7 @@ public class ResultFilters {
         }
 
         @Override
-        public boolean test(CameraResult result) {
+        public boolean test(ResultInterface result) {
             return result.getAmbiguity() <= maxAmbiguity;
         }
     }
@@ -51,28 +48,15 @@ public class ResultFilters {
         }
 
         @Override
-        public boolean test(CameraResult result) {
+        public boolean test(ResultInterface result) {
             double maxDistance = (result.getTargetCount() == 1) ? maxSingleTagDistance : maxMultiTagDistance;
             return result.getAverageDistanceToTargets() <= maxDistance;
         }
     }
 
-    public static class QualityFilter implements ResultFilterInterface {
-        private final ResultQuality minQuality;
-
-        public QualityFilter(ResultQuality minQuality) {
-            this.minQuality = minQuality;
-        }
-
-        @Override
-        public boolean test(CameraResult result) {
-            return result.getQuality().ordinal() <= minQuality.ordinal();
-        }
-    }
-
     public static class HasPoseFilter implements ResultFilterInterface {
         @Override
-        public boolean test(CameraResult result) {
+        public boolean test(ResultInterface result) {
             return result.hasPose();
         }
     }
@@ -85,7 +69,7 @@ public class ResultFilters {
         }
 
         @Override
-        public boolean test(CameraResult result) {
+        public boolean test(ResultInterface result) {
             return result.getTargetCount() >= minTargets;
         }
     }

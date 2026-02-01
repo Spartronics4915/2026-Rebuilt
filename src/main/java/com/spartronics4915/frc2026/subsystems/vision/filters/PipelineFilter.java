@@ -2,8 +2,9 @@ package com.spartronics4915.frc2026.subsystems.vision.filters;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import com.spartronics4915.frc2026.subsystems.vision.configurations.CameraResult;
+import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
 
 public class PipelineFilter {
     private final List<ResultFilterInterface> filters;
@@ -12,21 +13,16 @@ public class PipelineFilter {
         this.filters = List.copyOf(filters);
     }
 
-    public List<CameraResult> filter(List<CameraResult> results) {
-        List<CameraResult> filtered = new ArrayList<>(results.size());
-        
-        for (CameraResult result : results) {
-            if (test(result)) filtered.add(result);
-        }
-        
+    public List<ResultInterface> filter(List<ResultInterface> results) {   
+        List<ResultInterface> filtered = results.stream()
+            .filter(this::test)
+            .collect(Collectors.toList());
+
         return filtered;
     }
 
-    public boolean test(CameraResult result) {
-        for (ResultFilterInterface filter : filters) {
-            if (!filter.test(result)) return false;
-        }
-        return true;
+    public boolean test(ResultInterface result) {
+        return filters.stream().allMatch(filter -> filter.test(result));
     }
 
     public static Builder builder() {

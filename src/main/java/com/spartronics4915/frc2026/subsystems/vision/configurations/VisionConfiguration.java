@@ -15,8 +15,6 @@ public class VisionConfiguration {
     public final double maxMultiTagDistanceMeters;
     
     public final double maxAmbiguityScore;
-
-    public final Matrix<N3, N1> localStdDevs;
     
     public final Matrix<N3, N1> baseGlobalStdDevs;
 
@@ -45,16 +43,15 @@ public class VisionConfiguration {
             150.0,
             7.0, 
             15.0,
-            1,
-            VecBuilder.fill(0.5, 0.5, 0.5), 
-            VecBuilder.fill(0.5, 0.5, 0.5),
+            1000,
+            VecBuilder.fill(1, 1, 1),
             60,
-            18.0, 
+            20.0, 
             true,  
+            4.0,
             3.0,
-            2.0,
             true,
-            0.65,
+            1,
             1,      
             true,
             5.0
@@ -66,7 +63,6 @@ public class VisionConfiguration {
         double maxSingleTagDistanceMeters,
         double maxMultiTagDistanceMeters,
         double maxAmbiguityScore,
-        Matrix<N3, N1> localStdDevs,
         Matrix<N3, N1> baseGlobalStdDevs,
         double cameraProcessingFrequencyHz,
         double maxPeriodicTimeMs,
@@ -83,7 +79,6 @@ public class VisionConfiguration {
         this.maxSingleTagDistanceMeters = maxSingleTagDistanceMeters;
         this.maxMultiTagDistanceMeters = maxMultiTagDistanceMeters;
         this.maxAmbiguityScore = maxAmbiguityScore;
-        this.localStdDevs = localStdDevs;
         this.baseGlobalStdDevs = baseGlobalStdDevs;
         this.cameraProcessingFrequencyHz = cameraProcessingFrequencyHz;
         this.maxPeriodicTimeMs = maxPeriodicTimeMs;
@@ -102,22 +97,21 @@ public class VisionConfiguration {
     }
 
     public static class Builder {
-        private double maxLatencyMs = 100.0;
-        private double maxSingleTagDistanceMeters = 4.0;
-        private double maxMultiTagDistanceMeters = 8.0;
-        private double maxAmbiguityScore = 0.2;
-        private Matrix<N3, N1> localStdDevs = VecBuilder.fill(0.5, 0.5, 0.5);
-        private Matrix<N3, N1> baseGlobalStdDevs = VecBuilder.fill(0.7, 0.7, 0.9);
-        private double cameraProcessingFrequencyHz = 100.0;
-        private double maxPeriodicTimeMs = 18.0;
-        private boolean enableMotionPunishment = true;
-        private double velocityPunishmentThreshold = 2.0;
-        private double angularVelocityPunishmentThreshold = 2.0;
-        private boolean enablePoseFusion = true;
-        private double fusionTimestampThreshold = 0.1;
-        private int minCamerasForFusion = 2;
-        private boolean enableHistoricalValidation = true;
-        private double maxPoseJumpMeters = 1.5;
+        private double maxLatencyMs;
+        private double maxSingleTagDistanceMeters;
+        private double maxMultiTagDistanceMeters;
+        private double maxAmbiguityScore;
+        private Matrix<N3, N1> baseGlobalStdDevs;
+        private double cameraProcessingFrequencyHz;
+        private double maxPeriodicTimeMs;
+        private boolean enableMotionPunishment;
+        private double velocityPunishmentThreshold;
+        private double angularVelocityPunishmentThreshold;
+        private boolean enablePoseFusion;
+        private double fusionTimestampThreshold;
+        private int minCamerasForFusion;
+        private boolean enableHistoricalValidation;
+        private double maxPoseJumpMeters;
 
         public Builder maxLatencyMs(double maxLatencyMs) {
             this.maxLatencyMs = maxLatencyMs;
@@ -150,7 +144,6 @@ public class VisionConfiguration {
                 maxSingleTagDistanceMeters,
                 maxMultiTagDistanceMeters,
                 maxAmbiguityScore,
-                localStdDevs,
                 baseGlobalStdDevs,
                 cameraProcessingFrequencyHz,
                 maxPeriodicTimeMs,
