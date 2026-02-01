@@ -21,6 +21,7 @@ import com.pathplanner.lib.config.ModuleConfig;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import com.pathplanner.lib.path.PathConstraints;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
@@ -68,6 +69,35 @@ public final class Constants {
                 AutoConstants.kTranslationPID, 
                 AutoConstants.kRotationPID
             );
+
+            public static final Translation2d hubPose = new Translation2d(4.625, 4.035);
+            public static final Translation2d trenchTransform = new Translation2d(0, -3.4);
+            public static final Translation2d bumpTransform = new Translation2d(0, -1.523);
+            public static final Translation2d approachTransform = new Translation2d(-1.1, 0);
+
+            public static final PathConstraints defaultPathConstraints = new PathConstraints(
+                4,
+                5.0,
+                1/2 * Math.PI,
+                1 * Math.PI
+            );
+
+            public static final PathConstraints trenchPathConstraints = new PathConstraints(
+                2.0,
+                2.0,
+                1/4 * Math.PI,
+                1 * Math.PI
+            );
+
+            public static final PathConstraints bumpPathConstraints = new PathConstraints(
+                0.5,
+                0.5,
+                1/4 * Math.PI,
+                1/2 * Math.PI
+            );
+
+            public static final Rotation2d trenchApproachAngle = Rotation2d.fromDegrees(0.0);
+            public static final Rotation2d bumpApproachAngle = Rotation2d.fromDegrees(45.0);
 
             public enum PathplannerConfigs {
                 TEST_CHASSIS(new RobotConfig(

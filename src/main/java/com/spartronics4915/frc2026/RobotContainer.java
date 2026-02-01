@@ -6,7 +6,8 @@ package com.spartronics4915.frc2026;
 
 import com.spartronics4915.frc2026.Constants.OperatorConstants;
 import com.spartronics4915.frc2026.autos.Autos;
-
+import com.spartronics4915.frc2026.autos.ZoneTransition;
+import com.spartronics4915.frc2026.autos.ZoneTransition.TraversalMethod;
 import com.spartronics4915.frc2026.Constants.VisionConstants;
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
@@ -40,6 +41,7 @@ public class RobotContainer {
         })
         .setConfiguration(new VisionConfiguration())
         .build();
+    private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
 
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
     private final CommandXboxController operatorController = new CommandXboxController(OperatorConstants.OPERATOR_CONTROLLER_PORT);
@@ -70,6 +72,22 @@ public class RobotContainer {
             Commands.runOnce(() -> {
                 TELEOP_HEADING_OFFSET = swerveSubsystem.getPose().getRotation();
             })
+        );
+
+        driverController.leftBumper().whileTrue(
+            transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP)
+        );
+
+        driverController.rightBumper().whileTrue(
+            transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP)
+        );
+
+        driverController.leftTrigger().whileTrue(
+            transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH)
+        );
+
+        driverController.rightTrigger().whileTrue(
+            transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH)
         );
     }
 
