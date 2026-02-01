@@ -28,18 +28,13 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 public class RobotContainer {
     public final SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
     private final VisionSubsystem visionSubsystem = VisionSubsystem.builder()
-        .addCamera("right", VisionConstants.RIGHT_CAMERA)
-        //.addCamera("left", VisionConstants.LEFT_CAMERA)
-        //.addCamera("back", VisionConstants.BACK_CAMERA)
+        .addCamera("right", VisionConstants.RIGHT_PROCESSOR)
         .setFieldLayout(VisionConstants.LAYOUT)
         .setRobotPoseSupplier(() -> swerveSubsystem.getPose())
         .setRobotVelocitySupplier(() -> swerveSubsystem.getFieldVelocity())
-        .setFusedPoseSupplier(() -> swerveSubsystem.getPastVisionPose(VisionSubsystem.getPoseTimestamp()))
+        .setUsedPoseSupplier(() -> swerveSubsystem.getPastVisionPose(VisionSubsystem.getPoseTimestamp()))
         .setPoseConsumer((pose, time, stdDevs) -> {
             swerveSubsystem.addVisionMeasurement(pose, time, stdDevs);
-        })
-        .setObjectsConsumer((groupCenter, time) -> {
-            // Handle detected objects
         })
         .setConfiguration(new VisionConfiguration())
         .build();

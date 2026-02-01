@@ -1,11 +1,11 @@
 package com.spartronics4915.frc2026.subsystems.vision.filters;
 
-import com.spartronics4915.frc2026.subsystems.vision.configurations.CameraResult;
+import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
 
 @FunctionalInterface
 public interface ResultFilterInterface {
 
-    boolean test(CameraResult result);
+    boolean test(ResultInterface result);
 
     default ResultFilterInterface and (ResultFilterInterface other) {
         return (result) -> test(result) && other.test(result);
