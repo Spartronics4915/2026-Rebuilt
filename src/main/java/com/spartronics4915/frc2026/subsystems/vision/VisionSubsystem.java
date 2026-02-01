@@ -50,7 +50,7 @@ public class VisionSubsystem extends SubsystemBase {
 
     private static double lastPoseTimestamp;
 
-    private Supplier<Pose2d> robotPoseSupplier;
+    private Supplier<Pose2d> simPoseSupplier;
     private Supplier<Pose2d> usedPoseSupplier;
 
     private final StructPublisher<Pose2d> visionPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Vision Pose", Pose2d.struct).publish();
@@ -70,7 +70,7 @@ public class VisionSubsystem extends SubsystemBase {
         this.config = config;
         this.visionSystemSim = new VisionSystemSim("main");
         this.poseConsumer = poseConsumer;
-        this.robotPoseSupplier = robotPoseSupplier;
+        this.simPoseSupplier = robotPoseSupplier;
         this.usedPoseSupplier = usedPoseSupplier;
         
         this.context = new VisionContext(
@@ -158,7 +158,7 @@ public class VisionSubsystem extends SubsystemBase {
         }
         
         if (isSimulation) {
-            visionSystemSim.update(robotPoseSupplier.get());
+            visionSystemSim.update(simPoseSupplier.get());
         }
         
         // Stop periodic_total timing
@@ -219,7 +219,7 @@ public class VisionSubsystem extends SubsystemBase {
     public static class Builder {
         private final Map<String, ProcessorInterface> cameras = new HashMap<>();
         private AprilTagFieldLayout fieldLayout;
-        private Supplier<Pose2d> robotPoseSupplier;
+        private Supplier<Pose2d> simPoseSupplier;
         private Supplier<ChassisSpeeds> robotVelocitySupplier;
         private Supplier<Pose2d> usedPoseSupplier;
         private VisionConfiguration config = new VisionConfiguration();
@@ -235,8 +235,8 @@ public class VisionSubsystem extends SubsystemBase {
             return this;
         }
 
-        public Builder setRobotPoseSupplier(Supplier<Pose2d> supplier) {
-            this.robotPoseSupplier = supplier;
+        public Builder setSimPoseSupplier(Supplier<Pose2d> supplier) {
+            this.simPoseSupplier = supplier;
             return this;
         }
 
@@ -261,14 +261,14 @@ public class VisionSubsystem extends SubsystemBase {
         }
 
         public VisionSubsystem build() {
-            if (fieldLayout == null || robotPoseSupplier == null) {
+            if (fieldLayout == null || simPoseSupplier == null) {
                 throw new IllegalStateException("Field layout and robot pose supplier are required");
             }
             
             return new VisionSubsystem(
                 cameras,
                 fieldLayout,
-                robotPoseSupplier,
+                simPoseSupplier,
                 robotVelocitySupplier,
                 usedPoseSupplier,
                 config,

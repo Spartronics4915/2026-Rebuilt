@@ -99,6 +99,10 @@ public class SwerveSubsystem extends SubsystemBase {
         return swerveDrive.getPose();
     }
 
+    public Pose2d getSimulatedPose() {
+        return swerveDrive.getMapleSimDrive().get().getSimulatedDriveTrainPose();
+    }
+
     public Pose2d getPastVisionPose(double timestamp) {
         return swerveDrive.swerveDrivePoseEstimator.sampleAt(timestamp).get();
     }

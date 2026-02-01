@@ -33,7 +33,7 @@ public class RobotContainer {
     private final VisionSubsystem visionSubsystem = VisionSubsystem.builder()
         .addCamera("right", VisionConstants.RIGHT_PROCESSOR)
         .setFieldLayout(VisionConstants.LAYOUT)
-        .setRobotPoseSupplier(() -> swerveSubsystem.getPose())
+        .setSimPoseSupplier(() -> swerveSubsystem.getSimulatedPose())
         .setRobotVelocitySupplier(() -> swerveSubsystem.getFieldVelocity())
         .setUsedPoseSupplier(() -> swerveSubsystem.getPastVisionPose(VisionSubsystem.getPoseTimestamp()))
         .setPoseConsumer((pose, time, stdDevs) -> {
