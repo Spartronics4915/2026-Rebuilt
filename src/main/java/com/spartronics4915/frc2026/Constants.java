@@ -17,6 +17,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.LinearVelocityUnit;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
@@ -36,7 +37,6 @@ import com.revrobotics.spark.config.EncoderConfig;
 import com.revrobotics.spark.config.SparkBaseConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.SlotConfigs;
@@ -58,6 +58,8 @@ public final class Constants {
         }
        }
 
+       public static final String posePublisher = null;
+       public static final LinearVelocityUnit MetersPerSecond = null;
        public static final double kTrackWidth = Units.inchesToMeters(0);
        public static final double kWheelbase = Units.inchesToMeters(0);
        public static final double kChassisRadius = Math.hypot(
@@ -73,7 +75,7 @@ public final class Constants {
 
             public enum PathplannerConfigs{
                 COMP_CHASSIS(new RobotConfig(
-                    Kilogram.of(0);
+                    Kilogram.of(0),
                     KilogramSquareMeters.of(0),
                     new ModuleConfig(
                         Inches.of(0),
@@ -85,7 +87,7 @@ public final class Constants {
                         0
                     ),
                     new Translation2d(Inches.of(0), Inches.of(0)),
-                    new Tranlation2d(Inches.of(0), Inches.of(0)),
+                    new Translation2d(Inches.of(0), Inches.of(0)),
                     new Translation2d(Inches.of(0), Inches.of(0)),
                     new Translation2d(Inches.of(0), Inches.of(0))
                 ));
