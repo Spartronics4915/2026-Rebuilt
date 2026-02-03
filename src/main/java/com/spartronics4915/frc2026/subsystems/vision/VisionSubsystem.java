@@ -10,6 +10,7 @@ import org.photonvision.PhotonCamera;
 import org.photonvision.simulation.VisionSystemSim;
 
 import com.spartronics4915.frc2026.Robot;
+import com.spartronics4915.frc2026.Constants.VisionConstants;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
 import com.spartronics4915.frc2026.subsystems.vision.configurations.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.configurations.VisionContext;
@@ -24,6 +25,7 @@ import com.spartronics4915.frc2026.util.PoseFusionEngine;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
@@ -50,12 +52,14 @@ public class VisionSubsystem extends SubsystemBase {
 
     private static double lastPoseTimestamp;
 
-    private Supplier<Pose2d> simPoseSupplier;
+    private Supplier<Pose2d> robotPoseSupplier;
     private Supplier<Pose2d> usedPoseSupplier;
 
     private final StructPublisher<Pose2d> visionPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Vision Pose", Pose2d.struct).publish();
     private final DoublePublisher translationStdDevPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Translation Std Dev").publish();
     private final DoublePublisher rotationStdDevPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Rotation Std Dev").publish();
+
+    private final StructPublisher<Pose3d> cameraPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Camera Pose", Pose3d.struct).publish();
 
     private VisionSubsystem(
         Map<String, ProcessorInterface> cameras,
@@ -70,7 +74,7 @@ public class VisionSubsystem extends SubsystemBase {
         this.config = config;
         this.visionSystemSim = new VisionSystemSim("main");
         this.poseConsumer = poseConsumer;
-        this.simPoseSupplier = robotPoseSupplier;
+        this.robotPoseSupplier = robotPoseSupplier;
         this.usedPoseSupplier = usedPoseSupplier;
         
         this.context = new VisionContext(
@@ -144,21 +148,25 @@ public class VisionSubsystem extends SubsystemBase {
             
             if (fusedResult != null && fusedResult.hasPose()) {
                 lastPoseTimestamp = fusedResult.getTimestampSeconds();
+                
                 poseConsumer.accept(
                     fusedResult.getEstimatedPose().get(),
                     fusedResult.getTimestampSeconds(),
                     fusedResult.getStdDevs()
                 );
+
                 visionPosePublisher.accept(fusedResult.getEstimatedPose().get());
                 translationStdDevPublisher.accept(fusedResult.getStdDevs().get(0, 0));
                 rotationStdDevPublisher.accept(fusedResult.getStdDevs().get(2, 0));
+
+                cameraPosePublisher.accept(new Pose3d(robotPoseSupplier.get()).plus(VisionConstants.RIGHT_CAMERA_TRANSFORM));
             }
             
             performanceTracker.stopTiming();
         }
         
         if (isSimulation) {
-            visionSystemSim.update(simPoseSupplier.get());
+            visionSystemSim.update(robotPoseSupplier.get());
         }
         
         // Stop periodic_total timing

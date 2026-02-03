@@ -45,14 +45,14 @@ public class VisionConfiguration {
             15.0,
             1000,
             VecBuilder.fill(1, 1, 1),
-            60,
+            100,
             20.0, 
             true,  
             4.0,
             3.0,
-            true,
+            false,
             1,
-            1,      
+            0,      
             true,
             5.0
         );

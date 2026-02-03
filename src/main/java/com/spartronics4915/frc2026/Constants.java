@@ -159,8 +159,8 @@ public final class Constants {
 
         public static Transform3d RIGHT_CAMERA_TRANSFORM = new Transform3d(
             new Translation3d(
-                -0.34798, 
                 -0.0381, 
+                0.34798,
                 0.14605
             ),
             new Rotation3d(
@@ -173,7 +173,7 @@ public final class Constants {
         public static PhotonProcessor RIGHT_PROCESSOR = new PhotonProcessor(
             "evan", 
             new PhotonPoseEstimator(LAYOUT, RIGHT_CAMERA_TRANSFORM), 
-            0
+            100
         );
     }
 }
