@@ -5,22 +5,28 @@ import java.io.IOException;
 
 import com.spartronics4915.frc2026.Constants.SwerveConstants;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveDirectories;
+import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.units.LinearVelocityUnit;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import swervelib.SwerveDrive;
 import swervelib.parser.SwerveParser;
 
-public final class SwerveSubsystem {
+public final class SwerveSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
     private final SwerveDrive swerveDrive;
+
+    private final StructPublisher<Pose2d> posePublisher = NetworkTableInstance.getDefault().getTable("logging").getStructTopic("pose", Pose2d.struct).publish();
 
     public SwerveSubsystem(SwerveDirectories swerveDir) {
 
