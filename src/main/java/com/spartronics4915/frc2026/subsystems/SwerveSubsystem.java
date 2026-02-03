@@ -8,6 +8,7 @@ import java.util.function.Supplier;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
+import com.spartronics4915.frc2026.Robot;
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 
@@ -101,6 +102,14 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public Pose2d getSimulatedPose() {
         return swerveDrive.getMapleSimDrive().get().getSimulatedDriveTrainPose();
+    }
+
+    public Pose2d getRobotPose() {
+        if (Robot.isSimulation()) {
+            return getSimulatedPose();
+        } else {
+            return getPose();
+        }
     }
 
     public Pose2d getPastVisionPose(double timestamp) {
