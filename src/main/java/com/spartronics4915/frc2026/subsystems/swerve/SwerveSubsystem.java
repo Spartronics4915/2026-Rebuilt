@@ -53,15 +53,15 @@ public final class SwerveSubsystem extends SubsystemBase implements ModeSwitchIn
         SmartDashboard.putData("set angle to 0", Commands.runOnce(() -> {
             var currPose = getPose();
             setPose(new Pose2d(
-                            currPose.getX(),
-                            currPose.getY(),
-                            Rotation2d.kZero
-                        ));
-                    }));
-            
-                }
-            
-                private static Pose2d guessStartingPosition() {
+                currPose.getX(),
+                currPose.getY(),
+                Rotation2d.kZero
+            ));
+        }));
+
+    }
+
+    private static Pose2d guessStartingPosition() {
 
         if (DriverStation.getAlliance().isPresent() && DriverStation.getAlliance().get() == Alliance.Blue) {
             return new Pose2d(0, 0, Rotation2d.fromDegrees(0));

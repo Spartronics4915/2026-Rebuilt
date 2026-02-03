@@ -4,12 +4,12 @@
     "drive": {"gearRatio": 0, "diameter": 0}
   },
   "currentLimit": {
-    "drive": 0,
-    "angle": 0
+    "drive": 40,
+    "angle": 40
   },
   "rampRate": {
-    "drive": 0,
-    "angle": 0
+    "drive": 0.1,
+    "angle": 0.1
   },
   "wheelGripCoefficientOfFriction": 0,
   "optimalVoltage": 0
