@@ -34,12 +34,14 @@ public class TurretSubsystem extends SubsystemBase{
     CANcoder encoderOne = new CANcoder(Constants.TurretConstants.ENCODER_ONE_ID);
     CANcoder encoderTwo = new CANcoder(Constants.TurretConstants.ENCODER_TWO_ID);
 
-    public TurretSubsystem(){
-      applyMotorConfigs(turretConfigurator);  
-      SmartDashboard.putNumber("Set Point", 0); //temp code for testing
+    TrapezoidProfile trapProfile = new TrapezoidProfile(
+        new Constraints(Constants.TurretConstants.MAX_VELOCITY,Constants.TurretConstants.MAX_ACCELERATION)
+    );
 
-    }
-    
+    double position = this.getAngle().getRotations();
+    State currentState = new State(position,0);
+    double currentSetPoint = position;
+
     private void applyMotorConfigs(TalonFXConfigurator config){
         config.apply(new SlotConfigs()
             .withKP(Constants.TurretConstants.TURRET_P)
@@ -55,19 +57,21 @@ public class TurretSubsystem extends SubsystemBase{
         config.apply(new FeedbackConfigs()
             .withSensorToMechanismRatio(Constants.TurretConstants.SENSOR_TO_MECHANISM_RATIO)
         );
-
+    }
+    
+    public TurretSubsystem(){
+        applyMotorConfigs(turretConfigurator);  
     }
 
-    TrapezoidProfile trapProfile = new TrapezoidProfile(
-        new Constraints(Constants.TurretConstants.MAX_VELOCITY,Constants.TurretConstants.MAX_ACCELERATION)
-    );
-    double position = this.getAngle().getRotations();
-    State currentState = new State(position,0);
-    double currentSetPoint = position;
-   
+    private void publishData(){
+        turretSetpointPublisher.accept(currentSetPoint);
+        turretAnglePublisher.accept(this.getAngle().getDegrees());
+        turretVoltagePublisher.accept(turretMotor.getMotorVoltage().getValueAsDouble());
+        turretRequestedPosPublisher.accept(currentState.position);
+    }
+ 
     @Override
     public void periodic(){
-        currentSetPoint = SmartDashboard.getNumber("Set Point", 0);//temp code for testing 
         currentSetPoint = MathUtil.clamp(
             currentSetPoint,
             Constants.TurretConstants.MIN_ROTATION,
@@ -82,14 +86,6 @@ public class TurretSubsystem extends SubsystemBase{
 
         turretMotor.setControl(request);
         publishData();
-
-    }
-
-    private void publishData(){
-        turretSetpointPublisher.accept(currentSetPoint);
-        turretAnglePublisher.accept(this.getAngle().getDegrees());
-        turretVoltagePublisher.accept(turretMotor.getMotorVoltage().getValueAsDouble());
-        turretRequestedPosPublisher.accept(currentState.position);
     }
 
    /**
@@ -112,7 +108,7 @@ public class TurretSubsystem extends SubsystemBase{
      */
     public Rotation2d getAngle(){
         // Daniil claimed he would put fancy code here that will magically make it work 
-        
+
         return Rotation2d.fromDegrees(turretMotor.getPosition().getValue().in(Degrees));
     }
 
