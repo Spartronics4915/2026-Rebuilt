@@ -31,6 +31,9 @@ public class IntakeSubsystem extends SubsystemBase {
 
     double currentSetPoint = 0.0;
 
+    DoublePublisher intakeRPMPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Current RPM of IntakeMotor: ").publish();
+    DoublePublisher intakeVoltagePublisher = NetworkTableInstance.getDefault().getDoubleTopic("Current Voltage of IntakeMotor: ").publish();
+
     // Constructor
     public IntakeSubsystem() {
         SmartDashboard.putBoolean("Active", false);
@@ -89,11 +92,6 @@ public class IntakeSubsystem extends SubsystemBase {
         // stops the motor
         currentSetPoint = 0;
     }
-
-    // Logging
-    DoublePublisher intakeRPMPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Current RPM of IntakeMotor: ").publish();
-    DoublePublisher intakeVoltagePublisher = NetworkTableInstance.getDefault().getDoubleTopic("Current Voltage of IntakeMotor: ")
-            .publish();
 
     @Override
     public void periodic() {
