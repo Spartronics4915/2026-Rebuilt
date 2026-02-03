@@ -26,7 +26,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class Shooter extends SubsystemBase {
-
+//TODO: Gage!!! please fix what I have commented
     private TalonFX mainShooterMotor;
     private NeutralModeValue neutralMode;
     private TalonFX followerShooterMotor;
@@ -43,7 +43,6 @@ public class Shooter extends SubsystemBase {
     
         
         public Shooter () {
-
             trapProfile = new TrapezoidProfile(
 	            new Constraints(Constants.ShooterConstants.MaxVelocity, Constants.ShooterConstants.MaxAcceleration)
             );
@@ -53,6 +52,7 @@ public class Shooter extends SubsystemBase {
 
             
             //Main motor-----------------------------------------------------------------------------
+            //Simplify this by making motor initialzation into a method
             mainShooterMotor = new TalonFX(Constants.ShooterConstants.mainShooterMotorID); 
             TalonFXConfigurator configForMainShooterMotor = mainShooterMotor.getConfigurator();
             configForMainShooterMotor.apply(new SlotConfigs()
@@ -62,7 +62,7 @@ public class Shooter extends SubsystemBase {
             );
             configForMainShooterMotor.apply(new CurrentLimitsConfigs()
                 .withSupplyCurrentLimitEnable(true)
-                .withSupplyCurrentLimit(60)
+                .withSupplyCurrentLimit(60) //make sure these are constants
                 .withSupplyCurrentLowerLimit(40)
                 .withSupplyCurrentLowerTime(1.0)
             );
@@ -80,8 +80,9 @@ public class Shooter extends SubsystemBase {
             } else {neutralMode = NeutralModeValue.Brake;}
             mainShooterMotor.setNeutralMode(neutralMode);
 
-
+            //if you wish to organize your code, try using regions
             //follower motor-----------------------------------------------------------------------------
+            //Simplify this by making motor initialzation into a method
             followerShooterMotor = new TalonFX(Constants.ShooterConstants.followerShooterMotorID); 
             TalonFXConfigurator configForFollowerShooterMotor = followerShooterMotor.getConfigurator();
             configForFollowerShooterMotor.apply(new SlotConfigs()
@@ -91,7 +92,7 @@ public class Shooter extends SubsystemBase {
             );
             configForFollowerShooterMotor.apply(new CurrentLimitsConfigs()
                 .withSupplyCurrentLimitEnable(true)
-                .withSupplyCurrentLimit(60)
+                .withSupplyCurrentLimit(60) //make sure these are constants
                 .withSupplyCurrentLowerLimit(40)
                 .withSupplyCurrentLowerTime(1.0)
             );
@@ -144,7 +145,7 @@ public class Shooter extends SubsystemBase {
             
             motorSpeed.accept(currentState.position);  
             motorTargetSpeed.accept(currentSetSpeed);   
-            
+            //make sure there are no magic numbers
             currentState = trapProfile.calculate(
                 0.05, 
                 currentState, 
