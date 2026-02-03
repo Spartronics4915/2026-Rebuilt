@@ -26,10 +26,16 @@ public class ClimberSubsystem extends SubsystemBase {
     DoublePublisher climberVoltagePublisher = NetworkTableInstance.getDefault().getDoubleTopic("Climber Voltage").publish();
     DoublePublisher climberVelocityPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Climber Velocity").publish();
 
-    public ClimberSubsystem() {
-        applyMotorConfigs(primaryClimbConfigurator);
-
-    }
+     TrapezoidProfile trapProfile = new TrapezoidProfile(
+            new Constraints(Constants.ClimberConstants.MAX_VELOCITY, Constants.ClimberConstants.MAX_ACCELERATION));
+    double position = getPosition();
+    State currentState = new State(position, 0);
+    double currentSetPoint = position;
+    ElevatorFeedforward FFCalculator = new ElevatorFeedforward(
+            Constants.ClimberConstants.CLIMBER_S,
+            Constants.ClimberConstants.CLIMBER_J,
+            Constants.ClimberConstants.CLIMBER_V,
+            Constants.ClimberConstants.CLIMBER_A);
 
     private void applyMotorConfigs(TalonFXConfigurator config) {
         config.apply(new SlotConfigs()
@@ -46,16 +52,17 @@ public class ClimberSubsystem extends SubsystemBase {
 
     }
 
-    TrapezoidProfile trapProfile = new TrapezoidProfile(
-            new Constraints(Constants.ClimberConstants.MAX_VELOCITY, Constants.ClimberConstants.MAX_ACCELERATION));
-    double position = getPosition();
-    State currentState = new State(position, 0);
-    double currentSetPoint = position;
-    ElevatorFeedforward FFCalculator = new ElevatorFeedforward(
-            Constants.ClimberConstants.CLIMBER_S,
-            Constants.ClimberConstants.CLIMBER_J,
-            Constants.ClimberConstants.CLIMBER_V,
-            Constants.ClimberConstants.CLIMBER_A);
+    private void publishData() {
+        climberSetpointPublisher.accept(currentSetPoint);
+        climberRequestedPosPublisher.accept(currentState.position);
+        climberVoltagePublisher.accept(primaryClimbMotor.getMotorVoltage().getValueAsDouble());
+        climberVelocityPublisher.accept(primaryClimbMotor.getVelocity().getValueAsDouble());
+    }
+
+    public ClimberSubsystem() {
+        applyMotorConfigs(primaryClimbConfigurator);
+
+    }
 
     @Override
     public void periodic() {
@@ -75,12 +82,6 @@ public class ClimberSubsystem extends SubsystemBase {
         publishData();
     }
 
-    private void publishData() {
-        climberSetpointPublisher.accept(currentSetPoint);
-        climberRequestedPosPublisher.accept(currentState.position);
-        climberVoltagePublisher.accept(primaryClimbMotor.getMotorVoltage().getValueAsDouble());
-        climberVelocityPublisher.accept(primaryClimbMotor.getVelocity().getValueAsDouble());
-    }
 
     public Command setPrimaryClimber(double input) {
         return this.runOnce(() -> currentSetPoint = input);
