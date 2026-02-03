@@ -12,7 +12,7 @@
     
     "encoder": {
         "type": "cancoder",
-        "id": 9,
+        "id": 12,
         "canbus": null
     },
     
