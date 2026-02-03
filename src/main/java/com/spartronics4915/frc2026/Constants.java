@@ -12,6 +12,8 @@ public final class Constants {
 
     public static class ShooterConstants {
         
+        public static double deltaTime = 0;
+        
         //Main motor----------------------------------
         public static int mainShooterMotorID = 100;
         // Pid control of mainShooterMotor
@@ -26,6 +28,16 @@ public final class Constants {
         public static double FollowerI = 0;
         public static double FollowerD = 0;
 
+        //both motors----------------------------------
+        public static boolean   SupplyCurrentLimitEnabled   = true;
+        public static double    SupplyCurrentLimit          = 60;
+        public static double    SupplyCurrentLowerLimit     = 40;
+        public static double    SupplyCurrentLowerTime      = 1.0;
+        public static double    SensorToMechanismRatio      = 1;
+        
+        
+        
+        
         //feed forward
         public static double S = 0;
         public static double V = 0;
@@ -43,6 +55,8 @@ public final class Constants {
         //is the min and max speed of the motors
         public static double minSpeed = 0;
         public static double maxSpeed = 40;
+
+        
 
 
 

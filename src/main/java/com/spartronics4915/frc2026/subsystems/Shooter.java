@@ -26,7 +26,6 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class Shooter extends SubsystemBase {
-//TODO: Gage!!! please fix what I have commented
     private TalonFX mainShooterMotor;
     private NeutralModeValue neutralMode;
     private TalonFX followerShooterMotor;
@@ -43,16 +42,25 @@ public class Shooter extends SubsystemBase {
     
         
         public Shooter () {
+
             trapProfile = new TrapezoidProfile(
 	            new Constraints(Constants.ShooterConstants.MaxVelocity, Constants.ShooterConstants.MaxAcceleration)
             );
 
             currentState = new State(0, 0);
 
+            mainShooterMotorInitializer();
+            followerShooterMotorInitializer();
 
+            FFCalculator = new SimpleMotorFeedforward(
+                Constants.ShooterConstants.S,
+                Constants.ShooterConstants.V,
+                Constants.ShooterConstants.A
+            );
             
-            //Main motor-----------------------------------------------------------------------------
-            //Simplify this by making motor initialzation into a method
+        }
+
+        public void mainShooterMotorInitializer() {
             mainShooterMotor = new TalonFX(Constants.ShooterConstants.mainShooterMotorID); 
             TalonFXConfigurator configForMainShooterMotor = mainShooterMotor.getConfigurator();
             configForMainShooterMotor.apply(new SlotConfigs()
@@ -61,13 +69,13 @@ public class Shooter extends SubsystemBase {
                 .withKD(Constants.ShooterConstants.MainD)
             );
             configForMainShooterMotor.apply(new CurrentLimitsConfigs()
-                .withSupplyCurrentLimitEnable(true)
-                .withSupplyCurrentLimit(60) //make sure these are constants
-                .withSupplyCurrentLowerLimit(40)
-                .withSupplyCurrentLowerTime(1.0)
+                .withSupplyCurrentLimitEnable(Constants.ShooterConstants.SupplyCurrentLimitEnabled)
+                .withSupplyCurrentLimit(Constants.ShooterConstants.SupplyCurrentLimit) 
+                .withSupplyCurrentLowerLimit(Constants.ShooterConstants.SupplyCurrentLowerLimit)
+                .withSupplyCurrentLowerTime(Constants.ShooterConstants.SupplyCurrentLowerTime)
             );
             configForMainShooterMotor.apply(new FeedbackConfigs()
-                .withSensorToMechanismRatio(1)
+                .withSensorToMechanismRatio(Constants.ShooterConstants.SensorToMechanismRatio)
             );
             MotorOutputConfigs mainShooterMotorOutputConfigs = new MotorOutputConfigs();
             if (Constants.ShooterConstants.motorTurnsClockWise) {
@@ -79,10 +87,9 @@ public class Shooter extends SubsystemBase {
                 neutralMode = NeutralModeValue.Coast;
             } else {neutralMode = NeutralModeValue.Brake;}
             mainShooterMotor.setNeutralMode(neutralMode);
+        }
 
-            //if you wish to organize your code, try using regions
-            //follower motor-----------------------------------------------------------------------------
-            //Simplify this by making motor initialzation into a method
+        public void followerShooterMotorInitializer() {
             followerShooterMotor = new TalonFX(Constants.ShooterConstants.followerShooterMotorID); 
             TalonFXConfigurator configForFollowerShooterMotor = followerShooterMotor.getConfigurator();
             configForFollowerShooterMotor.apply(new SlotConfigs()
@@ -91,13 +98,13 @@ public class Shooter extends SubsystemBase {
                 .withKD(Constants.ShooterConstants.FollowerD)
             );
             configForFollowerShooterMotor.apply(new CurrentLimitsConfigs()
-                .withSupplyCurrentLimitEnable(true)
-                .withSupplyCurrentLimit(60) //make sure these are constants
-                .withSupplyCurrentLowerLimit(40)
-                .withSupplyCurrentLowerTime(1.0)
+                .withSupplyCurrentLimitEnable(Constants.ShooterConstants.SupplyCurrentLimitEnabled)
+                .withSupplyCurrentLimit(Constants.ShooterConstants.SupplyCurrentLimit) 
+                .withSupplyCurrentLowerLimit(Constants.ShooterConstants.SupplyCurrentLowerLimit)
+                .withSupplyCurrentLowerTime(Constants.ShooterConstants.SupplyCurrentLowerTime)
             );
             configForFollowerShooterMotor.apply(new FeedbackConfigs()
-                .withSensorToMechanismRatio(1)
+                .withSensorToMechanismRatio(Constants.ShooterConstants.SensorToMechanismRatio)
             );
             MotorOutputConfigs followerShooterMotorOutputConfigs = new MotorOutputConfigs();
             if (!Constants.ShooterConstants.motorTurnsClockWise) {
@@ -111,13 +118,6 @@ public class Shooter extends SubsystemBase {
             followerShooterMotor.setNeutralMode(neutralMode);
             
             followerShooterMotor.setControl(new StrictFollower(Constants.ShooterConstants.mainShooterMotorID));
-
-            FFCalculator = new SimpleMotorFeedforward(
-                Constants.ShooterConstants.S,
-                Constants.ShooterConstants.V,
-                Constants.ShooterConstants.A
-            );
-            
         }
         
         public void setSpeed(double zeroToOne){
@@ -145,9 +145,8 @@ public class Shooter extends SubsystemBase {
             
             motorSpeed.accept(currentState.position);  
             motorTargetSpeed.accept(currentSetSpeed);   
-            //make sure there are no magic numbers
             currentState = trapProfile.calculate(
-                0.05, 
+                Constants.ShooterConstants.deltaTime,  
                 currentState, 
                 new State(currentSetSpeed, 0)
             );
