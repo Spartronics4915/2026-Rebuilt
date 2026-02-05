@@ -101,7 +101,4 @@ public final class Constants {
         }
     }
 
-    public static class OdometryConstants {
-        //public static final double kMaxSwerveVisionPoseDifference = 0;
-    }
 }
