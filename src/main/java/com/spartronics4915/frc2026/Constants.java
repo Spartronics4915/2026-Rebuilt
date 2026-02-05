@@ -10,20 +10,20 @@ public final class Constants {
         public static final int OPERATOR_CONTROLLER_PORT = 1;
     }
     public static class HoodConstants {
-        public static final float P = 0;
-        public static final float I = 0;
-        public static final float D = 0;
-        //???
-        public static final double position = 0;
-        public static final double velocity = 0;
-        public static final double MaxVelocity = 0;
-        public static final double MaxAcceleration = 1;
-        public static final double MIN = 0;
-        public static final double MAX = 1;
-        public static final double dt = 0;
-        public static final double S = 0;
-        public static final double G = 0;
-        public static final double V = 0;
-        public static final double A = 0;
+        public static final double P = 5.0;
+        public static final double I = 0.0;
+        public static final double D = 0.0;
+        public static final double HOOD_MAX_VELOCITY = 15.0;
+        // If max acceleration is put higher than like 5 then it may jump super hard when first enabled while going to initial 0 (how fix)
+        public static final double HOOD_MAX_ACCELERATION = 5;
+        public static final double HOOD_MIN = 0.0;
+        public static final double HOOD_MAX = 90.0;
+        public static final double HOOD_DT = 1.0/50.0;
+        public static final int HOOD_MOTOR_ID = 3;
+        public static final boolean HOOD_CURRENT_LIMIT_ENABLE = true;
+        public static final double HOOD_CURRENT_LIMIT = 40;
+        public static final double HOOD_LOWER_LIMIT = 20;
+        public static final double HOOD_LOWER_TIME = 1;
+        public static final double HOOD_SENSOR_MECHANISM_RATIO = 1/1;
     }
 }
