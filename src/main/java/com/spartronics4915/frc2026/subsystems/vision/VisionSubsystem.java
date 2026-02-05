@@ -55,6 +55,8 @@ public class VisionSubsystem extends SubsystemBase {
     private Supplier<Pose2d> robotPoseSupplier;
     private Supplier<Pose2d> usedPoseSupplier;
 
+    private static boolean hasPose;
+
     private final StructPublisher<Pose2d> visionPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Vision Pose", Pose2d.struct).publish();
     private final DoublePublisher translationStdDevPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Translation Std Dev").publish();
     private final DoublePublisher rotationStdDevPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Rotation Std Dev").publish();
@@ -97,6 +99,8 @@ public class VisionSubsystem extends SubsystemBase {
         
         this.fusionEngine = new PoseFusionEngine();
         this.performanceTracker = new PerformanceTracker(config.maxPeriodicTimeMs);
+
+        this.hasPose = false;
 
         if (robotVelocitySupplier != null) {
             for (ProcessorInterface camera : cameras.values()) {
@@ -147,6 +151,7 @@ public class VisionSubsystem extends SubsystemBase {
             ApriltagResult fusedResult = fusionEngine.fusePoses(apriltagResults, config);
             
             if (fusedResult != null && fusedResult.hasPose()) {
+                hasPose = true;
                 lastPoseTimestamp = fusedResult.getTimestampSeconds();
                 
                 poseConsumer.accept(
@@ -160,6 +165,8 @@ public class VisionSubsystem extends SubsystemBase {
                 rotationStdDevPublisher.accept(fusedResult.getStdDevs().get(2, 0));
 
                 cameraPosePublisher.accept(new Pose3d(robotPoseSupplier.get()).plus(VisionConstants.RIGHT_CAMERA_TRANSFORM));
+            } else {
+                hasPose = false;
             }
             
             performanceTracker.stopTiming();
@@ -186,6 +193,10 @@ public class VisionSubsystem extends SubsystemBase {
 
     public static double getPoseTimestamp() {
         return lastPoseTimestamp; 
+    }
+
+    public static boolean hasPose() {
+        return hasPose;
     }
 
     public boolean isCameraConnected(String cameraName) {

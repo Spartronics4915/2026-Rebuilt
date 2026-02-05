@@ -171,7 +171,7 @@ public final class Constants {
         );
 
         public static PhotonProcessor RIGHT_PROCESSOR = new PhotonProcessor(
-            "evan", 
+            "daniil", 
             new PhotonPoseEstimator(LAYOUT, RIGHT_CAMERA_TRANSFORM), 
             100
         );

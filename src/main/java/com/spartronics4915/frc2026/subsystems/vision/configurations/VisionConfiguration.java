@@ -40,19 +40,19 @@ public class VisionConfiguration {
 
     public VisionConfiguration() {
         this(
-            150.0,
+            100.0,
             7.0, 
             15.0,
-            1000,
+            0.5,
             VecBuilder.fill(1, 1, 1),
             100,
-            20.0, 
-            true,  
+            16.0, 
+            false,  
+            5.0,
             4.0,
-            3.0,
-            false,
-            1,
-            0,      
+            true,
+            0.02,
+            1,      
             true,
             5.0
         );
