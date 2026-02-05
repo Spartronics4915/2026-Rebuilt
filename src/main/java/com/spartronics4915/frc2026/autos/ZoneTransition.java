@@ -85,7 +85,7 @@ public class ZoneTransition {
                 hubPose.plus(
                     trenchTransform.rotateBy(Rotation2d.fromDegrees(LRFlip))
                 ).plus(
-                    approachTransform.rotateBy(trenchApproachAngle.rotateBy(Rotation2d.fromDegrees(IOFlip + 180.0)))
+                    approachTransform.rotateBy(Rotation2d.fromDegrees(IOFlip + 180.0))
                 ),
                 Rotation2d.fromDegrees(IOFlip)
             )
