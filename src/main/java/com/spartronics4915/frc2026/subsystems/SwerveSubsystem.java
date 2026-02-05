@@ -203,10 +203,7 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public static Supplier<ChassisSpeeds> getSwerveTeleopCSSupplier(XboxController driverController, SwerveSubsystem swerve){
-        return () -> {
-            ChassisSpeeds chassisSpeeds = computeVelocitiesFromController(driverController, swerve).get();
-            return chassisSpeeds;
-        };
+        return computeVelocitiesFromController(driverController, swerve);
     }
 
     public Command driveCommand(ChassisSpeeds chassisSpeeds){
