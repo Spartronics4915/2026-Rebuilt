@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.util.FlippingUtil;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
 import com.spartronics4915.frc2026.Robot;
@@ -69,14 +70,41 @@ public class SwerveSubsystem extends SubsystemBase {
             (Speeds, FF) -> {drive(Speeds);},
             AutoConstants.kDriveController,
             config.pathplannerConfig.config,
-            () -> {
-                Optional<Alliance> alliance = DriverStation.getAlliance();
-                if(alliance.isEmpty()) return false;
-                if (alliance.get() == Alliance.Red) {return true;}
-                return false;
-            },
+            this::shouldFlip,
             this
         );
+    }
+
+    public boolean shouldFlip() {
+        Optional<Alliance> alliance = DriverStation.getAlliance();
+        if(alliance.isEmpty()) return false;
+        if (alliance.get() == Alliance.Red) {return true;}
+        return false;
+    }
+
+    public Pose2d getRelativePose() {
+        Pose2d pose = getPose();
+        if (shouldFlip()) {
+            return FlippingUtil.flipFieldPose(pose);
+        } else {
+            return pose;
+        }
+    }
+
+    public RobotHeading getRelativeHeading() {
+        RobotHeading heading = getHeading();
+        if (shouldFlip()) {
+            return new RobotHeading(
+                new Rotation3d(
+                    heading.rotation.getX(),
+                    heading.rotation.getY() * -1,
+                    heading.rotation.getZ() * -1
+                ),
+                heading.timestamp
+            );
+        } else {
+            return heading;
+        }
     }
 
     @Override

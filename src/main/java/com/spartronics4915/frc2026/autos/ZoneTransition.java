@@ -17,6 +17,7 @@ import com.pathplanner.lib.path.IdealStartingState;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.path.RotationTarget;
 import com.pathplanner.lib.path.Waypoint;
+import com.pathplanner.lib.util.FlippingUtil;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -50,7 +51,7 @@ public class ZoneTransition {
 
     public Command generateCommand(TraversalMethod method) {
         return Commands.defer(() -> {
-            return generateCommand(method, swerve != null && swerve.getPose().getX() < hubPose.getX());
+            return generateCommand(method, swerve != null && swerve.getRelativePose().getX() < hubPose.getX());
         }, Set.of());
     }
 
@@ -93,9 +94,11 @@ public class ZoneTransition {
 
         poses.add(
             0, 
-            new Pose2d(
-                swerve.getPose().getTranslation(), 
-                getPathVelocityHeading(swerve.getFieldVelocity(), poses.get(0))
+            flipIfNeeded(
+                new Pose2d(
+                    swerve.getPose().getTranslation(), 
+                    getPathVelocityHeading(swerve.getFieldVelocity(), poses.get(0))
+                )
             )
         );
 
@@ -117,7 +120,7 @@ public class ZoneTransition {
             defaultPathConstraints,
             new IdealStartingState(
                 startingVel,
-                swerve.getHeading().rotation().toRotation2d()
+                swerve.getRelativeHeading().rotation().toRotation2d()
             ),
             new GoalEndState(0.0, trenchApproachAngle.rotateBy(Rotation2d.fromDegrees(IOFlip))),
             false
@@ -132,9 +135,17 @@ public class ZoneTransition {
 
     private Rotation2d getPathVelocityHeading(ChassisSpeeds cs, Pose2d target){
         if (getVelocityMagnitude(cs).in(MetersPerSecond) < 0.25) {
-            Translation2d diff = target.getTranslation().minus(swerve.getPose().getTranslation());
+            Translation2d diff = flipIfNeeded(target).getTranslation().minus(swerve.getPose().getTranslation());
             return (diff.getNorm() < 0.01) ? target.getRotation() : diff.getAngle();
         }
         return new Rotation2d(cs.vxMetersPerSecond, cs.vyMetersPerSecond);
+    }
+
+    private Pose2d flipIfNeeded(Pose2d pose) {
+        if (swerve.shouldFlip()) {
+            return FlippingUtil.flipFieldPose(pose);
+        } else {
+            return pose;
+        }
     }
 }
