@@ -4,6 +4,7 @@ import com.spartronics4915.frc2026.subsystems.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.*;
+import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 
 import java.util.ArrayList;
@@ -66,7 +67,71 @@ public class ZoneTransition {
     }
 
     public Command generateBumpCommand(boolean isRightSide, boolean toNeutralZone) {
-        return null;
+        double LRFlip = isRightSide ? 0.0 : -180.0; // Left/Right flip
+        double IOFlip = toNeutralZone ? 0.0 : -180.0; // In/Out flip
+
+        List<Pose2d> poses = new ArrayList<>(List.of(
+            new Pose2d(
+                hubPose.plus(
+                    bumpTransform.rotateBy(Rotation2d.fromDegrees(LRFlip))
+                ).plus(
+                    approachTransform.rotateBy(Rotation2d.fromDegrees(IOFlip))
+                ),
+                Rotation2d.fromDegrees(IOFlip)
+            ),
+            new Pose2d(
+                hubPose.plus( // Pose will be really wrong over the bump so set the setpoint *way* farther
+                    exitTransform.rotateBy(Rotation2d.fromDegrees(IOFlip))
+                ).plus(
+                    bumpTransform.rotateBy(Rotation2d.fromDegrees(LRFlip))
+                ),
+                Rotation2d.fromDegrees(IOFlip)
+            )
+        ));
+
+        poses.add(
+            0, 
+            flipIfNeeded(
+                new Pose2d(
+                    swerve.getPose().getTranslation(), 
+                    getPathVelocityHeading(swerve.getFieldVelocity(), poses.get(0))
+                )
+            )
+        );
+
+        List<Waypoint> waypoints = PathPlannerPath.waypointsFromPoses(poses);
+
+        LinearVelocity startingVel = MetersPerSecond.of(
+            Math.max(
+                getVelocityMagnitude(swerve.getFieldVelocity()).in(MetersPerSecond),
+                0.1
+            )
+        );
+
+        PathPlannerPath path = new PathPlannerPath(
+            waypoints,
+            List.of(new RotationTarget(1, bumpApproachAngle.rotateBy(Rotation2d.fromDegrees(IOFlip)))),
+            List.of(),
+            List.of(new ConstraintsZone(1, 2, bumpPathConstraints)),
+            List.of(),
+            defaultPathConstraints,
+            new IdealStartingState(
+                startingVel,
+                swerve.getRelativeHeading().rotation().toRotation2d()
+            ),
+            new GoalEndState(0.0, bumpApproachAngle.rotateBy(Rotation2d.fromDegrees(IOFlip))),
+            false
+        );
+
+        return Commands.race(
+            AutoBuilder.followPath(path),
+            Commands.waitUntil(() -> {
+                return swerve.getRelativePose().getMeasureX().in(Meters) > hubPose.getX() ^ !toNeutralZone 
+                && Math.abs(swerve.swerveDrive.getPitch().getDegrees()) < 5.0
+                && Math.abs(swerve.swerveDrive.getRoll().getDegrees()) < 5.0
+                && VisionSubsystem.hasPose();
+            })
+        );
     }
 
     public Command generateTrenchCommand(boolean isRightSide, boolean toNeutralZone) {
