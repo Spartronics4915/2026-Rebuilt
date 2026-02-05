@@ -59,6 +59,10 @@ public final class SwerveSubsystem extends SubsystemBase implements ModeSwitchIn
             ));
         }));
 
+        SmartDashboard.putData(Commands.runOnce(() -> {
+            setPose(new Pose2d(16.3,4, Rotation2d.fromDegrees(180.0)));
+        }));
+
     }
 
     private static Pose2d guessStartingPosition() {
