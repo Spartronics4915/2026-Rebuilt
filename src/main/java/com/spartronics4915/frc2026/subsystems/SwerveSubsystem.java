@@ -190,9 +190,8 @@ public class SwerveSubsystem extends SubsystemBase {
 
             if (isFieldRelative) {
                 chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeeds, swerve.getPose().getRotation());
+                chassisSpeeds = rotateLinearChassisSpeeds(chassisSpeeds, TELEOP_HEADING_OFFSET);
             }
-            
-            chassisSpeeds = rotateLinearChassisSpeeds(chassisSpeeds, TELEOP_HEADING_OFFSET);
     
             return chassisSpeeds;
         };
