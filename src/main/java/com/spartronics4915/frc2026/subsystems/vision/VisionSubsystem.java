@@ -24,6 +24,7 @@ import com.spartronics4915.frc2026.util.PoseFusionEngine;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -58,10 +59,13 @@ public class VisionSubsystem extends SubsystemBase {
     private static boolean hasPose;
 
     private final StructPublisher<Pose2d> visionPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Vision Pose", Pose2d.struct).publish();
+    private final StructPublisher<Pose2d> usedPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Used Pose", Pose2d.struct).publish();
+
     private final DoublePublisher translationStdDevPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Translation Std Dev").publish();
     private final DoublePublisher rotationStdDevPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Rotation Std Dev").publish();
 
-    private final StructPublisher<Pose3d> cameraPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Camera Pose", Pose3d.struct).publish();
+    private final StructPublisher<Pose3d> rightCameraPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Right Camera Pose", Pose3d.struct).publish();
+    private final StructPublisher<Pose3d> leftCameraPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Left Camera Pose", Pose3d.struct).publish();
 
     private VisionSubsystem(
         Map<String, ProcessorInterface> cameras,
@@ -100,7 +104,7 @@ public class VisionSubsystem extends SubsystemBase {
         this.fusionEngine = new PoseFusionEngine();
         this.performanceTracker = new PerformanceTracker(config.maxPeriodicTimeMs);
 
-        this.hasPose = false;
+        hasPose = false;
 
         if (robotVelocitySupplier != null) {
             for (ProcessorInterface camera : cameras.values()) {
@@ -157,14 +161,17 @@ public class VisionSubsystem extends SubsystemBase {
                 poseConsumer.accept(
                     fusedResult.getEstimatedPose().get(),
                     fusedResult.getTimestampSeconds(),
-                    fusedResult.getStdDevs()
+                    VecBuilder.fill(1, 1, 1)
                 );
 
-                visionPosePublisher.accept(fusedResult.getEstimatedPose().get());
-                translationStdDevPublisher.accept(fusedResult.getStdDevs().get(0, 0));
-                rotationStdDevPublisher.accept(fusedResult.getStdDevs().get(2, 0));
+                visionPosePublisher.accept(fusedResult.getEstimatedPose().get());   
+                if (usedPoseSupplier.get() != null) usedPosePublisher.accept(usedPoseSupplier.get());
 
-                cameraPosePublisher.accept(new Pose3d(robotPoseSupplier.get()).plus(VisionConstants.RIGHT_CAMERA_TRANSFORM));
+                translationStdDevPublisher.accept(/*fusedResult.getStdDevs().get(0, 0)*/.5);
+                rotationStdDevPublisher.accept(/*fusedResult.getStdDevs().get(2, 0)*/.5);
+
+                rightCameraPosePublisher.accept(new Pose3d(robotPoseSupplier.get()).plus(VisionConstants.RIGHT_CAMERA_TRANSFORM));
+                leftCameraPosePublisher.accept(new Pose3d(robotPoseSupplier.get()).plus(VisionConstants.LEFT_CAMERA_TRANSFORM));
             } else {
                 hasPose = false;
             }

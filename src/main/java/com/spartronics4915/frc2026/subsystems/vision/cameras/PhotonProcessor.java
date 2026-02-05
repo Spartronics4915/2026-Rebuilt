@@ -13,10 +13,8 @@ import org.photonvision.simulation.PhotonCameraSim;
 import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 
-import com.ctre.phoenix6.Utils;
 import com.spartronics4915.frc2026.Constants.VisionConstants;
 import com.spartronics4915.frc2026.subsystems.vision.configurations.VisionConfiguration;
-import com.spartronics4915.frc2026.subsystems.vision.configurations.VisionContext;
 import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
 import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
 import com.spartronics4915.frc2026.util.StdDevCalculator;
@@ -69,7 +67,7 @@ public class PhotonProcessor implements ProcessorInterface {
     @Override
     public void start() {
         isRunning = true;
-        processingNotifier.startPeriodic(0.01); // 100Hz
+        processingNotifier.startPeriodic(0.006); // 60Hz
     }
 
     @Override
@@ -119,7 +117,7 @@ public class PhotonProcessor implements ProcessorInterface {
 
         EstimatedRobotPose robotPose = estimatedPose.get();
         Pose2d pose2d = robotPose.estimatedPose.toPose2d();
-        double timestamp = Utils.fpgaToCurrentTime(robotPose.timestampSeconds);
+        double timestamp = robotPose.timestampSeconds;
 
         // Calculate average ambiguity score
         double avgAmbiguity = targets.stream()

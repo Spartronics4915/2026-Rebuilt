@@ -3,6 +3,8 @@ package com.spartronics4915.frc2026.util;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.photonvision.targeting.PhotonTrackedTarget;
+
 import com.spartronics4915.frc2026.subsystems.vision.configurations.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
 
@@ -76,7 +78,7 @@ public class PoseFusionEngine {
         Pose2d meanPose = calculateMeanPose(results);
         
         List<ApriltagResult> filtered = new ArrayList<>();
-        double threshold = 5.0;
+        double threshold = 3.0;
 
         for (ApriltagResult result : results) {
             double distance = calculateMahalanobisDistance(
@@ -189,9 +191,9 @@ public class PoseFusionEngine {
         //double fusedStdDevY = Math.sqrt(1.0 / totalWeightY);
         //double fusedStdDevTheta = Math.sqrt(1.0 / totalWeightTheta);
 
-        double fusedStdDevX = 0.1;
-        double fusedStdDevY = 0.1;
-        double fusedStdDevTheta = 0.1;
+        double fusedStdDevX = 0.4;
+        double fusedStdDevY = 0.4;
+        double fusedStdDevTheta = 0.4;
 
         Matrix<N3, N1> fusedStdDevs = VecBuilder.fill(fusedStdDevX, fusedStdDevY, fusedStdDevTheta);
 
@@ -201,7 +203,7 @@ public class PoseFusionEngine {
             .orElse("") + "]";
 
         // Combine all targets from fused results
-        List<org.photonvision.targeting.PhotonTrackedTarget> allTargets = results.stream()
+        List<PhotonTrackedTarget> allTargets = results.stream()
             .flatMap(r -> r.getTargets().stream())
             .toList();
 

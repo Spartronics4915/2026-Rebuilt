@@ -31,7 +31,8 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 public class RobotContainer {
     public final SwerveSubsystem swerveSubsystem = new SwerveSubsystem(SwerveConfigurations.TEST_CHASSIS);
     private final VisionSubsystem visionSubsystem = VisionSubsystem.builder()
-        .addCamera("right", VisionConstants.RIGHT_PROCESSOR)
+        .addCamera("daniil", VisionConstants.RIGHT_PROCESSOR)
+        .addCamera("evan", VisionConstants.LEFT_PROCESSOR)
         .setFieldLayout(VisionConstants.LAYOUT)
         .setSimPoseSupplier(() -> swerveSubsystem.getRobotPose())
         .setRobotVelocitySupplier(() -> swerveSubsystem.getFieldVelocity())

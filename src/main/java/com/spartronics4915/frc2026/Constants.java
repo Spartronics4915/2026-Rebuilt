@@ -152,9 +152,9 @@ public final class Constants {
             static {
                 SIM_CAMERA_PROPERTIES.setCalibration(1280, 800, Rotation2d.fromDegrees(97.65));
                 SIM_CAMERA_PROPERTIES.setCalibError(0.84, 0.02);
-                SIM_CAMERA_PROPERTIES.setFPS(60);
+                SIM_CAMERA_PROPERTIES.setFPS(80);
                 SIM_CAMERA_PROPERTIES.setAvgLatencyMs(40);
-                SIM_CAMERA_PROPERTIES.setLatencyStdDevMs(10);
+                SIM_CAMERA_PROPERTIES.setLatencyStdDevMs(5);
             }
 
         public static Transform3d RIGHT_CAMERA_TRANSFORM = new Transform3d(
@@ -175,5 +175,25 @@ public final class Constants {
             new PhotonPoseEstimator(LAYOUT, RIGHT_CAMERA_TRANSFORM), 
             100
         );
+
+        public static Transform3d LEFT_CAMERA_TRANSFORM = new Transform3d(
+            new Translation3d(
+                -0.0381, 
+                -0.34798,
+                0.14605
+            ),
+            new Rotation3d(
+                0, 
+                Math.toRadians(-28), 
+                Math.toRadians(282)
+            )
+        );
+
+        public static PhotonProcessor LEFT_PROCESSOR = new PhotonProcessor(
+            "evan", 
+            new PhotonPoseEstimator(LAYOUT, LEFT_CAMERA_TRANSFORM), 
+            100
+        );
+
     }
 }
