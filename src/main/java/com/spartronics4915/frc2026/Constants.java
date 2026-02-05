@@ -45,7 +45,7 @@ public final class Constants {
 
         public static Rotation2d TELEOP_HEADING_OFFSET = Rotation2d.fromDegrees(0.0);
 
-        public static boolean IS_FIELD_RELATIVE = false;
+        public static boolean IS_FIELD_RELATIVE = true;
 
         public static final double STICK_DEADBAND = 0.05;
 
