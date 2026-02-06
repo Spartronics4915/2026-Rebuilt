@@ -7,11 +7,11 @@ import java.util.function.Supplier;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.util.FlippingUtil;
-import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
 import com.spartronics4915.frc2026.Robot;
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
+import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.driveController;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
@@ -68,7 +68,7 @@ public class SwerveSubsystem extends SubsystemBase {
             swerveDrive::resetOdometry,
             swerveDrive::getRobotVelocity,
             (Speeds, FF) -> {drive(Speeds);},
-            AutoConstants.kDriveController,
+            driveController,
             config.pathplannerConfig.config,
             this::shouldFlip,
             this
