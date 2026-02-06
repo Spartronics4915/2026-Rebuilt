@@ -151,6 +151,13 @@ public class Robot extends TimedRobot {
             hubEnabledPub.set(hubEnabled);
             timeUntilSwitchPub.set(timeUntilSwitch);
             currentAllianceSelectedPub.set(currentAllianceSelected);
+        } else {
+            hubEnabled = false;
+            timeUntilSwitch = 999.0;
+            currentAllianceSelected = false;
+            hubEnabledPub.set(false);
+            timeUntilSwitchPub.set(999.0);
+            currentAllianceSelectedPub.set(false);
         }
     }
 
