@@ -62,12 +62,12 @@ public final class Constants {
         }
 
         public static final class AutoConstants {
-            public static final PIDConstants kTranslationPID = new PIDConstants(5.0,0,0);
-            public static final PIDConstants kRotationPID = new PIDConstants(5.0,0,0);
+            public static final PIDConstants translationPID = new PIDConstants(5.0,0,0);
+            public static final PIDConstants rotationPID = new PIDConstants(5.0,0,0);
 
-            public static final PPHolonomicDriveController kDriveController = new PPHolonomicDriveController(
-                AutoConstants.kTranslationPID, 
-                AutoConstants.kRotationPID
+            public static final PPHolonomicDriveController driveController = new PPHolonomicDriveController(
+                AutoConstants.translationPID, 
+                AutoConstants.rotationPID
             );
 
             public static final Translation2d towerPose = new Translation2d(1.061, 3.745);
