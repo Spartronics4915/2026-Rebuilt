@@ -28,7 +28,8 @@ public class Robot extends TimedRobot {
     private final RobotContainer robotContainer;
     private final BooleanPublisher hubEnabledPub = NetworkTableInstance.getDefault().getBooleanTopic("IO/Hub Enabled").publish();
     private final DoublePublisher timeUntilSwitchPub = NetworkTableInstance.getDefault().getDoubleTopic("IO/Time Left Until Switch").publish();
-    private boolean currentAllianceSelected = false;
+    private final BooleanPublisher currentAllianceSelectedPub = NetworkTableInstance.getDefault().getBooleanTopic("IO/Current Alliance Selected").publish();
+    public boolean currentAllianceSelected = false;
     public static boolean hubEnabled;
     public static double timeUntilSwitch;
 
@@ -149,6 +150,7 @@ public class Robot extends TimedRobot {
 
             hubEnabledPub.set(hubEnabled);
             timeUntilSwitchPub.set(timeUntilSwitch);
+            currentAllianceSelectedPub.set(currentAllianceSelected);
         }
     }
 
