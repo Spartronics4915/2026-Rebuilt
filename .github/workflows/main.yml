@@ -50,7 +50,7 @@ jobs:
                   echo "Starting build..."
                   echo "--- Build run: $(date -u) ---" > build.log
                   rc=0
-                  ./gradlew build --no-daemon >> build.log 2>&1 || rc=$?
+                  ./gradlew build --no-daemon 2>&1 | tee -a build.log || rc=$?
                   echo $rc > build_exit_code
                   if [ "$rc" -ne 0 ]; then
                       echo "BUILD_FAILED=true" >> "$GITHUB_ENV"
@@ -101,7 +101,7 @@ jobs:
                   echo "--- Simulation run: $(date -u) ---" > simulate.log
                   
                   rc=0
-                  timeout 15s ./gradlew simulateJava --no-daemon >> simulate.log 2>&1 || rc=$?
+                  timeout 15s ./gradlew simulateJava --no-daemon 2>&1 | tee -a simulate.log || rc=$?
                   
                   # Detect if "The robot program quit unexpectedly" exists in log
                   # (indicates a crash even if Gradle returned 0)
