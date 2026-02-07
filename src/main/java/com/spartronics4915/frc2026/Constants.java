@@ -122,15 +122,15 @@ public final class Constants {
                 )),
 
                 COMP_CHASSIS(new RobotConfig(
-                    Pounds.of(999),
-                    KilogramSquareMeters.of(999),
+                    Pounds.of(15),
+                    KilogramSquareMeters.of(2),
                     new ModuleConfig(
-                        Inches.of(3.75/2.0),
-                        MetersPerSecond.of(0.5),
+                        Inches.of(2.0),
+                        MetersPerSecond.of(24),
                         1.916,
                         DCMotor.getKrakenX60(1),
-                        5.900,
-                        Amps.of(40),
+                        6.03,
+                        Amps.of(60),
                         1
                     ),
                     new Translation2d(Inches.of(14).in(Meter), Inches.of(13).in(Meter)), // Front left
@@ -162,14 +162,14 @@ public final class Constants {
 
         public static Transform3d RIGHT_CAMERA_TRANSFORM = new Transform3d(
             new Translation3d(
-                -0.0381, 
-                0.34798,
-                0.14605
+                0.315, 
+                0.116,
+                0.14
             ),
             new Rotation3d(
                 0, 
                 Math.toRadians(-28), 
-                Math.toRadians(72)
+                Math.toRadians(-18)
             )
         );
 
