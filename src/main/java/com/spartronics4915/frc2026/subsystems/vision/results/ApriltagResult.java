@@ -1,161 +1,170 @@
 package com.spartronics4915.frc2026.subsystems.vision.results;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.photonvision.targeting.PhotonTrackedTarget;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 
 public class ApriltagResult implements ResultInterface {
-    private final String cameraName;
+
+    private final String sourceName;
     private final double timestampSeconds;
     private final double latencyMs;
-    private final Optional<Pose2d> estimatedPose;
-    private final Matrix<N3, N1> stdDevs;
+    private final Pose2d pose;
+    private Matrix<N3, N1> stdDevs;
     private final List<PhotonTrackedTarget> targets;
     private final int targetCount;
-    private final double averageDistanceToTargets;
-    private final double ambiguity;
+    private final double avgDistance;
+    private final double avgAmbiguity;
+    private final double avgArea;
+    private final double x_anisotropy;
+    private final double y_anisotropy;
+    private final ChassisSpeeds speeds;
 
     public ApriltagResult(
-        String cameraName,
-        double timestampSeconds,
-        double latencyMs,
-        Optional<Pose2d> estimatedPose,
-        Matrix<N3, N1> stdDevs,
+        String name,
+        double timestamp,
+        double latency,
+        Pose2d resultPose,
+        Matrix<N3, N1> resultStdDevs,
         List<PhotonTrackedTarget> targets,
-        double averageDistanceToTargets,
-        double ambiguity
+        double averageDistance,
+        double averageAmbiguity,
+        double averageArea,
+        double horizontalAnisotropy,
+        double verticalAnisotropy,
+        ChassisSpeeds newSpeeds
     ) {
-        this.cameraName = cameraName;
-        this.timestampSeconds = timestampSeconds;
-        this.latencyMs = latencyMs;
-        this.estimatedPose = estimatedPose;
-        this.stdDevs = stdDevs;
+        this.sourceName = name;
+        this.timestampSeconds = timestamp;
+        this.latencyMs = latency;
+        this.pose = resultPose;
+        this.stdDevs = resultStdDevs;
         this.targets = List.copyOf(targets);
         this.targetCount = targets.size();
-        this.averageDistanceToTargets = averageDistanceToTargets;
-        this.ambiguity = ambiguity;
+        this.avgDistance = averageDistance;
+        this.avgAmbiguity = averageAmbiguity;
+        this.avgArea = averageArea;
+        this.x_anisotropy = horizontalAnisotropy;
+        this.y_anisotropy = verticalAnisotropy;
+        this.speeds = newSpeeds;
     }
 
+    //#region ------ Getters ------
+    
+    /**
+     * Gets the name of the source
+     */
     @Override
-    public String getCameraName() {
-        return cameraName;
+    public String getSourceName() {
+        return sourceName;
     }
 
+    /**
+     * Gets the timestamp in seconds
+     */
     @Override
     public double getTimestampSeconds() {
         return timestampSeconds;
     }
 
+    /**
+     * Gets the latency in milliseconds
+     */
     @Override
     public double getLatencyMs() {
         return latencyMs;
     }
 
-    public Optional<Pose2d> getEstimatedPose() {
-        return estimatedPose;
+    /**
+     * Gets the pose
+     */
+    public Pose2d getPose() {
+        return pose;
     }
 
+    /**
+     * Gets the standard deviations
+     */
     public Matrix<N3, N1> getStdDevs() {
         return stdDevs;
     }
 
+    /**
+     * Gets the list of targets
+     */
     @Override
     public List<PhotonTrackedTarget> getTargets() {
         return targets;
     }
 
+    /**
+     * Gets the amount of targets
+     */
     @Override
     public int getTargetCount() {
         return targetCount;
     }
 
+    /**
+     * Gets the average distance to the targets
+     */
     @Override
     public double getAverageDistanceToTargets() {
-        return averageDistanceToTargets;
+        return avgDistance;
     }
 
-    @Override
+    /**
+     * Gets the average ambiguity
+     */
+    @Override   
     public double getAmbiguity() {
-        return ambiguity;
+        return avgAmbiguity;
     }
 
+    /**
+     * Gets the average area
+     */
     @Override
-    public boolean hasPose() {
-        return estimatedPose.isPresent();
+    public double getAverageArea() {
+        return avgArea;
     }
 
+    /**
+     * Gets the horizontal anisotropy
+     */
     @Override
-    public boolean hasValidData() {
-        return hasPose();
+    public double getXAnisotropy() {
+        return x_anisotropy;
+    } 
+
+    /**
+     * Gets the vertical anisotropy
+     */
+    @Override
+    public double getYAnisotropy() {
+        return y_anisotropy;
+    } 
+
+    /**
+     * Gets the chassis speeds of the robot at the capture timestamp
+     */
+    @Override
+    public ChassisSpeeds getChassisSpeeds() {
+        return speeds;
     }
 
-    public static class Builder {
-        private String cameraName;
-        private double timestampSeconds;
-        private double latencyMs;
-        private Optional<Pose2d> estimatedPose;
-        private Matrix<N3, N1> stdDevs;
-        private List<PhotonTrackedTarget> targets;
-        private double averageDistanceToTargets;
-        private double ambiguity;
+    //#endregion
 
-        public Builder cameraName(String name) {
-            this.cameraName = name;
-            return this;
-        }
+    //#region ------ Setters ------
 
-        public Builder timestamp(double seconds) {
-            this.timestampSeconds = seconds;
-            return this;
-        }
-
-        public Builder latency(double ms) {
-            this.latencyMs = ms;
-            return this;
-        }
-
-        public Builder pose(Pose2d pose) {
-            this.estimatedPose = Optional.ofNullable(pose);
-            return this;
-        }
-
-        public Builder stdDevs(Matrix<N3, N1> stdDevs) {
-            this.stdDevs = stdDevs;
-            return this;
-        }
-
-        public Builder targets(List<PhotonTrackedTarget> targets) {
-            this.targets = targets;
-            return this;
-        }
-
-        public Builder averageDistance(double meters) {
-            this.averageDistanceToTargets = meters;
-            return this;
-        }
-
-        public Builder ambiguity(double ambiguity) {
-            this.ambiguity = ambiguity;
-            return this;
-        }
-
-        public ApriltagResult build() {
-            return new ApriltagResult(
-                cameraName,
-                timestampSeconds,
-                latencyMs,
-                estimatedPose,
-                stdDevs,
-                targets,
-                averageDistanceToTargets,
-                ambiguity
-            );
-        }
+    public void setStdDevs(Matrix<N3, N1> newStdDevs) {
+        stdDevs = newStdDevs;
     }
+
 }

@@ -1,32 +1,28 @@
 package com.spartronics4915.frc2026.subsystems.vision;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import org.photonvision.PhotonCamera;
 import org.photonvision.simulation.VisionSystemSim;
 
-import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.Constants.VisionConstants;
+import com.spartronics4915.frc2026.Robot;
+import com.spartronics4915.frc2026.subsystems.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
-import com.spartronics4915.frc2026.subsystems.vision.configurations.VisionConfiguration;
-import com.spartronics4915.frc2026.subsystems.vision.configurations.VisionContext;
-import com.spartronics4915.frc2026.subsystems.vision.configurations.VisionContext.VisionState;
 import com.spartronics4915.frc2026.subsystems.vision.filters.PipelineFilter;
 import com.spartronics4915.frc2026.subsystems.vision.filters.ResultFilters;
+import com.spartronics4915.frc2026.subsystems.vision.processing.PoseFusionEngine;
+import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
 import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
 import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
 import com.spartronics4915.frc2026.util.PerformanceTracker;
-import com.spartronics4915.frc2026.util.PoseFusionEngine;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.networktables.DoublePublisher;
@@ -34,83 +30,67 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+
 public class VisionSubsystem extends SubsystemBase {
-    
+
     private final Map<String, ProcessorInterface> cameras;
-    public final VisionContext context;
     private final VisionConfiguration config;
     
     private final VisionSystemSim visionSystemSim;
     private final boolean isSimulation;
     
     private final PipelineFilter aprilTagFilter;
-    
+    private final StdDevCalculator stdDevCalculator;
     private final PoseFusionEngine fusionEngine;
-    private final PerformanceTracker performanceTracker;
-    
     private final VisionPoseConsumer poseConsumer;
+    
+    private final PerformanceTracker performanceTracker;
+    private final SwerveSubsystem swerve;
 
-    private static double lastPoseTimestamp;
+    private boolean hasValidPose;
 
-    private Supplier<Pose2d> robotPoseSupplier;
-    private Supplier<Pose2d> usedPoseSupplier;
-
-    private static boolean hasPose;
-
-    private final StructPublisher<Pose2d> visionPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Vision Pose", Pose2d.struct).publish();
-    private final StructPublisher<Pose2d> usedPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Used Pose", Pose2d.struct).publish();
-
-    private final DoublePublisher translationStdDevPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Translation Std Dev").publish();
-    private final DoublePublisher rotationStdDevPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Rotation Std Dev").publish();
+    // Logging hell :(
+    private final StructPublisher<Pose2d> posePublisher = NetworkTableInstance.getDefault().getStructTopic("Vision Pose", Pose2d.struct).publish();
+    private final StructPublisher<Pose2d> usedPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Used Vision Pose", Pose2d.struct).publish();
 
     private final StructPublisher<Pose3d> rightCameraPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Right Camera Pose", Pose3d.struct).publish();
     private final StructPublisher<Pose3d> leftCameraPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Left Camera Pose", Pose3d.struct).publish();
 
-    private VisionSubsystem(
+    private final DoublePublisher transStdDevPublisher = NetworkTableInstance.getDefault().getDoubleTopic("XY Std Devs").publish();
+    private final DoublePublisher rotStdDevPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Theta Std Devs").publish();
+
+    private final DoublePublisher avgDistancePublisher = NetworkTableInstance.getDefault().getDoubleTopic("Avg Distance").publish();
+    private final DoublePublisher avgAmbiguityPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Avg Ambiguity").publish();
+    private final DoublePublisher avgAreaPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Avg Area").publish();
+    private final DoublePublisher xAnisotropyPublisher = NetworkTableInstance.getDefault().getDoubleTopic("X Anisotropy").publish();
+    private final DoublePublisher yAnisotropyPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Y Anisotropy").publish();
+    private final DoublePublisher latencyPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Latency").publish();
+    private final DoublePublisher targetCountPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Target Count").publish();
+    
+    public VisionSubsystem(
         Map<String, ProcessorInterface> cameras,
         AprilTagFieldLayout fieldLayout,
-        Supplier<Pose2d> robotPoseSupplier,
-        Supplier<ChassisSpeeds> robotVelocitySupplier,
-        Supplier<Pose2d> usedPoseSupplier,
-        VisionConfiguration config,
-        VisionPoseConsumer poseConsumer
+        VisionConfiguration configuration,
+        VisionPoseConsumer poseConsumer,
+        SwerveSubsystem swerveSubsystem
     ) {
         this.cameras = cameras;
-        this.config = config;
         this.visionSystemSim = new VisionSystemSim("main");
         this.poseConsumer = poseConsumer;
-        this.robotPoseSupplier = robotPoseSupplier;
-        this.usedPoseSupplier = usedPoseSupplier;
-        
-        this.context = new VisionContext(
-            fieldLayout,
-            robotPoseSupplier,
-            config,
-            VisionState.GLOBAL
-        );
+        this.config = configuration;
+        this.swerve = swerveSubsystem;
+        this.hasValidPose = false;
 
-        this.aprilTagFilter = PipelineFilter.builder()
-            .addFilter(new ResultFilters.HasTargetsFilter())
-            .addFilter(new ResultFilters.HasPoseFilter())
-            .addFilter(new ResultFilters.LatencyFilter(config.maxLatencyMs))
-            .addFilter(new ResultFilters.DistanceFilter(
-                config.maxSingleTagDistanceMeters,
-                config.maxMultiTagDistanceMeters
-            ))
-            .addFilter(new ResultFilters.AmbiguityFilter(config.maxAmbiguityScore))
-            .build();
+        this.aprilTagFilter = new PipelineFilter(List.of(
+            new ResultFilters.LatencyFilter(config.maxLatencyMs),
+            new ResultFilters.AmbiguityFilter(config.maxAmbiguityScore),
+            new ResultFilters.DistanceFilter(config.maxSingleTagDistanceMeters, config.maxMultiTagDistanceMeters),                      // Fast
+            new ResultFilters.AnisotropyFilter(config.maxAnisotropy)
+        ));
         
+        this.stdDevCalculator = new StdDevCalculator();
         this.fusionEngine = new PoseFusionEngine();
         this.performanceTracker = new PerformanceTracker(config.maxPeriodicTimeMs);
-
-        hasPose = false;
-
-        if (robotVelocitySupplier != null) {
-            for (ProcessorInterface camera : cameras.values()) {
-                camera.setRobotVelocitySupplier(robotVelocitySupplier);
-                camera.setVisionConfiguration(config);
-            }
-        }
 
         isSimulation = Robot.isSimulation();
         
@@ -120,10 +100,12 @@ public class VisionSubsystem extends SubsystemBase {
         }
 
         for (ProcessorInterface camera : cameras.values()) {
+            camera.setSpeedSupplier(swerveSubsystem::getFieldVelocity);
             camera.start();
-            if (isSimulation) visionSystemSim.addCamera(camera.getCameraSim(), camera.getTransform());
+            if (isSimulation) visionSystemSim.addCamera(camera.getCameraSim(), camera.getCameraTransform());
         }
     }
+    
 
     @Override
     public void periodic() {
@@ -137,6 +119,7 @@ public class VisionSubsystem extends SubsystemBase {
             performanceTracker.stopTiming();
         }
         
+        // Filter the camera results
         performanceTracker.startTiming("filtering");
         List<ResultInterface> filteredResults = aprilTagFilter.filter(allResults);
         performanceTracker.stopTiming();
@@ -147,39 +130,59 @@ public class VisionSubsystem extends SubsystemBase {
             .map(result -> (ApriltagResult) result)
             .toList();
 
+        // Set the standard deviations for the apriltag results
+        for (ApriltagResult entry : apriltagResults) {
+            entry.setStdDevs(stdDevCalculator.calculate(
+                entry.getAverageDistanceToTargets(),
+                entry.getAmbiguity(),
+                entry.getAverageArea(),
+                entry.getXAnisotropy(),
+                entry.getYAnisotropy(),
+                entry.getChassisSpeeds(),
+                entry.getLatencyMs(), 
+                entry.getTargetCount()
+            ));
+        }
+
         // Fuse poses from multiple cameras
         if (!apriltagResults.isEmpty()) {
             performanceTracker.startTiming("pose_fusion");
             
             ApriltagResult fusedResult = fusionEngine.fusePoses(apriltagResults, config);
             
-            if (fusedResult != null && fusedResult.hasPose()) {
-                hasPose = true;
-                lastPoseTimestamp = fusedResult.getTimestampSeconds();
-                
-                poseConsumer.accept(
-                    fusedResult.getEstimatedPose().get(),
-                    fusedResult.getTimestampSeconds(),
-                    fusedResult.getStdDevs()
-                );
-
-                visionPosePublisher.accept(fusedResult.getEstimatedPose().get());   
-                if (usedPoseSupplier.get() != null) usedPosePublisher.accept(usedPoseSupplier.get());
-
-                translationStdDevPublisher.accept(fusedResult.getStdDevs().get(0, 0));
-                rotationStdDevPublisher.accept(fusedResult.getStdDevs().get(2, 0));
-
-                rightCameraPosePublisher.accept(new Pose3d(robotPoseSupplier.get()).plus(VisionConstants.RIGHT_CAMERA_TRANSFORM));
-                //leftCameraPosePublisher.accept(new Pose3d(robotPoseSupplier.get()).plus(VisionConstants.LEFT_CAMERA_TRANSFORM));
-            } else {
-                hasPose = false;
-            }
+            poseConsumer.accept(
+                fusedResult.getPose(),
+                fusedResult.getTimestampSeconds(),
+                fusedResult.getStdDevs()
+            );
             
             performanceTracker.stopTiming();
+
+            hasValidPose = true;
+
+            // Logging hell (i'm sorry)
+            posePublisher.set(fusedResult.getPose());
+            usedPosePublisher.set(swerve.getPastVisionPose(fusedResult.getTimestampSeconds()));
+
+            rightCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.RIGHT_CAMERA_TRANSFORM));
+            leftCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.LEFT_CAMERA_TRANSFORM));
+
+            transStdDevPublisher.set(fusedResult.getStdDevs().get(0, 0));
+            rotStdDevPublisher.set(fusedResult.getStdDevs().get(2, 0));
+
+            avgDistancePublisher.set(fusedResult.getAverageDistanceToTargets());
+            avgAmbiguityPublisher.set(fusedResult.getAmbiguity());
+            avgAreaPublisher.set(fusedResult.getAverageArea());
+            xAnisotropyPublisher.set(fusedResult.getXAnisotropy());
+            yAnisotropyPublisher.set(fusedResult.getYAnisotropy());
+            latencyPublisher.set(fusedResult.getLatencyMs());
+            targetCountPublisher.set(fusedResult.getTargetCount());
+        } else {
+            hasValidPose = false;
         }
         
         if (isSimulation) {
-            visionSystemSim.update(robotPoseSupplier.get());
+            visionSystemSim.update(swerve.getRobotPose());
         }
         
         // Stop periodic_total timing
@@ -189,120 +192,17 @@ public class VisionSubsystem extends SubsystemBase {
         performanceTracker.publishMetrics();
     }
 
-    public void setState(VisionState state) {
-        context.setState(state);
-    }
-
-    public VisionState getState() {
-        return context.getCurrentState();
-    }
-
-    public static double getPoseTimestamp() {
-        return lastPoseTimestamp; 
-    }
-
-    public static boolean hasPose() {
-        return hasPose;
-    }
-
-    public boolean isCameraConnected(String cameraName) {
-        ProcessorInterface processor = cameras.get(cameraName);
-        return processor != null && processor.isConnected();
-    }
-
-    public int getActiveCameraCount() {
-        return (int) cameras.values().stream()
-            .filter(ProcessorInterface::isConnected)
-            .count();
-    }
-
-    public void resetPerformanceStats() {
-        performanceTracker.reset();
-    }
-
-    public boolean isPerformanceHealthy() {
-        return performanceTracker.isWithinBudget(config.maxPeriodicTimeMs);
+    public boolean hasValidPose() {
+        return hasValidPose;
     }
 
     @FunctionalInterface
     public interface VisionPoseConsumer {
         void accept(
-            Pose2d visionRobotPoseMeters,
-            double timestampSeconds,
-            Matrix<N3, N1> visionMeasurementStdDevs
+            Pose2d robotPose,
+            double timestamp,
+            Matrix<N3, N1> stdDevs
         );
     }
 
-    @FunctionalInterface
-    public interface VisionObjectsConsumer {
-        void accept(
-            Pose2d groupCenter,
-            double timestampSeconds
-        );
-    }
-
-    public static class Builder {
-        private final Map<String, ProcessorInterface> cameras = new HashMap<>();
-        private AprilTagFieldLayout fieldLayout;
-        private Supplier<Pose2d> simPoseSupplier;
-        private Supplier<ChassisSpeeds> robotVelocitySupplier;
-        private Supplier<Pose2d> usedPoseSupplier;
-        private VisionConfiguration config = new VisionConfiguration();
-        private VisionPoseConsumer poseConsumer = (pose, time, std) -> {};
-
-        public Builder addCamera(String name, ProcessorInterface processor) {
-            cameras.put(name, processor);
-            return this;
-        }
-
-        public Builder setFieldLayout(AprilTagFieldLayout layout) {
-            this.fieldLayout = layout;
-            return this;
-        }
-
-        public Builder setSimPoseSupplier(Supplier<Pose2d> supplier) {
-            this.simPoseSupplier = supplier;
-            return this;
-        }
-
-        public Builder setRobotVelocitySupplier(Supplier<ChassisSpeeds> supplier) {
-            this.robotVelocitySupplier = supplier;
-            return this;
-        }
-
-        public Builder setUsedPoseSupplier(Supplier<Pose2d> supplier) {
-            this.usedPoseSupplier = supplier;
-            return this;
-        }
-
-        public Builder setConfiguration(VisionConfiguration config) {
-            this.config = config;
-            return this;
-        }
-
-        public Builder setPoseConsumer(VisionPoseConsumer consumer) {
-            this.poseConsumer = consumer;
-            return this;
-        }
-
-        public VisionSubsystem build() {
-            if (fieldLayout == null || simPoseSupplier == null) {
-                throw new IllegalStateException("Field layout and robot pose supplier are required");
-            }
-            
-            return new VisionSubsystem(
-                cameras,
-                fieldLayout,
-                simPoseSupplier,
-                robotVelocitySupplier,
-                usedPoseSupplier,
-                config,
-                poseConsumer
-            );
-        }
-    }
-
-    public static Builder builder() {
-        return new Builder();
-    }
 }

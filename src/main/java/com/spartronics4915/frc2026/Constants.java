@@ -12,10 +12,12 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
-import org.photonvision.PhotonPoseEstimator;
+import java.util.Map;
+
 import org.photonvision.simulation.SimCameraProperties;
 
 import com.spartronics4915.frc2026.subsystems.vision.cameras.PhotonProcessor;
+import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.PathplannerConfigs;
 import com.pathplanner.lib.config.ModuleConfig;
 import com.pathplanner.lib.config.PIDConstants;
@@ -162,43 +164,61 @@ public final class Constants {
                 SIM_CAMERA_PROPERTIES.setLatencyStdDevMs(5);
             }
 
-        public static Transform3d RIGHT_CAMERA_TRANSFORM = new Transform3d(
-            new Translation3d(
-                0.315, 
-                0.116,
-                0.14
-            ),
-            new Rotation3d(
-                0, 
-                Math.toRadians(-28), 
-                Math.toRadians(-18)
-            )
-        );
+        public static final class StdDevConstants {
+            public static final double baseXYStdDev = 0.08;
+            public static final double baseThetaStdDev = 0.08;
+            public static final double distanceWeight = 0.8;
+            public static final double ambiguityWeight = 0.8;
+            public static final double areaWeight = 0.6;
+            public static final double anisotropyWeight = 0.6;
+            public static final double motionWeight = 0.4;
+            public static final double latencyWeight = 0.4;
+        }
 
-        public static PhotonProcessor RIGHT_PROCESSOR = new PhotonProcessor(
-            "daniil", 
-            new PhotonPoseEstimator(LAYOUT, RIGHT_CAMERA_TRANSFORM), 
-            100
-        );
+        public static final class CameraConstants {
 
-        public static Transform3d LEFT_CAMERA_TRANSFORM = new Transform3d(
-            new Translation3d(
-                -0.0381, 
-                -0.34798,
-                0.14605
-            ),
-            new Rotation3d(
-                0, 
-                Math.toRadians(-28), 
-                Math.toRadians(282)
-            )
-        );
+            public static final Transform3d RIGHT_CAMERA_TRANSFORM = new Transform3d(
+                new Translation3d(
+                    0.315, 
+                    0.116,
+                    0.14
+                ),
+                new Rotation3d(
+                    0, 
+                    Math.toRadians(-28), 
+                    Math.toRadians(-18)
+                )
+            );
 
-        public static PhotonProcessor LEFT_PROCESSOR = new PhotonProcessor(
-            "evan", 
-            new PhotonPoseEstimator(LAYOUT, LEFT_CAMERA_TRANSFORM), 
-            100
-        );
+            public static final Transform3d LEFT_CAMERA_TRANSFORM =  new Transform3d(
+                new Translation3d(
+                    0.315, 
+                    0, 
+                    0.14
+                ),
+                new Rotation3d(
+                    0, 
+                    Math.toRadians(-28), 
+                    0
+                )
+            );
 
+            public static final Map<String, ProcessorInterface> cameras = Map.of(
+                "right", new PhotonProcessor(
+                    "right", 
+                    LAYOUT,
+                    RIGHT_CAMERA_TRANSFORM, 
+                    SIM_CAMERA_PROPERTIES,
+                    null
+                ),
+                "left", new PhotonProcessor(
+                    "left", 
+                    LAYOUT,
+                    LEFT_CAMERA_TRANSFORM,
+                    SIM_CAMERA_PROPERTIES,
+                    null
+                )
+            );
+        }
     }
 }

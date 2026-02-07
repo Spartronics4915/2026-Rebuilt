@@ -2,20 +2,21 @@ package com.spartronics4915.frc2026.subsystems.vision.filters;
 
 import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
 
-@FunctionalInterface
-public interface ResultFilterInterface {
+public interface FilterInterface {
+
+    // ------ Main Functionality ------
 
     boolean test(ResultInterface result);
 
-    default ResultFilterInterface and (ResultFilterInterface other) {
+    default FilterInterface and (FilterInterface other) {
         return (result) -> test(result) && other.test(result);
     }
 
-    default ResultFilterInterface or (ResultFilterInterface other) {
+    default FilterInterface or (FilterInterface other) {
         return (result) -> test(result) || other.test(result);
     }
 
-    default ResultFilterInterface negate() {
+    default FilterInterface negate() {
         return (result) -> !test(result);
     }
 }

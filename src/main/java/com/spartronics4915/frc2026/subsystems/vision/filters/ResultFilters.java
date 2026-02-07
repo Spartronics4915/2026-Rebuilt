@@ -3,15 +3,11 @@ package com.spartronics4915.frc2026.subsystems.vision.filters;
 import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
 
 public class ResultFilters {
-    
-    public static class HasTargetsFilter implements ResultFilterInterface {
-        @Override
-        public boolean test(ResultInterface result) {
-            return result.getTargetCount() > 0;
-        }
-    }
 
-    public static class LatencyFilter implements ResultFilterInterface {
+    /**
+     * Filter for a result's latency
+     */
+    public static class LatencyFilter implements FilterInterface {
         private final double maxLatencyMs;
 
         public LatencyFilter(double maxLatencyMs) {
@@ -24,7 +20,10 @@ public class ResultFilters {
         }
     }
 
-    public static class AmbiguityFilter implements ResultFilterInterface {
+    /**
+     * Filter for a result's ambiguity
+     */
+    public static class AmbiguityFilter implements FilterInterface {
         private final double maxAmbiguity;
 
         public AmbiguityFilter(double maxAmbiguity) {
@@ -37,7 +36,10 @@ public class ResultFilters {
         }
     }
 
-    public static class DistanceFilter implements ResultFilterInterface {
+    /**
+     * Filter for a result's average distance to its targets
+     */
+    public static class DistanceFilter implements FilterInterface {
         private final double maxSingleTagDistance;
         private final double maxMultiTagDistance;
         
@@ -53,23 +55,33 @@ public class ResultFilters {
         }
     }
 
-    public static class HasPoseFilter implements ResultFilterInterface {
-        @Override
-        public boolean test(ResultInterface result) {
-            return result.hasPose();
-        }
-    }
+    public static class AreaFilter implements FilterInterface {
+        private final double minArea;
+        private final double maxArea;
 
-    public static class MinTargetCountFilter implements ResultFilterInterface {
-        private final int minTargets;
-
-        public MinTargetCountFilter(int minTargets) {
-            this.minTargets = minTargets;
+        public AreaFilter(double newMinArea, double newMaxArea) {
+            this.minArea = newMinArea;
+            this.maxArea = newMaxArea;
         }
 
         @Override
         public boolean test(ResultInterface result) {
-            return result.getTargetCount() >= minTargets;
+            return result.getAverageArea() >= minArea && result.getAverageArea() <= maxArea;
         }
     }
+
+    public static class AnisotropyFilter implements FilterInterface {
+        private final double maxAnisotropy;
+
+        public AnisotropyFilter(double newMaxAnisotropy) {
+            this.maxAnisotropy = newMaxAnisotropy;
+        }
+
+        @Override
+        public boolean test(ResultInterface result) {
+            return result.getXAnisotropy() <= maxAnisotropy 
+                && result.getYAnisotropy() <= maxAnisotropy;
+        }
+    }
+
 }

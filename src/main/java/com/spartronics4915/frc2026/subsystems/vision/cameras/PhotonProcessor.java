@@ -10,58 +10,67 @@ import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.simulation.PhotonCameraSim;
+import org.photonvision.simulation.SimCameraProperties;
 import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 
-import com.spartronics4915.frc2026.Constants.VisionConstants;
-import com.spartronics4915.frc2026.subsystems.vision.configurations.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
 import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
-import com.spartronics4915.frc2026.util.StdDevCalculator;
 
-import edu.wpi.first.math.Matrix;
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.numbers.N1;
-import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Notifier;
 
 public class PhotonProcessor implements ProcessorInterface {
+
     private final String cameraName;
-    private final PhotonCamera camera;
+    private final PhotonCamera photonCamera;
+    private final AprilTagFieldLayout fieldLayout;
+    private final Transform3d cameraTransform;
     private final PhotonPoseEstimator poseEstimator;
-    private final StdDevCalculator stdDevCalculator;
+
+    private final SimCameraProperties simProperties;
     private final PhotonCameraSim cameraSim;
     
-    private final ConcurrentLinkedQueue<ApriltagResult> resultQueue;
+    private final ConcurrentLinkedQueue<ResultInterface> resultQueue;
     private final int maxQueueSize;
     private final Notifier processingNotifier;
+    private final int processingFrequency;
+
+    private volatile boolean isRunning;
 
     private Supplier<ChassisSpeeds> robotVelocitySupplier;
-    private VisionConfiguration configuration;
-
-    private volatile boolean isRunning = false;
 
     public PhotonProcessor(
-        String cameraName,
-        PhotonPoseEstimator poseEstimator,
-        double processingFrequencyHz
+        String name,
+        AprilTagFieldLayout layout,
+        Transform3d transform,
+        SimCameraProperties properties,
+        Supplier<ChassisSpeeds> vroomSupplier
     ) {
-        this.cameraName = cameraName;
-        this.camera = new PhotonCamera(cameraName);
-        this.poseEstimator = poseEstimator;
-        this.stdDevCalculator = new StdDevCalculator();
-        this.cameraSim = new PhotonCameraSim(camera, VisionConstants.SIM_CAMERA_PROPERTIES);
-        this.robotVelocitySupplier = null;
-        this.configuration = null;
+        this.cameraName = name;
+        this.photonCamera = new PhotonCamera(cameraName);
+        this.fieldLayout = layout;
+        this.cameraTransform = transform;
+        this.poseEstimator = new PhotonPoseEstimator(fieldLayout, cameraTransform);
+        
+        this.simProperties = properties;
+        this.cameraSim = new PhotonCameraSim(photonCamera, simProperties);
 
         this.resultQueue = new ConcurrentLinkedQueue<>();
         this.maxQueueSize = 10;
         
         this.processingNotifier = new Notifier(this::process);
-        this.processingNotifier.setName("PhotonProcessor-" + cameraName);
+        this.processingFrequency = 100;
+        this.processingNotifier.setName("Spectrum-" + cameraName);
+        this.isRunning = false;
+
+        this.robotVelocitySupplier = vroomSupplier;
     }
+
+    //#region Processing
 
     @Override
     public void start() {
@@ -80,7 +89,7 @@ public class PhotonProcessor implements ProcessorInterface {
     public void process() {
         if (!isRunning) return;
 
-        List<PhotonPipelineResult> rawResults = camera.getAllUnreadResults();
+        List<PhotonPipelineResult> rawResults = photonCamera.getAllUnreadResults();
         
         for (PhotonPipelineResult rawResult : rawResults) {
             Optional<ApriltagResult> apriltagResult = processApriltagResult(rawResult);
@@ -93,152 +102,251 @@ public class PhotonProcessor implements ProcessorInterface {
         }
     }
 
-    // In PhotonProcessor, update the processApriltagResult method:
-
     private Optional<ApriltagResult> processApriltagResult(PhotonPipelineResult rawResult) {
         if (!rawResult.hasTargets()) return Optional.empty();
 
         List<PhotonTrackedTarget> targets = rawResult.getTargets();
         int targetCount = targets.size();
 
-        // Calculate average distance to all targets
-        double avgDistance = targets.stream()
+        // Calculate the average distance
+        double avgDistance = calculateAverageDistance(targets);
+
+        // Calculate the average ambiguity
+        double avgAmbiguity = calculateAverageAmbiguity(targets);
+
+        // Calculate the average area of the frame
+        double avgArea = calculateAverageArea(targets);
+
+        // Calculate the anisotropy for x vs. y uncertainty
+        double x_anisotropy = calculateXAnisotropy(targets);
+        double y_anisotropy = calculateYAnisotropy(targets);
+
+        // Get the robots current velocity
+        ChassisSpeeds robotVelocity = robotVelocitySupplier.get();
+        if (robotVelocity == null) {
+            robotVelocity = new ChassisSpeeds();
+        }
+
+        // Gets the vision pose from the result
+        EstimatedRobotPose estimatedPose = (targetCount > 1)
+            ? poseEstimator.estimateCoprocMultiTagPose(rawResult).get()
+            : poseEstimator.estimateLowestAmbiguityPose(rawResult).get();
+
+        // Gets the pose2d from the estimated robot pose
+        Pose2d resultPose = estimatedPose.estimatedPose.toPose2d();
+
+        // Get the timestamp of the vision pose
+        double timestamp = estimatedPose.timestampSeconds;
+
+        return Optional.of(new ApriltagResult(
+            cameraName, 
+            timestamp, 
+            targetCount, 
+            resultPose,
+            null, 
+            targets, 
+            avgDistance, 
+            avgAmbiguity, 
+            avgArea, 
+            x_anisotropy,
+            y_anisotropy,
+            robotVelocity
+        ));
+
+    }
+
+    //#endregion
+
+    //#region Calculation
+    
+    /**
+     * Calculate average distance across all targets
+     */
+    private double calculateAverageDistance(List<PhotonTrackedTarget> targets) {
+        return targets.stream()
             .mapToDouble(target -> target.getBestCameraToTarget().getTranslation().getNorm())
             .average()
             .orElse(0.0);
+    }
 
-        // Use multi-tag estimation if possible, otherwise lowest ambiguity
-        Optional<EstimatedRobotPose> estimatedPose = (targetCount > 1) 
-            ? poseEstimator.estimateCoprocMultiTagPose(rawResult) 
-            : poseEstimator.estimateLowestAmbiguityPose(rawResult);
-
-        if (estimatedPose.isEmpty()) return Optional.empty();
-
-        EstimatedRobotPose robotPose = estimatedPose.get();
-        Pose2d pose2d = robotPose.estimatedPose.toPose2d();
-        double timestamp = robotPose.timestampSeconds;
-
-        // Calculate average ambiguity score
-        double avgAmbiguity = targets.stream()
+    /**
+     * Calculate average pose ambiguity across all targets
+     */
+    private static double calculateAverageAmbiguity(List<PhotonTrackedTarget> targets) {
+        return targets.stream()
             .mapToDouble(PhotonTrackedTarget::getPoseAmbiguity)
+            .filter(a -> a >= 0)
+            .average()
+            .orElse(0.15);
+    }
+    
+    /**
+     * Calculate average tag area (percentage of frame)
+     */
+    private static double calculateAverageArea(List<PhotonTrackedTarget> targets) {
+        return targets.stream()
+            .mapToDouble(PhotonTrackedTarget::getArea)
             .average()
             .orElse(0.0);
-
-        // Get current robot velocity for motion punishment
-        ChassisSpeeds robotSpeeds = robotVelocitySupplier != null 
-            ? robotVelocitySupplier.get() 
-            : new ChassisSpeeds();
-
-
-        Matrix<N3, N1> stdDevs = stdDevCalculator.calculate(
-            targetCount,
-            avgDistance,
-            avgAmbiguity,
-            robotSpeeds,
-            configuration
+    }
+    
+    /**
+     * Calculate anisotropy factor for X
+     */
+    private static double calculateXAnisotropy(List<PhotonTrackedTarget> targets) {
+        double avgYawRad = Math.toRadians(
+            targets.stream()
+                .mapToDouble(target -> Math.abs(target.getYaw()))
+                .average()
+                .orElse(0.0)
         );
-
-        // Calculate latency
-        double latencyMs = rawResult.metadata.getLatencyMillis();
-
-        return Optional.of(new ApriltagResult.Builder()
-            .cameraName(cameraName)
-            .timestamp(timestamp)
-            .latency(latencyMs)
-            .pose(pose2d)
-            .stdDevs(stdDevs)
-            .targets(targets)
-            .averageDistance(avgDistance)
-            .ambiguity(avgAmbiguity)
-            .build());
+    
+        // Foreshortening in X direction due to horizontal viewing angle
+        return 1.0 / (Math.cos(avgYawRad) + 0.01);
     }
 
-    @Override
-    public void setRobotVelocitySupplier(Supplier<ChassisSpeeds> supplier) {
-        this.robotVelocitySupplier = supplier;
+    /**
+     * Calculate anisotropy factor for X
+     */
+    private static double calculateYAnisotropy(List<PhotonTrackedTarget> targets) {
+        double avgPitchRad = Math.toRadians(
+            targets.stream()
+                .mapToDouble(target -> Math.abs(target.getPitch()))
+                .average()
+                .orElse(0.0)
+        );
+    
+        // Foreshortening in Y direction due to vertical viewing angle
+        return 1.0 / (Math.cos(avgPitchRad) + 0.01);
     }
 
-    @Override
-    public void setVisionConfiguration(VisionConfiguration configuration) {
-        this.configuration = configuration;
-    }
+    //#endregion
 
-    @Override
-    public PhotonCamera getPhotonCamera() {
-        return camera;
-    }
+    //#region Getters
 
-    @Override
-    public Transform3d getTransform() {
-        return poseEstimator.getRobotToCameraTransform();
-    }
-
-    @Override
-    public PhotonCameraSim getCameraSim() {
-        return cameraSim;
-    }
-
-    @Override
-    public void setPipeline(int pipelineIndex) {
-        camera.setPipelineIndex(pipelineIndex);
-    }
-
+    /**
+     * Gets the camera's name
+     */
     @Override
     public String getCameraName() {
         return cameraName;
     }
 
+    /**
+     * Gets the camera's associated photon camera
+     */
     @Override
-    public boolean isConnected() {
-        return camera.isConnected();
+    public PhotonCamera getPhotonCamera() {
+        return photonCamera;
     }
 
+    /**
+     * Gets the camera's apriltag field layout
+     */
+    @Override
+    public AprilTagFieldLayout getFieldlayout() {
+        return fieldLayout;
+    }
+
+    /**
+     * Gets the camera's transform from the robots center
+     */
+    @Override
+    public Transform3d getCameraTransform() {
+        return cameraTransform;
+    }
+
+    /**
+     * Gets the camera's associated pose estimator
+     */
+    @Override
+    public PhotonPoseEstimator getPoseEstimator() {
+        return poseEstimator;
+    }
+
+    /**
+     * Gets the camera's simulator properties
+     */
+    @Override
+    public SimCameraProperties getSimProperties() {
+        return simProperties;
+    }
+
+    /**
+     * Gets the camera's associated simulation for the camera
+     */
+    @Override
+    public PhotonCameraSim getCameraSim() {
+        return cameraSim;
+    }
+
+    /**
+     * Gets the camera's queue of results
+     */
     @Override
     public List<ResultInterface> getResultQueue() {
         return new ArrayList<>(resultQueue);
     }
 
-    public static class Builder {
-        private String cameraName;
-        private Transform3d robotToCamera;
-        private PhotonPoseEstimator poseEstimator;
-        private Supplier<ChassisSpeeds> robotVelocitySupplier;
-        private double processingFrequencyHz = 100.0;
-
-        public Builder cameraName(String name) {
-            this.cameraName = name;
-            return this;
-        }
-
-        public Builder transform(Transform3d robotToCamera) {
-            this.robotToCamera = robotToCamera;
-            return this;
-        }
-
-        public Builder poseEstimator(PhotonPoseEstimator estimator) {
-            this.poseEstimator = estimator;
-            return this;
-        }
-
-        public Builder robotVelocitySupplier(Supplier<ChassisSpeeds> supplier) {
-            this.robotVelocitySupplier = supplier;
-            return this;
-        }
-
-        public Builder processingFrequency(double hz) {
-            this.processingFrequencyHz = hz;
-            return this;
-        }
-
-        public PhotonProcessor build() {
-            if (cameraName == null || robotToCamera == null || poseEstimator == null) {
-                throw new IllegalStateException("Camera name, transform, and pose estimator are required");
-            }
-            return new PhotonProcessor(
-                cameraName, 
-                poseEstimator,  
-                processingFrequencyHz
-            );
-        }
+    /**
+     * Gets the camera's max size for it's result queue
+     */
+    @Override
+    public int getMaxQueueSize() {
+        return maxQueueSize;
     }
+
+    /**
+     * Gets the camera's notifier (parallel processing)
+     */
+    @Override
+    public Notifier getNotifier() {
+        return processingNotifier;
+    }
+
+    /**
+     * Gets the camera's processing frequency
+     */
+    @Override
+    public double getFrequency() {
+        return processingFrequency;
+    }
+
+    /**
+     * Gets if the camera's notifier is running
+     */
+    @Override
+    public boolean isRunning() {
+        return isRunning;
+    }
+
+    /**
+     * Gets the camera's robot speed supplier
+     */
+    @Override
+    public Supplier<ChassisSpeeds> getSpeedSupplier() {
+        return robotVelocitySupplier;
+    }
+
+    //#endregion
+
+    //#region Setters
+
+    @Override
+    public void setPipeline(int newPipelineIndex) {
+        photonCamera.setPipelineIndex(newPipelineIndex);
+    }
+
+    @Override
+    public void setCameraTransform(Transform3d newCameraTransform) {
+        poseEstimator.setRobotToCameraTransform(newCameraTransform);
+    }
+
+    @Override
+    public void setSpeedSupplier(Supplier<ChassisSpeeds> newSupplier) {
+        this.robotVelocitySupplier = newSupplier;
+    }
+
+    //#endregion
+
 }

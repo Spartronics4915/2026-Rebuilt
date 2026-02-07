@@ -16,8 +16,8 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstant
 
 import com.spartronics4915.frc2026.commands.DriveCommand;
 import com.spartronics4915.frc2026.subsystems.SwerveSubsystem;
+import com.spartronics4915.frc2026.subsystems.vision.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
-import com.spartronics4915.frc2026.subsystems.vision.configurations.VisionConfiguration;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -34,18 +34,14 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  */
 public class RobotContainer {
     public final SwerveSubsystem swerveSubsystem = new SwerveSubsystem(SwerveConfigurations.COMP_CHASSIS);
-    private final VisionSubsystem visionSubsystem = VisionSubsystem.builder()
-        .addCamera("daniil", VisionConstants.RIGHT_PROCESSOR)
-        //.addCamera("evan", VisionConstants.LEFT_PROCESSOR)
-        .setFieldLayout(VisionConstants.LAYOUT)
-        .setSimPoseSupplier(() -> swerveSubsystem.getRobotPose())
-        .setRobotVelocitySupplier(() -> swerveSubsystem.getFieldVelocity())
-        .setUsedPoseSupplier(() -> swerveSubsystem.getPastVisionPose(VisionSubsystem.getPoseTimestamp()))
-        .setPoseConsumer((pose, time, stdDevs) -> {
-            swerveSubsystem.addVisionMeasurement(pose, time, stdDevs);
-        })
-        .setConfiguration(new VisionConfiguration())
-        .build();
+    public final VisionSubsystem visionSubsystem = new VisionSubsystem(
+        VisionConstants.CameraConstants.cameras, 
+        VisionConstants.LAYOUT, 
+        new VisionConfiguration(), 
+        swerveSubsystem::addVisionMeasurement, 
+        swerveSubsystem
+    );
+    
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
 
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
