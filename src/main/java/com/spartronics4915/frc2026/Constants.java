@@ -40,8 +40,8 @@ public final class Constants {
     }
 
     public static final class SwerveConstants {
-        public static final double MAX_SPEED = 18;
-        public static final AngularVelocity MAX_ANGULAR_SPEED = RadiansPerSecond.of(24);
+        public static final double MAX_SPEED = 6;
+        public static final AngularVelocity MAX_ANGULAR_SPEED = RadiansPerSecond.of(8);
 
         public static Rotation2d TELEOP_HEADING_OFFSET = Rotation2d.fromDegrees(0.0);
 
