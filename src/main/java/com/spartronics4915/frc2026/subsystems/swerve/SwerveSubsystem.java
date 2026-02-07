@@ -104,7 +104,6 @@ public final class SwerveSubsystem extends SubsystemBase implements ModeSwitchIn
     }
 
     private void setPose(Pose2d pose2d) {
-        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'setPose'");
     }
 
