@@ -10,6 +10,7 @@ import java.util.Optional;
 import com.pathplanner.lib.config.ModuleConfig;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.controllers.PathFollowingController;
 import com.pathplanner.lib.path.PathConstraints;
 
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -89,6 +90,8 @@ public final class Constants {
                     this.config = config;
                 }
             }
+
+            public static PathFollowingController kDriveController;
         }
     }
 

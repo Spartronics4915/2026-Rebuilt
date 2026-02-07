@@ -2,7 +2,9 @@ package com.spartronics4915.frc2026.subsystems.swerve;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 
+import com.pathplanner.lib.auto.AutoBuilder;
 import com.spartronics4915.frc2026.Constants.SwerveConstants;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveDirectories;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
@@ -11,6 +13,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.units.LinearVelocityUnit;
@@ -28,6 +31,8 @@ public final class SwerveSubsystem extends SubsystemBase implements ModeSwitchIn
     private final SwerveDrive swerveDrive;
 
     private final StructPublisher<Pose2d> posePublisher = NetworkTableInstance.getDefault().getTable("logging").getStructTopic("pose", Pose2d.struct).publish();
+    private final StructPublisher<ChassisSpeeds> shimPublisher = NetworkTableInstance.getDefault().getTable("logging").getStructTopic("shim", ChassisSpeeds.struct).publish();
+    private final DoublePublisher speedPublisher = NetworkTableInstance.getDefault().getTable("logging").getDoubleTopic("speed").publish();
 
     public SwerveSubsystem(SwerveDirectories swerveDir) {
 
@@ -50,6 +55,20 @@ public final class SwerveSubsystem extends SubsystemBase implements ModeSwitchIn
         swerveDrive.setCosineCompensator(false);
         swerveDrive.setAngularVelocityCompensation(false, false, 0);
         swerveDrive.setModuleEncoderAutoSynchronize(false, 0);
+
+        AutoBuilder.configure(
+            this::getPose, 
+            swerveDrive::resetOdometry, 
+            swerveDrive::getRobotVelocity, 
+            (speeds, FF) -> {shimPublisher.accept(speeds); drive(speeds);}, 
+            SwerveConstants.AutoConstants.kDriveController, 
+            SwerveConstants.AutoConstants.PathplannerConfigs.COMP_CHASSIS.config, 
+            () -> {
+                Optional<Alliance> temp = DriverStation.getAlliance();
+                if(temp.isEmpty()) return false;
+                if (temp.get() == Alliance.Red) {return true;}
+                return false;
+            }, this);
         
         SmartDashboard.putData("set angle to 0", Commands.runOnce(() -> {
             var currPose = getPose();
