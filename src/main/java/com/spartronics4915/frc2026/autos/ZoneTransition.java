@@ -30,9 +30,11 @@ import edu.wpi.first.wpilibj2.command.Commands;
 
 public class ZoneTransition {
     private final SwerveSubsystem swerve;
+    private final VisionSubsystem vision;
 
     public ZoneTransition(SwerveSubsystem swerveSubsystem, VisionSubsystem visionSubsystem) {
         this.swerve = swerveSubsystem;
+        this.vision = visionSubsystem;
     }
 
     public enum TraversalMethod {
@@ -128,7 +130,7 @@ public class ZoneTransition {
             Commands.waitUntil(() -> {
                 return swerve.getRelativePose().getMeasureX().in(Meters) > hubPose.getX() ^ !toNeutralZone 
                     && swerve.isFlatDebounced()
-                    && VisionSubsystem.hasPose();
+                    && vision.hasValidPose();
             })
         );
     }
