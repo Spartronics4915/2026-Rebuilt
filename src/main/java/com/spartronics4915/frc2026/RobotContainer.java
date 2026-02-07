@@ -11,12 +11,16 @@ import com.spartronics4915.frc2026.autos.ZoneTransition.TraversalMethod;
 import com.spartronics4915.frc2026.Constants.VisionConstants;
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
+import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.hubPose;
+import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.trenchTransform;
 
 import com.spartronics4915.frc2026.commands.DriveCommand;
 import com.spartronics4915.frc2026.subsystems.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.configurations.VisionConfiguration;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -83,12 +87,44 @@ public class RobotContainer {
             transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP)
         );
 
-        driverController.leftTrigger().whileTrue(
+        driverController.povLeft().whileTrue(
             transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH)
         );
 
-        driverController.rightTrigger().whileTrue(
+        driverController.povRight().whileTrue(
             transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH)
+        ); 
+
+        driverController.leftTrigger().onTrue(
+            Commands.runOnce(() -> {
+                swerveSubsystem.setMovementOverride(
+                    new Pose2d(
+                        0,
+                        hubPose.minus(trenchTransform).getY(),
+                        Rotation2d.fromDegrees(0)
+                    )
+                );
+            })
+        ).onFalse(
+            Commands.runOnce(() -> {
+                swerveSubsystem.setMovementOverride(null);
+            })
+        );
+
+        driverController.rightTrigger().onTrue(
+            Commands.runOnce(() -> {
+                swerveSubsystem.setMovementOverride(
+                    new Pose2d(
+                        0,
+                        hubPose.plus(trenchTransform).getY(),
+                        Rotation2d.fromDegrees(0)
+                    )
+                );
+            })
+        ).onFalse(
+            Commands.runOnce(() -> {
+                swerveSubsystem.setMovementOverride(null);
+            })
         );
     }
 

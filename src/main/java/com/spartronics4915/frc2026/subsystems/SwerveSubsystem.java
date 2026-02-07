@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.trajectory.PathPlannerTrajectoryState;
 import com.pathplanner.lib.util.FlippingUtil;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
 import com.spartronics4915.frc2026.Robot;
@@ -44,6 +45,7 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 public class SwerveSubsystem extends SubsystemBase {
     public final SwerveDrive swerveDrive;
     public static Pose2d pose;
+    public static Pose2d movementOverride;
     private final File directory;
     
     public static boolean isRightAlliance;
@@ -153,6 +155,14 @@ public class SwerveSubsystem extends SubsystemBase {
         return Math.sqrt(fieldVelocity.vxMetersPerSecond * fieldVelocity.vxMetersPerSecond + fieldVelocity.vyMetersPerSecond * fieldVelocity.vyMetersPerSecond);
     }
 
+    public Pose2d getMovementOverride() { 
+        return movementOverride;
+    }
+
+    public void setMovementOverride(Pose2d override) {
+        movementOverride = override;
+    }
+
     static private double applyResponseCurve(double x) {
         return Math.signum(x) * Math.pow(x, 2);
     }
@@ -172,28 +182,33 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public static Supplier<ChassisSpeeds> computeVelocitiesFromController(XboxController driverController, boolean isFieldRelative, SwerveSubsystem swerve) {
         return () -> {
-            ChassisSpeeds chassisSpeeds = new ChassisSpeeds();
-    
-            final double inputXRaw = driverController.getLeftY() * -1.0;
-            final double inputYRaw = driverController.getLeftX() * -1.0;
-            final double inputOmegaRaw;
-            
-            inputOmegaRaw = driverController.getRightX() * -1.0;
-    
-            final double inputX = applyResponseCurve(MathUtil.applyDeadband(inputXRaw, STICK_DEADBAND));
-            final double inputY = applyResponseCurve(MathUtil.applyDeadband(inputYRaw, STICK_DEADBAND));
-            final double inputOmega = applyResponseCurve(MathUtil.applyDeadband(inputOmegaRaw, STICK_DEADBAND));
-    
-            chassisSpeeds.vxMetersPerSecond = inputX * MAX_SPEED;
-            chassisSpeeds.vyMetersPerSecond = inputY * MAX_SPEED;
-            chassisSpeeds.omegaRadiansPerSecond = inputOmega * MAX_ANGULAR_SPEED.in(RadiansPerSecond);
+            Pose2d currentPose = swerve.getPose();
+            Pose2d override = swerve.getMovementOverride();
 
-            if (isFieldRelative) {
-                chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeeds, swerve.getPose().getRotation());
-                chassisSpeeds = rotateLinearChassisSpeeds(chassisSpeeds, TELEOP_HEADING_OFFSET);
+            // Raw joystick inputs
+            double joyVX = applyResponseCurve(MathUtil.applyDeadband(driverController.getLeftY() * -1.0, STICK_DEADBAND)) * MAX_SPEED;
+            double joyVY = applyResponseCurve(MathUtil.applyDeadband(driverController.getLeftX() * -1.0, STICK_DEADBAND)) * MAX_SPEED;
+            double joyOmega = applyResponseCurve(MathUtil.applyDeadband(driverController.getRightX() * -1.0, STICK_DEADBAND)) * MAX_ANGULAR_SPEED.in(RadiansPerSecond);
+
+            // Determine joystick components in field space
+            ChassisSpeeds fieldJoy = ChassisSpeeds.fromRobotRelativeSpeeds(joyVX, joyVY, 0, isFieldRelative ? TELEOP_HEADING_OFFSET : currentPose.getRotation());
+            double fieldVX = fieldJoy.vxMetersPerSecond;
+            double fieldVY = fieldJoy.vyMetersPerSecond;
+
+            if (override != null) {
+                PathPlannerTrajectoryState goalState = new PathPlannerTrajectoryState();
+                goalState.pose = override;
+
+                ChassisSpeeds robotTarget = driveController.calculateRobotRelativeSpeeds(currentPose, goalState);
+                ChassisSpeeds fieldTarget = ChassisSpeeds.fromRobotRelativeSpeeds(robotTarget, currentPose.getRotation());
+
+                if (override.getX() != 0) fieldVX = fieldTarget.vxMetersPerSecond;
+                if (override.getY() != 0) fieldVY = fieldTarget.vyMetersPerSecond;
+                if (override.getRotation().getRadians() != 0) joyOmega = robotTarget.omegaRadiansPerSecond;
             }
-    
-            return chassisSpeeds;
+
+            // Convert field-relative linear speeds back to robot-relative for the drivetrain
+            return ChassisSpeeds.fromFieldRelativeSpeeds(fieldVX, fieldVY, joyOmega, currentPose.getRotation());
         };
     }
 
