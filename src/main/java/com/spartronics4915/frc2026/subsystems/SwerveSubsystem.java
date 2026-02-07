@@ -33,7 +33,7 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import swervelib.SwerveDrive;
 import swervelib.parser.SwerveParser;
 import swervelib.telemetry.SwerveDriveTelemetry;
@@ -161,6 +161,17 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public void setMovementOverride(Pose2d override) {
         movementOverride = override;
+    }
+
+    public boolean isFlat() {
+        return Math.abs(swerveDrive.getPitch().getDegrees()) < TILT_THRESHOLD_DEGREES
+            && Math.abs(swerveDrive.getRoll().getDegrees()) < TILT_THRESHOLD_DEGREES;
+    }
+
+    Trigger flatTrigger = new Trigger(this::isFlat).debounce(TILT_DEBOUNCE);
+
+    public boolean isFlatDebounced() {
+        return flatTrigger.getAsBoolean();
     }
 
     static private double applyResponseCurve(double x) {

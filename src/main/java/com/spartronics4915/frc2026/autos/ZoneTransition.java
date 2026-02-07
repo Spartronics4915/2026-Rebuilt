@@ -127,9 +127,8 @@ public class ZoneTransition {
             AutoBuilder.followPath(path),
             Commands.waitUntil(() -> {
                 return swerve.getRelativePose().getMeasureX().in(Meters) > hubPose.getX() ^ !toNeutralZone 
-                && Math.abs(swerve.swerveDrive.getPitch().getDegrees()) < 5.0
-                && Math.abs(swerve.swerveDrive.getRoll().getDegrees()) < 5.0
-                && VisionSubsystem.hasPose();
+                    && swerve.isFlatDebounced()
+                    && VisionSubsystem.hasPose();
             })
         );
     }

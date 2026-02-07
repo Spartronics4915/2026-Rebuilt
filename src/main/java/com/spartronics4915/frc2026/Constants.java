@@ -48,6 +48,8 @@ public final class Constants {
         public static boolean IS_FIELD_RELATIVE = true;
 
         public static final double STICK_DEADBAND = 0.05;
+        public static final double TILT_THRESHOLD_DEGREES = 5.0;
+        public static final double TILT_DEBOUNCE = 0.2;
 
         public enum SwerveConfigurations {
             TEST_CHASSIS("test-chassis", PathplannerConfigs.TEST_CHASSIS),
