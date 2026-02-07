@@ -187,13 +187,9 @@ public class PoseFusionEngine {
 
         Pose2d fusedPose = new Pose2d(fusedX, fusedY, new Rotation2d(fusedTheta));
 
-        //double fusedStdDevX = Math.sqrt(1.0 / totalWeightX);
-        //double fusedStdDevY = Math.sqrt(1.0 / totalWeightY);
-        //double fusedStdDevTheta = Math.sqrt(1.0 / totalWeightTheta);
-
-        double fusedStdDevX = 0.4;
-        double fusedStdDevY = 0.4;
-        double fusedStdDevTheta = 0.4;
+        double fusedStdDevY = Math.sqrt(1.0 / totalWeightY);
+        double fusedStdDevX = Math.sqrt(1.0 / totalWeightX);
+        double fusedStdDevTheta = Math.sqrt(1.0 / totalWeightTheta);
 
         Matrix<N3, N1> fusedStdDevs = VecBuilder.fill(fusedStdDevX, fusedStdDevY, fusedStdDevTheta);
 

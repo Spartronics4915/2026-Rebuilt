@@ -24,7 +24,6 @@ import com.spartronics4915.frc2026.util.PoseFusionEngine;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -161,17 +160,17 @@ public class VisionSubsystem extends SubsystemBase {
                 poseConsumer.accept(
                     fusedResult.getEstimatedPose().get(),
                     fusedResult.getTimestampSeconds(),
-                    VecBuilder.fill(1, 1, 1)
+                    fusedResult.getStdDevs()
                 );
 
                 visionPosePublisher.accept(fusedResult.getEstimatedPose().get());   
                 if (usedPoseSupplier.get() != null) usedPosePublisher.accept(usedPoseSupplier.get());
 
-                translationStdDevPublisher.accept(/*fusedResult.getStdDevs().get(0, 0)*/.5);
-                rotationStdDevPublisher.accept(/*fusedResult.getStdDevs().get(2, 0)*/.5);
+                translationStdDevPublisher.accept(fusedResult.getStdDevs().get(0, 0));
+                rotationStdDevPublisher.accept(fusedResult.getStdDevs().get(2, 0));
 
                 rightCameraPosePublisher.accept(new Pose3d(robotPoseSupplier.get()).plus(VisionConstants.RIGHT_CAMERA_TRANSFORM));
-                leftCameraPosePublisher.accept(new Pose3d(robotPoseSupplier.get()).plus(VisionConstants.LEFT_CAMERA_TRANSFORM));
+                //leftCameraPosePublisher.accept(new Pose3d(robotPoseSupplier.get()).plus(VisionConstants.LEFT_CAMERA_TRANSFORM));
             } else {
                 hasPose = false;
             }

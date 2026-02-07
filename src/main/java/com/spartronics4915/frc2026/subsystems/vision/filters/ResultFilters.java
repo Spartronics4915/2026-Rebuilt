@@ -1,6 +1,5 @@
 package com.spartronics4915.frc2026.subsystems.vision.filters;
 
-import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
 import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
 
 public class ResultFilters {

@@ -20,7 +20,6 @@ import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
 import com.spartronics4915.frc2026.util.StdDevCalculator;
 
 import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -67,7 +66,7 @@ public class PhotonProcessor implements ProcessorInterface {
     @Override
     public void start() {
         isRunning = true;
-        processingNotifier.startPeriodic(0.006); // 60Hz
+        processingNotifier.startPeriodic(0.01);
     }
 
     @Override

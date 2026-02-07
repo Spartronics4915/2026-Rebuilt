@@ -10,16 +10,16 @@ import edu.wpi.first.math.numbers.N3;
 
 public class StdDevCalculator {
 
-    private static final double DISTANCE_SCALE_FACTOR = 0.02;
-    private static final double AMBIGUITY_SCALE_FACTOR = 0.002;
+    private static final double DISTANCE_SCALE_FACTOR = 0.05;
+    private static final double AMBIGUITY_SCALE_FACTOR = 0.05;
 
-    private static final double MULTI_TAG_BASE_REDUCTION = 0.6;
-    private static final double MULTI_TAG_REDUCTION_PER_ADDITIONAL = 0.95;
+    private static final double MULTI_TAG_BASE_REDUCTION = 0.7;
+    private static final double MULTI_TAG_REDUCTION_PER_ADDITIONAL = 0.90;
     private static final double MULTI_TAG_MIN_SCALE = 0.1;
 
     private static final double LINEAR_VELOCITY_SCALE = 1.0;
     private static final double ANGULAR_VELOCITY_SCALE = 2.0;
-    private static final double STATIONARY_BONUS = 0.7;
+    private static final double STATIONARY_BONUS = 0.1;
     private static final double STATIONARY_THRESHOLD = 0.1;
 
     private static final double ROTATION_STD_DEV_MULTIPLIER = 1.2;
