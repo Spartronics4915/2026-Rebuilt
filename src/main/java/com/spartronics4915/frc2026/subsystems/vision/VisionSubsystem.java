@@ -125,11 +125,11 @@ public class VisionSubsystem extends SubsystemBase {
         
         // Filter the camera results
         performanceTracker.startTiming("filtering");
-        //List<ResultInterface> filteredResults = aprilTagFilter.filter(allResults);
+        List<ResultInterface> filteredResults = aprilTagFilter.filter(allResults);
         performanceTracker.stopTiming();
 
         // Convert ResultInterface to ApriltagResult
-        List<ApriltagResult> apriltagResults = allResults.stream()
+        List<ApriltagResult> apriltagResults = filteredResults.stream()
             .filter(ApriltagResult.class::isInstance)
             .map(ApriltagResult.class::cast)
             .toList();

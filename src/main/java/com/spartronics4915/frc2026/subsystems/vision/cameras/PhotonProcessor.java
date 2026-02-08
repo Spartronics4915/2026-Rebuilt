@@ -117,7 +117,7 @@ public class PhotonProcessor implements ProcessorInterface {
         double avgDistance = calculateAverageDistance(targets);
 
         // Calculate the average ambiguity
-        double avgAmbiguity = calculateAverageAmbiguity(targets);
+        double avgAmbiguity = calculateAmbiguity(targets);
 
         // Calculate the average area of the frame
         double avgArea = calculateAverageArea(targets);
@@ -180,13 +180,20 @@ public class PhotonProcessor implements ProcessorInterface {
     /**
      * Calculate average pose ambiguity across all targets
      */
-    private static double calculateAverageAmbiguity(List<PhotonTrackedTarget> targets) {
-        return targets.stream()
+    private static double calculateAmbiguity(List<PhotonTrackedTarget> targets) {
+        if (targets.size() == 1) {
+            return targets.get(0).getPoseAmbiguity();
+        }
+    
+        double minAmbiguity = targets.stream()
             .mapToDouble(PhotonTrackedTarget::getPoseAmbiguity)
             .filter(a -> a >= 0)
-            .average()
+            .min()
             .orElse(0.15);
+
+        return minAmbiguity / Math.sqrt(targets.size());
     }
+
     
     /**
      * Calculate average tag area (percentage of frame)

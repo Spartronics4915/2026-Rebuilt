@@ -32,9 +32,10 @@ public class ResultFilters {
 
         @Override
         public boolean test(ResultInterface result) {
+            if (result.getTargetCount() > 1) return true;
             return result.getAmbiguity() <= maxAmbiguity;
         }
-    }
+    }   
 
     /**
      * Filter for a result's average distance to its targets
