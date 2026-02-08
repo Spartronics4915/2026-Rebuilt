@@ -53,14 +53,6 @@ public class StdDevCalculator {
         double xyStdDev = baseXYStdDev * xyMultiplier;
         double thetaStdDev = baseThetaStdDev * thetaMultiplier;
         
-        
-        final double MAX_XY_STD_DEV = 2.0;
-        final double MAX_THETA_STD_DEV = 1.57;
-        
-        if (xyStdDev > MAX_XY_STD_DEV || thetaStdDev > MAX_THETA_STD_DEV) {
-            return null;
-        }
-        
         return VecBuilder.fill(xyStdDev, xyStdDev, thetaStdDev);
     }
     
