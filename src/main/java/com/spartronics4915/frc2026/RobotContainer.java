@@ -96,7 +96,7 @@ public class RobotContainer {
                 swerveSubsystem.setMovementOverride(
                     new Pose2d(
                         0,
-                        hubPose.minus(trenchTransform).getY(),
+                        hubPose.minus(trenchTransform.times(swerveSubsystem.shouldFlip() ? -1 : 1)).getY(),
                         Rotation2d.fromDegrees(0)
                     )
                 );
@@ -112,7 +112,7 @@ public class RobotContainer {
                 swerveSubsystem.setMovementOverride(
                     new Pose2d(
                         0,
-                        hubPose.plus(trenchTransform).getY(),
+                        hubPose.plus(trenchTransform.times(swerveSubsystem.shouldFlip() ? -1 : 1)).getY(),
                         Rotation2d.fromDegrees(0)
                     )
                 );
