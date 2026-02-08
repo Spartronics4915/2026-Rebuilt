@@ -16,9 +16,11 @@ import org.photonvision.targeting.PhotonTrackedTarget;
 
 import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
 import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
+import static com.spartronics4915.frc2026.Constants.VisionConstants.*;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Notifier;
@@ -42,6 +44,7 @@ public class PhotonProcessor implements ProcessorInterface {
     private volatile boolean isRunning;
 
     private Supplier<ChassisSpeeds> robotVelocitySupplier;
+    private Supplier<Pose3d> referencePoseSupplier;
 
     public PhotonProcessor(
         String name,
@@ -60,7 +63,7 @@ public class PhotonProcessor implements ProcessorInterface {
         this.cameraSim = new PhotonCameraSim(photonCamera, simProperties);
 
         this.resultQueue = new ConcurrentLinkedQueue<>();
-        this.maxQueueSize = 10;
+        this.maxQueueSize = 20;
         
         this.processingNotifier = new Notifier(this::process);
         this.processingFrequency = 100;
@@ -94,10 +97,12 @@ public class PhotonProcessor implements ProcessorInterface {
         for (PhotonPipelineResult rawResult : rawResults) {
             Optional<ApriltagResult> apriltagResult = processApriltagResult(rawResult);
             if (apriltagResult.isPresent()) {
-                if (resultQueue.size() >= maxQueueSize) {
-                    resultQueue.poll();
+                synchronized (resultQueue) {
+                    while (resultQueue.size() >= maxQueueSize) {
+                        resultQueue.poll();
+                    }
+                    resultQueue.add(apriltagResult.get());
                 }
-                resultQueue.add(apriltagResult.get());
             }
         }
     }
@@ -138,10 +143,13 @@ public class PhotonProcessor implements ProcessorInterface {
         // Get the timestamp of the vision pose
         double timestamp = estimatedPose.timestampSeconds;
 
+        // Get the latency of the vision pose
+        double latency = rawResult.metadata.getLatencyMillis();
+
         return Optional.of(new ApriltagResult(
             cameraName, 
             timestamp, 
-            targetCount, 
+            latency, 
             resultPose,
             null, 
             targets, 
@@ -200,13 +208,11 @@ public class PhotonProcessor implements ProcessorInterface {
                 .average()
                 .orElse(0.0)
         );
-    
-        // Foreshortening in X direction due to horizontal viewing angle
-        return 1.0 / (Math.cos(avgYawRad) + 0.01);
+        return 1.0 / Math.max(Math.cos(avgYawRad), MIN_COSINE_VALUE);
     }
 
     /**
-     * Calculate anisotropy factor for X
+     * Calculate anisotropy factor for Y
      */
     private static double calculateYAnisotropy(List<PhotonTrackedTarget> targets) {
         double avgPitchRad = Math.toRadians(
@@ -215,9 +221,7 @@ public class PhotonProcessor implements ProcessorInterface {
                 .average()
                 .orElse(0.0)
         );
-    
-        // Foreshortening in Y direction due to vertical viewing angle
-        return 1.0 / (Math.cos(avgPitchRad) + 0.01);
+        return 1.0 / Math.max(Math.cos(avgPitchRad), MIN_COSINE_VALUE);
     }
 
     //#endregion
@@ -285,7 +289,12 @@ public class PhotonProcessor implements ProcessorInterface {
      */
     @Override
     public List<ResultInterface> getResultQueue() {
-        return new ArrayList<>(resultQueue);
+        List<ResultInterface> results = new ArrayList<>();
+        ResultInterface result;
+        while ((result = resultQueue.poll()) != null) {
+            results.add(result);
+        }
+        return results;
     }
 
     /**

@@ -1,11 +1,5 @@
 package com.spartronics4915.frc2026.subsystems.vision;
 
-import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.numbers.N1;
-import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.math.VecBuilder;
-
-
 public class VisionConfiguration {
     
     public final double maxLatencyMs;
@@ -13,6 +7,8 @@ public class VisionConfiguration {
     public final double maxMultiTagDistanceMeters;
     public final double maxAmbiguityScore;
     public final double maxAnisotropy;
+    public final double minArea;
+    public final double maxArea;
     public final double cameraProcessingFrequencyHz;
     public final double maxPeriodicTimeMs;
     public final boolean enableMotionPunishment;
@@ -27,15 +23,17 @@ public class VisionConfiguration {
     public VisionConfiguration() {
         this(
             70,
-            5.0, 
-            10.0,
-            0.8,
+            20.0, 
+            20.0,
+            0.4,
             1.2,
+            0.01,
+            0.55,
             100,
             15.0, 
             true,  
-            4.0,
             3.0,
+            2.0,
             true,
             0.02,
             2,   
@@ -50,6 +48,8 @@ public class VisionConfiguration {
         double maxMultiTagDistanceMeters,
         double maxAmbiguityScore,
         double maxAnisotropy,
+        double minArea,
+        double maxArea,
         double cameraProcessingFrequencyHz,
         double maxPeriodicTimeMs,
         boolean enableMotionPunishment,
@@ -66,6 +66,8 @@ public class VisionConfiguration {
         this.maxMultiTagDistanceMeters = maxMultiTagDistanceMeters;
         this.maxAmbiguityScore = maxAmbiguityScore;
         this.maxAnisotropy = maxAnisotropy;
+        this.minArea = minArea;
+        this.maxArea = maxArea;
         this.cameraProcessingFrequencyHz = cameraProcessingFrequencyHz;
         this.maxPeriodicTimeMs = maxPeriodicTimeMs;
         this.enableMotionPunishment = enableMotionPunishment;

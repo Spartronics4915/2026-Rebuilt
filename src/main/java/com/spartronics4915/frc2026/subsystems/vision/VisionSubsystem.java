@@ -27,6 +27,7 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -66,6 +67,8 @@ public class VisionSubsystem extends SubsystemBase {
     private final DoublePublisher yAnisotropyPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Y Anisotropy").publish();
     private final DoublePublisher latencyPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Latency").publish();
     private final DoublePublisher targetCountPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Target Count").publish();
+
+    private final StructArrayPublisher<Pose3d> trackedApriltagsPublisher = NetworkTableInstance.getDefault().getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
     
     public VisionSubsystem(
         Map<String, ProcessorInterface> cameras,
@@ -84,8 +87,9 @@ public class VisionSubsystem extends SubsystemBase {
         this.aprilTagFilter = new PipelineFilter(List.of(
             new ResultFilters.LatencyFilter(config.maxLatencyMs),
             new ResultFilters.AmbiguityFilter(config.maxAmbiguityScore),
-            new ResultFilters.DistanceFilter(config.maxSingleTagDistanceMeters, config.maxMultiTagDistanceMeters),                      // Fast
-            new ResultFilters.AnisotropyFilter(config.maxAnisotropy)
+            new ResultFilters.DistanceFilter(config.maxSingleTagDistanceMeters, config.maxMultiTagDistanceMeters),
+            new ResultFilters.AnisotropyFilter(config.maxAnisotropy),
+            new ResultFilters.AreaFilter(config.minArea, config.maxArea)
         ));
         
         this.stdDevCalculator = new StdDevCalculator();
@@ -121,13 +125,13 @@ public class VisionSubsystem extends SubsystemBase {
         
         // Filter the camera results
         performanceTracker.startTiming("filtering");
-        List<ResultInterface> filteredResults = aprilTagFilter.filter(allResults);
+        //List<ResultInterface> filteredResults = aprilTagFilter.filter(allResults);
         performanceTracker.stopTiming();
 
         // Convert ResultInterface to ApriltagResult
-        List<ApriltagResult> apriltagResults = filteredResults.stream()
-            .filter(result -> result instanceof ApriltagResult)
-            .map(result -> (ApriltagResult) result)
+        List<ApriltagResult> apriltagResults = allResults.stream()
+            .filter(ApriltagResult.class::isInstance)
+            .map(ApriltagResult.class::cast)
             .toList();
 
         // Set the standard deviations for the apriltag results
@@ -144,12 +148,16 @@ public class VisionSubsystem extends SubsystemBase {
             ));
         }
 
+        apriltagResults = apriltagResults.stream()
+            .filter(result -> result.getStdDevs() != null)
+            .toList();
+
         // Fuse poses from multiple cameras
         if (!apriltagResults.isEmpty()) {
             performanceTracker.startTiming("pose_fusion");
             
             ApriltagResult fusedResult = fusionEngine.fusePoses(apriltagResults, config);
-            
+
             poseConsumer.accept(
                 fusedResult.getPose(),
                 fusedResult.getTimestampSeconds(),
@@ -170,13 +178,13 @@ public class VisionSubsystem extends SubsystemBase {
             transStdDevPublisher.set(fusedResult.getStdDevs().get(0, 0));
             rotStdDevPublisher.set(fusedResult.getStdDevs().get(2, 0));
 
-            avgDistancePublisher.set(fusedResult.getAverageDistanceToTargets());
+            avgDistancePublisher .set(fusedResult.getAverageDistanceToTargets());
             avgAmbiguityPublisher.set(fusedResult.getAmbiguity());
             avgAreaPublisher.set(fusedResult.getAverageArea());
             xAnisotropyPublisher.set(fusedResult.getXAnisotropy());
             yAnisotropyPublisher.set(fusedResult.getYAnisotropy());
             latencyPublisher.set(fusedResult.getLatencyMs());
-            targetCountPublisher.set(fusedResult.getTargetCount());
+            targetCountPublisher.set(fusedResult.getTargets().size());
         } else {
             hasValidPose = false;
         }

@@ -32,6 +32,7 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.AngularVelocity;
 
@@ -157,8 +158,8 @@ public final class Constants {
         
         public static final SimCameraProperties SIM_CAMERA_PROPERTIES = new SimCameraProperties();
             static {
-                SIM_CAMERA_PROPERTIES.setCalibration(1280, 800, Rotation2d.fromDegrees(97.65));
-                SIM_CAMERA_PROPERTIES.setCalibError(0.84, 0.02);
+                SIM_CAMERA_PROPERTIES.setCalibration(1600, 1200, Rotation2d.fromDegrees(97.65));
+                SIM_CAMERA_PROPERTIES.setCalibError(0.64, 0.02);
                 SIM_CAMERA_PROPERTIES.setFPS(80);
                 SIM_CAMERA_PROPERTIES.setAvgLatencyMs(40);
                 SIM_CAMERA_PROPERTIES.setLatencyStdDevMs(5);
@@ -209,16 +210,19 @@ public final class Constants {
                     LAYOUT,
                     RIGHT_CAMERA_TRANSFORM, 
                     SIM_CAMERA_PROPERTIES,
-                    null
+                    () -> new ChassisSpeeds()
                 ),
                 "left", new PhotonProcessor(
                     "left", 
                     LAYOUT,
                     LEFT_CAMERA_TRANSFORM,
                     SIM_CAMERA_PROPERTIES,
-                    null
+                    () -> new ChassisSpeeds()
                 )
             );
         }
+
+        public static final double MIN_COSINE_VALUE = 0.01;
+
     }
 }
