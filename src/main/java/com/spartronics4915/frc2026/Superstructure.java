@@ -28,4 +28,13 @@ public class Superstructure {
         this.pivot = new PivotSubsystem();
     }
     
+    public enum SuperState {
+        TRAVERSAL,
+        SHOOTING,
+        TRENCH,
+        PRE_CLIMB,
+        ACTIVE_CLIMB,
+        STOWED
+    }
+
 }
