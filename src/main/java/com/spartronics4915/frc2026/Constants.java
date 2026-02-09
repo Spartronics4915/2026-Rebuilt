@@ -15,14 +15,14 @@ public final class Constants {
         public static double deltaTime = 0;
         
         //Main motor----------------------------------
-        public static int mainShooterMotorID = 100;
+        public static int mainShooterMotorID = 22;
         // Pid control of mainShooterMotor
         public static double MainP = 0;
         public static double MainI = 0;
         public static double MainD = 0;
         
         //Follower motor-------------------------------
-        public static int followerShooterMotorID = 99;
+        public static int followerShooterMotorID = 23;
         // Pid control 
         public static double FollowerP = 0;
         public static double FollowerI = 0;
