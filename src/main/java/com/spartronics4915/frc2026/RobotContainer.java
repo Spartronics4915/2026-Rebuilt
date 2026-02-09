@@ -6,7 +6,7 @@ package com.spartronics4915.frc2026;
 
 import com.spartronics4915.frc2026.Constants.OperatorConstants;
 import com.spartronics4915.frc2026.commands.Autos;
-import com.spartronics4915.frc2026.subsystems.IntakeSubsystem;
+import com.spartronics4915.frc2026.subsystems.superstructure.IntakeSubsystem;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
