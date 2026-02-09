@@ -64,6 +64,16 @@ public class Hood extends SubsystemBase {
         return RPM.of(robotsonTheThird.getVelocity().getValue().in(RPM));
     }
 
+    private Rotation2d rawToAngle(double rotation) {
+        Rotation2d angle = Rotation2d.fromRotations(rotation);
+        return angle;
+    }
+    
+    private double angleToRaw(Rotation2d angle) {
+        double rotation = angle.getRotations();
+        return rotation;
+    }
+
     public void setSetpoint(double newSetpoint){
         double currentSetpoint = newSetpoint;
     }
@@ -117,10 +127,10 @@ public class Hood extends SubsystemBase {
 
 
 
-    //   H   H  OOO   OOO  DDDD       CCC   OOO  DDDD  EEEEE   //
-    //   H   H O   O O   O D   D     C   C O   O D   D E       //
-    //   H   H O   O O   O D   D     C     O   O D   D E       //
-    //   HHHHH O   O O   O D   D     C     O   O D   D EEEE    //
-    //   H   H O   O O   O D   D     C     O   O D   D E       //
-    //   H   H O   O O   O D   D     C   C O   O D   D E       //
-    //   H   H  OOO   OOO  DDDD       CCC   OOO  DDDD  EEEEE   //
+    //   H      H   OOOOOO    OOOOOO   DDDDDD          CCCCCC    OOOOOO   DDDDDD    EEEEEEEE   //
+    //   H      H  O      O  O      O  D     D        C      C  O      O  D     D   E          //
+    //   H      H  O      O  O      O  D      D       C         O      O  D      D  E          //
+    //   HHHHHHHH  O      O  O      O  D      D       C         O      O  D      D  EEEEEEE    //
+    //   H      H  O      O  O      O  D      D       C         O      O  D      D  E          //
+    //   H      H  O      O  O      O  D     D        C      C  O      O  D     D   E          //
+    //   H      H   OOOOOO    OOOOOO   DDDDDD          CCCCCC    OOOOOO   DDDDDD    EEEEEEEE   //
