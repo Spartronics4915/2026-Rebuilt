@@ -65,12 +65,12 @@ public class Hood extends SubsystemBase {
     }
 
     private Rotation2d rawToAngle(double rotation) {
-        Rotation2d angle = Rotation2d.fromRotations(rotation);
+        Rotation2d angle = Rotation2d.fromDegrees(rotation);
         return angle;
     }
     
     private double angleToRaw(Rotation2d angle) {
-        double rotation = angle.getRotations();
+        double rotation = angle.getDegrees();
         return rotation;
     }
 
