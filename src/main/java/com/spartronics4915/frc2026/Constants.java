@@ -49,7 +49,7 @@ public final class Constants {
 
         public static boolean motorTurnsClockWise = true;
         //Main motor, looking at face of motor, true for clock wise , false for counter clock wise
-        public static boolean motorCoast = true;
+        public static boolean motorCoast = false;
         //true for Coast, false for Brake
 
         //is the min and max speed of the motors

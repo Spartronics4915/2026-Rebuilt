@@ -107,7 +107,7 @@ public class Shooter extends SubsystemBase {
                 .withSensorToMechanismRatio(Constants.ShooterConstants.SensorToMechanismRatio)
             );
             MotorOutputConfigs followerShooterMotorOutputConfigs = new MotorOutputConfigs();
-            if (!Constants.ShooterConstants.motorTurnsClockWise) {
+            if (Constants.ShooterConstants.motorTurnsClockWise) {
                 followerShooterMotorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
             } else {followerShooterMotorOutputConfigs.Inverted = InvertedValue.CounterClockwise_Positive;}
             configForFollowerShooterMotor.apply(followerShooterMotorOutputConfigs);
