@@ -51,18 +51,17 @@ public final class Constants {
        }
 
        public static final String posePublisher = null;
-       public static final LinearVelocityUnit MetersPerSecond = null;
-       public static final double kTrackWidth = Units.inchesToMeters(0);
-       public static final double kWheelbase = Units.inchesToMeters(0);
-       public static final double kChassisRadius = Math.hypot(
-                kTrackWidth / 2, kWheelbase / 2);
+       public static final double trackWidth = Units.inchesToMeters(22.475);
+       public static final double wheelbase = Units.inchesToMeters(22.475);
+       public static final double chassisRadius = Math.hypot(
+                trackWidth / 2, wheelbase / 2);
        
-        public static final LinearVelocity kMaxSpeed = MetersPerSecond.of(0);
-        public static final AngularVelocity kMaxAngularSpeed = RadiansPerSecond.of(kMaxSpeed.in(MetersPerSecond) * Math.PI / kChassisRadius);
+        public static final double maxSpeed = Units.feetToMeters(6);
+        public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(maxSpeed * Math.PI / chassisRadius);
 
         public static final class AutoConstants {
-            public static final PIDConstants kTranslationPID = new PIDConstants(0, 0, 0);
-            public static final PIDConstants kRotationPID = new PIDConstants(0, 0, 0);
+            public static final PIDConstants translationPID = new PIDConstants(0, 0, 0);
+            public static final PIDConstants rotationPID = new PIDConstants(0, 0, 0);
             public static final String PathPlannerConfigs = null;
 
             public enum PathplannerConfigs{

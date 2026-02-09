@@ -37,7 +37,7 @@ public final class SwerveSubsystem extends SubsystemBase implements ModeSwitchIn
     public SwerveSubsystem(SwerveDirectories swerveDir) {
 
         try {
-            swerveDrive = new SwerveParser(new File(Filesystem.getDeployDirectory(), swerveDir.directory)).createSwerveDrive(SwerveConstants.kMaxSpeed.in(SwerveConstants.MetersPerSecond),
+            swerveDrive = new SwerveParser(new File(Filesystem.getDeployDirectory(), swerveDir.directory)).createSwerveDrive(SwerveConstants.maxSpeed,
              //new Pose2d(new Translation2d(meter.of(2),
              //    meter.of(5)),
              //    Rotation2d.fromDegrees(180)
