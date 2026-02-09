@@ -1,4 +1,4 @@
-package com.spartronics4915.frc2026.subsystems;
+package com.spartronics4915.frc2026.subsystems.swerve;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,11 +17,9 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstant
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;

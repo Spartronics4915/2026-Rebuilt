@@ -6,4 +6,8 @@ public class ShooterSubsystem extends SubsystemBase {
     
     public ShooterSubsystem() {}
 
+    public enum ShooterState {
+        ON, OFF
+    }
+
 }

@@ -9,7 +9,7 @@ import org.photonvision.simulation.VisionSystemSim;
 
 import com.spartronics4915.frc2026.Constants.VisionConstants;
 import com.spartronics4915.frc2026.Robot;
-import com.spartronics4915.frc2026.subsystems.SwerveSubsystem;
+import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
 import com.spartronics4915.frc2026.subsystems.vision.filters.PipelineFilter;
 import com.spartronics4915.frc2026.subsystems.vision.filters.ResultFilters;

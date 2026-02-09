@@ -6,4 +6,8 @@ public class HoodSubsystem extends SubsystemBase{
     
     public HoodSubsystem() {}
 
+    public enum HoodState {
+        UNRESTRICTED, RESTRICTED
+    }
+
 }

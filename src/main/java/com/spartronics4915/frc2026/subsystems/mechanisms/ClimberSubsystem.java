@@ -6,4 +6,8 @@ public class ClimberSubsystem extends SubsystemBase{
     
     public ClimberSubsystem() {}
 
+    public enum ClimberState {
+        DOWN, UP
+    }
+
 }

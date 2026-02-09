@@ -6,4 +6,8 @@ public class TurretSubsystem extends SubsystemBase {
     
     public TurretSubsystem() {}
 
+    public enum TurretState {
+        UNRESTRICTED, RESTRICTED
+    }
+
 }

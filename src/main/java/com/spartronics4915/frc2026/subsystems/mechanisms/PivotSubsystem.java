@@ -6,4 +6,8 @@ public class PivotSubsystem extends SubsystemBase {
     
     public PivotSubsystem() {}
 
+    public enum PivotState {
+        DOWN, UP
+    }
+
 }

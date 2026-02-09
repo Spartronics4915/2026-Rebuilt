@@ -29,6 +29,7 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -223,6 +224,15 @@ public final class Constants {
         }
 
         public static final double MIN_COSINE_VALUE = 0.01;
+
+    }
+
+    public static final class SuperstructureConstants {
+
+        public static final Transform2d turretTransform = new Transform2d(
+            new Translation2d(0, 0),
+            new Rotation2d()
+        );
 
     }
 }
