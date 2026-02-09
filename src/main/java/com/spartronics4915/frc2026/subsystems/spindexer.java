@@ -59,6 +59,14 @@ public class spindexer extends SubsystemBase{
         initialize();
     }
 
+    public double getVolt(){
+        return spindexerMotor.getMotorVoltage().getValueAsDouble();
+    }
+
+    public double getRPM(){
+        return spindexerMotor.getAcceleration().getValueAsDouble();
+    }
+
     public void spindexerOn(){
         setPoint = Constants.SpindexerConstants.SPINDEXER_MOTOR_SPEED;
     }
@@ -78,7 +86,8 @@ public class spindexer extends SubsystemBase{
         VelocityVoltage VVrequest = new VelocityVoltage(setPoint);
 
         spindexerMotor.setControl(VVrequest);
-
+        spindexerVoltage.accept(this.getVolt());
+        spindexerRPM.accept(this.getRPM());
         if (SmartDashboard.getBoolean("on", false)){
             spindexerOn();
         } else {
