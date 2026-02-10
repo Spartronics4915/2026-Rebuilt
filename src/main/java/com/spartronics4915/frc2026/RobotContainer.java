@@ -35,9 +35,8 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  * subsystems, commands, and trigger mappings) should be declared here.
  */
 public class RobotContainer {
-    HoodSubsystem hood = new HoodSubsystem();
-
-
+    
+    public final HoodSubsystem hoodSubsystem = new HoodSubsystem();
     public final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
     public final SwerveSubsystem swerveSubsystem = new SwerveSubsystem(SwerveConfigurations.COMP_CHASSIS);
     public final VisionSubsystem visionSubsystem = new VisionSubsystem(
