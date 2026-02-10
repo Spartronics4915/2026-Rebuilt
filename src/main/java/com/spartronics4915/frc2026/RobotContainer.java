@@ -15,6 +15,7 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstant
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.trenchTransform;
 
 import com.spartronics4915.frc2026.commands.DriveCommand;
+import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.path.HoodSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.path.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
@@ -38,6 +39,7 @@ public class RobotContainer {
     
     public final HoodSubsystem hoodSubsystem = new HoodSubsystem();
     public final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
+    public final PivotSubsystem pivotSubsystem = new PivotSubsystem();
     public final SwerveSubsystem swerveSubsystem = new SwerveSubsystem(SwerveConfigurations.COMP_CHASSIS);
     public final VisionSubsystem visionSubsystem = new VisionSubsystem(
         VisionConstants.CameraConstants.cameras, 
