@@ -1,4 +1,4 @@
-package com.spartronics4915.frc2026.subsystems;
+package com.spartronics4915.frc2026.subsystems.mechanisms.path;
 
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.Follower;

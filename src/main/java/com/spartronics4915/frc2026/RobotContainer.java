@@ -15,13 +15,13 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstant
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.trenchTransform;
 
 import com.spartronics4915.frc2026.commands.DriveCommand;
+import com.spartronics4915.frc2026.subsystems.mechanisms.path.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;import com.spartronics4915.frc2026.subsystems.ShooterSubsystem;
-
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
