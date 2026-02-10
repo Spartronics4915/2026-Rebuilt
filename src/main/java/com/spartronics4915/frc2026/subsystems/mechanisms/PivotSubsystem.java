@@ -24,7 +24,7 @@ import static com.spartronics4915.frc2026.Constants.PivotConstants.*;
 
 public class PivotSubsystem extends SubsystemBase {
 
-    TalonFX motor = new TalonFX(PIVOT_MOTOR_ID);
+    TalonFX motor = new TalonFX(MOTOR_ID);
     
     TrapezoidProfile trapProfile = new TrapezoidProfile(
 	    new Constraints(MAX_VELOCITY, MAX_ACCELERATION)

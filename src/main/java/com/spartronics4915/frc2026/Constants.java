@@ -274,7 +274,7 @@ public final class Constants {
     
     public static class HoodConstants {
 
-        public static final int HOOD_MOTOR_ID = 21;
+        public static final int MOTOR_ID = 21;
 
         public static final double P = 250.0;
         public static final double I = 0.0;
@@ -312,7 +312,7 @@ public final class Constants {
 
     public static class PivotConstants {
 
-        public static final int PIVOT_MOTOR_ID = 14;
+        public static final int MOTOR_ID = 14;
 
         public static final double P = 0.0;
         public static final double I = 0.0;
@@ -361,7 +361,7 @@ public final class Constants {
         public static final double LOWER_LIMIT = 40;
 
         public static final double LOWER_TIME = 1;
-        public static final double SENSOR_MECHANISM_RATIO = 0;
+        public static final double SENSOR_MECHANISM_RATIO = 20/9;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
