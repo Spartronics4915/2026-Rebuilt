@@ -51,7 +51,7 @@ public class Hood extends SubsystemBase {
         motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
         motorConfig.apply(motorOutputConfigs);
 
-    SmartDashboard.putNumber("Robotson", 0);
+        SmartDashboard.putNumber("Robotson", 0);
 
     }
 
@@ -103,7 +103,22 @@ public class Hood extends SubsystemBase {
         hoodAnglePublisher.accept(robotsonTheThird.getPosition().getValueAsDouble());
         hoodVoltagePublisher.accept(robotsonTheThird.getMotorVoltage().getValueAsDouble());
 
-       // robotsonTheThird.setControl(request);
+        // robotsonTheThird.setControl(request);
+
+
+
+
+
+        if (robotsonTheThird.getPosition().getValue().in(Degrees)  <  (Constants.HoodConstants.HOOD_MIN + 5)) {
+            currentSetpoint = Constants.HoodConstants.HOOD_MIN;
+        } else if (robotsonTheThird.getPosition().getValue().in(Degrees)  >  (Constants.HoodConstants.HOOD_MAX - 5)) {
+            currentSetpoint = Constants.HoodConstants.HOOD_MAX;
+        }
+
+
+
+
+
 
     }
 
