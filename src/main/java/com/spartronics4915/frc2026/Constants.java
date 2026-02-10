@@ -34,6 +34,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.units.measure.AngularVelocity;
 
 public final class Constants {
@@ -53,6 +54,8 @@ public final class Constants {
         public static final double STICK_DEADBAND = 0.05;
         public static final double TILT_THRESHOLD_DEGREES = 5.0;
         public static final double TILT_DEBOUNCE = 0.2;
+
+        public static final Constraints trenchAlignConstraints = new Constraints(3, 3);
 
         public enum SwerveConfigurations {
             TEST_CHASSIS("test-chassis", PathplannerConfigs.TEST_CHASSIS),

@@ -19,8 +19,6 @@ import com.spartronics4915.frc2026.subsystems.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -94,32 +92,24 @@ public class RobotContainer {
         driverController.leftTrigger().onTrue(
             Commands.runOnce(() -> {
                 swerveSubsystem.setMovementOverride(
-                    new Pose2d(
-                        0,
-                        hubPose.minus(trenchTransform.times(swerveSubsystem.shouldFlip() ? -1 : 1)).getY(),
-                        Rotation2d.fromDegrees(0)
-                    )
+                    hubPose.minus(trenchTransform.times(swerveSubsystem.shouldFlip() ? -1 : 1)).getY()
                 );
             })
         ).onFalse(
             Commands.runOnce(() -> {
-                swerveSubsystem.setMovementOverride(null);
+                swerveSubsystem.setMovementOverride(0.0);
             })
         );
 
         driverController.rightTrigger().onTrue(
             Commands.runOnce(() -> {
                 swerveSubsystem.setMovementOverride(
-                    new Pose2d(
-                        0,
-                        hubPose.plus(trenchTransform.times(swerveSubsystem.shouldFlip() ? -1 : 1)).getY(),
-                        Rotation2d.fromDegrees(0)
-                    )
+                    hubPose.plus(trenchTransform.times(swerveSubsystem.shouldFlip() ? -1 : 1)).getY()
                 );
             })
         ).onFalse(
             Commands.runOnce(() -> {
-                swerveSubsystem.setMovementOverride(null);
+                swerveSubsystem.setMovementOverride(0.0);
             })
         );
     }
