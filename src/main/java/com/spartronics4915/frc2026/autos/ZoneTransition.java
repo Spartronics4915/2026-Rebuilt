@@ -55,7 +55,7 @@ public class ZoneTransition {
     public Command generateCommand(TraversalMethod method) {
         return Commands.defer(() -> {
             return generateCommand(method, swerve != null && swerve.getRelativePose().getX() < hubPose.getX());
-        }, Set.of());
+        }, Set.of(swerve));
     }
 
     public Command generateCommand(TraversalMethod method, boolean toNeutralZone) {
@@ -65,7 +65,7 @@ public class ZoneTransition {
             } else {
                 return generateBumpCommand(method.isRightSide, toNeutralZone);
             }
-        }, Set.of());
+        }, Set.of(swerve));
     }
 
     public Command generateBumpCommand(boolean isRightSide, boolean toNeutralZone) {
@@ -188,7 +188,7 @@ public class ZoneTransition {
                 startingVel,
                 swerve.getRelativeHeading().rotation().toRotation2d()
             ),
-            new GoalEndState(0.0, trenchApproachAngle.rotateBy(Rotation2d.fromDegrees(IOFlip))),
+            new GoalEndState(trenchPathConstraints.maxVelocityMPS(), trenchApproachAngle.rotateBy(Rotation2d.fromDegrees(IOFlip))),
             false
         );
 

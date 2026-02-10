@@ -112,7 +112,7 @@ public class DriveToPOI {
                     });
                 }
             }
-        }, Set.of());
+        }, Set.of(swerve));
     }
 
     private Command generatePathFromWaypoint(Translation2d translation, Rotation2d endingHeading, Rotation2d endingVelocityHeading) {
