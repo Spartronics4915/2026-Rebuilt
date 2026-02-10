@@ -19,12 +19,13 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  * subsystems, commands, and trigger mappings) should be declared here.
  */
 public class RobotContainer {
+    HoodSubsystem hood = new HoodSubsystem();
+
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
     private final CommandXboxController operatorController = new CommandXboxController(OperatorConstants.OPERATOR_CONTROLLER_PORT);
 
     public RobotContainer() {
         configureBindings();
-        HoodSubsystem hood = new HoodSubsystem();
     }
 
     /**
