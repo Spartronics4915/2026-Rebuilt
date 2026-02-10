@@ -8,6 +8,8 @@ import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.spartronics4915.frc2026.util.ModeSwitchHandler;
+import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -23,7 +25,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static com.spartronics4915.frc2026.Constants.HoodConstants.*;
 
-public class HoodSubsystem extends SubsystemBase {
+public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
     TalonFX motor = new TalonFX(MOTOR_ID);
     
@@ -49,8 +51,9 @@ public class HoodSubsystem extends SubsystemBase {
             motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
             motorConfig.apply(motorOutputConfigs);
 
-        currentState = new State(0, 0.0);
-        motor.setPosition(0);
+        setMechanismAngle(Rotation2d.fromDegrees(0));
+
+        ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         SmartDashboard.putData("Hood Up", presetCommand(HoodState.UP));
         SmartDashboard.putData("Hood Middle", presetCommand(HoodState.MIDDLE));
@@ -61,7 +64,6 @@ public class HoodSubsystem extends SubsystemBase {
 
     @Override
     public void periodic(){
-    
         currentSetpoint = Rotation2d.fromRotations(
             MathUtil.clamp(
                 currentSetpoint.getRotations(), 
@@ -77,7 +79,7 @@ public class HoodSubsystem extends SubsystemBase {
         );
 
         PositionVoltage request = new PositionVoltage(currentState.position);
-        motor.setControl(request);
+            motor.setControl(request);
 
         appliedOutPub.accept(motor.getMotorVoltage().getValue().in(Volts));
         positionPub.accept(getPosition());
@@ -96,6 +98,20 @@ public class HoodSubsystem extends SubsystemBase {
 
     public void setState(HoodState state){
         currentSetpoint = state.angle;
+    }
+
+    private void setMechanismAngle(Rotation2d angle){
+        motor.setPosition(angle.getRotations());
+        resetMechanism(angle);
+    }
+
+    public void resetMechanism(){
+        resetMechanism(getPosition());
+    }
+
+    public void resetMechanism(Rotation2d angle){
+        currentSetpoint = angle;
+        currentState = new State(angle.getRotations(), 0.0);
     }
 
     //#endregion
@@ -120,6 +136,11 @@ public class HoodSubsystem extends SubsystemBase {
         private HoodState(Rotation2d angle) {
             this.angle = angle;
         }
+    }
+
+    @Override
+    public void onModeSwitch() {
+        resetMechanism();
     }
 
 }

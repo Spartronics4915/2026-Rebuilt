@@ -1,10 +1,15 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
 
+import com.spartronics4915.frc2026.util.ModeSwitchHandler;
+import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
+
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-public class IntakeSubsystem extends SubsystemBase {
+public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterface {
     
-    public IntakeSubsystem() {}
+    public IntakeSubsystem() {
+        ModeSwitchHandler.EnableModeSwitchHandler(this);
+    }
 
     public enum IntakeState {
         ON, OFF

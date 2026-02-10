@@ -4,6 +4,8 @@ import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.spartronics4915.frc2026.util.ModeSwitchHandler;
+import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -12,7 +14,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static com.spartronics4915.frc2026.Constants.FeederConstants.*;
 
-public class FeederSubsystem extends SubsystemBase {
+public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterface {
     
     private TalonFX motor;
 
@@ -34,6 +36,7 @@ public class FeederSubsystem extends SubsystemBase {
             configurator.apply(CURRENT_LIMITS_CONFIG);
             configurator.apply(FEEDBACK_CONFIG);
         
+        ModeSwitchHandler.EnableModeSwitchHandler(this);
     }
 
     @Override
@@ -78,6 +81,11 @@ public class FeederSubsystem extends SubsystemBase {
         private FeederState(double rpm) {
             this.rpm = rpm;
         }
+    }
+
+    @Override
+    public void onModeSwitch() {
+        setState(FeederState.OFF);
     }
 }
 

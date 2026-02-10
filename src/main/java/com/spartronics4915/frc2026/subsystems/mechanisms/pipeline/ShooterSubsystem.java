@@ -6,6 +6,8 @@ import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.spartronics4915.frc2026.util.ModeSwitchHandler;
+import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -15,7 +17,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static com.spartronics4915.frc2026.Constants.ShooterConstants.*;
 
-public class ShooterSubsystem extends SubsystemBase {
+public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterface {
     private TalonFX leadMotor;
     private TalonFX followerMotor;
 
@@ -47,6 +49,8 @@ public class ShooterSubsystem extends SubsystemBase {
         followerMotor.setControl(new Follower(FOLLOWER_MOTOR_ID, MotorAlignmentValue.Aligned));
         
         leadMotor.set(0);
+
+        ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         SmartDashboard.putData("Shooter On", setStateCommand(ShooterState.ON));
         SmartDashboard.putData("Shooter Off", setStateCommand(ShooterState.OFF));
@@ -94,5 +98,10 @@ public class ShooterSubsystem extends SubsystemBase {
         private ShooterState(double rpm) {
             this.rpm = rpm;
         }
+    }
+
+    @Override
+    public void onModeSwitch() {
+        setState(ShooterState.OFF);
     }
 }

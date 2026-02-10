@@ -4,7 +4,8 @@ import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.FeederSubsystem.FeederState;
+import com.spartronics4915.frc2026.util.ModeSwitchHandler;
+import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -13,7 +14,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static com.spartronics4915.frc2026.Constants.IndexerConstants.*;
 
-public class IndexerSubsystem extends SubsystemBase {
+public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterface {
     
     private TalonFX motor;
 
@@ -34,6 +35,8 @@ public class IndexerSubsystem extends SubsystemBase {
             configurator.apply(PID_CONFIG);
             configurator.apply(CURRENT_LIMITS_CONFIG);
             configurator.apply(FEEDBACK_CONFIG);
+
+        ModeSwitchHandler.EnableModeSwitchHandler(this);
     }
 
     @Override
@@ -53,7 +56,7 @@ public class IndexerSubsystem extends SubsystemBase {
         currentSetpoint = setpoint;
     }
 
-    public void setState(FeederState state) {
+    public void setState(IndexerState state) {
         setSetpoint(state.rpm);
     }
 
@@ -65,7 +68,7 @@ public class IndexerSubsystem extends SubsystemBase {
         return this.runOnce(() -> setSetpoint(setpoint));
     }
 
-    public Command setStateCommand(FeederState state){
+    public Command setStateCommand(IndexerState state){
         return setSetpointCommand(state.rpm);
     }
 
@@ -77,6 +80,11 @@ public class IndexerSubsystem extends SubsystemBase {
         private IndexerState(double rpm) {
             this.rpm = rpm;
         }
+    }
+
+    @Override
+    public void onModeSwitch() {
+        setState(IndexerState.OFF);
     }
 
 }
