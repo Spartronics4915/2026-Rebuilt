@@ -16,8 +16,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static com.spartronics4915.frc2026.Constants.ShooterConstants.*;
 
-import java.security.PublicKey;
-
 public class ShooterSubsystem extends SubsystemBase {
     private TalonFX leadMotor;
     private TalonFX followerMotor;
