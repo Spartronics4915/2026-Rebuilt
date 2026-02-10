@@ -58,8 +58,6 @@ public class RobotContainer {
 
     public RobotContainer() {
         configureBindings();
-
-        ShooterSubsystem Shooter = new ShooterSubsystem();
     }
 
     /**

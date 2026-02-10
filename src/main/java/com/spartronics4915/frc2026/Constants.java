@@ -293,7 +293,7 @@ public final class Constants {
         public static final double SENSOR_MECHANISM_RATIO = 85.3333333;
 
         public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(0);
-        public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(30);
+        public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(35);
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
@@ -328,10 +328,10 @@ public final class Constants {
         public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 1;
-        public static final double SENSOR_MECHANISM_RATIO = 0;
+        public static final double SENSOR_MECHANISM_RATIO = 16.875;
 
         public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(0);
-        public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(30);
+        public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(0);
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
@@ -346,5 +346,36 @@ public final class Constants {
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(SENSOR_MECHANISM_RATIO);
+    }
+
+    public static class FeederConstants {
+        
+        public static final int MOTOR_ID = 18;
+
+        public static final double P = 0;
+        public static final double I = 0;
+        public static final double D = 0;
+
+        public static final boolean CURRENT_LIMIT_ENABLE = true;
+        public static final double CURRENT_LIMIT = 60;
+        public static final double LOWER_LIMIT = 40;
+
+        public static final double LOWER_TIME = 1;
+        public static final double SENSOR_MECHANISM_RATIO = 0;
+
+        public static final SlotConfigs PID_CONFIG = new SlotConfigs()
+            .withKP(P)
+            .withKI(I)
+            .withKD(D);
+
+        public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
+            .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
+            .withSupplyCurrentLimit(CURRENT_LIMIT)
+            .withSupplyCurrentLowerLimit(LOWER_LIMIT)
+            .withSupplyCurrentLowerTime(LOWER_TIME);
+
+        public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
+            .withSensorToMechanismRatio(SENSOR_MECHANISM_RATIO);
+
     }
 }

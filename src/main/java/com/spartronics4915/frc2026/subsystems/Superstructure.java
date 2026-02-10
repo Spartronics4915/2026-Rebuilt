@@ -1,6 +1,7 @@
 package com.spartronics4915.frc2026.subsystems;
 
 import com.spartronics4915.frc2026.subsystems.mechanisms.path.IntakeSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.path.FeederSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.path.HoodSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.path.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.path.IndexerSubsystem;
@@ -8,14 +9,6 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.path.TurretSubsystem;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem;
-
-import static com.spartronics4915.frc2026.subsystems.mechanisms.path.IntakeSubsystem.*;
-import static com.spartronics4915.frc2026.subsystems.mechanisms.path.HoodSubsystem.*;
-import static com.spartronics4915.frc2026.subsystems.mechanisms.path.ShooterSubsystem.*;
-import static com.spartronics4915.frc2026.subsystems.mechanisms.path.IndexerSubsystem.*;
-import static com.spartronics4915.frc2026.subsystems.mechanisms.path.TurretSubsystem.*;
-import static com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem.*;
-import static com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem.*;
 
 import static com.spartronics4915.frc2026.subsystems.Superstructure.SuperState.*;
 import static com.spartronics4915.frc2026.Constants.SuperstructureConstants.*;
@@ -27,6 +20,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class Superstructure extends SubsystemBase{
 
+    private final FeederSubsystem feeder;
     private final HoodSubsystem hood;
     private final IntakeSubsystem intake;
     private final ShooterSubsystem shooter;
@@ -43,6 +37,7 @@ public class Superstructure extends SubsystemBase{
     private boolean override;
 
     public Superstructure(
+        FeederSubsystem feederSubsystem,
         HoodSubsystem hoodSubsystem,
         IntakeSubsystem intakeSubsystem,
         ShooterSubsystem shooterSubsystem,
@@ -52,6 +47,7 @@ public class Superstructure extends SubsystemBase{
         PivotSubsystem pivotSubsystem,
         SwerveSubsystem swerveSubsystem
     ) {
+        this.feeder = feederSubsystem;
         this.hood = hoodSubsystem;
         this.intake = intakeSubsystem;
         this.shooter = shooterSubsystem;
