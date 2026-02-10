@@ -4,6 +4,8 @@
 
 package com.spartronics4915.frc2026;
 
+import edu.wpi.first.math.geometry.Rotation2d;
+
 public final class Constants {
     public static class OperatorConstants {
         public static final int DRIVER_CONTROLLER_PORT = 0;
@@ -13,17 +15,22 @@ public final class Constants {
         public static final double P = 5.0;
         public static final double I = 0.0;
         public static final double D = 0.0;
-        public static final double HOOD_MAX_VELOCITY = 15.0;
-        // If max acceleration is put higher than like 5 then it may jump super hard when first enabled while going to initial 0 (how fix)
+
+        public static final double HOOD_MAX_VELOCITY = 5;
         public static final double HOOD_MAX_ACCELERATION = 5;
-        public static final double HOOD_MIN = 0.0;
-        public static final double HOOD_MAX = 90.0;
-        public static final double HOOD_DT = 1.0/50.0;
+
+        public static final double HOOD_DT = 0.02;
+
         public static final int HOOD_MOTOR_ID = 3;
+
         public static final boolean HOOD_CURRENT_LIMIT_ENABLE = true;
         public static final double HOOD_CURRENT_LIMIT = 40;
         public static final double HOOD_LOWER_LIMIT = 20;
+
         public static final double HOOD_LOWER_TIME = 1;
-        public static final double HOOD_SENSOR_MECHANISM_RATIO = 1/1;
+        public static final double HOOD_SENSOR_MECHANISM_RATIO = 0;
+
+        public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(0);
+        public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(35);
     }
 }
