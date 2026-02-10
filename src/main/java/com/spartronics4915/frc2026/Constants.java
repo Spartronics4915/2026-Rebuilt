@@ -19,9 +19,9 @@ public final class Constants {
         public static final int LEAD_MOTOR_ID = 22;
         public static final int FOLLOWER_MOTOR_ID = 23;
 
-        public static final double kP = 0.3;
+        public static final double kP = 0;
         public static final double kI = 0;
-        public static final double kD = 0.005;
+        public static final double kD = 0;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(kP)
