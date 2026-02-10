@@ -16,12 +16,12 @@ public final class Constants {
 
     public static class ShooterConstants {
         
-        public static final int LEAD_MOTOR_ID = 0;
-        public static final int FOLLOWER_MOTOR_ID = 0;
+        public static final int LEAD_MOTOR_ID = 22;
+        public static final int FOLLOWER_MOTOR_ID = 23;
 
-        public static final double kP = 0;
+        public static final double kP = 0.3;
         public static final double kI = 0;
-        public static final double kD = 0;
+        public static final double kD = 0.005;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(kP)
@@ -35,7 +35,7 @@ public final class Constants {
             .withSupplyCurrentLowerTime(1.0);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
-            .withSensorToMechanismRatio(0)
+            .withSensorToMechanismRatio(0.9375)
         ;
 
     }
