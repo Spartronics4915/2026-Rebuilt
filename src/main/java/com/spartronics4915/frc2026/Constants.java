@@ -379,25 +379,35 @@ public final class Constants {
 
     }
 
-    public static class SpindexerConstants {
-        public static final int SPINDEXER_MOTOR_ID = 0;
+    public static class IndexerConstants {
+        
+        public static final int MOTOR_ID = 17;
 
-        public static final double SPINDEXER_MAX_VELOCITY = 0;
-        public static final double SPINDEXER_MIN_VELOCITY = 0;
-        public static final double SPINDEXER_MAX_ACCELERATION = 0;
-        public static final double SPINDEXER_POSITION = 0;
-        public static final double SPINDEXER_VELOCITY = 0;
-        public static final double SPINDEXER_DELTA_TIME = 0;
+        public static final double P = 0;
+        public static final double I = 0;
+        public static final double D = 0;
 
-        public static final double SPINDEXER_P = 0;
-        public static final double SPINDEXER_I = 0;
-        public static final double SPINDEXER_D = 0;
+        public static final boolean CURRENT_LIMIT_ENABLE = true;
+        public static final double CURRENT_LIMIT = 60;
+        public static final double LOWER_LIMIT = 40;
 
-        public static final double SPINDEXER_CURRENT_LIMIT = 0;
-        public static final double SPINDEXER_LOWER_CURRENT_LIMIT = 0; 
-        public static final double SPINDEXER_LOWER_CURRENT_TIME = 0;
-        public static final double SPINDEXER_SENSOR_TO_MECHANISM_RATIO = 0;
-        public static final double SPINDEXER_MOTOR_SPEED = 0;
-        public static final boolean SPINDEXER_CURRENT_LIMIT_ENABLE = true;
+        public static final double LOWER_TIME = 1;
+        public static final double SENSOR_MECHANISM_RATIO = 12;
+
+        public static final SlotConfigs PID_CONFIG = new SlotConfigs()
+            .withKP(P)
+            .withKI(I)
+            .withKD(D);
+
+        public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
+            .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
+            .withSupplyCurrentLimit(CURRENT_LIMIT)
+            .withSupplyCurrentLowerLimit(LOWER_LIMIT)
+            .withSupplyCurrentLowerTime(LOWER_TIME);
+
+        public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
+            .withSensorToMechanismRatio(SENSOR_MECHANISM_RATIO);
+
     }
+
 }

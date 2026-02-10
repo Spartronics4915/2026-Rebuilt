@@ -1,4 +1,4 @@
-package com.spartronics4915.frc2026.subsystems.mechanisms.path;
+package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
 
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;

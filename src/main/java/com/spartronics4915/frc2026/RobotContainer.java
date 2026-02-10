@@ -16,8 +16,8 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstant
 
 import com.spartronics4915.frc2026.commands.DriveCommand;
 import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem;
-import com.spartronics4915.frc2026.subsystems.mechanisms.path.HoodSubsystem;
-import com.spartronics4915.frc2026.subsystems.mechanisms.path.ShooterSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.HoodSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;

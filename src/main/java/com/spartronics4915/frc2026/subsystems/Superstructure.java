@@ -1,14 +1,14 @@
 package com.spartronics4915.frc2026.subsystems;
 
-import com.spartronics4915.frc2026.subsystems.mechanisms.path.IntakeSubsystem;
-import com.spartronics4915.frc2026.subsystems.mechanisms.path.FeederSubsystem;
-import com.spartronics4915.frc2026.subsystems.mechanisms.path.HoodSubsystem;
-import com.spartronics4915.frc2026.subsystems.mechanisms.path.ShooterSubsystem;
-import com.spartronics4915.frc2026.subsystems.mechanisms.path.IndexerSubsystem;
-import com.spartronics4915.frc2026.subsystems.mechanisms.path.TurretSubsystem;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.FeederSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.HoodSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IntakeSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.TurretSubsystem;
 
 import static com.spartronics4915.frc2026.subsystems.Superstructure.SuperState.*;
 import static com.spartronics4915.frc2026.Constants.SuperstructureConstants.*;
