@@ -37,6 +37,10 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.AngularVelocity;
 
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
+import com.ctre.phoenix6.configs.FeedbackConfigs;
+import com.ctre.phoenix6.configs.SlotConfigs;
+
 public final class Constants {
     public static class OperatorConstants {
         public static final int DRIVER_CONTROLLER_PORT = 0;
@@ -233,6 +237,32 @@ public final class Constants {
             new Translation2d(0, 0),
             new Rotation2d()
         );
+
+    }
+
+    public static class ShooterConstants {
+        
+        public static final int LEAD_MOTOR_ID = 22;
+        public static final int FOLLOWER_MOTOR_ID = 23;
+
+        public static final double kP = 0.3;
+        public static final double kI = 0;
+        public static final double kD = 0.005;
+
+        public static final SlotConfigs PID_CONFIG = new SlotConfigs()
+            .withKP(kP)
+            .withKI(kI)
+            .withKD(kD);
+
+        public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
+            .withSupplyCurrentLimitEnable(true)
+            .withSupplyCurrentLimit(60)
+            .withSupplyCurrentLowerLimit(40)
+            .withSupplyCurrentLowerTime(1.0);
+
+        public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
+            .withSensorToMechanismRatio(0.9375)
+        ;
 
     }
 }
