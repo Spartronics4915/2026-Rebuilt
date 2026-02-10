@@ -4,6 +4,10 @@
 
 package com.spartronics4915.frc2026;
 
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
+import com.ctre.phoenix6.configs.FeedbackConfigs;
+import com.ctre.phoenix6.configs.SlotConfigs;
+
 public final class Constants {
     public static class OperatorConstants {
         public static final int DRIVER_CONTROLLER_PORT = 0;
@@ -12,53 +16,27 @@ public final class Constants {
 
     public static class ShooterConstants {
         
-        public static double deltaTime = 0;
-        
-        //Main motor----------------------------------
-        public static int mainShooterMotorID = 22;
-        // Pid control of mainShooterMotor
-        public static double MainP = 0;
-        public static double MainI = 0;
-        public static double MainD = 0;
-        
-        //Follower motor-------------------------------
-        public static int followerShooterMotorID = 23;
-        // Pid control 
-        public static double FollowerP = 0;
-        public static double FollowerI = 0;
-        public static double FollowerD = 0;
+        public static final int LEAD_MOTOR_ID = 0;
+        public static final int FOLLOWER_MOTOR_ID = 0;
 
-        //both motors----------------------------------
-        public static boolean   SupplyCurrentLimitEnabled   = true;
-        public static double    SupplyCurrentLimit          = 60;
-        public static double    SupplyCurrentLowerLimit     = 40;
-        public static double    SupplyCurrentLowerTime      = 1.0;
-        public static double    SensorToMechanismRatio      = 1;
-        
-        
-        
-        
-        //feed forward
-        public static double S = 0;
-        public static double V = 0;
-        public static double A = 0;
+        public static final double kP = 0;
+        public static final double kI = 0;
+        public static final double kD = 0;
 
-        //trap profile
-        public static double MaxVelocity = 20;     //is accel
-        public static double MaxAcceleration = 20; //is jerk
+        public static final SlotConfigs PID_CONFIG = new SlotConfigs()
+            .withKP(kP)
+            .withKI(kI)
+            .withKD(kD);
 
-        public static boolean motorTurnsClockWise = true;
-        //Main motor, looking at face of motor, true for clock wise , false for counter clock wise
-        public static boolean motorCoast = false;
-        //true for Coast, false for Brake
+        public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
+            .withSupplyCurrentLimitEnable(true)
+            .withSupplyCurrentLimit(60)
+            .withSupplyCurrentLowerLimit(40)
+            .withSupplyCurrentLowerTime(1.0);
 
-        //is the min and max speed of the motors
-        public static double minSpeed = 0;
-        public static double maxSpeed = 40;
-
-        
-
-
+        public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
+            .withSensorToMechanismRatio(0)
+        ;
 
     }
 }
