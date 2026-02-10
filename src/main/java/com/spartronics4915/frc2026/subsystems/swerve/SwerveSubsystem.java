@@ -31,6 +31,7 @@ import swervelib.parser.SwerveParser;
 
 public final class SwerveSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
+    File directory = new File(Filesystem.getDeployDirectory(),"swerve");
     private final SwerveDrive swerveDrive;
 
     private final StructPublisher<Pose2d> posePublisher = NetworkTableInstance.getDefault().getTable("logging").getStructTopic("pose", Pose2d.struct).publish();

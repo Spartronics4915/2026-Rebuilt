@@ -24,7 +24,7 @@ public class RobotContainer {
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
     private final CommandXboxController operatorController = new CommandXboxController(OperatorConstants.OPERATOR_CONTROLLER_PORT);
 
-    private final SwerveSubsystem drivebase = new SwerveSubsystem(null);
+    private final SwerveSubsystem drivebase = new SwerveSubsystem(SwerveConstants.SwerveDirectories.COMP_CHASSIS);
 
     public RobotContainer() {
         configureBindings();

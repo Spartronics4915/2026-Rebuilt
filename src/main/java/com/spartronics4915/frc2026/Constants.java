@@ -39,7 +39,7 @@ public final class Constants {
         public static final int OPERATOR_CONTROLLER_PORT = 1;
     }
 
-    public static class SwerveConstants {
+    public static final class SwerveConstants {
        public enum SwerveDirectories{
         COMP_CHASSIS("swerve/comp-chassis");
 
