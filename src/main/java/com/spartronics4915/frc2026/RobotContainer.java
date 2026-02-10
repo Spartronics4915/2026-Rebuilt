@@ -6,10 +6,12 @@ package com.spartronics4915.frc2026;
 
 import com.spartronics4915.frc2026.Constants.OperatorConstants;
 import com.spartronics4915.frc2026.commands.Autos;
+import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import swervelib.SwerveInputStream;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -21,9 +23,28 @@ public class RobotContainer {
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
     private final CommandXboxController operatorController = new CommandXboxController(OperatorConstants.OPERATOR_CONTROLLER_PORT);
 
+    private final SwerveSubsystem drivebase = new SwerveSubsystem(null);
+
     public RobotContainer() {
         configureBindings();
+        drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
     }
+
+    SwerveInputStream driveAngularVelocity = SwerveInputStream.of(drivebase.getSwerveDrive(), 
+                                                                  () -> m_driverController.getLeftY() * -1,
+                                                                  () -> m_driverController.getLeftX() * -1);
+                                                                  .withControllerRotationalAxis(m_driverController::getRightX)
+                                                                  .deadband(OperatorConstants.DEADBAND)
+                                                                  .scaleTranslation(0.8)
+                                                                  .allianceRelativeControl(true);
+
+    SwerveInputStream driveDirectAngle = driveAngularVelocity.copy().withControllerHeadingAxis(m_driverController::getRightX,
+                                                                                               m_driverController::getRightY)
+                                                                                               .headingWhile(true);
+
+    Command driveFieldOrientedDirectAngle = drivebase.driveFieldOriented(driveDirectAngle);
+
+    Command driveFieldOrientedAngularVeloity = drivebase.drivefieldOriented(driveAngularVelocity);
 
     /**
      * Use this method to define your trigger->command mappings. Triggers can be created via the

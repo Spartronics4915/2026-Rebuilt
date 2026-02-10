@@ -3,6 +3,7 @@ package com.spartronics4915.frc2026.subsystems.swerve;
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.spartronics4915.frc2026.Constants.SwerveConstants;
@@ -21,9 +22,11 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import swervelib.SwerveDrive;
+import swervelib.SwerveInputStream;
 import swervelib.parser.SwerveParser;
 
 public final class SwerveSubsystem extends SubsystemBase implements ModeSwitchInterface {
@@ -98,10 +101,6 @@ public final class SwerveSubsystem extends SubsystemBase implements ModeSwitchIn
         swerveDrive.drive(chassisSpeeds);
     }
 
-    public void driveFieldOriented(ChassisSpeeds chassisSpeeds) {
-        swerveDrive.driveFieldOriented(chassisSpeeds);
-    }
-
     public Pose2d getPose() {
         return swerveDrive.getPose();
     }
@@ -124,6 +123,20 @@ public final class SwerveSubsystem extends SubsystemBase implements ModeSwitchIn
 
     private void setPose(Pose2d pose2d) {
         throw new UnsupportedOperationException("Unimplemented method 'setPose'");
+    }
+
+    public SwerveDrive getSwerveDrive() {
+        return swerveDrive;
+    }
+
+    public void driveFieldOriented(ChassisSpeeds velocity) {
+        swerveDrive.driveFieldOriented(velocity);
+    }
+
+    public Command driveFieldOriented(Supplier<ChassisSpeeds> velocity){
+        return run(() -> (
+            swerveDrive.driveFieldOriented(velocity.get());
+        ));
     }
 
     @Override

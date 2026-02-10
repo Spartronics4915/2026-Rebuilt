@@ -58,6 +58,7 @@ public final class Constants {
        
         public static final double maxSpeed = Units.feetToMeters(6);
         public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(maxSpeed * Math.PI / chassisRadius);
+        public static final double DEADBAND = 0.05;
 
         public static final class AutoConstants {
             public static final PIDConstants translationPID = new PIDConstants(0, 0, 0);
