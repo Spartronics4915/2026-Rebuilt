@@ -12,12 +12,12 @@ public final class Constants {
         public static final int OPERATOR_CONTROLLER_PORT = 1;
     }
     public static class HoodConstants {
-        public static final double P = 250.0;
+        public static final double P = 0.0;
         public static final double I = 0.0;
-        public static final double D = 0.05;
+        public static final double D = 0.0;
 
-        public static final double HOOD_MAX_VELOCITY = 10;
-        public static final double HOOD_MAX_ACCELERATION = 10;
+        public static final double HOOD_MAX_VELOCITY = 0;
+        public static final double HOOD_MAX_ACCELERATION = 0;
 
         public static final double HOOD_DT = 0.02;
 
