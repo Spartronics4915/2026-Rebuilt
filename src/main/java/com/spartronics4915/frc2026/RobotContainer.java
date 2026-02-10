@@ -5,6 +5,7 @@
 package com.spartronics4915.frc2026;
 
 import com.spartronics4915.frc2026.Constants.OperatorConstants;
+import com.spartronics4915.frc2026.Constants.SwerveConstants;
 import com.spartronics4915.frc2026.commands.Autos;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 
@@ -31,20 +32,20 @@ public class RobotContainer {
     }
 
     SwerveInputStream driveAngularVelocity = SwerveInputStream.of(drivebase.getSwerveDrive(), 
-                                                                  () -> m_driverController.getLeftY() * -1,
-                                                                  () -> m_driverController.getLeftX() * -1);
-                                                                  .withControllerRotationalAxis(m_driverController::getRightX)
-                                                                  .deadband(OperatorConstants.DEADBAND)
+                                                                  () -> driverController.getLeftY() * -1,
+                                                                  () -> driverController.getLeftX() * -1)
+                                                                  .withControllerRotationAxis(driverController::getRightX)
+                                                                  .deadband(SwerveConstants.DEADBAND)
                                                                   .scaleTranslation(0.8)
                                                                   .allianceRelativeControl(true);
 
-    SwerveInputStream driveDirectAngle = driveAngularVelocity.copy().withControllerHeadingAxis(m_driverController::getRightX,
-                                                                                               m_driverController::getRightY)
+    SwerveInputStream driveDirectAngle = driveAngularVelocity.copy().withControllerHeadingAxis(driverController::getRightX,
+                                                                                               driverController::getRightY)
                                                                                                .headingWhile(true);
 
     Command driveFieldOrientedDirectAngle = drivebase.driveFieldOriented(driveDirectAngle);
 
-    Command driveFieldOrientedAngularVeloity = drivebase.drivefieldOriented(driveAngularVelocity);
+    Command driveFieldOrientedAngularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
 
     /**
      * Use this method to define your trigger->command mappings. Triggers can be created via the
