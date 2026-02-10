@@ -171,6 +171,10 @@ public class SwerveSubsystem extends SubsystemBase {
         movementOverride = override;
     }
 
+    public void lockModules(){
+        swerveDrive.lockPose();
+    }
+
     public boolean isFlat() {
         return Math.abs(swerveDrive.getPitch().getDegrees()) < TILT_THRESHOLD_DEGREES
             && Math.abs(swerveDrive.getRoll().getDegrees()) < TILT_THRESHOLD_DEGREES;
