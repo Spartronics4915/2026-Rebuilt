@@ -3,15 +3,13 @@ package com.spartronics4915.frc2026.subsystems.mechanisms.path;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 
-import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
-import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
-import com.ctre.phoenix6.configs.SlotConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
@@ -30,7 +28,7 @@ public class HoodSubsystem extends SubsystemBase {
     TalonFX motor = new TalonFX(HOOD_MOTOR_ID);
     
     TrapezoidProfile trapProfile = new TrapezoidProfile(
-	    new Constraints(HOOD_MAX_VELOCITY, HOOD_MAX_ACCELERATION)
+	    new Constraints(MAX_VELOCITY, MAX_ACCELERATION)
     );
 
     private Rotation2d currentSetpoint = Rotation2d.fromDegrees(0);
@@ -43,27 +41,13 @@ public class HoodSubsystem extends SubsystemBase {
     
     public HoodSubsystem() {
         TalonFXConfigurator motorConfig = motor.getConfigurator();
-        
-        motorConfig.apply(new SlotConfigs()
-            .withKP(P)
-            .withKI(I)
-            .withKD(D)
-        );
-        
-        motorConfig.apply(new CurrentLimitsConfigs()
-            .withSupplyCurrentLimitEnable(HOOD_CURRENT_LIMIT_ENABLE)
-            .withSupplyCurrentLimit(HOOD_CURRENT_LIMIT)
-            .withSupplyCurrentLowerLimit(HOOD_LOWER_LIMIT)
-            .withSupplyCurrentLowerTime(HOOD_LOWER_TIME)
-        );
-        
-        motorConfig.apply(new FeedbackConfigs()
-            .withSensorToMechanismRatio(HOOD_SENSOR_MECHANISM_RATIO)
-        );
+            motorConfig.apply(PID_CONFIG);
+            motorConfig.apply(CURRENT_LIMITS_CONFIG);
+            motorConfig.apply(FEEDBACK_CONFIG);
 
         MotorOutputConfigs motorOutputConfigs = new MotorOutputConfigs();
-        motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
-        motorConfig.apply(motorOutputConfigs);
+            motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
+            motorConfig.apply(motorOutputConfigs);
 
         currentState = new State(0, 0.0);
         motor.setPosition(0);
@@ -78,16 +62,16 @@ public class HoodSubsystem extends SubsystemBase {
     @Override
     public void periodic(){
     
-        //currentSetpoint = Rotation2d.fromRotations(
-        //    MathUtil.clamp(
-        //        currentSetpoint.getRotations(), 
-        //        MIN_ANGLE.getRotations(), 
-        //        MAX_ANGLE.getRotations()
-        //    )
-        //);
+        currentSetpoint = Rotation2d.fromRotations(
+            MathUtil.clamp(
+                currentSetpoint.getRotations(), 
+                MIN_ANGLE.getRotations(), 
+                MAX_ANGLE.getRotations()
+            )
+        );
 
         currentState = trapProfile.calculate(
-            HOOD_DT, 
+            DELTA_TIME, 
             currentState, 
             new State(currentSetpoint.getRotations(), 0.0)
         );

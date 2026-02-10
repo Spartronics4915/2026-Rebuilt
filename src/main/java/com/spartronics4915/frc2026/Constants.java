@@ -41,8 +41,6 @@ import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.SlotConfigs;
 
-import edu.wpi.first.math.geometry.Rotation2d;
-
 public final class Constants {
     public static class OperatorConstants {
         public static final int DRIVER_CONTROLLER_PORT = 0;
@@ -247,46 +245,106 @@ public final class Constants {
         public static final int LEAD_MOTOR_ID = 22;
         public static final int FOLLOWER_MOTOR_ID = 23;
 
-        public static final double kP = 0.3;
-        public static final double kI = 0;
-        public static final double kD = 0.005;
+        public static final double P = 0.3;
+        public static final double I = 0;
+        public static final double D = 0.005;
+
+        public static final boolean CURRENT_LIMIT_ENABLE = true;
+        public static final double CURRENT_LIMIT = 40;
+        public static final double LOWER_LIMIT = 20;
+
+        public static final double LOWER_TIME = 1;
+        public static final double SENSOR_MECHANISM_RATIO = 85.3333333;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
-            .withKP(kP)
-            .withKI(kI)
-            .withKD(kD);
+            .withKP(P)
+            .withKI(I)
+            .withKD(D);
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
-            .withSupplyCurrentLimitEnable(true)
-            .withSupplyCurrentLimit(60)
-            .withSupplyCurrentLowerLimit(40)
-            .withSupplyCurrentLowerTime(1.0);
+            .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
+            .withSupplyCurrentLimit(CURRENT_LIMIT)
+            .withSupplyCurrentLowerLimit(LOWER_LIMIT)
+            .withSupplyCurrentLowerTime(LOWER_TIME);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
-            .withSensorToMechanismRatio(0.9375)
-        ;
+            .withSensorToMechanismRatio(SENSOR_MECHANISM_RATIO);
 
     }
+    
     public static class HoodConstants {
+
+        public static final int HOOD_MOTOR_ID = 21;
+
         public static final double P = 250.0;
         public static final double I = 0.0;
         public static final double D = 0.05;
 
-        public static final double HOOD_MAX_VELOCITY = 10;
-        public static final double HOOD_MAX_ACCELERATION = 10;
+        public static final double MAX_VELOCITY = 10;
+        public static final double MAX_ACCELERATION = 10;
 
-        public static final double HOOD_DT = 0.02;
+        public static final double DELTA_TIME = 0.02;
 
-        public static final int HOOD_MOTOR_ID = 21;
+        public static final boolean CURRENT_LIMIT_ENABLE = true;
+        public static final double CURRENT_LIMIT = 40;
+        public static final double LOWER_LIMIT = 20;
 
-        public static final boolean HOOD_CURRENT_LIMIT_ENABLE = true;
-        public static final double HOOD_CURRENT_LIMIT = 40;
-        public static final double HOOD_LOWER_LIMIT = 20;
-
-        public static final double HOOD_LOWER_TIME = 1;
-        public static final double HOOD_SENSOR_MECHANISM_RATIO = 85.3333333;
+        public static final double LOWER_TIME = 1;
+        public static final double SENSOR_MECHANISM_RATIO = 85.3333333;
 
         public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(0);
         public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(30);
+
+        public static final SlotConfigs PID_CONFIG = new SlotConfigs()
+            .withKP(P)
+            .withKI(I)
+            .withKD(D);
+
+        public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
+            .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
+            .withSupplyCurrentLimit(CURRENT_LIMIT)
+            .withSupplyCurrentLowerLimit(LOWER_LIMIT)
+            .withSupplyCurrentLowerTime(LOWER_TIME);
+
+        public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
+            .withSensorToMechanismRatio(SENSOR_MECHANISM_RATIO);
+    }
+
+    public static class PivotConstants {
+
+        public static final int PIVOT_MOTOR_ID = 14;
+
+        public static final double P = 0.0;
+        public static final double I = 0.0;
+        public static final double D = 0.0;
+
+        public static final double MAX_VELOCITY = 0;
+        public static final double MAX_ACCELERATION = 0;
+
+        public static final double DELTA_TIME = 0.02;
+
+        public static final boolean CURRENT_LIMIT_ENABLE = true;
+        public static final double CURRENT_LIMIT = 40;
+        public static final double LOWER_LIMIT = 20;
+
+        public static final double LOWER_TIME = 1;
+        public static final double SENSOR_MECHANISM_RATIO = 0;
+
+        public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(0);
+        public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(30);
+
+        public static final SlotConfigs PID_CONFIG = new SlotConfigs()
+            .withKP(P)
+            .withKI(I)
+            .withKD(D);
+
+        public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
+            .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
+            .withSupplyCurrentLimit(CURRENT_LIMIT)
+            .withSupplyCurrentLowerLimit(LOWER_LIMIT)
+            .withSupplyCurrentLowerTime(LOWER_TIME);
+
+        public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
+            .withSensorToMechanismRatio(SENSOR_MECHANISM_RATIO);
     }
 }
