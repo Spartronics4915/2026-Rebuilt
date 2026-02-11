@@ -1,29 +1,29 @@
 package com.spartronics4915.frc2026.subsystems;
 
-import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.Robot;
-import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
-import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem;
-import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem.PivotState;
+
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.FeederSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.HoodSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IntakeSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.TurretSubsystem;
-import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.FeederSubsystem.FeederState;
-import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.HoodSubsystem.HoodState;
-import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem.IndexerState;
-import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem.ShooterState;
+
+import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem;
+import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
+
+import static com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.FeederSubsystem.FeederState.*;
+import static com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.HoodSubsystem.HoodState.*;
+import static com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem.IndexerState.*;
+import static com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem.ShooterState.*;
 
 import static com.spartronics4915.frc2026.subsystems.Superstructure.SuperState.*;
-import static edu.wpi.first.units.Units.Rotation;
 import static com.spartronics4915.frc2026.Constants.SuperstructureConstants.*;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class Superstructure extends SubsystemBase{
@@ -132,33 +132,38 @@ public class Superstructure extends SubsystemBase{
         return RobotLocation.ALLIANCE_ZONE;
     }
 
-    /**
-     * 
-     */
     private void transition(SuperState wantedState) {
         switch (wantedState) {
             case STOWED:
+                toStowed();
                 break;
             
             case IDLE:
+                toIdle();
                 break;
 
             case TRAVERSAL:
+                toTransversal();
                 break;
 
             case SHOOTING:
+                toShooting();
                 break;
 
             case TRENCH:
+                toTrench();
                 break;
 
             case SAFE:
+                toSafe();
                 break;
 
             case PRE_CLIMB:
+                toPreClimb();
                 break;
 
             case ACTIVE_CLIMB:
+                toActiveClimb();
                 break;
 
             case TESTING:
@@ -228,9 +233,6 @@ public class Superstructure extends SubsystemBase{
         override = true;
         transition(overrideState);
     }
-
-    // Something to consider is having a method that will determine the starting state of the robot,
-    // Or just have it force it to stow/sit idle
 
 }
 
