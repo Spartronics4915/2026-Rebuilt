@@ -108,6 +108,26 @@ public final class Constants {
             public static final Translation2d approachTransform = new Translation2d(-1.1, 0);
             public static final Translation2d exitTransform = new Translation2d(centerPose.getX() - hubPose.getX(), 0);
 
+            public static final Translation2d fuelZoneXAxisPose = new Translation2d(7.512, 4.035);
+            public static final Translation2d startOfFuelTransform = new Translation2d(0.0, 1.889);
+            public static final Translation2d endQuadrantTransform = new Translation2d(0.0, 0.708);
+            public static final Translation2d endOfFuelTransform = new Translation2d(0.0, -1.685);
+
+            public static final PathConstraints quadrantPathConstraints = new PathConstraints(
+                null, 
+                null, 
+                null, 
+                null
+                //add these later
+            );
+
+            public static final PathConstraints fuelZoneConstraints = new PathConstraints(
+                null,
+                null,
+                null,
+                null
+            );
+
             public static final Distance robotLength = Inches.of(30);
             public static final Distance robotWidth = Inches.of(30);
             public static final Distance intakeLength = Inches.of(6);
@@ -136,6 +156,8 @@ public final class Constants {
 
             public static final Rotation2d trenchApproachAngle = Rotation2d.fromDegrees(0.0);
             public static final Rotation2d bumpApproachAngle = Rotation2d.fromDegrees(45.0);
+            public static final Rotation2d startOfFuelAngle = Rotation2d.fromDegrees(299); //This guy might need to be changed
+            public static final Rotation2d endOfQuadrantAngle = Rotation2d.fromDegrees(-90.0);
 
             public enum PathplannerConfigs {
                 TEST_CHASSIS(new RobotConfig(
