@@ -74,7 +74,6 @@ public class Superstructure extends SubsystemBase{
         IDLE, 
         TRAVERSAL,
         SHOOTING,
-        TRENCH,
         SAFE,
         PRE_CLIMB,
         ACTIVE_CLIMB,
@@ -100,28 +99,33 @@ public class Superstructure extends SubsystemBase{
             case ALLIANCE_ZONE:
                 if (!Robot.hubEnabled || Robot.timeUntilSwitch > 3) return;
                 if (currentState == SHOOTING) return;
+                transition(SHOOTING);
                 break;
 
             case TRENCH:
-                if (currentState == TRENCH) return;
+                if (currentState == SAFE) return;
+                transition(SAFE);
                 break;
 
             case BUMP:
                 if (currentState == SAFE) return;
+                transition(SAFE);
                 break;
 
             case NEUTRAL_ZONE:
                 if (currentState == TRAVERSAL) return;
+                transition(TRAVERSAL);
                 break;
 
             case OTHER_ALLIANCE_ZONE:
                 if (currentState == SAFE) return;
+                transition(SAFE);
                 break;
             
             case THE_VOID:
                 if (currentState == IDLE) return;
+                transition(IDLE);
                 break;
-            
         }
     }
 
@@ -148,10 +152,6 @@ public class Superstructure extends SubsystemBase{
 
             case SHOOTING:
                 toShooting();
-                break;
-
-            case TRENCH:
-                toTrench();
                 break;
 
             case SAFE:
@@ -188,10 +188,6 @@ public class Superstructure extends SubsystemBase{
     }
     
     private Command toShooting() { 
-        return null;
-    }
-
-    private Command toTrench() { 
         return null;
     }
 
