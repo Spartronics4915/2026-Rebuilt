@@ -118,8 +118,8 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
         return this.runOnce(() -> setSetpoint(newSetpoint));
     }
 
-    public Command presetCommand(PivotState preset){
-        return setSetpointCommand(preset.angle);
+    public Command setStateCommand(PivotState state){
+        return setSetpointCommand(state.angle);
     }
  
     public enum PivotState {

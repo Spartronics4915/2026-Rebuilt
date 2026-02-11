@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import static com.spartronics4915.frc2026.Constants.ShooterConstants.*;
 
 public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterface {
+
     private TalonFX leadMotor;
     private TalonFX followerMotor;
 
@@ -67,6 +68,10 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     public double getCurrentRPM() {
         return leadMotor.getVelocity().getValueAsDouble();
+    }
+
+    public double getCurrentSetpoint() {
+        return currentSetpoint;
     }
 
     public void setSetpoint(double setpoint){
