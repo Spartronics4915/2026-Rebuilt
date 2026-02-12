@@ -37,27 +37,27 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  */
 public class RobotContainer {
     
-    public final HoodSubsystem hoodSubsystem = new HoodSubsystem();
+    // public final HoodSubsystem hoodSubsystem = new HoodSubsystem();
     public final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
-    public final PivotSubsystem pivotSubsystem = new PivotSubsystem();
-    public final SwerveSubsystem swerveSubsystem = new SwerveSubsystem(SwerveConfigurations.COMP_CHASSIS);
-    public final VisionSubsystem visionSubsystem = new VisionSubsystem(
-        VisionConstants.CameraConstants.cameras, 
-        VisionConstants.LAYOUT, 
-        new VisionConfiguration(), 
-        swerveSubsystem::addVisionMeasurement, 
-        swerveSubsystem
-    );
+    //public final PivotSubsystem pivotSubsystem = new PivotSubsystem();
+    //public final SwerveSubsystem swerveSubsystem = new SwerveSubsystem(SwerveConfigurations.COMP_CHASSIS);
+    //public final VisionSubsystem visionSubsystem = new VisionSubsystem(
+    //    VisionConstants.CameraConstants.cameras, 
+    //    VisionConstants.LAYOUT, 
+    //    new VisionConfiguration(), 
+    //    swerveSubsystem::addVisionMeasurement, 
+    //    swerveSubsystem
+    //);
     
-    private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
+    //private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
 
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
     private final CommandXboxController operatorController = new CommandXboxController(OperatorConstants.OPERATOR_CONTROLLER_PORT);
 
-    public DriveCommand driveCommand = new DriveCommand(driverController, swerveSubsystem);
+    //public DriveCommand driveCommand = new DriveCommand(driverController, swerveSubsystem);
 
     public RobotContainer() {
-        configureBindings();
+        //configureBindings();
     }
 
     /**
@@ -67,7 +67,7 @@ public class RobotContainer {
      * Xbox}/{@link edu.wpi.first.wpilibj2.command.button.CommandPS4Controller PS4} controllers or
      * {@link edu.wpi.first.wpilibj2.command.button.CommandJoystick Flight joysticks}.
      */
-    private void configureBindings() {
+    /*private void configureBindings() {
         swerveSubsystem.setDefaultCommand(driveCommand);
 
         driverController.b().onTrue(
@@ -129,7 +129,7 @@ public class RobotContainer {
                 swerveSubsystem.setMovementOverride(null);
             })
         );
-    }
+    }*/
 
     /**
      * Use this to pass the autonomous command to the main {@link Robot} class.

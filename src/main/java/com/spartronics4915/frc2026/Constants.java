@@ -245,19 +245,20 @@ public final class Constants {
         public static final int LEAD_MOTOR_ID = 22;
         public static final int FOLLOWER_MOTOR_ID = 23;
 
-        public static final double P = 0.3;
+        public static final double P = 0.35;
         public static final double I = 0;
-        public static final double D = 0.005;
+        public static final double D = 0;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
         public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 1;
-        public static final double SENSOR_MECHANISM_RATIO = 85.3333333;
+        public static final double SENSOR_MECHANISM_RATIO = 0.9375;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
+            
             .withKI(I)
             .withKD(D);
 
@@ -278,7 +279,7 @@ public final class Constants {
 
         public static final double P = 250.0;
         public static final double I = 0.0;
-        public static final double D = 0.05;
+        public static final double D = 0.1;
 
         public static final double MAX_VELOCITY = 10;
         public static final double MAX_ACCELERATION = 10;

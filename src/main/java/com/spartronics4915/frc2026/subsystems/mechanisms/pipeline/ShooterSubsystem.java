@@ -3,6 +3,7 @@ package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
@@ -24,8 +25,9 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     private double currentSetpoint;
 
-    private DoublePublisher rpmPublisher = NetworkTableInstance.getDefault().getDoubleTopic("RPM").publish();
+    private DoublePublisher rpmPublisher = NetworkTableInstance.getDefault().getDoubleTopic("RPS").publish();
     private DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Setpoint").publish();
+    private DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Applied Out").publish();
 
     //#region Main Functionality
 
@@ -59,14 +61,20 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     @Override
     public void periodic() {
-        VelocityVoltage request = new VelocityVoltage(currentSetpoint);
-        leadMotor.setControl(request);
+        if (currentSetpoint != 0) {
+            VelocityVoltage request = new VelocityVoltage(currentSetpoint);
+            leadMotor.setControl(request);
+        } else {
+            VoltageOut request = new VoltageOut(0.0);
+            leadMotor.setControl(request);
+        }
 
-        rpmPublisher.accept(getCurrentRPM());
+        rpmPublisher.accept(getCurrentRPS());
         setpointPublisher.accept(currentSetpoint);
+        appliedOutPublisher.accept(leadMotor.getDutyCycle().getValueAsDouble());
     }
 
-    public double getCurrentRPM() {
+    public double getCurrentRPS() {
         return leadMotor.getVelocity().getValueAsDouble();
     }
 
@@ -79,7 +87,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     }
 
     public void setState(ShooterState state) {
-        setSetpoint(state.rpm);
+        setSetpoint(state.rps);
     }
 
     //#endregion
@@ -91,17 +99,17 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     }
 
     public Command setStateCommand(ShooterState state){
-        return setSetpointCommand(state.rpm);
+        return setSetpointCommand(state.rps);
     }
 
     public enum ShooterState{
         ON(100),
         OFF(0);
 
-        double rpm;
+        double rps;
 
-        private ShooterState(double rpm) {
-            this.rpm = rpm;
+        private ShooterState(double rps) {
+            this.rps = rps;
         }
     }
 
@@ -109,4 +117,5 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     public void onModeSwitch() {
         setState(ShooterState.OFF);
     }
+
 }
