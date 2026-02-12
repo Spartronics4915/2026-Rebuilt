@@ -53,7 +53,8 @@ public class DriveToPOI {
                     return Commands.sequence(
                         Commands.parallel(
                             // Move climber up while driving up,
-                            generatePathFromWaypoint(
+                            Autos.generatePathFromWaypoint(
+                                swerve,
                                 towerPose.plus(
                                     towerTransform.plus(
                                         new Translation2d(0, towerPadding.in(Meters))
@@ -71,7 +72,8 @@ public class DriveToPOI {
                         ),
                         PositionPIDCommand.generateCommand(
                             swerve,
-                            flipIfNeeded(
+                            Autos.flipIfNeeded(
+                                swerve,
                                 new Pose2d(
                                     towerPose.plus(
                                         towerTransform.plus(
@@ -89,7 +91,8 @@ public class DriveToPOI {
                     );
                 }
                 case DEPOT: {
-                    return generatePathFromWaypoint(
+                    return Autos.generatePathFromWaypoint(
+                        swerve,
                         depotPose.plus(
                             new Translation2d(robotLength.in(Meters) / 2.0 + intakeLength.in(Meters), 0)
                         ),
@@ -98,7 +101,8 @@ public class DriveToPOI {
                     );
                 }
                 case OUTPOST: {
-                    return generatePathFromWaypoint(
+                    return Autos.generatePathFromWaypoint(
+                        swerve,
                         outpostPose.plus(
                             new Translation2d(robotWidth.in(Meters) / 2.0, 0)
                         ),
@@ -113,61 +117,5 @@ public class DriveToPOI {
                 }
             }
         }, Set.of(swerve));
-    }
-
-    private Command generatePathFromWaypoint(Translation2d translation, Rotation2d endingHeading, Rotation2d endingVelocityHeading) {
-        Pose2d waypoint = new Pose2d(translation, endingVelocityHeading);
-        List<Pose2d> poses = new ArrayList<>(List.of(waypoint));
-
-        poses.add(
-            0, 
-            flipIfNeeded(
-                new Pose2d(
-                    swerve.getPose().getTranslation(), 
-                    getPathVelocityHeading(swerve.getFieldVelocity(), poses.get(0))
-                )
-            )
-        );
-
-        List<Waypoint> waypoints = PathPlannerPath.waypointsFromPoses(poses);
-
-        LinearVelocity startingVel = MetersPerSecond.of(
-            Math.max(
-                getVelocityMagnitude(swerve.getFieldVelocity()).in(MetersPerSecond),
-                0.1
-            )
-        );
-
-        PathPlannerPath path = new PathPlannerPath(
-            waypoints,
-            defaultPathConstraints,
-            new IdealStartingState(
-                startingVel,
-                swerve.getRelativeHeading().rotation().toRotation2d()
-            ),
-            new GoalEndState(0.0, endingHeading)
-        );
-
-        return AutoBuilder.followPath(path);
-    }
-
-    private LinearVelocity getVelocityMagnitude(ChassisSpeeds cs){
-        return MetersPerSecond.of(new Translation2d(cs.vxMetersPerSecond, cs.vyMetersPerSecond).getNorm());
-    }
-
-    private Rotation2d getPathVelocityHeading(ChassisSpeeds cs, Pose2d target){
-        if (getVelocityMagnitude(cs).in(MetersPerSecond) < 0.25) {
-            Translation2d diff = flipIfNeeded(target).getTranslation().minus(swerve.getPose().getTranslation());
-            return (diff.getNorm() < 0.01) ? target.getRotation() : diff.getAngle();
-        }
-        return new Rotation2d(cs.vxMetersPerSecond, cs.vyMetersPerSecond);
-    }
-
-    private Pose2d flipIfNeeded(Pose2d pose) {
-        if (swerve.shouldFlip()) {
-            return FlippingUtil.flipFieldPose(pose);
-        } else {
-            return pose;
-        }
     }
 }
