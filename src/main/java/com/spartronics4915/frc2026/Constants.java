@@ -102,7 +102,7 @@ public final class Constants {
             public static final Translation2d hubPose = new Translation2d(4.625, 4.035);
             public static final Translation2d outpostPose = new Translation2d(0.0, 0.666);
             public static final Translation2d depotPose = new Translation2d(0.0, 5.964);
-            public static final Translation2d towerTransform = new Translation2d(0.0, 0.505);
+            public static final Translation2d towerTransform = new Translation2d(0.0, 0.445);
             public static final Translation2d trenchTransform = new Translation2d(0, -3.4);
             public static final Translation2d bumpTransform = new Translation2d(0, -1.523);
             public static final Translation2d approachTransform = new Translation2d(-1.1, 0);
@@ -111,10 +111,10 @@ public final class Constants {
             public static final Distance robotLength = Inches.of(30);
             public static final Distance robotWidth = Inches.of(30);
             public static final Distance intakeLength = Inches.of(6);
-            public static final Distance towerPadding = Inches.of(5);
+            public static final Distance towerPadding = Inches.of(2);
 
             public static final PathConstraints defaultPathConstraints = new PathConstraints(
-                4,
+                3.0,
                 5.0,
                 1/2 * Math.PI,
                 1 * Math.PI
