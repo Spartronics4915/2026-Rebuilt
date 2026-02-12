@@ -1,11 +1,11 @@
 {
   "angle": {
-    "type": "krakenX44",
+    "type": "talonfx",
     "id": 1,
     "canbus": null
   },
   "drive": {
-    "type": "krakenX60",
+    "type": "talonfx",
     "id": 2,
     "canbus": null
   },
