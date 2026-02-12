@@ -37,6 +37,7 @@ public class PositionPIDCommand extends Command{
 
     private final DoublePublisher xErrLogger = NetworkTableInstance.getDefault().getTable("logging").getDoubleTopic("X Error").publish();
     private final DoublePublisher yErrLogger = NetworkTableInstance.getDefault().getTable("logging").getDoubleTopic("Y Error").publish();
+    private final DoublePublisher rErrLogger = NetworkTableInstance.getDefault().getTable("logging").getDoubleTopic("R Error").publish();
 
 
 
@@ -70,6 +71,7 @@ public class PositionPIDCommand extends Command{
 
         xErrLogger.accept(mSwerve.getPose().getX() - goalPose.getX());
         yErrLogger.accept(mSwerve.getPose().getY() - goalPose.getY());
+        rErrLogger.accept(mSwerve.getPose().getRotation().getDegrees() - goalPose.getRotation().getDegrees());
     }
 
     @Override
@@ -90,7 +92,7 @@ public class PositionPIDCommand extends Command{
 
         Pose2d diff = mSwerve.getPose().relativeTo(goalPose);
 
-        var rotation = MathUtil.isNear(
+        Boolean rotation = MathUtil.isNear(
             0.0, 
             diff.getRotation().getRotations(), 
             rotationTolerance.getRotations(), 
@@ -98,11 +100,9 @@ public class PositionPIDCommand extends Command{
             1.0
         );
 
-        var position = diff.getTranslation().getNorm() < positionTolerance.in(Meters);
+        Boolean position = diff.getTranslation().getNorm() < positionTolerance.in(Meters);
 
-        var speed = mSwerve.getSpeed() < speedTolerance.in(MetersPerSecond);
-
-        // System.out.println("end trigger conditions R: "+ rotation + "\tP: " + position + "\tS: " + speed);
+        Boolean speed = mSwerve.getSpeed() < speedTolerance.in(MetersPerSecond);
         
         return endTriggerDebouncer.calculate(
             rotation && position && speed
