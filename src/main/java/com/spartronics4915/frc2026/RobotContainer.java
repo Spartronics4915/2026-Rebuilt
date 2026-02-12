@@ -135,6 +135,14 @@ public class RobotContainer {
      * @return the command to run in autonomous
      */
     public Command getAutonomousCommand() {
-        return Autos.nothingAuto();
+        return Commands.sequence(
+            transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, true),
+            transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, false),
+            POIfactory.generateCommand(POI.DEPOT),
+            transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, true),
+            transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, false),
+            POIfactory.generateCommand(POI.OUTPOST),
+            POIfactory.generateCommand(POI.TOWER)
+        );
     }
 }
