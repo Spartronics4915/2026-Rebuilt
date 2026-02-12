@@ -210,8 +210,8 @@ public final class Constants {
 
             public static final Transform3d RIGHT_CAMERA_TRANSFORM = new Transform3d(
                 new Translation3d(
-                    0.315, 
-                    0.116,
+                    0.3556, 
+                    0.180975,
                     0.14
                 ),
                 new Rotation3d(
@@ -236,19 +236,19 @@ public final class Constants {
 
             public static final Map<String, ProcessorInterface> cameras = Map.of(
                 "right", new PhotonProcessor(
-                    "right", 
+                    "daniil", 
                     LAYOUT,
                     RIGHT_CAMERA_TRANSFORM, 
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
-                ),
-                "left", new PhotonProcessor(
-                    "left", 
-                    LAYOUT,
-                    LEFT_CAMERA_TRANSFORM,
-                    SIM_CAMERA_PROPERTIES,
-                    () -> new ChassisSpeeds()
                 )
+                //"left", new PhotonProcessor(
+                //    "left", 
+                //    LAYOUT,
+                //    LEFT_CAMERA_TRANSFORM,
+                //    SIM_CAMERA_PROPERTIES,
+                //    () -> new ChassisSpeeds()
+                //)
             );
         }
 
