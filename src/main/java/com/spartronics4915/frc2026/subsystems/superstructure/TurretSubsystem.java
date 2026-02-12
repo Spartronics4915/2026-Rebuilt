@@ -1,7 +1,6 @@
 package com.spartronics4915.frc2026.subsystems.superstructure;
 
 import static edu.wpi.first.units.Units.Degrees;
-
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.SlotConfigs;
@@ -10,7 +9,6 @@ import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.spartronics4915.frc2026.Constants;
-
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
@@ -18,7 +16,6 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -90,14 +87,14 @@ public class TurretSubsystem extends SubsystemBase{
 
    /**
     * Sets the turrets rotation value
-    * @param input the desired rotation value, in degrees
+    * @param input the desired rotation value, as a rotation 2d
     */
     public Command setTurret(Rotation2d input){
         return this.runOnce(()->currentSetPoint = input.getRotations());
     }
     /**
      * increments the turret's angle 
-     * @param input the amount you wish to modify the turret's angle by, in degrees 
+     * @param input the amount you wish to modify the turret's angle by, as a rotation 2d
      */
     public Command incrementTurret(Rotation2d input){
         return this.runOnce(()->currentSetPoint += input.getRotations());
@@ -107,8 +104,7 @@ public class TurretSubsystem extends SubsystemBase{
      * @return the angle of the turret as a rotation 2d
      */
     public Rotation2d getAngle(){
-        // Daniil claimed he would put fancy code here that will magically make it work 
-
+        // Daniil claimed he would put fancy code here that will magically make it work (This is where the encoder code should go when he gets to it)
         return Rotation2d.fromDegrees(turretMotor.getPosition().getValue().in(Degrees));
     }
 

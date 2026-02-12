@@ -22,7 +22,7 @@ public final class Constants {
         public static final double CURRENT_LOWER_TIME = 1.0;
 
         public static final double SENSOR_TO_MECHANISM_RATIO = 1;
-        public static final double MIN_ROTATION = -1; //The Turret Subsystem is currently written using rotations as the values in its pid, so this is equivilent to -360 deegrees
+        public static final double MIN_ROTATION = -1; //The Turret Subsystem is currently written using rotations as the values in its pid, so this is equivalent to -360 degrees
         public static final double MAX_ROTATION = 1;
 
         public static final double MAX_VELOCITY = 4;
