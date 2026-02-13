@@ -76,7 +76,7 @@ public final class Constants {
         }
 
         public static final class AutoConstants {
-            public static final PIDConstants translationPID = new PIDConstants(5.0,0,0);
+            public static final PIDConstants translationPID = new PIDConstants(7.5,0,0);
             public static final PIDConstants rotationPID = new PIDConstants(5.0,0,0);
 
             public static final PPHolonomicDriveController driveController = new PPHolonomicDriveController(
@@ -111,7 +111,7 @@ public final class Constants {
             public static final Distance robotLength = Inches.of(30);
             public static final Distance robotWidth = Inches.of(30);
             public static final Distance intakeLength = Inches.of(6);
-            public static final Distance towerPadding = Inches.of(2);
+            public static final Distance towerPadding = Inches.of(10);
 
             public static final PathConstraints defaultPathConstraints = new PathConstraints(
                 3.0,
