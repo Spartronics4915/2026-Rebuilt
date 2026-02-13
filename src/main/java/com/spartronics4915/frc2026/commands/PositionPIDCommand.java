@@ -19,6 +19,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.units.measure.Time;
@@ -38,12 +39,13 @@ public class PositionPIDCommand extends Command{
     private final DoublePublisher xErrLogger = NetworkTableInstance.getDefault().getTable("logging").getDoubleTopic("X Error").publish();
     private final DoublePublisher yErrLogger = NetworkTableInstance.getDefault().getTable("logging").getDoubleTopic("Y Error").publish();
     private final DoublePublisher rErrLogger = NetworkTableInstance.getDefault().getTable("logging").getDoubleTopic("R Error").publish();
-
+    private final BooleanPublisher aligning = NetworkTableInstance.getDefault().getTable("logging").getBooleanTopic("Aligning").publish();
 
 
     private PositionPIDCommand(SwerveSubsystem mSwerve, Pose2d goalPose) {
         this.mSwerve = mSwerve;
         this.goalPose = goalPose;
+        addRequirements(mSwerve);
     }
 
     public static Command generateCommand(SwerveSubsystem swerve, Pose2d goalPose, Time timeout){
@@ -56,6 +58,7 @@ public class PositionPIDCommand extends Command{
     @Override
     public void initialize() {
         timer.restart();
+        aligning.set(true);
     }
 
     @Override
@@ -85,6 +88,7 @@ public class PositionPIDCommand extends Command{
             + "\nRotation offset: " + diff.getRotation().getMeasure().in(Degrees) + " deg"
             + "\nVelocity value: " + mSwerve.getSpeed() + "m/s"
         );
+        aligning.set(false);
     }
 
     @Override
