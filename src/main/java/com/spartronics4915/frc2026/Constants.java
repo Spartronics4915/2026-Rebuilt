@@ -58,8 +58,8 @@ public final class Constants {
         public static boolean IS_FIELD_RELATIVE = true;
 
         public static final double STICK_DEADBAND = 0.05;
-        public static final double TILT_THRESHOLD_DEGREES = 5.0;
-        public static final double TILT_DEBOUNCE = 0.2;
+        public static final double TILT_THRESHOLD_DEGREES = 1.0;
+        public static final double TILT_DEBOUNCE = 0.3;
 
         public static final Constraints trenchAlignConstraints = new Constraints(3, 3);
 
