@@ -7,9 +7,6 @@ import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
-import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem.TurretClamp;
-import com.spartronics4915.frc2026.util.ModeSwitchHandler;
-import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -19,16 +16,16 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+import com.spartronics4915.frc2026.util.ModeSwitchHandler;
+import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 import static com.spartronics4915.frc2026.Constants.HoodConstants.*;
 
 public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
     TalonFX motor = new TalonFX(MOTOR_ID);
-    
     TrapezoidProfile trapezoidProfile = new TrapezoidProfile(
 	    new Constraints(MAX_VELOCITY, MAX_ACCELERATION)
     );

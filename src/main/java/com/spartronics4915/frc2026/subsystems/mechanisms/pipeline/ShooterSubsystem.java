@@ -63,13 +63,12 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     @Override
     public void periodic() {
-        double limitedSetpoint;
+        double limitedSetpoint = (currentSetpoint != 0) ? 0 : RPSLimiter.calculate(currentSetpoint);
+
         if (currentSetpoint != 0) {
-            limitedSetpoint = RPSLimiter.calculate(currentSetpoint);
             VelocityVoltage request = new VelocityVoltage(limitedSetpoint);
             leadMotor.setControl(request);
         } else {
-            limitedSetpoint = 0;
             RPSLimiter.reset(0);
             VoltageOut request = new VoltageOut(0.0);
             leadMotor.setControl(request);

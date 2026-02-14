@@ -21,7 +21,6 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private TalonFX motor;
 
     private SlewRateLimiter RPSLimiter = new SlewRateLimiter(MAX_ACCELERATION);
-
     private double currentSetpoint;
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("feeder").getDoubleTopic("applied out").publish();
@@ -46,13 +45,12 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     @Override
     public void periodic() {
-        double limitedSetpoint;
+        double limitedSetpoint = (currentSetpoint != 0) ? 0 : RPSLimiter.calculate(currentSetpoint);
+
         if (currentSetpoint != 0) {
-            limitedSetpoint = RPSLimiter.calculate(currentSetpoint);
             VelocityVoltage request = new VelocityVoltage(limitedSetpoint);
             motor.setControl(request);
         } else {
-            limitedSetpoint = 0;
             RPSLimiter.reset(0);
             VoltageOut request = new VoltageOut(0.0);
             motor.setControl(request);
