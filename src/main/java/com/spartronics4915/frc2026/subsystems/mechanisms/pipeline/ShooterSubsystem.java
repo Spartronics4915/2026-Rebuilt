@@ -10,6 +10,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -23,9 +24,12 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private TalonFX leadMotor;
     private TalonFX followerMotor;
 
+    private SlewRateLimiter RPSLimiter = new SlewRateLimiter(MAX_ACCELERATION);
+
     private double currentSetpoint;
 
     private DoublePublisher rpmPublisher = NetworkTableInstance.getDefault().getDoubleTopic("RPS").publish();
+    private DoublePublisher desiredRPSPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Desired RPS").publish();
     private DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Setpoint").publish();
     private DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Applied Out").publish();
 
@@ -61,16 +65,21 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     @Override
     public void periodic() {
+        double limitedSetpoint;
         if (currentSetpoint != 0) {
-            VelocityVoltage request = new VelocityVoltage(currentSetpoint);
+            limitedSetpoint = RPSLimiter.calculate(currentSetpoint);
+            VelocityVoltage request = new VelocityVoltage(limitedSetpoint);
             leadMotor.setControl(request);
         } else {
+            limitedSetpoint = 0;
+            RPSLimiter.reset(0);
             VoltageOut request = new VoltageOut(0.0);
             leadMotor.setControl(request);
         }
 
         rpmPublisher.accept(getCurrentRPS());
         setpointPublisher.accept(currentSetpoint);
+        desiredRPSPublisher.accept(limitedSetpoint);
         appliedOutPublisher.accept(leadMotor.getDutyCycle().getValueAsDouble());
     }
 

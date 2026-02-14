@@ -2,11 +2,13 @@ package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
 
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -18,9 +20,12 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
     
     private TalonFX motor;
 
+    private SlewRateLimiter RPSLimiter = new SlewRateLimiter(MAX_ACCELERATION);
+
     private double currentSetpoint;
 
     private DoublePublisher rpmPublisher = NetworkTableInstance.getDefault().getDoubleTopic("RPM").publish();
+    private DoublePublisher desiredRPSPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Desired RPS").publish();
     private DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Setpoint").publish();
 
     //#region Main Functionality
@@ -41,10 +46,20 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     @Override
     public void periodic() {
-        VelocityVoltage request = new VelocityVoltage(currentSetpoint);
-        motor.setControl(request);
+        double limitedSetpoint;
+        if (currentSetpoint != 0) {
+            limitedSetpoint = RPSLimiter.calculate(currentSetpoint);
+            VelocityVoltage request = new VelocityVoltage(limitedSetpoint);
+            motor.setControl(request);
+        } else {
+            limitedSetpoint = 0;
+            RPSLimiter.reset(0);
+            VoltageOut request = new VoltageOut(0.0);
+            motor.setControl(request);
+        }
 
         rpmPublisher.accept(getCurrentRPM());
+        desiredRPSPublisher.accept(limitedSetpoint);
         setpointPublisher.accept(currentSetpoint);
     }
 
