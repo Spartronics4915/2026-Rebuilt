@@ -15,8 +15,8 @@ import com.pathplanner.lib.path.IdealStartingState;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.path.Waypoint;
 import com.pathplanner.lib.util.FlippingUtil;
-import com.spartronics4915.frc2026.subsystems.SwerveSubsystem;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants;
+import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;

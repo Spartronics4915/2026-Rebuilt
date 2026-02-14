@@ -7,7 +7,7 @@ import static edu.wpi.first.units.Units.Seconds;
 import java.util.Set;
 
 import com.spartronics4915.frc2026.commands.PositionPIDCommand;
-import com.spartronics4915.frc2026.subsystems.SwerveSubsystem;
+import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
