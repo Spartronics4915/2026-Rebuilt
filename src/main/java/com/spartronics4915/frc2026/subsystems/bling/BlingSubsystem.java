@@ -61,7 +61,60 @@ public class BlingSubsystem {
         }
     }
 
+    public void decrementAnimation() {
+        switch(currentAnimation) {
+            case ColorFlow: changeAnimation(AnimationTypes.ColorFlow); break;
+            case Fire: changeAnimation(AnimationTypes.Fire); break;
+            case Larson: changeAnimation(AnimationTypes.Larson); break;
+            case Rainbow: changeAnimation(AnimationTypes.Rainbow); break;
+            case RgbFade: changeAnimation(AnimationTypes.RgbFade); break;
+            case SingleFade: changeAnimation(AnimationTypes.SingleFade); break;
+            case Strobe: changeAnimation(AnimationTypes.Strobe); break;
+            case Twinkle: changeAnimation(AnimationTypes.Twinkle); break;
+            case TwinkleOff: changeAnimation(AnimationTypes.TwinkleOff); break;
+            case SetAll: changeAnimation(AnimationTypes.SetAll); break;
+        }
+    }
+
     public void setColors() {
         changeAnimation(AnimationTypes.SetAll);
+    }
+
+    public void changeAnimation(AnimationTypes toChange) {
+        currentAnimation = toChange;
+
+        switch(toChange) {
+            case ColorFlow:
+                toAnimate = new ColorFlowAnimation(128, 20, 70, 0, 0.7, Constants.BlingConstants.LedCount, Direction.Forward);
+                break;
+            case Fire:
+                toAnimate = new FireAnimation(0.5, 0.7, Constants.BlingConstants.LedCount, 0.7, 0.5);
+                break;
+            case Larson:
+                toAnimate = new LarsonAnimation(0, 255, 46, 0, 1, Constants.BlingConstants.LedCount, BounceMode.Front,3);
+                break;
+            case Rainbow:
+                toAnimate = new RainbowAnimation(1, 0.1, Constants.BlingConstants.LedCount);
+                break;
+            case RgbFade:
+                toAnimate = new RgbFadeAnimation(0.7, 0.4, Constants.BlingConstants.LedCount);
+                break;
+            case SingleFade:
+                toAnimate = new SingleFadeAnimation(50, 2, 200, 0, 0.5, Constants.BlingConstants.LedCount);
+                break;
+            case Strobe:
+                toAnimate = new StrobeAnimation(240, 10, 180, 0, 98.0 / 256.0, Constants.BlingConstants.LedCount);
+                break;
+            case Twinkle:
+                toAnimate = new TwinkleAnimation(30, 70, 60, 0, 0.4, Constants.BlingConstants.LedCount, TwinklePercent.Percent6);
+                break;
+            case TwinkleOff:
+                toAnimate = new TwinkleOffAnimation(70, 90, 175, 0, 0.8, Constants.BlingConstants.LedCount, TwinkleOffPercent.Percent100);
+                break;
+            case SetAll:
+                toAnimate = null;
+                break;
+        }
+    System.out.println("Changed to " + currentAnimation.toString());
     }
 }
