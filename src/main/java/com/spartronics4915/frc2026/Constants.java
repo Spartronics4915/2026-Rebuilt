@@ -258,7 +258,6 @@ public final class Constants {
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
-            
             .withKI(I)
             .withKD(D);
 

@@ -55,9 +55,9 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
 
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
-        SmartDashboard.putData("Hood Up", presetCommand(HoodState.UP));
-        SmartDashboard.putData("Hood Middle", presetCommand(HoodState.MIDDLE));
-        SmartDashboard.putData("Hood Down", presetCommand(HoodState.DOWN));
+        SmartDashboard.putData("Hood Up", setStateCommand(HoodState.UP));
+        SmartDashboard.putData("Hood Middle", setStateCommand(HoodState.MIDDLE));
+        SmartDashboard.putData("Hood Down", setStateCommand(HoodState.DOWN));
     }
 
     //#region Main Functionality
@@ -122,8 +122,8 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
         return this.runOnce(() -> setSetpoint(newSetpoint));
     }
 
-    public Command presetCommand(HoodState preset){
-        return setSetpointCommand(preset.angle);
+    public Command setStateCommand(HoodState state){
+        return setSetpointCommand(state.angle);
     }
  
     public enum HoodState {
