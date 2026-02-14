@@ -5,7 +5,6 @@ import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.*;
 import static edu.wpi.first.units.Units.Meters;
-import static edu.wpi.first.units.Units.MetersPerSecond;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,17 +13,12 @@ import java.util.Set;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.ConstraintsZone;
 import com.pathplanner.lib.path.GoalEndState;
-import com.pathplanner.lib.path.IdealStartingState;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.path.RotationTarget;
 import com.pathplanner.lib.path.Waypoint;
-import com.pathplanner.lib.util.FlippingUtil;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 
@@ -55,7 +49,7 @@ public class ZoneTransition {
     public Command generateCommand(TraversalMethod method) {
         return Commands.defer(() -> {
             return generateCommand(method, swerve != null && swerve.getRelativePose().getX() < hubPose.getX());
-        }, Set.of());
+        }, Set.of(swerve));
     }
 
     public Command generateCommand(TraversalMethod method, boolean toNeutralZone) {
@@ -65,7 +59,7 @@ public class ZoneTransition {
             } else {
                 return generateBumpCommand(method.isRightSide, toNeutralZone);
             }
-        }, Set.of());
+        }, Set.of(swerve));
     }
 
     public Command generateBumpCommand(boolean isRightSide, boolean toNeutralZone) {
@@ -91,24 +85,9 @@ public class ZoneTransition {
             )
         ));
 
-        poses.add(
-            0, 
-            flipIfNeeded(
-                new Pose2d(
-                    swerve.getPose().getTranslation(), 
-                    getPathVelocityHeading(swerve.getFieldVelocity(), poses.get(0))
-                )
-            )
-        );
+        Autos.addStartingPoseToPath(swerve, poses);
 
         List<Waypoint> waypoints = PathPlannerPath.waypointsFromPoses(poses);
-
-        LinearVelocity startingVel = MetersPerSecond.of(
-            Math.max(
-                getVelocityMagnitude(swerve.getFieldVelocity()).in(MetersPerSecond),
-                0.1
-            )
-        );
 
         PathPlannerPath path = new PathPlannerPath(
             waypoints,
@@ -117,10 +96,7 @@ public class ZoneTransition {
             List.of(new ConstraintsZone(1, 2, bumpPathConstraints)),
             List.of(),
             defaultPathConstraints,
-            new IdealStartingState(
-                startingVel,
-                swerve.getRelativeHeading().rotation().toRotation2d()
-            ),
+            Autos.generateStartingState(swerve),
             new GoalEndState(0.0, bumpApproachAngle.rotateBy(Rotation2d.fromDegrees(IOFlip))),
             false
         );
@@ -158,24 +134,9 @@ public class ZoneTransition {
             )
         ));
 
-        poses.add(
-            0, 
-            flipIfNeeded(
-                new Pose2d(
-                    swerve.getPose().getTranslation(), 
-                    getPathVelocityHeading(swerve.getFieldVelocity(), poses.get(0))
-                )
-            )
-        );
+        Autos.addStartingPoseToPath(swerve, poses);
 
         List<Waypoint> waypoints = PathPlannerPath.waypointsFromPoses(poses);
-
-        LinearVelocity startingVel = MetersPerSecond.of(
-            Math.max(
-                getVelocityMagnitude(swerve.getFieldVelocity()).in(MetersPerSecond),
-                0.1
-            )
-        );
 
         PathPlannerPath path = new PathPlannerPath(
             waypoints,
@@ -184,34 +145,11 @@ public class ZoneTransition {
             List.of(new ConstraintsZone(1, 2, trenchPathConstraints)),
             List.of(),
             defaultPathConstraints,
-            new IdealStartingState(
-                startingVel,
-                swerve.getRelativeHeading().rotation().toRotation2d()
-            ),
-            new GoalEndState(0.0, trenchApproachAngle.rotateBy(Rotation2d.fromDegrees(IOFlip))),
+            Autos.generateStartingState(swerve),
+            new GoalEndState(trenchPathConstraints.maxVelocityMPS(), trenchApproachAngle.rotateBy(Rotation2d.fromDegrees(IOFlip))),
             false
         );
 
         return AutoBuilder.followPath(path);
-    }
-
-    private LinearVelocity getVelocityMagnitude(ChassisSpeeds cs){
-        return MetersPerSecond.of(new Translation2d(cs.vxMetersPerSecond, cs.vyMetersPerSecond).getNorm());
-    }
-
-    private Rotation2d getPathVelocityHeading(ChassisSpeeds cs, Pose2d target){
-        if (getVelocityMagnitude(cs).in(MetersPerSecond) < 0.25) {
-            Translation2d diff = flipIfNeeded(target).getTranslation().minus(swerve.getPose().getTranslation());
-            return (diff.getNorm() < 0.01) ? target.getRotation() : diff.getAngle();
-        }
-        return new Rotation2d(cs.vxMetersPerSecond, cs.vyMetersPerSecond);
-    }
-
-    private Pose2d flipIfNeeded(Pose2d pose) {
-        if (swerve.shouldFlip()) {
-            return FlippingUtil.flipFieldPose(pose);
-        } else {
-            return pose;
-        }
     }
 }

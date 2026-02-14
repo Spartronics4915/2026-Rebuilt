@@ -23,6 +23,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -45,11 +46,13 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 public class SwerveSubsystem extends SubsystemBase {
     public final SwerveDrive swerveDrive;
     public static Pose2d pose;
-    public static Pose2d movementOverride;
+    public static double movementOverride = 0.0;
     private final File directory;
-    
+
     public static boolean isRightAlliance;
 
+    private TrapezoidProfile.State yState = new TrapezoidProfile.State();
+    private boolean wasOverriding = false;    
     StructPublisher<Pose2d> posePublisher = NetworkTableInstance.getDefault().getStructTopic("Pose", Pose2d.struct).publish();
 
     public SwerveSubsystem(SwerveConfigurations config) {
@@ -160,12 +163,16 @@ public class SwerveSubsystem extends SubsystemBase {
         return Math.sqrt(fieldVelocity.vxMetersPerSecond * fieldVelocity.vxMetersPerSecond + fieldVelocity.vyMetersPerSecond * fieldVelocity.vyMetersPerSecond);
     }
 
-    public Pose2d getMovementOverride() { 
+    public double getMovementOverride() { 
         return movementOverride;
     }
 
-    public void setMovementOverride(Pose2d override) {
+    public void setMovementOverride(double override) {
         movementOverride = override;
+    }
+
+    public void lockModules(){
+        swerveDrive.lockPose();
     }
 
     public boolean isFlat() {
@@ -197,9 +204,12 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public static Supplier<ChassisSpeeds> computeVelocitiesFromController(XboxController driverController, boolean isFieldRelative, SwerveSubsystem swerve) {
+        TrapezoidProfile trapezoidProfile = new TrapezoidProfile(trenchAlignConstraints);
+
         return () -> {
             Pose2d currentPose = swerve.getPose();
-            Pose2d override = swerve.getMovementOverride();
+            double override = swerve.getMovementOverride();
+            ChassisSpeeds fieldVel = swerve.getFieldVelocity();
 
             // Raw joystick inputs
             double joyVX = applyResponseCurve(MathUtil.applyDeadband(driverController.getLeftY() * -1.0, STICK_DEADBAND)) * MAX_SPEED;
@@ -211,16 +221,32 @@ public class SwerveSubsystem extends SubsystemBase {
             double fieldVX = fieldJoy.vxMetersPerSecond;
             double fieldVY = fieldJoy.vyMetersPerSecond;
 
-            if (override != null) {
+            if (override != 0.0) {
+                if (!swerve.wasOverriding) {
+                    swerve.yState = new TrapezoidProfile.State(currentPose.getY(), fieldVel.vyMetersPerSecond);
+                    swerve.wasOverriding = true;
+                }
+
+                double targetX = currentPose.getX();
+                double targetY = swerve.yState.position;
+                double targetTheta = currentPose.getRotation().getRadians();
+
+                swerve.yState = trapezoidProfile.calculate(0.02, 
+                    swerve.yState, 
+                    new TrapezoidProfile.State(override, 0)
+                );
+                targetY = swerve.yState.position;
+
                 PathPlannerTrajectoryState goalState = new PathPlannerTrajectoryState();
-                goalState.pose = override;
+                goalState.pose = new Pose2d(targetX, targetY, Rotation2d.fromRadians(targetTheta));
 
                 ChassisSpeeds robotTarget = driveController.calculateRobotRelativeSpeeds(currentPose, goalState);
                 ChassisSpeeds fieldTarget = ChassisSpeeds.fromRobotRelativeSpeeds(robotTarget, currentPose.getRotation());
 
-                if (override.getX() != 0) fieldVX = fieldTarget.vxMetersPerSecond;
-                if (override.getY() != 0) fieldVY = fieldTarget.vyMetersPerSecond;
-                if (override.getRotation().getRadians() != 0) joyOmega = robotTarget.omegaRadiansPerSecond;
+                fieldVY = fieldTarget.vyMetersPerSecond;
+            } else {
+                swerve.wasOverriding = false;
+                swerve.yState = new TrapezoidProfile.State(currentPose.getY(), fieldVel.vyMetersPerSecond);
             }
 
             // Convert field-relative linear speeds back to robot-relative for the drivetrain

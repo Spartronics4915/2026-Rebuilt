@@ -6,6 +6,8 @@ package com.spartronics4915.frc2026;
 
 import com.spartronics4915.frc2026.Constants.OperatorConstants;
 import com.spartronics4915.frc2026.autos.Autos;
+import com.spartronics4915.frc2026.autos.DriveToPOI;
+import com.spartronics4915.frc2026.autos.DriveToPOI.POI;
 import com.spartronics4915.frc2026.autos.ZoneTransition;
 import com.spartronics4915.frc2026.autos.ZoneTransition.TraversalMethod;
 import com.spartronics4915.frc2026.Constants.VisionConstants;
@@ -23,8 +25,6 @@ import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -54,6 +54,7 @@ public class RobotContainer {
     );
     
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
+    private final DriveToPOI POIfactory = new DriveToPOI(swerveSubsystem);
 
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
     private final CommandXboxController operatorController = new CommandXboxController(OperatorConstants.OPERATOR_CONTROLLER_PORT);
@@ -100,37 +101,41 @@ public class RobotContainer {
 
         driverController.povRight().whileTrue(
             transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH)
-        ); 
+        );
+
+        driverController.povUp().whileTrue(
+            POIfactory.generateCommand(POI.DEPOT)
+        );
+
+        driverController.povDown().whileTrue(
+            POIfactory.generateCommand(POI.OUTPOST)
+        );
+        
+        driverController.y().whileTrue(
+            POIfactory.generateCommand(POI.TOWER)
+        );
 
         driverController.leftTrigger().onTrue(
             Commands.runOnce(() -> {
                 swerveSubsystem.setMovementOverride(
-                    new Pose2d(
-                        0,
-                        hubPose.plus(trenchTransform).getY(),
-                        Rotation2d.fromDegrees(0)
-                    )
+                    hubPose.minus(trenchTransform.times(swerveSubsystem.shouldFlip() ? -1 : 1)).getY()
                 );
             })
         ).onFalse(
             Commands.runOnce(() -> {
-                swerveSubsystem.setMovementOverride(null);
+                swerveSubsystem.setMovementOverride(0.0);
             })
         );
 
         driverController.rightTrigger().onTrue(
             Commands.runOnce(() -> {
                 swerveSubsystem.setMovementOverride(
-                    new Pose2d(
-                        0,
-                        hubPose.minus(trenchTransform).getY(),
-                        Rotation2d.fromDegrees(0)
-                    )
+                    hubPose.plus(trenchTransform.times(swerveSubsystem.shouldFlip() ? -1 : 1)).getY()
                 );
             })
         ).onFalse(
             Commands.runOnce(() -> {
-                swerveSubsystem.setMovementOverride(null);
+                swerveSubsystem.setMovementOverride(0.0);
             })
         );
     }
@@ -141,6 +146,14 @@ public class RobotContainer {
      * @return the command to run in autonomous
      */
     public Command getAutonomousCommand() {
-        return Autos.nothingAuto();
+        return Commands.sequence(
+            transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, true),
+            transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, false),
+            POIfactory.generateCommand(POI.DEPOT),
+            transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, true),
+            transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, false),
+            POIfactory.generateCommand(POI.OUTPOST),
+            POIfactory.generateCommand(POI.TOWER)
+        );
     }
 }

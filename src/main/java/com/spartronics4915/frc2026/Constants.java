@@ -5,12 +5,15 @@
 package com.spartronics4915.frc2026;
 
 import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Centimeter;
 import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.InchesPerSecond;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Meter;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.Seconds;
 
 import java.util.Map;
 
@@ -35,7 +38,11 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.LinearVelocity;
+import edu.wpi.first.units.measure.Time;
 
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
@@ -56,8 +63,10 @@ public final class Constants {
         public static boolean IS_FIELD_RELATIVE = true;
 
         public static final double STICK_DEADBAND = 0.05;
-        public static final double TILT_THRESHOLD_DEGREES = 5.0;
-        public static final double TILT_DEBOUNCE = 0.2;
+        public static final double TILT_THRESHOLD_DEGREES = 1.0;
+        public static final double TILT_DEBOUNCE = 0.3;
+
+        public static final Constraints trenchAlignConstraints = new Constraints(3, 3);
 
         public enum SwerveConfigurations {
             TEST_CHASSIS("test-chassis", PathplannerConfigs.TEST_CHASSIS),
@@ -72,7 +81,7 @@ public final class Constants {
         }
 
         public static final class AutoConstants {
-            public static final PIDConstants translationPID = new PIDConstants(5.0,0,0);
+            public static final PIDConstants translationPID = new PIDConstants(7.5,0,0);
             public static final PIDConstants rotationPID = new PIDConstants(5.0,0,0);
 
             public static final PPHolonomicDriveController driveController = new PPHolonomicDriveController(
@@ -80,16 +89,37 @@ public final class Constants {
                 AutoConstants.rotationPID
             );
 
+            public static final PIDConstants alignTranslationPID = new PIDConstants(2.0,0,0);
+            public static final PIDConstants alignRotationPID = new PIDConstants(2.0,0,0);
+
+            public static final PPHolonomicDriveController autoAlignPIDController = new PPHolonomicDriveController(
+                AutoConstants.alignTranslationPID, 
+                AutoConstants.alignRotationPID
+            );
+
+            public static final Time endTriggerDebounce = Seconds.of(0.04);
+            public static final Rotation2d rotationTolerance = Rotation2d.fromDegrees(3.0);
+            public static final Distance positionTolerance = Centimeter.of(1.5);
+            public static final LinearVelocity speedTolerance = InchesPerSecond.of(2);
+
             public static final Translation2d towerPose = new Translation2d(1.061, 3.745);
             public static final Translation2d centerPose = new Translation2d(8.271, 4.035);
             public static final Translation2d hubPose = new Translation2d(4.625, 4.035);
+            public static final Translation2d outpostPose = new Translation2d(0.0, 0.666);
+            public static final Translation2d depotPose = new Translation2d(0.0, 5.964);
+            public static final Translation2d towerTransform = new Translation2d(0.0, 0.445);
             public static final Translation2d trenchTransform = new Translation2d(0, -3.4);
             public static final Translation2d bumpTransform = new Translation2d(0, -1.523);
             public static final Translation2d approachTransform = new Translation2d(-1.1, 0);
             public static final Translation2d exitTransform = new Translation2d(centerPose.getX() - hubPose.getX(), 0);
 
+            public static final Distance robotLength = Inches.of(30);
+            public static final Distance robotWidth = Inches.of(30);
+            public static final Distance intakeLength = Inches.of(6);
+            public static final Distance towerPadding = Inches.of(10);
+
             public static final PathConstraints defaultPathConstraints = new PathConstraints(
-                4,
+                3.0,
                 5.0,
                 1/2 * Math.PI,
                 1 * Math.PI
@@ -185,8 +215,8 @@ public final class Constants {
 
             public static final Transform3d RIGHT_CAMERA_TRANSFORM = new Transform3d(
                 new Translation3d(
-                    0.315, 
-                    0.116,
+                    0.3556, 
+                    0.180975,
                     0.14
                 ),
                 new Rotation3d(
@@ -211,19 +241,19 @@ public final class Constants {
 
             public static final Map<String, ProcessorInterface> cameras = Map.of(
                 "right", new PhotonProcessor(
-                    "right", 
+                    "daniil", 
                     LAYOUT,
                     RIGHT_CAMERA_TRANSFORM, 
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
-                ),
-                "left", new PhotonProcessor(
-                    "left", 
-                    LAYOUT,
-                    LEFT_CAMERA_TRANSFORM,
-                    SIM_CAMERA_PROPERTIES,
-                    () -> new ChassisSpeeds()
                 )
+                //"left", new PhotonProcessor(
+                //    "left", 
+                //    LAYOUT,
+                //    LEFT_CAMERA_TRANSFORM,
+                //    SIM_CAMERA_PROPERTIES,
+                //    () -> new ChassisSpeeds()
+                //)
             );
         }
 

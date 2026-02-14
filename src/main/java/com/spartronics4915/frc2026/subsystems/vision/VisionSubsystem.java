@@ -158,11 +158,13 @@ public class VisionSubsystem extends SubsystemBase {
             
             ApriltagResult fusedResult = fusionEngine.fusePoses(apriltagResults, config);
 
-            poseConsumer.accept(
-                fusedResult.getPose(),
-                fusedResult.getTimestampSeconds(),
-                fusedResult.getStdDevs()
-            );
+            if (swerve != null && swerve.isFlatDebounced()) {
+                poseConsumer.accept(
+                    fusedResult.getPose(),
+                    fusedResult.getTimestampSeconds(),
+                    fusedResult.getStdDevs()
+                );
+            }
             
             performanceTracker.stopTiming();
 
