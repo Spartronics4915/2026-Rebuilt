@@ -10,7 +10,8 @@ import com.ctre.phoenix.led.ColorFlowAnimation.Direction;
 import com.ctre.phoenix.led.LarsonAnimation.BounceMode;
 import com.ctre.phoenix.led.TwinkleAnimation.TwinklePercent;
 import com.ctre.phoenix.led.TwinkleOffAnimation.TwinkleOffPercent;
+import com.spartronics4915.frc2026.Constants;
 
 public class BlingSubsystem {
-    
+    private final CANdle candle = new CANdle(Constants.BlingConstants.CANdleID, "rio");
 }
