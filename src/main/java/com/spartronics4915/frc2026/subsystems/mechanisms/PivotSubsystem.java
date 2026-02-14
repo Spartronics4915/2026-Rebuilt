@@ -59,7 +59,6 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
 
     @Override
     public void periodic(){
-    
         currentSetpoint = Rotation2d.fromRotations(
             MathUtil.clamp(
                 currentSetpoint.getRotations(), 

@@ -286,7 +286,7 @@ public final class Constants {
         public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 1;
-        public static final double SENSOR_MECHANISM_RATIO = 0.9375;
+        public static final double MOTOR_MECHANISM_RATIO = 0.9375;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
@@ -300,7 +300,7 @@ public final class Constants {
             .withSupplyCurrentLowerTime(LOWER_TIME);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
-            .withSensorToMechanismRatio(SENSOR_MECHANISM_RATIO);
+            .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
     }
     
@@ -312,8 +312,8 @@ public final class Constants {
         public static final double I = 0.0;
         public static final double D = 0.1;
 
-        public static final double MAX_VELOCITY = 10;
-        public static final double MAX_ACCELERATION = 10;
+        public static final double MAX_VELOCITY = 0;
+        public static final double MAX_ACCELERATION = 0;
 
         public static final double DELTA_TIME = 0.02;
 
@@ -322,7 +322,7 @@ public final class Constants {
         public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 1;
-        public static final double SENSOR_MECHANISM_RATIO = 85.3333333;
+        public static final double MOTOR_MECHANISM_RATIO = 85.3333333;
 
         public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(0);
         public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(35);
@@ -339,7 +339,7 @@ public final class Constants {
             .withSupplyCurrentLowerTime(LOWER_TIME);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
-            .withSensorToMechanismRatio(SENSOR_MECHANISM_RATIO);
+            .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
     }
 
     public static class PivotConstants {
@@ -360,7 +360,7 @@ public final class Constants {
         public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 1;
-        public static final double SENSOR_MECHANISM_RATIO = 16.875;
+        public static final double MOTOR_MECHANISM_RATIO = 16.875;
 
         public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(0);
         public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(0);
@@ -377,7 +377,7 @@ public final class Constants {
             .withSupplyCurrentLowerTime(LOWER_TIME);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
-            .withSensorToMechanismRatio(SENSOR_MECHANISM_RATIO);
+            .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
     }
 
     public static class FeederConstants {
@@ -395,7 +395,7 @@ public final class Constants {
         public static final double LOWER_LIMIT = 40;
 
         public static final double LOWER_TIME = 1;
-        public static final double SENSOR_MECHANISM_RATIO = 20/9;
+        public static final double MOTOR_MECHANISM_RATIO = 20/9;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
@@ -409,7 +409,7 @@ public final class Constants {
             .withSupplyCurrentLowerTime(LOWER_TIME);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
-            .withSensorToMechanismRatio(SENSOR_MECHANISM_RATIO);
+            .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
     }
 
@@ -428,7 +428,7 @@ public final class Constants {
         public static final double LOWER_LIMIT = 40;
 
         public static final double LOWER_TIME = 1;
-        public static final double SENSOR_MECHANISM_RATIO = 12;
+        public static final double MOTOR_MECHANISM_RATIO = 12;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
@@ -442,78 +442,121 @@ public final class Constants {
             .withSupplyCurrentLowerTime(LOWER_TIME);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
-            .withSensorToMechanismRatio(SENSOR_MECHANISM_RATIO);
+            .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
     }
 
     public static class TurretConstants{
-        public static final int TURRET_MOTOR_ID = 19;
 
-        public static final double TURRET_P = 5.0;
-        public static final double TURRET_I = 0.0;
-        public static final double TURRET_D = 0.0;
+        public static final int MOTOR_ID = 19;
+        public static final int ENCODER_ID = 0;
 
-        public static final boolean CURRENT_LIMIT_ENABLED = true;
-        public static final double SUPPLY_CURRENT_LIMIT = 30;
-        public static final double CURRENT_LOWER_LIMIT = 15;
-        public static final double CURRENT_LOWER_TIME = 1.0;
+        public static final double P = 0.0;
+        public static final double I = 0.0;
+        public static final double D = 0.0;
 
-        public static final double SENSOR_TO_MECHANISM_RATIO = 1;
-        public static final double MIN_ROTATION = -1; //The Turret Subsystem is currently written using rotations as the values in its pid, so this is equivalent to -360 degrees
-        public static final double MAX_ROTATION = 1;
+        public static final double MAX_VELOCITY = 0;
+        public static final double MAX_ACCELERATION = 0;
 
-        public static final double MAX_VELOCITY = 4;
-        public static final double MAX_ACCELERATION = 2;
-        public static final double DELTA_TIME = 1.0/50.0;
+        public static final double DELTA_TIME = 0.02;
 
-        public static final int ENCODER_ONE_ID = 0;
-        public static final int ENCODER_TWO_ID = 0;
+        public static final boolean CURRENT_LIMIT_ENABLE = true;
+        public static final double CURRENT_LIMIT = 40;
+        public static final double LOWER_LIMIT = 20;
+
+        public static final double LOWER_TIME = 1;
+        public static final double MOTOR_MECHANISM_RATIO = 1 / ((12/38) * (18/38) * (11/84));
+        public static final double ENCODER_MECHANISM_RATIO = 1 / (11/84);
+
+        public static final SlotConfigs PID_CONFIG = new SlotConfigs()
+            .withKP(P)
+            .withKI(I)
+            .withKD(D);
+
+        public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
+            .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
+            .withSupplyCurrentLimit(CURRENT_LIMIT)
+            .withSupplyCurrentLowerLimit(LOWER_LIMIT)
+            .withSupplyCurrentLowerTime(LOWER_TIME);
+
+        public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
+            .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
+
     }
     
     public static class IntakeConstants {
-        public static final int INTAKE_MOTOR_ID = 3;
-        public static final double INTAKE_MAX_VELOCITY = 50.0;
-        public static final double INTAKE_MAX_ACCELERATION = 1.0;
-        public static final double INTAKE_POSITION = 0.0;
-        public static final double INTAKE_VELOCITY = 0.0;
-        public static final double INTAKE_MINIMUM_VELOCITY = 0.0;
-        public static final double INTAKE_MAXIMUM_VELOCITY = 50.0;
-        public static final double INTAKE_DT = 1.0/50.0;
 
-        public static final double INTAKE_P = 0.02;
-        public static final double INTAKE_I = 0;
-        public static final double INTAKE_D = 0;
+        public static final int MOTOR_ID = 3;
 
-        public static final boolean INTAKE_CURRENT_LIMIT_ENABLE = true;
-        public static final double INTAKE_CURRENT_LIMIT = 30;
-        public static final double INTAKE_CURRENT_LOWER_LIMIT = 10;
-        public static final double INTAKE_CURRENT_LOWER_TIME = 1;
-        public static final double INTAKE_SENSOR_TO_MECH_RATIO = 1/1;
-        public static final double INTAKE_MOTOR_SPEED = 60;
+        public static final double P = 0;
+        public static final double I = 0;
+        public static final double D = 0;
+
+        public static final double MAX_VELOCITY = 0;
+        public static final double MAX_ACCELERATION = 0;
+
+        public static final double DELTA_TIME = 0.02;
+
+        public static final boolean CURRENT_LIMIT_ENABLE = true;
+        public static final double CURRENT_LIMIT = 40;
+        public static final double LOWER_LIMIT = 20;
+
+        public static final double LOWER_TIME = 1;
+        public static final double MOTOR_MECHANISM_RATIO = 3;
+
+        public static final SlotConfigs PID_CONFIG = new SlotConfigs()
+            .withKP(P)
+            .withKI(I)
+            .withKD(D);
+
+        public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
+            .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
+            .withSupplyCurrentLimit(CURRENT_LIMIT)
+            .withSupplyCurrentLowerLimit(LOWER_LIMIT)
+            .withSupplyCurrentLowerTime(LOWER_TIME);
+
+        public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
+            .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
+
     }
+
     public static class ClimberConstants{
-        public static final int PRIMARY_CLIMB_MOTOR_ID = 0;
-        public static final double SENSOR_TO_MECHANISM_RATIO = 0.0;
-        public static final double CLIMBER_P = 0.0;
-        public static final double CLIMBER_I = 0.0;
-        public static final double CLIMBER_D = 0.0;
-        public static final double MAX_VELOCITY = 0.0;
-        public static final double MAX_ACCELERATION = 0.0;
 
-        public static final double CLIMBER_S = 0;
-        public static final double CLIMBER_J = 0;
-        public static final double CLIMBER_V = 0;
-        public static final double CLIMBER_A = 0;
+        public static final int MOTOR_ID = 24;
 
-        public static final boolean CURRENT_LIMIT_ENABLED = true;
-        public static final double SUPPLY_CURRENT_LIMIT = 25;
-        public static final double CURRENT_LOWER_LIMIT = 10;
-        public static final double CURRENT_LOWER_TIME = 1.0;
+        public static final double P = 0.0;
+        public static final double I = 0.0;
+        public static final double D = 0.0;
 
-        public static final double MIN_HIGHT = 0.0;
-        public static final double MAX_HIGHT = 1.0;
-        public static final double DeltaTime = 1.0/50.0;
+        public static final double MAX_VELOCITY = 0;
+        public static final double MAX_ACCELERATION = 0;
 
+        public static final double DELTA_TIME = 0.02;
+
+        public static final boolean CURRENT_LIMIT_ENABLE = true;
+        public static final double CURRENT_LIMIT = 60;
+        public static final double LOWER_LIMIT = 40;
+
+        public static final double LOWER_TIME = 1;
+        public static final double MOTOR_MECHANISM_RATIO = 20;
+
+        public static final double MIN_HEIGHT = 0.0;
+        public static final double MAX_HEIGHT = 1.0;
+
+        public static final SlotConfigs PID_CONFIG = new SlotConfigs()
+            .withKP(P)
+            .withKI(I)
+            .withKD(D);
+
+        public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
+            .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
+            .withSupplyCurrentLimit(CURRENT_LIMIT)
+            .withSupplyCurrentLowerLimit(LOWER_LIMIT)
+            .withSupplyCurrentLowerTime(LOWER_TIME);
+
+        public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
+            .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
     }
+
 }

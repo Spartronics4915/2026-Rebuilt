@@ -1,98 +1,122 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms;
 
-import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
-import com.ctre.phoenix6.configs.FeedbackConfigs;
-import com.ctre.phoenix6.configs.SlotConfigs;
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.spartronics4915.frc2026.Constants;
+import com.ctre.phoenix6.signals.InvertedValue;
+import com.spartronics4915.frc2026.util.ModeSwitchHandler;
+import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
+
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.ElevatorFeedforward;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
-import edu.wpi.first.networktables.DoublePublisher;
-import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-public class ClimberSubsystem extends SubsystemBase {
-    TalonFX primaryClimbMotor = new TalonFX(Constants.ClimberConstants.PRIMARY_CLIMB_MOTOR_ID);
-    TalonFXConfigurator primaryClimbConfigurator = primaryClimbMotor.getConfigurator();
+import static com.spartronics4915.frc2026.Constants.ClimberConstants.*;
 
-    DoublePublisher climberSetpointPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Climber Setpoint").publish();
-    DoublePublisher climberRequestedPosPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Climber Requested Position").publish();
-    DoublePublisher climberVoltagePublisher = NetworkTableInstance.getDefault().getDoubleTopic("Climber Voltage").publish();
-    DoublePublisher climberVelocityPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Climber Velocity").publish();
+public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
-     TrapezoidProfile trapProfile = new TrapezoidProfile(
-            new Constraints(Constants.ClimberConstants.MAX_VELOCITY, Constants.ClimberConstants.MAX_ACCELERATION));
-    double position = getPosition();
-    State currentState = new State(position, 0);
-    double currentSetPoint = position;
-    ElevatorFeedforward FFCalculator = new ElevatorFeedforward(
-            Constants.ClimberConstants.CLIMBER_S,
-            Constants.ClimberConstants.CLIMBER_J,
-            Constants.ClimberConstants.CLIMBER_V,
-            Constants.ClimberConstants.CLIMBER_A);
+    TalonFX motor = new TalonFX(MOTOR_ID);
+    
+    TrapezoidProfile trapProfile = new TrapezoidProfile(
+	    new Constraints(MAX_VELOCITY, MAX_ACCELERATION)
+    );
 
-    private void applyMotorConfigs(TalonFXConfigurator config) {
-        config.apply(new SlotConfigs()
-                .withKP(Constants.ClimberConstants.CLIMBER_P)
-                .withKI(Constants.ClimberConstants.CLIMBER_I)
-                .withKD(Constants.ClimberConstants.CLIMBER_D));
-        config.apply(new CurrentLimitsConfigs()
-                .withSupplyCurrentLimitEnable(Constants.ClimberConstants.CURRENT_LIMIT_ENABLED)
-                .withSupplyCurrentLimit(Constants.ClimberConstants.SUPPLY_CURRENT_LIMIT)
-                .withSupplyCurrentLowerLimit(Constants.ClimberConstants.CURRENT_LOWER_LIMIT)
-                .withSupplyCurrentLowerTime(Constants.ClimberConstants.CURRENT_LOWER_TIME));
-        config.apply(new FeedbackConfigs()
-                .withSensorToMechanismRatio(Constants.ClimberConstants.SENSOR_TO_MECHANISM_RATIO));
-
-    }
-
-    private void publishData() {
-        climberSetpointPublisher.accept(currentSetPoint);
-        climberRequestedPosPublisher.accept(currentState.position);
-        climberVoltagePublisher.accept(primaryClimbMotor.getMotorVoltage().getValueAsDouble());
-        climberVelocityPublisher.accept(primaryClimbMotor.getVelocity().getValueAsDouble());
-    }
-
+    private double currentSetpoint = 0;
+    private State currentState = new State();
+    
     public ClimberSubsystem() {
-        applyMotorConfigs(primaryClimbConfigurator);
+        TalonFXConfigurator motorConfig = motor.getConfigurator();
+            motorConfig.apply(PID_CONFIG);
+            motorConfig.apply(CURRENT_LIMITS_CONFIG);
+            motorConfig.apply(FEEDBACK_CONFIG);
 
+        MotorOutputConfigs motorOutputConfigs = new MotorOutputConfigs();
+            motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
+            motorConfig.apply(motorOutputConfigs);
+
+        setMechanismPosition(0);
+
+        ModeSwitchHandler.EnableModeSwitchHandler(this);
     }
+
+    //#region Main Functionality
 
     @Override
-    public void periodic() {
-        currentSetPoint = MathUtil.clamp(
-                currentSetPoint,
-                Constants.ClimberConstants.MIN_HIGHT,
-                Constants.ClimberConstants.MAX_HIGHT);
+    public void periodic(){
+        currentSetpoint = MathUtil.clamp(
+            currentSetpoint, 
+            MIN_HEIGHT, 
+            MAX_HEIGHT
+        );
+
         currentState = trapProfile.calculate(
-                Constants.ClimberConstants.DeltaTime,
-                currentState,
-                new State(currentSetPoint, 0));
-        PositionVoltage request = new PositionVoltage(currentState.position)
-                .withFeedForward(
-                        FFCalculator.calculate(currentState.position, currentState.velocity));
+            DELTA_TIME, 
+            currentState, 
+            new State(currentSetpoint, 0.0)
+        );
 
-        primaryClimbMotor.setControl(request);
-        publishData();
-    }
-
-
-    public Command setPrimaryClimber(double input) {
-        return this.runOnce(() -> currentSetPoint = input);
-    }
-
-    public Command incrementPrimaryClimber(double input) {
-        return this.runOnce(() -> currentSetPoint += input);
+        PositionVoltage request = new PositionVoltage(currentState.position);
+            motor.setControl(request);
     }
 
     public double getPosition() {
-        return primaryClimbMotor.getRotorPosition().getValueAsDouble();
+        return motor.getPosition().getValueAsDouble();
+    }
+
+    public void setSetpoint(double setpoint){
+        currentSetpoint = setpoint;
+    }
+
+    public void setState(ClimberState state){
+        currentSetpoint = state.position;
+    }
+
+    private void setMechanismPosition(double position){
+        motor.setPosition(position);
+        resetMechanism(position);
+    }
+
+    public void resetMechanism(){
+        resetMechanism(getPosition());
+    }
+
+    public void resetMechanism(double position){
+        currentSetpoint = position;
+        currentState = new State(position, 0.0);
+    }
+
+    //#endregion
+
+    //#region Commands
+
+    public Command setSetpointCommand(double newSetpoint){
+        return this.runOnce(() -> setSetpoint(newSetpoint));
+    }
+
+    public Command setStateCommand(ClimberState state){
+        return setSetpointCommand(state.position);
+    }
+
+    //#endregion
+ 
+    public enum ClimberState {
+        DOWN(0),
+        UP(0);
+
+        double position;
+
+        private ClimberState(double position) {
+            this.position = position;
+        }
+    }
+
+    @Override
+    public void onModeSwitch() {
+        resetMechanism();
     }
 
 }

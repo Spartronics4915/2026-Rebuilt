@@ -1,16 +1,9 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms;
 
-import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
-import com.ctre.phoenix6.configs.FeedbackConfigs;
-import com.ctre.phoenix6.configs.MotorOutputConfigs;
-import com.ctre.phoenix6.configs.SlotConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.InvertedValue;
-import com.spartronics4915.frc2026.Constants;
 
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
@@ -20,85 +13,69 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-public class IntakeSubsystem extends SubsystemBase {
+import static com.spartronics4915.frc2026.Constants.IntakeConstants.*;
 
-    TalonFX intakeMotor = new TalonFX(Constants.IntakeConstants.INTAKE_MOTOR_ID);
-    TalonFXConfigurator intakeMotorConfig = intakeMotor.getConfigurator();
+import com.spartronics4915.frc2026.util.ModeSwitchHandler;
+import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
-    TrapezoidProfile trapProfile = new TrapezoidProfile(
+public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterface {
+
+    private TalonFX motor = new TalonFX(MOTOR_ID);
+
+    private TrapezoidProfile trapezoidProfile = new TrapezoidProfile(
         new Constraints(
-            Constants.IntakeConstants.INTAKE_MAX_VELOCITY, 
-            Constants.IntakeConstants.INTAKE_MAX_ACCELERATION
+            MAX_VELOCITY, 
+            MAX_ACCELERATION
         )
     );
 
-    State currentState = new State(Constants.IntakeConstants.INTAKE_POSITION, Constants.IntakeConstants.INTAKE_VELOCITY);
-    double currentSetPoint = 0.0;
+    private State currentState = new State();
+    private double currentSetpoint = 0.0;
 
-    DoublePublisher intakeRPMPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Current RPM of IntakeMotor: ").publish();
-    DoublePublisher intakeVoltagePublisher = NetworkTableInstance.getDefault().getDoubleTopic("Current Voltage of IntakeMotor: ").publish();
+    DoublePublisher RPSPublisher = NetworkTableInstance.getDefault().getTable("Intake").getDoubleTopic("RPS").publish();
+    DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("Intake").getDoubleTopic("Setpoint").publish();
+    DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("Intake").getDoubleTopic("Applied Out").publish();
 
     //#region Main Functionality
 
     public IntakeSubsystem() {
+        TalonFXConfigurator intakeMotorConfig = motor.getConfigurator();
+            intakeMotorConfig.apply(PID_CONFIG);
+            intakeMotorConfig.apply(CURRENT_LIMITS_CONFIG);
+            intakeMotorConfig.apply(FEEDBACK_CONFIG);
+
+        ModeSwitchHandler.EnableModeSwitchHandler(this);
+
         SmartDashboard.putData("Intake On", setStateCommand(IntakeState.ON));
         SmartDashboard.putData("Intake Off", setStateCommand(IntakeState.OFF));
-
-        intakeMotorConfig.apply(new SlotConfigs()
-            .withKP(Constants.IntakeConstants.INTAKE_P)
-            .withKI(Constants.IntakeConstants.INTAKE_I)
-            .withKD(Constants.IntakeConstants.INTAKE_D)
-        );
-
-        intakeMotorConfig.apply(new CurrentLimitsConfigs()
-            .withSupplyCurrentLimitEnable(Constants.IntakeConstants.INTAKE_CURRENT_LIMIT_ENABLE)
-            .withSupplyCurrentLimit(Constants.IntakeConstants.INTAKE_CURRENT_LIMIT)
-            .withSupplyCurrentLowerLimit(Constants.IntakeConstants.INTAKE_CURRENT_LOWER_LIMIT)
-            .withSupplyCurrentLowerTime(Constants.IntakeConstants.INTAKE_CURRENT_LOWER_TIME)
-        );
-
-        intakeMotorConfig.apply(new FeedbackConfigs()
-            .withSensorToMechanismRatio(Constants.IntakeConstants.INTAKE_SENSOR_TO_MECH_RATIO)
-        );
-
-        MotorOutputConfigs motorOutputConfigs = new MotorOutputConfigs();
-        motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
-
-        intakeMotorConfig.apply(motorOutputConfigs);
     }
 
     @Override
     public void periodic() {
-        
-        currentSetPoint = MathUtil.clamp(
-            currentSetPoint, 
-            Constants.IntakeConstants.INTAKE_MINIMUM_VELOCITY,
-            Constants.IntakeConstants.INTAKE_MAXIMUM_VELOCITY
+        currentState = trapezoidProfile.calculate(
+            DELTA_TIME, 
+            currentState, 
+            new State(0, currentSetpoint)
         );
 
-        //currentState = trapProfile.calculate(
-        //      Constants.IntakeConstants.INTAKE_DT, 
-        //      currentState, 
-        //      new State(0, currentSetPoint));
+        VelocityVoltage request = new VelocityVoltage(currentSetpoint);
+            motor.setControl(request);
 
-        VelocityVoltage request = new VelocityVoltage(currentSetPoint);
-
-        intakeMotor.setControl(request);
-
-        intakeRPMPublisher.accept(this.getCurrentRPM());
-        intakeVoltagePublisher.accept(this.getAppliedVoltage());
+        RPSPublisher.accept(getCurrentRPS());
+        setpointPublisher.accept(currentSetpoint);
+        appliedOutPublisher.accept(getAppliedVoltage());
     }
 
-    public double getCurrentRPM() {
-        return intakeMotor.getVelocity().getValueAsDouble();
+    public double getCurrentRPS() {
+        return motor.getVelocity().getValueAsDouble();
     }
 
     public double getAppliedVoltage() {
-        return intakeMotor.getMotorVoltage().getValueAsDouble();
+        return motor.getMotorVoltage().getValueAsDouble();
     }
 
     public void setSetpoint(double newSetpoint){
-        currentSetPoint = newSetpoint;
+        currentSetpoint = newSetpoint;
     }
 
     public void setState(IntakeState newState) {
@@ -125,6 +102,11 @@ public class IntakeSubsystem extends SubsystemBase {
         private IntakeState(double rpm) {
             this.rpm = rpm;
         }
+    }
+
+    @Override
+    public void onModeSwitch() {
+        setState(IntakeState.OFF);
     }
     
 }
