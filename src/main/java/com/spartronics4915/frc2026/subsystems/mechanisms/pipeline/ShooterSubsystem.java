@@ -55,7 +55,6 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
         followerMotor.setControl(new Follower(FOLLOWER_MOTOR_ID, MotorAlignmentValue.Aligned));
         
         leadMotor.set(0);
-
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         SmartDashboard.putData("Shooter On", setStateCommand(ShooterState.ON));

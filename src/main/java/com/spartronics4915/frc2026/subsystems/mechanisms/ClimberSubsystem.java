@@ -45,7 +45,6 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
             motorConfig.apply(motorOutputConfigs);
 
         setMechanismPosition(0);
-
         ModeSwitchHandler.EnableModeSwitchHandler(this);
     }
 

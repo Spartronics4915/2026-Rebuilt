@@ -33,7 +33,7 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private Rotation2d currentSetpoint = Rotation2d.fromDegrees(0);
     private State currentState = new State();
     
-    private TurretState currentTurretState;
+    private TurretClamp currentClamp;
     private Rotation2d minAngle;
     private Rotation2d maxAngle;
 
@@ -48,9 +48,9 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
             configurator.apply(CURRENT_LIMITS_CONFIG);
             configurator.apply(FEEDBACK_CONFIG);
         
-        currentTurretState = TurretState.RESTRICTED;
-            minAngle = currentTurretState.minAngle;
-            maxAngle = currentTurretState.maxAngle;
+        currentClamp = TurretClamp.RESTRICTED;
+            minAngle = currentClamp.minAngle;
+            maxAngle = currentClamp.maxAngle;
 
         setMechanismAngle(Rotation2d.fromDegrees(0));
         ModeSwitchHandler.EnableModeSwitchHandler(this);
@@ -92,10 +92,10 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
         currentSetpoint = setpoint;
     }
 
-    public void setTurretState(TurretState state){
-        currentTurretState = state;
-            minAngle = currentTurretState.minAngle;
-            maxAngle = currentTurretState.maxAngle;
+    public void setClamp(TurretClamp clamp){
+        currentClamp = clamp;
+            minAngle = currentClamp.minAngle;
+            maxAngle = currentClamp.maxAngle;
     }
 
     private void setMechanismAngle(Rotation2d angle){
@@ -122,14 +122,14 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     //#endregion
 
-    public enum TurretState {
+    public enum TurretClamp {
         RESTRICTED(Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
         UNRESTRICTED(Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0));
 
         Rotation2d minAngle;
         Rotation2d maxAngle;
 
-        private TurretState(Rotation2d minAngle, Rotation2d maxAngle) {
+        private TurretClamp(Rotation2d minAngle, Rotation2d maxAngle) {
             this.minAngle = minAngle;
             this.maxAngle = maxAngle;
         }

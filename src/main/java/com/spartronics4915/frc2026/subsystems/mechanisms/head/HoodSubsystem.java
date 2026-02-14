@@ -7,6 +7,7 @@ import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem.TurretClamp;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
@@ -28,12 +29,16 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
 
     TalonFX motor = new TalonFX(MOTOR_ID);
     
-    TrapezoidProfile trapProfile = new TrapezoidProfile(
+    TrapezoidProfile trapezoidProfile = new TrapezoidProfile(
 	    new Constraints(MAX_VELOCITY, MAX_ACCELERATION)
     );
 
     private Rotation2d currentSetpoint = Rotation2d.fromDegrees(0);
     private State currentState = new State();
+
+    private HoodClamp currentClamp;
+    private Rotation2d minAngle;
+    private Rotation2d maxAngle;
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("hood").getDoubleTopic("applied out").publish();
     private final StructPublisher<Rotation2d> positionPublisher = NetworkTableInstance.getDefault().getTable("hood").getStructTopic("position", Rotation2d.struct).publish();
@@ -50,13 +55,12 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
             motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
             motorConfig.apply(motorOutputConfigs);
 
+        currentClamp = HoodClamp.RESTRICTED;
+            minAngle = currentClamp.minAngle;
+            maxAngle = currentClamp.maxAngle;
+
         setMechanismAngle(Rotation2d.fromDegrees(0));
-
         ModeSwitchHandler.EnableModeSwitchHandler(this);
-
-        SmartDashboard.putData("Hood Up", setStateCommand(HoodState.UP));
-        SmartDashboard.putData("Hood Middle", setStateCommand(HoodState.MIDDLE));
-        SmartDashboard.putData("Hood Down", setStateCommand(HoodState.DOWN));
     }
 
     //#region Main Functionality
@@ -66,12 +70,12 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
         currentSetpoint = Rotation2d.fromRotations(
             MathUtil.clamp(
                 currentSetpoint.getRotations(), 
-                MIN_ANGLE.getRotations(), 
-                MAX_ANGLE.getRotations()
+                minAngle.getRotations(), 
+                maxAngle.getRotations()
             )
         );
 
-        currentState = trapProfile.calculate(
+        currentState = trapezoidProfile.calculate(
             DELTA_TIME, 
             currentState, 
             new State(currentSetpoint.getRotations(), 0.0)
@@ -95,8 +99,10 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
         currentSetpoint = setpoint;
     }
 
-    public void setState(HoodState state){
-        currentSetpoint = state.angle;
+    public void setClamp(HoodClamp clamp){
+        currentClamp = clamp;
+            minAngle = currentClamp.minAngle;
+            maxAngle = currentClamp.maxAngle;
     }
 
     private void setMechanismAngle(Rotation2d angle){
@@ -120,20 +126,17 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
     public Command setSetpointCommand(Rotation2d newSetpoint){
         return this.runOnce(() -> setSetpoint(newSetpoint));
     }
-
-    public Command setStateCommand(HoodState state){
-        return setSetpointCommand(state.angle);
-    }
  
-    public enum HoodState {
-        DOWN(Rotation2d.fromDegrees(0)),
-        UP(Rotation2d.fromDegrees(30)),
-        MIDDLE(Rotation2d.fromDegrees(15));
+    public enum HoodClamp {
+        RESTRICTED(Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
+        UNRESTRICTED(Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0));
 
-        Rotation2d angle;
+        Rotation2d minAngle;
+        Rotation2d maxAngle;
 
-        private HoodState(Rotation2d angle) {
-            this.angle = angle;
+        private HoodClamp(Rotation2d minAngle, Rotation2d maxAngle) {
+            this.minAngle = minAngle;
+            this.maxAngle = maxAngle;
         }
     }
 
