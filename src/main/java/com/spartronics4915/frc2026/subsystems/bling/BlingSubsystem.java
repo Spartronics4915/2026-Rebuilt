@@ -80,6 +80,16 @@ public class BlingSubsystem {
         changeAnimation(AnimationTypes.SetAll);
     }
 
+    //Wrappers to access CANdle from the subsystem
+    public double getVbat() { return candle.getBusVoltage(); }
+    public double get5V() { return candle.get5VRailVoltage(); }
+    public double getCurrent() { return candle.getCurrent(); }
+    public double getTemperature() { return candle.getTemperature(); }
+    public void configBrightness(double percent) { candle.configBrightnessScalar(percent, 0); }
+    public void configLos(boolean disableWhenLos) { candle.configLOSBehavior(disableWhenLos, 0); }
+    public void configLedType(LEDStripType type) { candle.configLEDType(type, 0); }
+    public void configStatusLedBehavior(boolean offWhenActive) { candle.configStatusLedState(offWhenActive, 0); }
+
     public void changeAnimation(AnimationTypes toChange) {
         currentAnimation = toChange;
 
