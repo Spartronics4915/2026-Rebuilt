@@ -3,20 +3,14 @@ package com.spartronics4915.frc2026.subsystems;
 import com.spartronics4915.frc2026.Robot;
 
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.FeederSubsystem;
-import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.HoodSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem;
-import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IntakeSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
-import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.TurretSubsystem;
-
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.head.HoodSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
-
-import static com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.FeederSubsystem.FeederState.*;
-import static com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.HoodSubsystem.HoodState.*;
-import static com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem.IndexerState.*;
-import static com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem.ShooterState.*;
 
 import static com.spartronics4915.frc2026.subsystems.Superstructure.SuperState.*;
 import static com.spartronics4915.frc2026.Constants.SuperstructureConstants.*;

@@ -1,4 +1,4 @@
-package com.spartronics4915.frc2026.subsystems.superstructure;
+package com.spartronics4915.frc2026.subsystems.mechanisms.head;
 
 import static edu.wpi.first.units.Units.Degrees;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;

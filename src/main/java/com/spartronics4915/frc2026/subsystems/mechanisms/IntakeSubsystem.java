@@ -1,4 +1,4 @@
-package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
+package com.spartronics4915.frc2026.subsystems.mechanisms;
 
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;

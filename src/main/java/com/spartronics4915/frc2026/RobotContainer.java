@@ -16,7 +16,8 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstant
 
 import com.spartronics4915.frc2026.commands.DriveCommand;
 import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem;
-import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.HoodSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.head.HoodSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionConfiguration;
@@ -38,8 +39,11 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 public class RobotContainer {
     
     public final HoodSubsystem hoodSubsystem = new HoodSubsystem();
-    public final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
+    public final TurretSubsystem turretSubsystem = new TurretSubsystem();
+
     public final PivotSubsystem pivotSubsystem = new PivotSubsystem();
+    public final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
+    
     public final SwerveSubsystem swerveSubsystem = new SwerveSubsystem(SwerveConfigurations.COMP_CHASSIS);
     public final VisionSubsystem visionSubsystem = new VisionSubsystem(
         VisionConstants.CameraConstants.cameras, 
@@ -58,7 +62,6 @@ public class RobotContainer {
 
     public RobotContainer() {
         configureBindings();
-        TurretSubsystem turretSubsystem = new TurretSubsystem();
     }
 
     /**
