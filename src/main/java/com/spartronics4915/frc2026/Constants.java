@@ -465,8 +465,8 @@ public final class Constants {
         public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 1;
-        public static final double MOTOR_MECHANISM_RATIO = 1 / ((12/38) * (18/38) * (11/84));
-        public static final double ENCODER_MECHANISM_RATIO = 1 / (11/84);
+        public static final double MOTOR_MECHANISM_RATIO = 1.0 / ((12.0/38.0) * (18.0/38.0) * (11.0/84.0));
+        public static final double ENCODER_MECHANISM_RATIO = 1.0 / (11.0/84.0);
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
