@@ -13,7 +13,7 @@ import static edu.wpi.first.units.Units.Seconds;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.trajectory.PathPlannerTrajectoryState;
 import com.spartronics4915.frc2026.Constants.SwerveConstants;
-import com.spartronics4915.frc2026.subsystems.SwerveSubsystem;
+import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.Debouncer;
