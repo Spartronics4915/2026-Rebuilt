@@ -16,6 +16,7 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstant
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.trenchTransform;
 
 import com.spartronics4915.frc2026.commands.DriveCommand;
+import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.HoodSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem;
@@ -36,11 +37,12 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  * subsystems, commands, and trigger mappings) should be declared here.
  */
 public class RobotContainer {
-    
+
     public final HoodSubsystem hoodSubsystem = new HoodSubsystem();
     public final TurretSubsystem turretSubsystem = new TurretSubsystem();
 
     public final PivotSubsystem pivotSubsystem = new PivotSubsystem();
+    public final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
     public final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
     
     public final SwerveSubsystem swerveSubsystem = new SwerveSubsystem(SwerveConfigurations.COMP_CHASSIS);
