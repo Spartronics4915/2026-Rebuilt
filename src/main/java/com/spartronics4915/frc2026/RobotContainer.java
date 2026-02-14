@@ -58,6 +58,7 @@ public class RobotContainer {
 
     public RobotContainer() {
         configureBindings();
+        TurretSubsystem turretSubsystem = new TurretSubsystem();
     }
 
     /**
