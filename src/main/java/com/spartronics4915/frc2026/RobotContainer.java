@@ -6,7 +6,7 @@ package com.spartronics4915.frc2026;
 
 import com.spartronics4915.frc2026.Constants.OperatorConstants;
 import com.spartronics4915.frc2026.commands.Autos;
-import com.spartronics4915.frc2026.subsystems.superstructure.IntakeSubsystem;
+import com.spartronics4915.frc2026.subsystems.IntakeSubsystem;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -19,12 +19,14 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  * subsystems, commands, and trigger mappings) should be declared here.
  */
 public class RobotContainer {
+
+    IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
+
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
     private final CommandXboxController operatorController = new CommandXboxController(OperatorConstants.OPERATOR_CONTROLLER_PORT);
 
     public RobotContainer() {
         configureBindings();
-        IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
     }
 
     /**
