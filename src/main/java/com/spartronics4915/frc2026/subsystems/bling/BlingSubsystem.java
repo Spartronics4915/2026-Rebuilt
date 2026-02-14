@@ -32,4 +32,22 @@ public class BlingSubsystem {
     }
 
     private AnimationTypes currentAnimation;
+
+    public BlingSubsystem(XboxController joy) {
+        this.joystick = joy;
+        //changeAnimation(AnimationTypes.SetAll);
+
+        CANdleConfiguration configAll = new CANdleConfiguration();
+
+        configAll.statusLedOffWhenActive = true;
+        configAll.disableWhenLOS = false;
+        configAll.stripType = LEDStripType.GRB;
+        configAll.brightnessScalar = 0.1;
+        configAll.vBatOutputMode = VBatOutputMode.Modulated;
+        candle.configAllSettings(configAll, 100);
+    }
+
+    public void setColors() {
+        //changeAnimation(AnimationTypes.SetAll);
+    }
 }
