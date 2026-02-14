@@ -14,7 +14,6 @@ import com.spartronics4915.frc2026.Constants;
 
 public class BlingSubsystem {
     private final CANdle candle = new CANdle(Constants.BlingConstants.CANdleID, "rio");
-    private final int LedCount = 300;
     private XboxController joystick;
 
     private Animation toAnimate = null;
@@ -31,6 +30,6 @@ public class BlingSubsystem {
         TwinkleOff,
         SetAll
     }
-    
+
     private AnimationTypes currentAnimation;
 }
