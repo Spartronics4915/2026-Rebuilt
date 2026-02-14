@@ -28,10 +28,9 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     private double currentSetpoint;
 
-    private DoublePublisher rpmPublisher = NetworkTableInstance.getDefault().getDoubleTopic("RPS").publish();
-    private DoublePublisher desiredRPSPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Desired RPS").publish();
-    private DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Setpoint").publish();
-    private DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Applied Out").publish();
+    private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("applied out").publish();
+    private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("rps").publish();
+    private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("setpoint").publish();
 
     //#region Main Functionality
 
@@ -77,10 +76,9 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
             leadMotor.setControl(request);
         }
 
-        rpmPublisher.accept(getCurrentRPS());
-        setpointPublisher.accept(currentSetpoint);
-        desiredRPSPublisher.accept(limitedSetpoint);
         appliedOutPublisher.accept(leadMotor.getDutyCycle().getValueAsDouble());
+        rpsPublisher.accept(getCurrentRPS());
+        setpointPublisher.accept(currentSetpoint);
     }
 
     public double getCurrentRPS() {

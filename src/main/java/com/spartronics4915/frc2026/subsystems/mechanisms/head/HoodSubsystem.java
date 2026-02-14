@@ -1,7 +1,6 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms.head;
 
 import static edu.wpi.first.units.Units.Rotations;
-import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
@@ -36,10 +35,10 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
     private Rotation2d currentSetpoint = Rotation2d.fromDegrees(0);
     private State currentState = new State();
 
-    private final DoublePublisher appliedOutPub = NetworkTableInstance.getDefault().getTable("logHood").getDoubleTopic("applied out").publish();
-    private final StructPublisher<Rotation2d> positionPub = NetworkTableInstance.getDefault().getTable("logHood").getStructTopic("position", Rotation2d.struct).publish();
-    private final StructPublisher<Rotation2d> desiredStatePub = NetworkTableInstance.getDefault().getTable("logHood").getStructTopic("desiredState", Rotation2d.struct).publish();
-    private final StructPublisher<Rotation2d> setpointpub = NetworkTableInstance.getDefault().getTable("logHood").getStructTopic("setpointpub", Rotation2d.struct).publish();
+    private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("hood").getDoubleTopic("applied out").publish();
+    private final StructPublisher<Rotation2d> positionPublisher = NetworkTableInstance.getDefault().getTable("hood").getStructTopic("position", Rotation2d.struct).publish();
+    private final StructPublisher<Rotation2d> desiredStatePublisher = NetworkTableInstance.getDefault().getTable("hood").getStructTopic("desiredState", Rotation2d.struct).publish();
+    private final StructPublisher<Rotation2d> setpointPublisher = NetworkTableInstance.getDefault().getTable("hood").getStructTopic("setpoint", Rotation2d.struct).publish();
     
     public HoodSubsystem() {
         TalonFXConfigurator motorConfig = motor.getConfigurator();
@@ -81,10 +80,10 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
         PositionVoltage request = new PositionVoltage(currentState.position);
             motor.setControl(request);
 
-        appliedOutPub.accept(motor.getMotorVoltage().getValue().in(Volts));
-        positionPub.accept(getPosition());
-        desiredStatePub.accept(Rotation2d.fromRotations(currentState.position));
-        setpointpub.accept(currentSetpoint);
+        appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
+        positionPublisher.accept(getPosition());
+        desiredStatePublisher.accept(Rotation2d.fromRotations(currentState.position));
+        setpointPublisher.accept(currentSetpoint);
     }
 
     public Rotation2d getPosition() {

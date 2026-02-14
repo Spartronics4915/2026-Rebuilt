@@ -32,9 +32,9 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private State currentState = new State();
     private double currentSetpoint = 0.0;
 
-    DoublePublisher RPSPublisher = NetworkTableInstance.getDefault().getTable("Intake").getDoubleTopic("RPS").publish();
-    DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("Intake").getDoubleTopic("Setpoint").publish();
-    DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("Intake").getDoubleTopic("Applied Out").publish();
+    private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("applied out").publish();
+    private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("rps").publish();
+    private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("setpoint").publish();
 
     //#region Main Functionality
 
@@ -61,9 +61,9 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
         VelocityVoltage request = new VelocityVoltage(currentSetpoint);
             motor.setControl(request);
 
-        RPSPublisher.accept(getCurrentRPS());
+        appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
+        rpsPublisher.accept(getCurrentRPS());
         setpointPublisher.accept(currentSetpoint);
-        appliedOutPublisher.accept(getAppliedVoltage());
     }
 
     public double getCurrentRPS() {

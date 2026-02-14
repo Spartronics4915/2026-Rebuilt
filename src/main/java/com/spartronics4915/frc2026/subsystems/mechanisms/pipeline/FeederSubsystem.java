@@ -24,9 +24,9 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     private double currentSetpoint;
 
-    private DoublePublisher rpmPublisher = NetworkTableInstance.getDefault().getDoubleTopic("RPM").publish();
-    private DoublePublisher desiredRPSPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Desired RPS").publish();
-    private DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Setpoint").publish();
+    private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("feeder").getDoubleTopic("applied out").publish();
+    private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("feeder").getDoubleTopic("rps").publish();
+    private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("feeder").getDoubleTopic("setpoint").publish();
 
     //#region Main Functionality
 
@@ -58,8 +58,8 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
             motor.setControl(request);
         }
 
-        rpmPublisher.accept(getCurrentRPM());
-        desiredRPSPublisher.accept(limitedSetpoint);
+        appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
+        rpsPublisher.accept(getCurrentRPM());
         setpointPublisher.accept(currentSetpoint);
     }
 

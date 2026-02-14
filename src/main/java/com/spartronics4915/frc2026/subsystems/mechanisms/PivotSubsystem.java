@@ -35,10 +35,10 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
     private Rotation2d currentSetpoint = Rotation2d.fromDegrees(0);
     private State currentState = new State();
 
-    private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("Pivot").getDoubleTopic("Applied Out").publish();
-    private final StructPublisher<Rotation2d> positionPublisher = NetworkTableInstance.getDefault().getTable("Pivot").getStructTopic("Position", Rotation2d.struct).publish();
-    private final StructPublisher<Rotation2d> desiredStatePublisher = NetworkTableInstance.getDefault().getTable("Pivot").getStructTopic("Desired State", Rotation2d.struct).publish();
-    private final StructPublisher<Rotation2d> setpointPublisher = NetworkTableInstance.getDefault().getTable("Pivot").getStructTopic("Setpoint", Rotation2d.struct).publish();
+    private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("pivot").getDoubleTopic("Applied Out").publish();
+    private final StructPublisher<Rotation2d> positionPublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("Position", Rotation2d.struct).publish();
+    private final StructPublisher<Rotation2d> desiredStatePublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("Desired State", Rotation2d.struct).publish();
+    private final StructPublisher<Rotation2d> setpointPublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("Setpoint", Rotation2d.struct).publish();
     
     public PivotSubsystem() {
         TalonFXConfigurator motorConfig = motor.getConfigurator();
@@ -51,7 +51,6 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
             motorConfig.apply(motorOutputConfigs);
 
         setMechanismAngle(Rotation2d.fromDegrees(0));
-
         ModeSwitchHandler.EnableModeSwitchHandler(this);
     }
 
