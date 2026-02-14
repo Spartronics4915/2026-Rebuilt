@@ -127,4 +127,21 @@ public class BlingSubsystem {
         }
     System.out.println("Changed to " + currentAnimation.toString());
     }
+
+    @Override
+    public void periodic() {
+        if(toAnimate == null) {
+            candle.setLEDs((int)(joystick.getLeftTriggerAxis() * 255),
+                            (int)(joystick.getRightTriggerAxis() * 255),
+                            (int)(joystick.getLeftX() * 255));
+        } else {
+            candle.animate(toAnimate);
+        }
+        candle.modulateVBatOutput(joystick.getRightY());
+    }
+
+    @Override
+    public void simulationPeriodic() {
+        
+    }
 }
