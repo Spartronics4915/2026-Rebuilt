@@ -35,7 +35,7 @@ public class BlingSubsystem {
 
     public BlingSubsystem(XboxController joy) {
         this.joystick = joy;
-        //changeAnimation(AnimationTypes.SetAll);
+        changeAnimation(AnimationTypes.SetAll);
 
         CANdleConfiguration configAll = new CANdleConfiguration();
 
@@ -47,7 +47,21 @@ public class BlingSubsystem {
         candle.configAllSettings(configAll, 100);
     }
 
+    public void incrementAnimation() {
+        switch(currentAnimation) {
+            case ColorFlow: changeAnimation(AnimationTypes.Fire); break;
+            case Fire: changeAnimation(AnimationTypes.Fire); break;
+            case Larson: changeAnimation(AnimationTypes.Larson); break;
+            case Rainbow: changeAnimation(AnimationTypes.Rainbow); break;
+            case RgbFade: changeAnimation(AnimationTypes.RgbFade); break;
+            case SingleFade: changeAnimation(AnimationTypes.SingleFade); break;
+            case Strobe: changeAnimation(AnimationTypes.Strobe); break;
+            case TwinkleOff: changeAnimation(AnimationTypes.TwinkleOff); break;
+            case SetAll: changeAnimation(AnimationTypes.SetAll); break;
+        }
+    }
+
     public void setColors() {
-        //changeAnimation(AnimationTypes.SetAll);
+        changeAnimation(AnimationTypes.SetAll);
     }
 }
