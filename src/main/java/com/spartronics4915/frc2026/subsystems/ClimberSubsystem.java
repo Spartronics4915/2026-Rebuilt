@@ -1,4 +1,4 @@
-package com.spartronics4915.frc2026.subsystems.superstructure;
+package com.spartronics4915.frc2026.subsystems;
 
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
