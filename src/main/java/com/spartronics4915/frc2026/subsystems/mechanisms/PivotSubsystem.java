@@ -1,11 +1,11 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms;
 
-import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
@@ -29,6 +29,7 @@ import static com.spartronics4915.frc2026.Constants.PivotConstants.*;
 public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
     TalonFX motor = new TalonFX(MOTOR_ID);
+    CANcoder encoder = new CANcoder(ENCODER_ID);
     
     TrapezoidProfile trapProfile = new TrapezoidProfile(
 	    new Constraints(MAX_VELOCITY, MAX_ACCELERATION)
@@ -36,7 +37,7 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
 
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
-    private Rotation2d currentSetpoint = Rotation2d.fromDegrees(0);
+    private Rotation2d currentSetpoint = MIN_ANGLE;
     private State currentState = new State();
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("pivot").getDoubleTopic("Applied Out").publish();
@@ -54,7 +55,7 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
             motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
             motorConfig.apply(motorOutputConfigs);
 
-        setMechanismAngle(Rotation2d.fromDegrees(0));
+        setMechanismAngle(Rotation2d.fromRotations(encoder.getAbsolutePosition().getValueAsDouble()));
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         SmartDashboard.putData("Pivot Down", setStateCommand(PivotState.DOWN));
@@ -90,8 +91,7 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
     }
 
     public Rotation2d getPosition() {
-        double position = motor.getPosition().getValue().in(Rotations);
-        return Rotation2d.fromRotations(position);
+        return Rotation2d.fromRotations(encoder.getAbsolutePosition().getValueAsDouble());
     }
 
     public void setSetpoint(Rotation2d setpoint){
