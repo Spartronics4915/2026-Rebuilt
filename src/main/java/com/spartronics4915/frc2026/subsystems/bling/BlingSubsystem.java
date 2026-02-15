@@ -1,7 +1,6 @@
 package com.spartronics4915.frc2026.subsystems.bling;
 
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import com.ctre.phoenix.led.*;
 import com.ctre.phoenix.led.CANdle.LEDStripType;
@@ -13,6 +12,7 @@ import com.ctre.phoenix.led.TwinkleOffAnimation.TwinkleOffPercent;
 import com.spartronics4915.frc2026.Constants;
 
 public class BlingSubsystem {
+    @SuppressWarnings("removal")
     private final CANdle candle = new CANdle(Constants.BlingConstants.CANdleID, "rio");
     private XboxController joystick;
 
@@ -33,6 +33,7 @@ public class BlingSubsystem {
 
     private AnimationTypes currentAnimation;
 
+    @SuppressWarnings("removal")
     public BlingSubsystem(XboxController joy) {
         this.joystick = joy;
         changeAnimation(AnimationTypes.SetAll);
@@ -81,15 +82,24 @@ public class BlingSubsystem {
     }
 
     //Wrappers to access CANdle from the subsystem
+    @SuppressWarnings("removal")
     public double getVbat() { return candle.getBusVoltage(); }
+    @SuppressWarnings("removal")
     public double get5V() { return candle.get5VRailVoltage(); }
+    @SuppressWarnings("removal")
     public double getCurrent() { return candle.getCurrent(); }
+    @SuppressWarnings("removal")
     public double getTemperature() { return candle.getTemperature(); }
+    @SuppressWarnings("removal")
     public void configBrightness(double percent) { candle.configBrightnessScalar(percent, 0); }
+    @SuppressWarnings("removal")
     public void configLos(boolean disableWhenLos) { candle.configLOSBehavior(disableWhenLos, 0); }
+    @SuppressWarnings("removal")
     public void configLedType(LEDStripType type) { candle.configLEDType(type, 0); }
+    @SuppressWarnings("removal")
     public void configStatusLedBehavior(boolean offWhenActive) { candle.configStatusLedState(offWhenActive, 0); }
 
+    @SuppressWarnings("removal")
     public void changeAnimation(AnimationTypes toChange) {
         currentAnimation = toChange;
 
@@ -127,7 +137,7 @@ public class BlingSubsystem {
         }
     System.out.println("Changed to " + currentAnimation.toString());
     }
-
+/*
     @Override
     public void periodic() {
         if(toAnimate == null) {
@@ -142,6 +152,7 @@ public class BlingSubsystem {
 
     @Override
     public void simulationPeriodic() {
-        
+
     }
+    */
 }
