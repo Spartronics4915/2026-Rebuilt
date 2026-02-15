@@ -3,6 +3,7 @@ package com.spartronics4915.frc2026.subsystems.swerve;
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -203,7 +204,7 @@ public class SwerveSubsystem extends SubsystemBase {
         );
     }
 
-    public static Supplier<ChassisSpeeds> computeVelocitiesFromController(XboxController driverController, boolean isFieldRelative, SwerveSubsystem swerve) {
+    public static Supplier<ChassisSpeeds> computeVelocitiesFromController(XboxController driverController, BooleanSupplier isFieldRelative, SwerveSubsystem swerve) {
         TrapezoidProfile trapezoidProfile = new TrapezoidProfile(trenchAlignConstraints);
 
         return () -> {
@@ -217,7 +218,7 @@ public class SwerveSubsystem extends SubsystemBase {
             double joyOmega = applyResponseCurve(MathUtil.applyDeadband(driverController.getRightX() * -1.0, STICK_DEADBAND)) * MAX_ANGULAR_SPEED.in(RadiansPerSecond);
 
             // Determine joystick components in field space
-            ChassisSpeeds fieldJoy = ChassisSpeeds.fromRobotRelativeSpeeds(joyVX, joyVY, 0, isFieldRelative ? TELEOP_HEADING_OFFSET : currentPose.getRotation());
+            ChassisSpeeds fieldJoy = ChassisSpeeds.fromRobotRelativeSpeeds(joyVX, joyVY, 0, isFieldRelative.getAsBoolean() ? TELEOP_HEADING_OFFSET : currentPose.getRotation());
             double fieldVX = fieldJoy.vxMetersPerSecond;
             double fieldVY = fieldJoy.vyMetersPerSecond;
 
@@ -255,7 +256,7 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public static Supplier<ChassisSpeeds> computeVelocitiesFromController(XboxController driverController, SwerveSubsystem swerve) {
-        return computeVelocitiesFromController(driverController, IS_FIELD_RELATIVE, swerve);
+        return computeVelocitiesFromController(driverController, () -> IS_FIELD_RELATIVE, swerve);
     }
 
     public static Supplier<ChassisSpeeds> getSwerveTeleopCSSupplier(XboxController driverController, SwerveSubsystem swerve){
