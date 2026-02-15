@@ -1,228 +1,299 @@
 package com.spartronics4915.frc2026.subsystems;
 
-import com.spartronics4915.frc2026.Robot;
+import static com.spartronics4915.frc2026.Constants.SuperstructureConstants.*;
 
-import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.FeederSubsystem;
-import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem;
-import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem.IntakeState;
+import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem.PivotState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.HoodSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem;
-import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.head.HoodSubsystem.HoodClamp;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.FeederSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.FeederSubsystem.FeederState;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem.IndexerState;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem.ShooterClamp;
 
-import static com.spartronics4915.frc2026.subsystems.Superstructure.SuperState.*;
-import static com.spartronics4915.frc2026.Constants.SuperstructureConstants.*;
-
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-public class Superstructure extends SubsystemBase{
+public class Superstructure extends SubsystemBase {
 
-    private final FeederSubsystem feeder;
+    // Head mechanisms
     private final HoodSubsystem hood;
-    private final IndexerSubsystem indexer;
-    private final IntakeSubsystem intake;
-    private final ShooterSubsystem shooter;
     private final TurretSubsystem turret;
+
+    // Pipeline mechanisms
+    private final FeederSubsystem feeder;
+    private final IndexerSubsystem indexer;
+    private final ShooterSubsystem shooter;
+
+    // Other mechanisms
     private final ClimberSubsystem climber;
+    private final IntakeSubsystem intake;
     private final PivotSubsystem pivot;
-    private final SwerveSubsystem swerve;
 
-    private SuperState currentState;
-    private RobotLocation currentLocation;
-    private RobotLocation lastLocation;
+    // Bla bla bla bla 
+    private RobotState currentRobotState;
+    private Zone currentZone;
+    private Zone previousZone;
 
-    private boolean override;
+    private boolean stateOverride;
 
-    public Superstructure(
-        FeederSubsystem feederSubsystem,
-        HoodSubsystem hoodSubsystem,
-        IndexerSubsystem indexerSubsystem,
-        IntakeSubsystem intakeSubsystem,
-        ShooterSubsystem shooterSubsystem,
-        TurretSubsystem turretSubsystem,
-        ClimberSubsystem climberSubsystem,
-        PivotSubsystem pivotSubsystem,
-        SwerveSubsystem swerveSubsystem
-    ) {
-        this.feeder = feederSubsystem;
-        this.hood = hoodSubsystem;
-        this.indexer = indexerSubsystem;
-        this.intake = intakeSubsystem;
-        this.shooter = shooterSubsystem;
-        this.turret = turretSubsystem;
-        this.climber = climberSubsystem;
-        this.pivot = pivotSubsystem;
-        this.swerve = swerveSubsystem;
-
-        this.currentLocation = getCurrentLocation();
-        this.lastLocation = currentLocation;
-    }
+    // Publishing for superstructure logging
+    private final StringPublisher currentStatePublisher = NetworkTableInstance.getDefault().getTable("Superstructure").getStringTopic("State").publish();
+    private final StringPublisher currentZonePublisher = NetworkTableInstance.getDefault().getTable("Superstructure").getStringTopic("Current Zone").publish();
+    private final StringPublisher previousZonePublisher = NetworkTableInstance.getDefault().getTable("Superstructure").getStringTopic("Previous State").publish();
     
-    public enum SuperState {
-        STOWED,
-        IDLE, 
+    public Superstructure(
+        HoodSubsystem hoodSubsystem,
+        TurretSubsystem turretSubsystem,
+        FeederSubsystem feederSubsystem,
+        IndexerSubsystem indexerSubsystem,
+        ShooterSubsystem shooterSubsystem,
+        ClimberSubsystem climberSubsystem,
+        IntakeSubsystem intakeSubsystem,
+        PivotSubsystem pivotSubsystem
+    ) {
+        this.hood = hoodSubsystem;
+        this.turret = turretSubsystem;
+        this.feeder = feederSubsystem;
+        this.indexer = indexerSubsystem;
+        this.shooter = shooterSubsystem;
+        this.climber = climberSubsystem;
+        this.intake = intakeSubsystem;
+        this.pivot = pivotSubsystem;
+
+        this.currentZone = getCurrentZone();
+        this.previousZone = currentZone;
+    }
+
+    private enum RobotState {
         TRAVERSAL,
+        CRUISE,
         SHOOTING,
-        SAFE,
-        PRE_CLIMB,
-        ACTIVE_CLIMB,
+        CLIMB,
+        IDLE,
+        STOWED,
         TESTING
     }
 
-    public enum RobotLocation {
+    private enum PipelineState {
+        ON(IndexerState.ON, FeederState.ON, ShooterClamp.UNRESTRICTED),
+        OFF(IndexerState.OFF, FeederState.OFF, ShooterClamp.RESTRICTED);
+
+        IndexerState indexerState;
+        FeederState feederState;
+        ShooterClamp shooterClamp;
+
+        private PipelineState(
+            IndexerState indexerState,
+            FeederState feederState,
+            ShooterClamp shooterClamp
+        ) {
+            this.indexerState = indexerState;
+            this.feederState = feederState;
+            this.shooterClamp = shooterClamp;
+        }
+    }
+
+    private enum Zone {
         ALLIANCE_ZONE,
         TRENCH,
         BUMP,
         NEUTRAL_ZONE,
-        OTHER_ALLIANCE_ZONE,
-        THE_VOID
+        OPPONENT_ZONE
     }
 
     @Override
     public void periodic() {
-        currentLocation = getCurrentLocation();
-        if (currentLocation != lastLocation) override = false;
-        if (override) return;
-
-        switch (currentLocation) {
-            case ALLIANCE_ZONE:
-                if (!Robot.hubEnabled || Robot.timeUntilSwitch > 3) return;
-                if (currentState == SHOOTING) return;
-                transition(SHOOTING);
-                break;
-
-            case TRENCH:
-                if (currentState == SAFE) return;
-                transition(SAFE);
-                break;
-
-            case BUMP:
-                if (currentState == SAFE) return;
-                transition(SAFE);
-                break;
-
-            case NEUTRAL_ZONE:
-                if (currentState == TRAVERSAL) return;
-                transition(TRAVERSAL);
-                break;
-
-            case OTHER_ALLIANCE_ZONE:
-                if (currentState == SAFE) return;
-                transition(SAFE);
-                break;
-            
-            case THE_VOID:
-                if (currentState == IDLE) return;
-                transition(IDLE);
-                break;
+        currentZone = getCurrentZone();
+        if (currentZone != previousZone) {
+            stateOverride = false;
+            previousZone = currentZone;
         }
+
+        if (stateOverride != true) {
+            switch (currentZone) {
+                case ALLIANCE_ZONE:
+                    if (currentRobotState == RobotState.SHOOTING) return;
+                    switchState(RobotState.SHOOTING);
+                    break;
+
+                case TRENCH:
+                    hood.setClamp(HoodClamp.RESTRICTED);
+                    if (currentRobotState == RobotState.TRAVERSAL) return;
+                    switchState(RobotState.TRAVERSAL);
+                    break;
+
+                case BUMP:
+                    if (currentRobotState == RobotState.CRUISE) return;
+                    switchState(RobotState.CRUISE);
+                    break;
+
+                case NEUTRAL_ZONE:
+                    if (currentRobotState == RobotState.TRAVERSAL) return;
+                    switchState(RobotState.TRAVERSAL);
+                    break;
+
+                case OPPONENT_ZONE:
+                    if (currentRobotState == RobotState.CRUISE) return;
+                    switchState(RobotState.CRUISE);
+                    break;
+            }
+        } 
+
+        currentStatePublisher.accept(currentRobotState.name());
+        currentZonePublisher.accept(currentZone.name());
+        previousZonePublisher.accept(previousZone.name());
     }
 
-    private RobotLocation getCurrentLocation() {
-        Pose2d currentPose = swerve.getRobotPose().plus(turretTransform);
-        // Do all the fancy stuff to get the location
-        // Check if the last location is the same as this location for override purposes
-        return RobotLocation.ALLIANCE_ZONE;
+    private Zone getCurrentZone() {
+        return Zone.ALLIANCE_ZONE;
     }
 
-    private void transition(SuperState wantedState) {
-        switch (wantedState) {
-            case STOWED:
-                toStowed();
-                break;
-            
-            case IDLE:
-                toIdle();
-                break;
+    public void setStateOverride(RobotState overrideState) {
+        stateOverride = true;
+        switchState(overrideState);
+    }
 
+    private Command setPipelineState(PipelineState state) {
+        return Commands.sequence(
+            shooter.setClampCommand(state.shooterClamp),
+            Commands.waitUntil(() -> isShooterReady()),
+            Commands.parallel(
+                indexer.setStateCommand(state.indexerState),
+                feeder.setStateCommand(state.feederState)
+            )
+        );
+    }
+
+    private void switchState(RobotState desiredState) {
+        switch (desiredState) {
             case TRAVERSAL:
-                toTransversal();
+                transToTraversal();
+                break;
+
+            case CRUISE:
+                transToCruise();
                 break;
 
             case SHOOTING:
-                toShooting();
+                transToShooting();
                 break;
 
-            case SAFE:
-                toSafe();
+            case CLIMB:
+                transToClimb();
                 break;
 
-            case PRE_CLIMB:
-                toPreClimb();
+            case IDLE:
+                transToIdle();
                 break;
 
-            case ACTIVE_CLIMB:
-                toActiveClimb();
+            case STOWED:
+                transToStowed();
                 break;
 
             case TESTING:
+                System.out.println("Chat, what are we doing?");
                 break;
         }
+        currentRobotState = desiredState;
     }
 
-    //#endregion
+    //#region State Transitions
 
-    //#region Transitions
-
-    private Command toStowed() {
-        return null;
+    private Command transToTraversal() {
+        return Commands.sequence(
+            pivot.setStateCommand(PivotState.DOWN),
+            Commands.waitUntil(() -> isPivotSafe()),
+            Commands.parallel(
+                setPipelineState(PipelineState.OFF),
+                intake.setStateCommand(IntakeState.ON)
+            )
+        );
     }
 
-    private Command toIdle() { 
-        return null;
+    private Command transToCruise() {
+        return Commands.sequence(
+            pivot.setStateCommand(PivotState.MIDDLE),
+            Commands.waitUntil(() -> isPivotSafe()),
+            Commands.parallel(
+                setPipelineState(PipelineState.OFF),
+                intake.setStateCommand(IntakeState.OFF)
+            )
+        );
     }
 
-    private Command toTransversal() { 
-        return null;
-    }
-    
-    private Command toShooting() { 
-        return null;
-    }
-
-    private Command toSafe() { 
-        return null;
-    }
-
-    private Command toPreClimb() { 
-        return null;
+    private Command transToShooting() {
+        return Commands.sequence(
+            pivot.setStateCommand(PivotState.DOWN),
+            Commands.waitUntil(() -> isPivotSafe()),
+            Commands.parallel(
+                setPipelineState(PipelineState.ON),
+                intake.setStateCommand(IntakeState.ON)
+            )
+        );
     }
 
-    private Command toActiveClimb() { 
-        return null;
+    private Command transToClimb() {
+        return Commands.sequence(
+            pivot.setStateCommand(PivotState.DOWN),
+            Commands.waitUntil(() -> isPivotSafe()),
+            Commands.parallel(
+                setPipelineState(PipelineState.ON),
+                intake.setStateCommand(IntakeState.OFF)
+            )
+        );
+    }
+
+    private Command transToIdle() {
+        return Commands.sequence(
+            pivot.setStateCommand(PivotState.DOWN),
+            Commands.waitUntil(() -> isPivotSafe()),
+            Commands.parallel(
+                setPipelineState(PipelineState.OFF),
+                intake.setStateCommand(IntakeState.OFF)
+            )
+        );
+    }
+
+    private Command transToStowed() {
+        return Commands.sequence(
+            setPipelineState(PipelineState.OFF),
+            Commands.waitUntil(() -> isTurretSafe()),
+            Commands.parallel(
+                pivot.setStateCommand(PivotState.UP),
+                intake.setStateCommand(IntakeState.OFF)
+            )
+        );
     }
 
     //#endregion
 
     //#region Checks
 
-    private boolean isPivotSafe() {
-        return pivot.getPosition().getRotations() > Rotation2d.fromDegrees(0).getRotations();
+    private boolean isShooterReady() {
+        return shooter.getCurrentRPS() >= shooter.getCurrentSetpoint();
     }
-    
-    private boolean isHoodSafe() {
-        return hood.getPosition().getRotations() > Rotation2d.fromDegrees(0).getRotations();
+
+    private boolean isPivotSafe() {
+        return pivot.getPosition().getDegrees() 
+            > PIVOT_SAFE_THRESHOLD.getDegrees();
     }
 
     private boolean isTurretSafe() {
-        return true; //turret.getPosition().getRotations() > Rotation2d.fromDegrees(0).getRotations();
-    }
-
-    private boolean isShooterReady() {
-        return true; // This should check if the shooter is at or really close to the set point
-    }
+        return (turret.getPosition().getDegrees() > TURRET_MIN_SAFE_THRESHOLD.getDegrees() 
+            && turret.getPosition().getDegrees() < TURRET_MAX_SAFE_THRESHOLD.getDegrees()
+        );
+    }   
 
     //#endregion
 
-    public void setStateOverride(SuperState overrideState) {
-        override = true;
-        transition(overrideState);
-    }
-
 }
-

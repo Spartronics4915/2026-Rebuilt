@@ -10,10 +10,10 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -27,6 +27,8 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private SlewRateLimiter RPSLimiter = new SlewRateLimiter(MAX_ACCELERATION);
 
     private double currentSetpoint;
+    private ShooterClamp RPSClamp;
+    private double maxRPS;
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("applied out").publish();
     private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("rps").publish();
@@ -54,16 +56,21 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
             configurator.apply(FEEDBACK_CONFIG);
 
         followerMotor.setControl(new Follower(FOLLOWER_MOTOR_ID, MotorAlignmentValue.Aligned));
-        
-        leadMotor.set(0);
-        ModeSwitchHandler.EnableModeSwitchHandler(this);
 
-        SmartDashboard.putData("Shooter On", setStateCommand(ShooterState.ON));
-        SmartDashboard.putData("Shooter Off", setStateCommand(ShooterState.OFF));
+        setClamp(ShooterClamp.RESTRICTED);
+        
+        leadMotor.set(ShooterClamp.RESTRICTED.maxRPS);
+        ModeSwitchHandler.EnableModeSwitchHandler(this);
     }
 
     @Override
     public void periodic() {
+        currentSetpoint = MathUtil.clamp(
+                currentSetpoint, 
+                0, 
+                maxRPS
+            );
+
         double limitedSetpoint = (currentSetpoint != 0) ? 0 : RPSLimiter.calculate(currentSetpoint);
 
         if (currentSetpoint != 0) {
@@ -92,36 +99,37 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
         currentSetpoint = setpoint;
     }
 
-    public void setState(ShooterState state) {
-        setSetpoint(state.rps);
+    public void setClamp(ShooterClamp clamp) {
+        RPSClamp = clamp;
+        maxRPS = RPSClamp.maxRPS;
     }
 
     //#endregion
 
     //#region Commands
 
-    public Command setSetpointCommand(double setpoint){
+    public Command setSetpointCommand(double setpoint) {
         return this.runOnce(() -> setSetpoint(setpoint));
     }
 
-    public Command setStateCommand(ShooterState state){
-        return setSetpointCommand(state.rps);
+    public Command setClampCommand(ShooterClamp clamp) {
+        return this.runOnce(() -> setClamp(clamp));
     }
 
-    public enum ShooterState{
-        ON(100),
-        OFF(0);
+    public enum ShooterClamp{
+        RESTRICTED(0),
+        UNRESTRICTED(0);
 
-        double rps;
+        double maxRPS;
 
-        private ShooterState(double rps) {
-            this.rps = rps;
+        private ShooterClamp(double maxRPS) {
+            this.maxRPS = maxRPS;
         }
     }
 
     @Override
     public void onModeSwitch() {
-        setState(ShooterState.OFF);
+        setSetpoint(ShooterClamp.RESTRICTED.maxRPS);
     }
 
 }

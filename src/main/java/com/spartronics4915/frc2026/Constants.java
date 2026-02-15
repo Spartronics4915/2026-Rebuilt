@@ -268,6 +268,9 @@ public final class Constants {
             new Rotation2d()
         );
 
+        public static final Rotation2d PIVOT_SAFE_THRESHOLD = Rotation2d.fromDegrees(0);
+        public static final Rotation2d TURRET_MIN_SAFE_THRESHOLD = Rotation2d.fromDegrees(0);
+        public static final Rotation2d TURRET_MAX_SAFE_THRESHOLD = Rotation2d.fromDegrees(0);
     }
 
     public static class ShooterConstants {
