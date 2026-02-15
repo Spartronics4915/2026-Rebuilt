@@ -54,6 +54,8 @@ public final class Constants {
         public static final int OPERATOR_CONTROLLER_PORT = 1;
     }
 
+    //#region Swerve
+
     public static final class SwerveConstants {
         public static final double MAX_SPEED = 6;
         public static final AngularVelocity MAX_ANGULAR_SPEED = RadiansPerSecond.of(8);
@@ -79,6 +81,8 @@ public final class Constants {
                 this.pathplannerConfig = pathplannerConfig;
             }
         }
+
+        //#region Autos
 
         public static final class AutoConstants {
             public static final PIDConstants translationPID = new PIDConstants(7.5,0,0);
@@ -186,7 +190,11 @@ public final class Constants {
                 }
             }
         }
+        //#endregion
     }
+
+    //#endregion
+    //#region Vision
 
     public static final class VisionConstants {
         public static final AprilTagFieldLayout LAYOUT = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
@@ -261,6 +269,9 @@ public final class Constants {
 
     }
 
+    //#endregion
+    //#region Superstructure
+
     public static final class SuperstructureConstants {
 
         public static final Transform2d turretTransform = new Transform2d(
@@ -272,6 +283,9 @@ public final class Constants {
         public static final Rotation2d TURRET_MIN_SAFE_THRESHOLD = Rotation2d.fromDegrees(0);
         public static final Rotation2d TURRET_MAX_SAFE_THRESHOLD = Rotation2d.fromDegrees(0);
     }
+
+    //#endregion
+    //#region Shooter
 
     public static class ShooterConstants {
         
@@ -306,6 +320,9 @@ public final class Constants {
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
     }
+
+    //#endregion
+    //#region Hood
     
     public static class HoodConstants {
 
@@ -344,6 +361,9 @@ public final class Constants {
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
     }
+
+    //#endregion
+    //#region Pivot
 
     public static class PivotConstants {
 
@@ -384,6 +404,9 @@ public final class Constants {
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
     }
 
+    //#endregion
+    //#region Feeder
+
     public static class FeederConstants {
         
         public static final int MOTOR_ID = 18;
@@ -417,6 +440,9 @@ public final class Constants {
 
     }
 
+    //#endregion
+    //#region Indexer
+
     public static class IndexerConstants {
         
         public static final int MOTOR_ID = 17;
@@ -449,6 +475,9 @@ public final class Constants {
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
     }
+
+    //#endregion
+    //#region Turret
 
     public static class TurretConstants{
 
@@ -487,6 +516,9 @@ public final class Constants {
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
     }
+
+    //#endregion
+    //#region Intake
     
     public static class IntakeConstants {
 
@@ -526,6 +558,9 @@ public final class Constants {
 
     }
 
+    //#endregion
+    //#region Climber
+
     public static class ClimberConstants{
 
         public static final int MOTOR_ID = 24;
@@ -564,5 +599,7 @@ public final class Constants {
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
     }
+
+    //#endregion
 
 }
