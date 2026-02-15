@@ -102,31 +102,16 @@ public final class Constants {
             public static final Translation2d hubPose = new Translation2d(4.625, 4.035);
             public static final Translation2d outpostPose = new Translation2d(0.0, 0.666);
             public static final Translation2d depotPose = new Translation2d(0.0, 5.964);
+            public static final Translation2d fuelZoneXAxisPose = new Translation2d(7.512, 4.035);
+
             public static final Translation2d towerTransform = new Translation2d(0.0, 0.445);
             public static final Translation2d trenchTransform = new Translation2d(0, -3.4);
             public static final Translation2d bumpTransform = new Translation2d(0, -1.523);
             public static final Translation2d approachTransform = new Translation2d(-1.1, 0);
             public static final Translation2d exitTransform = new Translation2d(centerPose.getX() - hubPose.getX(), 0);
-
-            public static final Translation2d fuelZoneXAxisPose = new Translation2d(7.512, 4.035);
             public static final Translation2d startOfFuelTransform = new Translation2d(0.0, 1.889);
             public static final Translation2d endQuadrantTransform = new Translation2d(0.0, 0.708);
             public static final Translation2d endOfFuelTransform = new Translation2d(0.0, -1.685);
-
-            public static final PathConstraints quadrantPathConstraints = new PathConstraints(
-                null, 
-                null, 
-                null, 
-                null
-                //add these later
-            );
-
-            public static final PathConstraints fuelZoneConstraints = new PathConstraints(
-                null,
-                null,
-                null,
-                null
-            );
 
             public static final Distance robotLength = Inches.of(30);
             public static final Distance robotWidth = Inches.of(30);
