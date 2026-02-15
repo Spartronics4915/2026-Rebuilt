@@ -318,8 +318,6 @@ public final class Constants {
         public static final double MAX_VELOCITY = 0;
         public static final double MAX_ACCELERATION = 0;
 
-        public static final double DELTA_TIME = 0.02;
-
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
         public static final double LOWER_LIMIT = 20;
@@ -356,8 +354,6 @@ public final class Constants {
 
         public static final double MAX_VELOCITY = 0;
         public static final double MAX_ACCELERATION = 0;
-
-        public static final double DELTA_TIME = 0.02;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
@@ -462,8 +458,6 @@ public final class Constants {
         public static final double MAX_VELOCITY = 0;
         public static final double MAX_ACCELERATION = 0;
 
-        public static final double DELTA_TIME = 0.02;
-
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
         public static final double LOWER_LIMIT = 20;
@@ -501,8 +495,6 @@ public final class Constants {
         public static final double MAX_VELOCITY = 0;
         public static final double MAX_ACCELERATION = 0;
 
-        public static final double DELTA_TIME = 0.02;
-
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
         public static final double LOWER_LIMIT = 20;
@@ -536,8 +528,6 @@ public final class Constants {
 
         public static final double MAX_VELOCITY = 0;
         public static final double MAX_ACCELERATION = 0;
-
-        public static final double DELTA_TIME = 0.02;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 60;
