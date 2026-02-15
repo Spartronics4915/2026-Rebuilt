@@ -453,7 +453,7 @@ public final class Constants {
     public static class TurretConstants{
 
         public static final int MOTOR_ID = 19;
-        public static final int ENCODER_ID = 0;
+        public static final int ENCODER_ID = 20;
 
         public static final double P = 0.0;
         public static final double I = 0.0;
