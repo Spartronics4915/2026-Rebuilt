@@ -4,6 +4,7 @@ import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
@@ -33,7 +34,7 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
     private State currentState = new State();
-    private double currentSetpoint = 0.0;
+    private double currentSetpoint = STARTING_SPEED_RPS;
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("applied out").publish();
     private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("rps").publish();
@@ -55,13 +56,19 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     @Override
     public void periodic() {
+        currentSetpoint = MathUtil.clamp(
+            currentSetpoint,
+            -MAX_VELOCITY,
+            MAX_VELOCITY
+        );
+
         currentState = trapezoidProfile.calculate(
             dtCalc.update(), 
             currentState, 
-            new State(0, currentSetpoint)
+            new State(currentState.position, currentSetpoint)
         );
 
-        VelocityVoltage request = new VelocityVoltage(currentSetpoint);
+        VelocityVoltage request = new VelocityVoltage(currentState.velocity);
             motor.setControl(request);
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
@@ -82,7 +89,7 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
     }
 
     public void setState(IntakeState newState) {
-        setSetpoint(newState.rpm);
+        setSetpoint(newState.rps);
     }
 
     //#endregion
@@ -94,16 +101,17 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
     }
 
     public Command setStateCommand(IntakeState state){
-        return setSetpointCommand(state.rpm);
+        return setSetpointCommand(state.rps);
     }
 
     public enum IntakeState {
-        ON(100),
+        ON(0),
         OFF(0);
 
-        double rpm;
-        private IntakeState(double rpm) {
-            this.rpm = rpm;
+        double rps;
+
+        private IntakeState(double rps) {
+            this.rps = rps;
         }
     }
 

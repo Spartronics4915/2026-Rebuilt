@@ -348,6 +348,7 @@ public final class Constants {
     public static class PivotConstants {
 
         public static final int MOTOR_ID = 14;
+        public static final int ENCODER_ID = 16;
 
         public static final double P = 0.0;
         public static final double I = 0.0;
@@ -490,6 +491,8 @@ public final class Constants {
     public static class IntakeConstants {
 
         public static final int MOTOR_ID = 3;
+
+        public static final double STARTING_SPEED_RPS = 0;
 
         public static final double P = 0;
         public static final double I = 0;
