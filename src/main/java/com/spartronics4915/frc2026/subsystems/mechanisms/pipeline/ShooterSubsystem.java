@@ -38,14 +38,15 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
         this.currentSetpoint = 0.0;
 
         leadMotor = new TalonFX(LEAD_MOTOR_ID);
-        leadMotor.setNeutralMode(NeutralModeValue.Brake);
+            leadMotor.setNeutralMode(NeutralModeValue.Brake);
+        
+        followerMotor = new TalonFX(FOLLOWER_MOTOR_ID);
+            followerMotor.setNeutralMode(NeutralModeValue.Brake);
         
         TalonFXConfigurator configurator = leadMotor.getConfigurator();
             configurator.apply(PID_CONFIG);
             configurator.apply(CURRENT_LIMITS_CONFIG);
             configurator.apply(FEEDBACK_CONFIG);
-
-        followerMotor = new TalonFX(FOLLOWER_MOTOR_ID);
             
         configurator = followerMotor.getConfigurator();
             configurator.apply(PID_CONFIG);
