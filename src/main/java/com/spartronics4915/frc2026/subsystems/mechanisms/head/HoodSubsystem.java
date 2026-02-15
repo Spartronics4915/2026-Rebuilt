@@ -84,7 +84,7 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
             currentState, 
             new State(currentSetpoint.getRotations(), 0.0)
         );
-
+        
         PositionVoltage request = new PositionVoltage(currentState.position);
             motor.setControl(request);
 

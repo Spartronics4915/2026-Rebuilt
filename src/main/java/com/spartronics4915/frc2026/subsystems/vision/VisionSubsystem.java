@@ -51,22 +51,22 @@ public class VisionSubsystem extends SubsystemBase {
     private boolean hasValidPose;
 
     // Logging hell :(
-    private final StructPublisher<Pose2d> posePublisher = NetworkTableInstance.getDefault().getStructTopic("Vision Pose", Pose2d.struct).publish();
-    private final StructPublisher<Pose2d> usedPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Used Vision Pose", Pose2d.struct).publish();
+    private final StructPublisher<Pose2d> posePublisher = NetworkTableInstance.getDefault().getTable("vision").getStructTopic("Vision Pose", Pose2d.struct).publish();
+    private final StructPublisher<Pose2d> usedPosePublisher = NetworkTableInstance.getDefault().getTable("vision").getStructTopic("Used Vision Pose", Pose2d.struct).publish();
 
-    private final StructPublisher<Pose3d> rightCameraPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Right Camera Pose", Pose3d.struct).publish();
-    private final StructPublisher<Pose3d> leftCameraPosePublisher = NetworkTableInstance.getDefault().getStructTopic("Left Camera Pose", Pose3d.struct).publish();
+    private final StructPublisher<Pose3d> rightCameraPosePublisher = NetworkTableInstance.getDefault().getTable("vision").getStructTopic("Right Camera Pose", Pose3d.struct).publish();
+    private final StructPublisher<Pose3d> leftCameraPosePublisher = NetworkTableInstance.getDefault().getTable("vision").getStructTopic("Left Camera Pose", Pose3d.struct).publish();
 
-    private final DoublePublisher transStdDevPublisher = NetworkTableInstance.getDefault().getDoubleTopic("XY Std Devs").publish();
-    private final DoublePublisher rotStdDevPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Theta Std Devs").publish();
+    private final DoublePublisher transStdDevPublisher = NetworkTableInstance.getDefault().getTable("vision").getDoubleTopic("XY Std Devs").publish();
+    private final DoublePublisher rotStdDevPublisher = NetworkTableInstance.getDefault().getTable("vision").getDoubleTopic("Theta Std Devs").publish();
 
-    private final DoublePublisher avgDistancePublisher = NetworkTableInstance.getDefault().getDoubleTopic("Avg Distance").publish();
-    private final DoublePublisher avgAmbiguityPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Avg Ambiguity").publish();
-    private final DoublePublisher avgAreaPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Avg Area").publish();
-    private final DoublePublisher xAnisotropyPublisher = NetworkTableInstance.getDefault().getDoubleTopic("X Anisotropy").publish();
-    private final DoublePublisher yAnisotropyPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Y Anisotropy").publish();
-    private final DoublePublisher latencyPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Latency").publish();
-    private final DoublePublisher targetCountPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Target Count").publish();
+    private final DoublePublisher avgDistancePublisher = NetworkTableInstance.getDefault().getTable("vision").getDoubleTopic("Avg Distance").publish();
+    private final DoublePublisher avgAmbiguityPublisher = NetworkTableInstance.getDefault().getTable("vision").getDoubleTopic("Avg Ambiguity").publish();
+    private final DoublePublisher avgAreaPublisher = NetworkTableInstance.getDefault().getTable("vision").getDoubleTopic("Avg Area").publish();
+    private final DoublePublisher xAnisotropyPublisher = NetworkTableInstance.getDefault().getTable("vision").getDoubleTopic("X Anisotropy").publish();
+    private final DoublePublisher yAnisotropyPublisher = NetworkTableInstance.getDefault().getTable("vision").getDoubleTopic("Y Anisotropy").publish();
+    private final DoublePublisher latencyPublisher = NetworkTableInstance.getDefault().getTable("vision").getDoubleTopic("Latency").publish();
+    private final DoublePublisher targetCountPublisher = NetworkTableInstance.getDefault().getTable("vision").getDoubleTopic("Target Count").publish();
 
     private final StructArrayPublisher<Pose3d> trackedApriltagsPublisher = NetworkTableInstance.getDefault().getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
     

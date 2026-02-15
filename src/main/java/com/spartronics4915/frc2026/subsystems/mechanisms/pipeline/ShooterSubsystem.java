@@ -7,9 +7,6 @@ import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem.IndexerState;
-import com.spartronics4915.frc2026.util.ModeSwitchHandler;
-import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
@@ -20,6 +17,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static com.spartronics4915.frc2026.Constants.ShooterConstants.*;
+import com.spartronics4915.frc2026.util.ModeSwitchHandler;
+import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
 public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
