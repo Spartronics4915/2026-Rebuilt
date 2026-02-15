@@ -20,6 +20,7 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -55,6 +56,10 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
 
         setMechanismAngle(Rotation2d.fromDegrees(0));
         ModeSwitchHandler.EnableModeSwitchHandler(this);
+
+        SmartDashboard.putData("Pivot Down", setStateCommand(PivotState.DOWN));
+        SmartDashboard.putData("Pivot Middle", setStateCommand(PivotState.MIDDLE));
+        SmartDashboard.putData("Pivot Up", setStateCommand(PivotState.UP));
     }
 
     //#region Main Functionality

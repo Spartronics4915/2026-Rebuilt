@@ -5,16 +5,17 @@ import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import com.spartronics4915.frc2026.util.ModeSwitchHandler;
-import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static com.spartronics4915.frc2026.Constants.IndexerConstants.*;
+import com.spartronics4915.frc2026.util.ModeSwitchHandler;
+import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
 public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterface {
     
@@ -42,6 +43,9 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
             configurator.apply(FEEDBACK_CONFIG);
 
         ModeSwitchHandler.EnableModeSwitchHandler(this);
+        
+        SmartDashboard.putData("Indexer On", setStateCommand(IndexerState.ON));
+        SmartDashboard.putData("Indexer Off", setStateCommand(IndexerState.OFF));
     }
 
     @Override

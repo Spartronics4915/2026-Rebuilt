@@ -11,6 +11,7 @@ import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -41,6 +42,9 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
             configurator.apply(FEEDBACK_CONFIG);
         
         ModeSwitchHandler.EnableModeSwitchHandler(this);
+
+        SmartDashboard.putData("Feeder On", setStateCommand(FeederState.ON));
+        SmartDashboard.putData("Feeder Off", setStateCommand(FeederState.OFF));
     }
 
     @Override

@@ -18,6 +18,7 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -57,6 +58,9 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         setMechanismAngle(Rotation2d.fromDegrees(0));
         ModeSwitchHandler.EnableModeSwitchHandler(this);
+
+        SmartDashboard.putData("Turret 0", setSetpointCommand(Rotation2d.fromDegrees(0)));
+        SmartDashboard.putData("Turret 180", setSetpointCommand(Rotation2d.fromDegrees(180)));
     }
 
     //#region Main Functionality
