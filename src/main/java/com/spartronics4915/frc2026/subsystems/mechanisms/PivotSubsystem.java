@@ -9,6 +9,7 @@ import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
+import com.spartronics4915.frc2026.util.TimeVarianceAuthority;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
 import edu.wpi.first.math.MathUtil;
@@ -31,6 +32,8 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
     TrapezoidProfile trapProfile = new TrapezoidProfile(
 	    new Constraints(MAX_VELOCITY, MAX_ACCELERATION)
     );
+
+    TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
     private Rotation2d currentSetpoint = Rotation2d.fromDegrees(0);
     private State currentState = new State();
@@ -67,7 +70,7 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
         );
 
         currentState = trapProfile.calculate(
-            DELTA_TIME, 
+            dtCalc.update(), 
             currentState, 
             new State(currentSetpoint.getRotations(), 0.0)
         );

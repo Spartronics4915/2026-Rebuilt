@@ -8,6 +8,7 @@ import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
+import com.spartronics4915.frc2026.util.TimeVarianceAuthority;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -29,6 +30,8 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private TrapezoidProfile trapezoidProfile = new TrapezoidProfile(
         new Constraints(MAX_VELOCITY, MAX_ACCELERATION)
     );
+    
+    TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
     private Rotation2d currentSetpoint = Rotation2d.fromDegrees(0);
     private State currentState = new State();
@@ -69,7 +72,7 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
         );
 
         currentState = trapezoidProfile.calculate(
-            DELTA_TIME, 
+            dtCalc.update(), 
             currentState, 
             new State(currentSetpoint.getRotations(), 0.0)
         );

@@ -11,6 +11,7 @@ import com.pathplanner.lib.trajectory.PathPlannerTrajectoryState;
 import com.pathplanner.lib.util.FlippingUtil;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
 import com.spartronics4915.frc2026.Robot;
+import com.spartronics4915.frc2026.util.TimeVarianceAuthority;
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.driveController;
@@ -206,6 +207,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public static Supplier<ChassisSpeeds> computeVelocitiesFromController(XboxController driverController, BooleanSupplier isFieldRelative, SwerveSubsystem swerve) {
         TrapezoidProfile trapezoidProfile = new TrapezoidProfile(trenchAlignConstraints);
+        TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
         return () -> {
             Pose2d currentPose = swerve.getPose();
@@ -222,6 +224,8 @@ public class SwerveSubsystem extends SubsystemBase {
             double fieldVX = fieldJoy.vxMetersPerSecond;
             double fieldVY = fieldJoy.vyMetersPerSecond;
 
+            double dt = dtCalc.update();
+
             if (override != 0.0) {
                 if (!swerve.wasOverriding) {
                     swerve.yState = new TrapezoidProfile.State(currentPose.getY(), fieldVel.vyMetersPerSecond);
@@ -232,7 +236,8 @@ public class SwerveSubsystem extends SubsystemBase {
                 double targetY = swerve.yState.position;
                 double targetTheta = currentPose.getRotation().getRadians();
 
-                swerve.yState = trapezoidProfile.calculate(0.02, 
+                swerve.yState = trapezoidProfile.calculate(
+                    dt, 
                     swerve.yState, 
                     new TrapezoidProfile.State(override, 0)
                 );

@@ -17,6 +17,7 @@ import static com.spartronics4915.frc2026.Constants.IntakeConstants.*;
 
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
+import com.spartronics4915.frc2026.util.TimeVarianceAuthority;
 
 public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
@@ -28,6 +29,8 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
             MAX_ACCELERATION
         )
     );
+
+    TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
     private State currentState = new State();
     private double currentSetpoint = 0.0;
@@ -53,7 +56,7 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
     @Override
     public void periodic() {
         currentState = trapezoidProfile.calculate(
-            DELTA_TIME, 
+            dtCalc.update(), 
             currentState, 
             new State(0, currentSetpoint)
         );

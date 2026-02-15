@@ -7,6 +7,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
+import com.spartronics4915.frc2026.util.TimeVarianceAuthority;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
@@ -25,6 +26,8 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
     TrapezoidProfile trapProfile = new TrapezoidProfile(
 	    new Constraints(MAX_VELOCITY, MAX_ACCELERATION)
     );
+    
+    TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
     private double currentSetpoint = 0;
     private State currentState = new State();
@@ -59,7 +62,7 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
         );
 
         currentState = trapProfile.calculate(
-            DELTA_TIME, 
+            dtCalc.update(), 
             currentState, 
             new State(currentSetpoint, 0.0)
         );
