@@ -47,6 +47,7 @@ import edu.wpi.first.units.measure.Time;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.SlotConfigs;
+import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 public final class Constants {
     public static class OperatorConstants {
@@ -465,6 +466,9 @@ public final class Constants {
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 1.0 / ((12.0/38.0) * (18.0/38.0) * (11.0/84.0));
         public static final double ENCODER_MECHANISM_RATIO = 1.0 / (11.0/84.0);
+        public static final double MAGNET_OFFSET = 0.0;
+
+        public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.Clockwise_Positive;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)

@@ -2,6 +2,7 @@ package com.spartronics4915.frc2026.subsystems.mechanisms.head;
 
 import static edu.wpi.first.units.Units.Rotations;
 
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
@@ -47,16 +48,21 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private final StructPublisher<Rotation2d> setpointPublisher = NetworkTableInstance.getDefault().getTable("turret").getStructTopic("setpoint", Rotation2d.struct).publish();
     
     public TurretSubsystem(){
-        TalonFXConfigurator configurator = motor.getConfigurator();
-            configurator.apply(PID_CONFIG);
-            configurator.apply(CURRENT_LIMITS_CONFIG);
-            configurator.apply(FEEDBACK_CONFIG);
+        TalonFXConfigurator motorConfigurator = motor.getConfigurator();
+            motorConfigurator.apply(PID_CONFIG);
+            motorConfigurator.apply(CURRENT_LIMITS_CONFIG);
+            motorConfigurator.apply(FEEDBACK_CONFIG);
+
+        CANcoderConfiguration cancoderConfigurator = new CANcoderConfiguration();
+            cancoderConfigurator.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 0.5;
+            cancoderConfigurator.MagnetSensor.SensorDirection = ENCODER_SENSOR_DIRECTION;
+            cancoderConfigurator.MagnetSensor.MagnetOffset = MAGNET_OFFSET;
         
         currentClamp = TurretClamp.RESTRICTED;
             minAngle = currentClamp.minAngle;
             maxAngle = currentClamp.maxAngle;
 
-        setMechanismAngle(Rotation2d.fromDegrees(0));
+        setMechanismAngle(Rotation2d.fromDegrees(getEncoderPosition().getDegrees()));
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         SmartDashboard.putData("Turret 0", setSetpointCommand(Rotation2d.fromDegrees(0)));
@@ -92,6 +98,11 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     public Rotation2d getPosition() {
         double position = motor.getPosition().getValue().in(Rotations);
+        return Rotation2d.fromRotations(position);
+    }
+
+    public Rotation2d getEncoderPosition() {
+        double position = encoder.getPosition().getValue().in(Rotations) * ENCODER_MECHANISM_RATIO;
         return Rotation2d.fromRotations(position);
     }
     
