@@ -181,7 +181,7 @@ public class PoseFusionEngine {
         double dx = pose1.getX() - pose2.getX();
         double dy = pose1.getY() - pose2.getY();
         
-        // [-π, π]
+        // [-π, π] 
         double dtheta = Math.IEEEremainder(
             pose1.getRotation().getRadians() - pose2.getRotation().getRadians(),
             2 * Math.PI

@@ -20,7 +20,6 @@ import static com.spartronics4915.frc2026.Constants.VisionConstants.*;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Notifier;
@@ -44,7 +43,6 @@ public class PhotonProcessor implements ProcessorInterface {
     private volatile boolean isRunning;
 
     private Supplier<ChassisSpeeds> robotVelocitySupplier;
-    private Supplier<Pose3d> referencePoseSupplier;
 
     public PhotonProcessor(
         String name,
@@ -63,7 +61,7 @@ public class PhotonProcessor implements ProcessorInterface {
         this.cameraSim = new PhotonCameraSim(photonCamera, simProperties);
 
         this.resultQueue = new ConcurrentLinkedQueue<>();
-        this.maxQueueSize = 1;
+        this.maxQueueSize = 10;
         
         this.processingNotifier = new Notifier(this::process);
         this.processingFrequency = 100;
