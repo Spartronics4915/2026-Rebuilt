@@ -4,6 +4,9 @@
 
 package com.spartronics4915.frc2026.autos;
 
+import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.robotLength;
+import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.towerPose;
+import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 
 import java.util.ArrayList;
@@ -77,7 +80,11 @@ public final class Autos {
         return AutoBuilder.followPath(path);
     }
 
-    public static Rotation2d getPathVelocityHeading(SwerveSubsystem swerve, Pose2d target){
+    public static Rotation2d getPathVelocityHeading(SwerveSubsystem swerve, Pose2d target) {
+        if (swerve.getRelativePose().getTranslation().getX() < towerPose.getX() + robotLength.in(Meters) / 2.0) {
+            return Rotation2d.fromDegrees(swerve.shouldFlip() ? 180.0 : 0.0);
+        }
+
         ChassisSpeeds cs = swerve.getFieldVelocity();
         if (getVelocityMagnitude(cs).in(MetersPerSecond) < 0.25) {
             Translation2d diff = flipIfNeeded(swerve, target).getTranslation().minus(swerve.getPose().getTranslation());
@@ -86,7 +93,7 @@ public final class Autos {
         return new Rotation2d(cs.vxMetersPerSecond, cs.vyMetersPerSecond);
     }
 
-    public static LinearVelocity getVelocityMagnitude(ChassisSpeeds cs){
+    public static LinearVelocity getVelocityMagnitude(ChassisSpeeds cs) {
         return MetersPerSecond.of(new Translation2d(cs.vxMetersPerSecond, cs.vyMetersPerSecond).getNorm());
     }
 
