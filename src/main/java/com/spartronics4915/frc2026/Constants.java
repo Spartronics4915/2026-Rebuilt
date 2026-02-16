@@ -107,6 +107,7 @@ public final class Constants {
             public static final Translation2d towerTransform = new Translation2d(0.0, 0.445);
             public static final Translation2d trenchTransform = new Translation2d(0, -3.4);
             public static final Translation2d bumpTransform = new Translation2d(0, -1.523);
+            public static final Translation2d bumpTrenchDivTransform = new Translation2d(0, 2.604);
             public static final Translation2d approachTransform = new Translation2d(-1.1, 0);
             public static final Translation2d exitTransform = new Translation2d(centerPose.getX() - hubPose.getX(), 0);
             public static final Translation2d startOfFuelTransform = new Translation2d(0.0, 1.889);
