@@ -6,6 +6,7 @@ package com.spartronics4915.frc2026;
 
 import com.spartronics4915.frc2026.Constants.OperatorConstants;
 import com.spartronics4915.frc2026.autos.Autos;
+import com.spartronics4915.frc2026.autos.ComplexAutoChooser;
 import com.spartronics4915.frc2026.autos.DriveToPOI;
 import com.spartronics4915.frc2026.autos.DriveToPOI.POI;
 import com.spartronics4915.frc2026.autos.ZoneTransition;
@@ -17,6 +18,8 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstant
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.trenchTransform;
 import static com.spartronics4915.frc2026.subsystems.SwerveSubsystem.isFieldRelative;
 import static com.spartronics4915.frc2026.subsystems.SwerveSubsystem.teleopHeadingOffset;
+
+import java.util.Set;
 
 import com.spartronics4915.frc2026.commands.DriveCommand;
 import com.spartronics4915.frc2026.subsystems.SwerveSubsystem;
@@ -46,6 +49,8 @@ public class RobotContainer {
     
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
     private final DriveToPOI POIfactory = new DriveToPOI(swerveSubsystem);
+
+    private final ComplexAutoChooser autoChooser = new ComplexAutoChooser(transitionFactory, POIfactory, 10);
 
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
     private final CommandXboxController operatorController = new CommandXboxController(OperatorConstants.OPERATOR_CONTROLLER_PORT);
@@ -137,14 +142,6 @@ public class RobotContainer {
      * @return the command to run in autonomous
      */
     public Command getAutonomousCommand() {
-        return Commands.sequence(
-            transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, true),
-            transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, false),
-            POIfactory.generateCommand(POI.DEPOT),
-            transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, true),
-            transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, false),
-            POIfactory.generateCommand(POI.OUTPOST),
-            POIfactory.generateCommand(POI.TOWER)
-        );
+        return Commands.defer(() -> autoChooser.getAuto(), Set.of(swerveSubsystem));
     }
 }
