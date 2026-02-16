@@ -47,6 +47,8 @@ public class SwerveSubsystem extends SubsystemBase {
     public final SwerveDrive swerveDrive;
     public static Pose2d pose;
     public static double movementOverride = 0.0;
+    public static boolean isFieldRelative = DEFAULT_IS_FIELD_RELATIVE;
+    public static Rotation2d teleopHeadingOffset = Rotation2d.fromDegrees(0.0);
     private final File directory;
 
     public static boolean isRightAlliance;
@@ -217,7 +219,7 @@ public class SwerveSubsystem extends SubsystemBase {
             double joyOmega = applyResponseCurve(MathUtil.applyDeadband(driverController.getRightX() * -1.0, STICK_DEADBAND)) * MAX_ANGULAR_SPEED.in(RadiansPerSecond);
 
             // Determine joystick components in field space
-            ChassisSpeeds fieldJoy = ChassisSpeeds.fromRobotRelativeSpeeds(joyVX, joyVY, 0, isFieldRelative ? TELEOP_HEADING_OFFSET : currentPose.getRotation());
+            ChassisSpeeds fieldJoy = ChassisSpeeds.fromRobotRelativeSpeeds(joyVX, joyVY, 0, isFieldRelative ? teleopHeadingOffset : currentPose.getRotation());
             double fieldVX = fieldJoy.vxMetersPerSecond;
             double fieldVY = fieldJoy.vyMetersPerSecond;
 
@@ -255,7 +257,7 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public static Supplier<ChassisSpeeds> computeVelocitiesFromController(XboxController driverController, SwerveSubsystem swerve) {
-        return computeVelocitiesFromController(driverController, IS_FIELD_RELATIVE, swerve);
+        return computeVelocitiesFromController(driverController, isFieldRelative, swerve);
     }
 
     public static Supplier<ChassisSpeeds> getSwerveTeleopCSSupplier(XboxController driverController, SwerveSubsystem swerve){

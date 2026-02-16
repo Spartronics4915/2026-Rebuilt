@@ -15,6 +15,8 @@ import com.spartronics4915.frc2026.Constants.VisionConstants;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.hubPose;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.trenchTransform;
+import static com.spartronics4915.frc2026.subsystems.SwerveSubsystem.isFieldRelative;
+import static com.spartronics4915.frc2026.subsystems.SwerveSubsystem.teleopHeadingOffset;
 
 import com.spartronics4915.frc2026.commands.DriveCommand;
 import com.spartronics4915.frc2026.subsystems.SwerveSubsystem;
@@ -66,13 +68,13 @@ public class RobotContainer {
 
         driverController.b().onTrue(
             Commands.runOnce(() -> {
-                IS_FIELD_RELATIVE = !IS_FIELD_RELATIVE;
+                isFieldRelative = !isFieldRelative;
             })
         );
 
         driverController.a().onTrue(
             Commands.runOnce(() -> {
-                TELEOP_HEADING_OFFSET = swerveSubsystem.getPose().getRotation();
+                teleopHeadingOffset = swerveSubsystem.getPose().getRotation();
             })
         );
 
