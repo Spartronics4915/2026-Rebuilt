@@ -20,17 +20,17 @@ public class ComplexAutoChooser {
      * Each step contains the allowed step following it, which is used to determine which options to show in the UI after a step is selected.
      */
     public enum AutoSegment {
-        L_TRENCH_TO_NEUTRAL("L-Trench to Neutral", WITHIN_NEUTRAL),
-        L_BUMP_TO_NEUTRAL("L-Bump to Neutral", WITHIN_NEUTRAL),
-        R_TRENCH_TO_NEUTRAL("R-Trench to Neutral", WITHIN_NEUTRAL),
-        R_BUMP_TO_NEUTRAL("R-Bump to Neutral", WITHIN_NEUTRAL),
-        L_TRENCH_TO_ALLIANCE("L-Trench to Alliance", WITHIN_ALLIANCE),
-        L_BUMP_TO_ALLIANCE("L-Bump to Alliance", WITHIN_ALLIANCE),
-        R_TRENCH_TO_ALLIANCE("R-Trench to Alliance", WITHIN_ALLIANCE),
-        R_BUMP_TO_ALLIANCE("R-Bump to Alliance", WITHIN_ALLIANCE),
-        DEPOT("Go to Depot", WITHIN_ALLIANCE),
-        OUTPOST("Go to Outpost", WITHIN_ALLIANCE),
-        TOWER("Climb Tower", NONE),
+        L_TRENCH_TO_NEUTRAL("LT -> N", WITHIN_NEUTRAL),
+        L_BUMP_TO_NEUTRAL("LB -> N", WITHIN_NEUTRAL),
+        R_TRENCH_TO_NEUTRAL("RT -> N", WITHIN_NEUTRAL),
+        R_BUMP_TO_NEUTRAL("RB -> N", WITHIN_NEUTRAL),
+        L_TRENCH_TO_ALLIANCE("LT -> A", WITHIN_ALLIANCE),
+        L_BUMP_TO_ALLIANCE("LB -> A", WITHIN_ALLIANCE),
+        R_TRENCH_TO_ALLIANCE("RT -> A", WITHIN_ALLIANCE),
+        R_BUMP_TO_ALLIANCE("RB -> A", WITHIN_ALLIANCE),
+        DEPOT("-> D", WITHIN_ALLIANCE),
+        OUTPOST("-> O", WITHIN_ALLIANCE),
+        TOWER("-> T", NONE),
         UNUSED(" ", NONE);
 
         public final String userFacingName;
