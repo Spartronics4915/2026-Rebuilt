@@ -110,20 +110,23 @@ public class ComplexAutoChooser {
 
             if (lastSegment.getAllowedTransitions().length == 0) {
                 selectedSegments[i] = UNUSED;
-            }
-
-            for (AutoSegment option : lastSegment.getAllowedTransitions()) {
-                segment.addOption(option.userFacingName, option);
-            }
-            segment.setDefaultOption(UNUSED.userFacingName, UNUSED);
-
-            final int j = i;
-            segment.onChange((selected) -> {
-                if (selectedSegments[j] != selected) {
-                    selectedSegments[j] = selected;
-                    resolveSteps();
+            } else {
+                for (AutoSegment option : lastSegment.getAllowedTransitions()) {
+                    if (option == lastSegment) continue;
+                    segment.addOption(option.userFacingName, option);
                 }
-            });
+
+                segment.setDefaultOption(UNUSED.userFacingName, UNUSED);
+
+                final int j = i;
+                segment.onChange((selected) -> {
+                    if (selectedSegments[j] != selected) {
+                        selectedSegments[j] = selected;
+                        resolveSteps();
+                    }
+                });
+            }
+
             SmartDashboard.putData("Auto Chooser/Step " + i, segment);
             
             segmentChoosers[i] = segment;
