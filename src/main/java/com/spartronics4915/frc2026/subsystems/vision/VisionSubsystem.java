@@ -56,6 +56,7 @@ public class VisionSubsystem extends SubsystemBase {
 
     private final StructPublisher<Pose3d> rightCameraPosePublisher = NetworkTableInstance.getDefault().getTable("vision").getStructTopic("Right Camera Pose", Pose3d.struct).publish();
     private final StructPublisher<Pose3d> leftCameraPosePublisher = NetworkTableInstance.getDefault().getTable("vision").getStructTopic("Left Camera Pose", Pose3d.struct).publish();
+    private final StructPublisher<Pose3d> backCameraPosePublisher = NetworkTableInstance.getDefault().getTable("vision").getStructTopic("Back Camera Pose", Pose3d.struct).publish();
 
     private final DoublePublisher transStdDevPublisher = NetworkTableInstance.getDefault().getTable("vision").getDoubleTopic("XY Std Devs").publish();
     private final DoublePublisher rotStdDevPublisher = NetworkTableInstance.getDefault().getTable("vision").getDoubleTopic("Theta Std Devs").publish();
@@ -176,6 +177,7 @@ public class VisionSubsystem extends SubsystemBase {
 
             rightCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.RIGHT_CAMERA_TRANSFORM));
             leftCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.LEFT_CAMERA_TRANSFORM));
+            backCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.BACK_CAMERA_TRANSFORM));
 
             transStdDevPublisher.set(fusedResult.getStdDevs().get(0, 0));
             rotStdDevPublisher.set(fusedResult.getStdDevs().get(2, 0));

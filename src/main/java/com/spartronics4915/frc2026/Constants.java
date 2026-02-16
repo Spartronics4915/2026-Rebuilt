@@ -204,9 +204,9 @@ public final class Constants {
             static {
                 SIM_CAMERA_PROPERTIES.setCalibration(1600, 1200, Rotation2d.fromDegrees(97.65));
                 SIM_CAMERA_PROPERTIES.setCalibError(0.64, 0.02);
-                SIM_CAMERA_PROPERTIES.setFPS(80);
+                SIM_CAMERA_PROPERTIES.setFPS(100);
                 SIM_CAMERA_PROPERTIES.setAvgLatencyMs(40);
-                SIM_CAMERA_PROPERTIES.setLatencyStdDevMs(5);
+                SIM_CAMERA_PROPERTIES.setLatencyStdDevMs(0);
             }
 
         public static final class StdDevConstants {
@@ -224,45 +224,65 @@ public final class Constants {
 
             public static final Transform3d RIGHT_CAMERA_TRANSFORM = new Transform3d(
                 new Translation3d(
-                    0.3556, 
-                    0.180975,
-                    0.14
+                    -0.1272, 
+                    0.329413,
+                    0.4076
                 ),
                 new Rotation3d(
-                    0, 
-                    Math.toRadians(-28), 
-                    Math.toRadians(-18)
+                    Math.toRadians(0), 
+                    Math.toRadians(0), 
+                    Math.toRadians(200)
                 )
             );
 
             public static final Transform3d LEFT_CAMERA_TRANSFORM =  new Transform3d(
                 new Translation3d(
-                    0.315, 
-                    0, 
-                    0.14
+                    -0.125205, 
+                    -0.334776, 
+                    0.257945
                 ),
                 new Rotation3d(
-                    0, 
-                    Math.toRadians(-28), 
-                    0
+                    Math.toRadians(0), 
+                    Math.toRadians(0), 
+                    Math.toRadians(70)
+                )
+            );
+
+            public static final Transform3d BACK_CAMERA_TRANSFORM =  new Transform3d(
+                new Translation3d(
+                    -0.3070, 
+                    0.1270, 
+                    0.276496
+                ),
+                new Rotation3d(
+                    Math.toRadians(0), 
+                    Math.toRadians(0), 
+                    Math.toRadians(180)
                 )
             );
 
             public static final Map<String, ProcessorInterface> cameras = Map.of(
                 "right", new PhotonProcessor(
-                    "daniil", 
+                    "right", 
                     LAYOUT,
                     RIGHT_CAMERA_TRANSFORM, 
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
+                ),
+                "left", new PhotonProcessor(
+                    "left", 
+                    LAYOUT,
+                    LEFT_CAMERA_TRANSFORM,
+                    SIM_CAMERA_PROPERTIES,
+                    () -> new ChassisSpeeds()
+                ),
+                "back", new PhotonProcessor(
+                    "back", 
+                    LAYOUT,
+                    BACK_CAMERA_TRANSFORM,
+                    SIM_CAMERA_PROPERTIES,
+                    () -> new ChassisSpeeds()
                 )
-                //"left", new PhotonProcessor(
-                //    "left", 
-                //    LAYOUT,
-                //    LEFT_CAMERA_TRANSFORM,
-                //    SIM_CAMERA_PROPERTIES,
-                //    () -> new ChassisSpeeds()
-                //)
             );
         }
 
