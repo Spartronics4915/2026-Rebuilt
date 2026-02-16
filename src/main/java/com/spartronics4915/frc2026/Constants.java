@@ -90,6 +90,8 @@ public final class Constants {
                 AutoConstants.alignRotationPID
             );
 
+            public static final double defaultOutpostWaitTime = 3.0;
+
             public static final Time endTriggerDebounce = Seconds.of(0.04);
             public static final Rotation2d rotationTolerance = Rotation2d.fromDegrees(3.0);
             public static final Distance positionTolerance = Centimeter.of(1.5);
