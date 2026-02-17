@@ -57,7 +57,7 @@ public final class Constants {
     }
 
     public static class GeneralConstants {
-        public static final CANBus CAN_BUS = new CANBus("Spicy-Mcgee");
+        public static final CANBus CAN_BUS = new CANBus("Spicy Mcgee");
     }
 
     //#region Swerve
