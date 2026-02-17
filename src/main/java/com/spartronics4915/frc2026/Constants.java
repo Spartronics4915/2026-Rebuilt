@@ -167,7 +167,7 @@ public final class Constants {
                 )),
 
                 COMP_CHASSIS(new RobotConfig(
-                    Pounds.of(15),
+                    Pounds.of(100),
                     KilogramSquareMeters.of(2),
                     new ModuleConfig(
                         Inches.of(2.0),
@@ -386,7 +386,7 @@ public final class Constants {
         public static final int MOTOR_ID = 14;
         public static final int ENCODER_ID = 16;
 
-        public static final double P = 0.0;
+        public static final double P = 0.01;
         public static final double I = 0.0;
         public static final double D = 0.0;
 
@@ -398,10 +398,10 @@ public final class Constants {
         public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 1;
-        public static final double MOTOR_MECHANISM_RATIO = 16.875;
+        public static final double MOTOR_MECHANISM_RATIO = 50.625;
 
-        public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(0);
-        public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(90);
+        public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(3);
+        public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(130);
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
@@ -537,7 +537,7 @@ public final class Constants {
     
     public static class IntakeConstants {
 
-        public static final int MOTOR_ID = 3;
+        public static final int MOTOR_ID = 15;
 
         public static final double STARTING_SPEED_RPS = 0;
 

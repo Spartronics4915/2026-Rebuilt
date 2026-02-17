@@ -1,6 +1,6 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms;
 
-import static edu.wpi.first.units.Units.Volts;
+import static edu.wpi.first.units.Units.Rotations;
 
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
@@ -28,8 +28,8 @@ import static com.spartronics4915.frc2026.Constants.PivotConstants.*;
 
 public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
-    TalonFX motor = new TalonFX(MOTOR_ID);
-    CANcoder encoder = new CANcoder(ENCODER_ID);
+    TalonFX motor = new TalonFX(MOTOR_ID, "Spicy Mcgee");
+    CANcoder encoder = new CANcoder(ENCODER_ID, "Spicy Mcgee");
     
     TrapezoidProfile trapProfile = new TrapezoidProfile(
 	    new Constraints(MAX_VELOCITY, MAX_ACCELERATION)
@@ -37,7 +37,7 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
 
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
-    private Rotation2d currentSetpoint = MIN_ANGLE;
+    private Rotation2d currentSetpoint;
     private State currentState = new State();
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("pivot").getDoubleTopic("Applied Out").publish();
@@ -52,10 +52,10 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
             motorConfig.apply(FEEDBACK_CONFIG);
 
         MotorOutputConfigs motorOutputConfigs = new MotorOutputConfigs();
-            motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
+            motorOutputConfigs.Inverted = InvertedValue.CounterClockwise_Positive;
             motorConfig.apply(motorOutputConfigs);
 
-        setMechanismAngle(Rotation2d.fromRotations(encoder.getAbsolutePosition().getValueAsDouble()));
+        resetMechanism(Rotation2d.fromRotations(encoder.getAbsolutePosition().getValueAsDouble()));
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         SmartDashboard.putData("Pivot Ready", setStateCommand(PivotState.READY));
@@ -84,14 +84,15 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
         PositionVoltage request = new PositionVoltage(currentState.position);
         motor.setControl(request);
 
-        appliedOutPublisher.accept(motor.getMotorVoltage().getValue().in(Volts));
+        appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         positionPublisher.accept(getPosition());
         desiredStatePublisher.accept(Rotation2d.fromRotations(currentState.position));
         setpointPublisher.accept(currentSetpoint);
     }
 
     public Rotation2d getPosition() {
-        return Rotation2d.fromRotations(encoder.getAbsolutePosition().getValueAsDouble());
+        double position = motor.getPosition().getValue().in(Rotations);
+        return Rotation2d.fromRotations(position);
     }
 
     public void setSetpoint(Rotation2d setpoint){
@@ -129,9 +130,9 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
     }
  
     public enum PivotState {
-        READY(Rotation2d.fromDegrees(90)),
-        SAFE(Rotation2d.fromDegrees(80)),
-        STOW(Rotation2d.fromDegrees(0));
+        READY(Rotation2d.fromDegrees(130)),
+        SAFE(Rotation2d.fromDegrees(50)),
+        STOW(Rotation2d.fromDegrees(3));
 
         Rotation2d angle;
 
