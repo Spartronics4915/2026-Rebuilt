@@ -2,9 +2,11 @@ package com.spartronics4915.frc2026.subsystems.mechanisms;
 
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
@@ -24,12 +26,7 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     private TalonFX motor = new TalonFX(MOTOR_ID, "Spicy Mcgee");
 
-    private TrapezoidProfile trapezoidProfile = new TrapezoidProfile(
-        new Constraints(
-            MAX_VELOCITY, 
-            MAX_ACCELERATION
-        )
-    );
+    private SlewRateLimiter RPSLimiter = new SlewRateLimiter(MAX_ACCELERATION);
 
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
@@ -62,14 +59,16 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
             MAX_VELOCITY
         );
 
-        currentState = trapezoidProfile.calculate(
-            dtCalc.update(), 
-            currentState, 
-            new State(currentState.position, currentSetpoint)
-        );
+        double limitedSetpoint = (currentSetpoint != 0) ? 0 : RPSLimiter.calculate(currentSetpoint);
 
-        VelocityVoltage request = new VelocityVoltage(currentState.velocity);
+        if (currentSetpoint != 0) {
+            VelocityVoltage request = new VelocityVoltage(limitedSetpoint);
             motor.setControl(request);
+        } else {
+            RPSLimiter.reset(0);
+            VoltageOut request = new VoltageOut(0.0);
+            motor.setControl(request);
+        }
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPS());
