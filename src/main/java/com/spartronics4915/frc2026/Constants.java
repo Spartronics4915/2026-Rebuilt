@@ -429,6 +429,8 @@ public final class Constants {
         public static final double I = 0;
         public static final double D = 0;
 
+        public static final double MAX_RPS = 100;
+
         public static final double MAX_ACCELERATION = 0;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
@@ -464,6 +466,8 @@ public final class Constants {
         public static final double P = 0;
         public static final double I = 0;
         public static final double D = 0;
+
+        public static final double MAX_RPS = 100;
 
         public static final double MAX_ACCELERATION = 0;
 
@@ -539,7 +543,7 @@ public final class Constants {
 
         public static final int MOTOR_ID = 15;
 
-        public static final double STARTING_SPEED_RPS = 0;
+        public static final double MAX_RPS = 100;
 
         public static final double P = 0;
         public static final double I = 0;

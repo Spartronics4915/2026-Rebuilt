@@ -34,7 +34,7 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
     private State currentState = new State();
-    private double currentSetpoint = STARTING_SPEED_RPS;
+    private double currentSetpoint;
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("applied out").publish();
     private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("rps").publish();
@@ -48,6 +48,7 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
             intakeMotorConfig.apply(CURRENT_LIMITS_CONFIG);
             intakeMotorConfig.apply(FEEDBACK_CONFIG);
 
+        setState(IntakeState.OFF);
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         SmartDashboard.putData("Intake On", setStateCommand(IntakeState.ON));
@@ -58,8 +59,8 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
     public void periodic() {
         currentSetpoint = MathUtil.clamp(
             currentSetpoint,
-            -MAX_VELOCITY,
-            MAX_VELOCITY
+            -MAX_RPS,
+            MAX_RPS
         );
 
         currentState = trapezoidProfile.calculate(

@@ -6,6 +6,7 @@ import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.networktables.DoublePublisher;
@@ -54,6 +55,12 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     @Override
     public void periodic() {
+        currentSetpoint = MathUtil.clamp(
+            currentSetpoint,
+            -MAX_RPS,
+            MAX_RPS
+        );
+
         double limitedSetpoint = (currentSetpoint != 0) ? 0 : RPSLimiter.calculate(currentSetpoint);
 
         if (currentSetpoint != 0) {

@@ -8,6 +8,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -49,6 +50,12 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     @Override
     public void periodic() {
+        currentSetpoint = MathUtil.clamp(
+            currentSetpoint,
+            -MAX_RPS,
+            MAX_RPS
+        );
+
         double limitedSetpoint = (currentSetpoint != 0) ? 0 : RPSLimiter.calculate(currentSetpoint);
 
         if (currentSetpoint != 0) {
