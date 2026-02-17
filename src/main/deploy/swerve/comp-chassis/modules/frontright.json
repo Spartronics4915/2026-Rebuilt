@@ -2,17 +2,17 @@
     "angle": {
         "type": "talonfx",
         "id": 4,
-        "canbus": null
+        "canbus": "Spicy Mcgee"
     },
     "drive": {
         "type": "talonfx",
         "id": 5,
-        "canbus": null
+        "canbus": "Spicy Mcgee"
     },
     "encoder": {
         "type": "cancoder",
         "id": 6,
-        "canbus": null
+        "canbus": "Spicy Mcgee"
     },
     "inverted": {
         "drive": false,
