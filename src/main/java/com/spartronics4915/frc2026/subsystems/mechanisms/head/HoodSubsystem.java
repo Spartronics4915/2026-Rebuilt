@@ -26,10 +26,11 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 import static com.spartronics4915.frc2026.Constants.HoodConstants.*;
+import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
-    TalonFX motor = new TalonFX(MOTOR_ID, "Spicy Mcgee");
+    TalonFX motor = new TalonFX(MOTOR_ID, CAN_BUS);
     TrapezoidProfile trapezoidProfile = new TrapezoidProfile(
 	    new Constraints(MAX_VELOCITY, MAX_ACCELERATION)
     );

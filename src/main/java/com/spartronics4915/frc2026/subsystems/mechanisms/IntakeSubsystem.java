@@ -7,9 +7,6 @@ import com.ctre.phoenix6.hardware.TalonFX;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
-import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
-import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -17,6 +14,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static com.spartronics4915.frc2026.Constants.IntakeConstants.*;
+import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
@@ -24,13 +22,12 @@ import com.spartronics4915.frc2026.util.TimeVarianceAuthority;
 
 public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
-    private TalonFX motor = new TalonFX(MOTOR_ID, "Spicy Mcgee");
+    private TalonFX motor = new TalonFX(MOTOR_ID, CAN_BUS);
 
     private SlewRateLimiter RPSLimiter = new SlewRateLimiter(MAX_ACCELERATION);
 
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
-    private State currentState = new State();
     private double currentSetpoint;
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("applied out").publish();

@@ -17,6 +17,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static com.spartronics4915.frc2026.Constants.IndexerConstants.*;
+import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
@@ -39,7 +40,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
     public IndexerSubsystem() {
         this.currentSetpoint = 0.0;
 
-        motor = new TalonFX(MOTOR_ID, "Spicy Mcgee");
+        motor = new TalonFX(MOTOR_ID, CAN_BUS);
         motor.setNeutralMode(NeutralModeValue.Brake);
         
         TalonFXConfigurator configurator = motor.getConfigurator();

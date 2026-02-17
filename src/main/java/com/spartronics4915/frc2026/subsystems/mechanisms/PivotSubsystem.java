@@ -25,11 +25,12 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static com.spartronics4915.frc2026.Constants.PivotConstants.*;
+import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
-    TalonFX motor = new TalonFX(MOTOR_ID, "Spicy Mcgee");
-    CANcoder encoder = new CANcoder(ENCODER_ID, "Spicy Mcgee");
+    TalonFX motor = new TalonFX(MOTOR_ID, CAN_BUS);
+    CANcoder encoder = new CANcoder(ENCODER_ID, CAN_BUS);
     
     TrapezoidProfile trapProfile = new TrapezoidProfile(
 	    new Constraints(MAX_VELOCITY, MAX_ACCELERATION)

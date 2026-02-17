@@ -25,11 +25,12 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static com.spartronics4915.frc2026.Constants.TurretConstants.*;
+import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
-    private TalonFX motor = new TalonFX(MOTOR_ID, "Spicy Mcgee");
-    private CANcoder encoder = new CANcoder(ENCODER_ID);
+    private TalonFX motor = new TalonFX(MOTOR_ID, CAN_BUS);
+    private CANcoder encoder = new CANcoder(ENCODER_ID, CAN_BUS);
     private TrapezoidProfile trapezoidProfile = new TrapezoidProfile(
         new Constraints(MAX_VELOCITY, MAX_ACCELERATION)
     );

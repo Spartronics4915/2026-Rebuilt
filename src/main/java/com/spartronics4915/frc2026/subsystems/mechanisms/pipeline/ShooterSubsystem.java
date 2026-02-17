@@ -17,6 +17,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static com.spartronics4915.frc2026.Constants.ShooterConstants.*;
+import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
@@ -40,10 +41,10 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     public ShooterSubsystem() {
         this.currentSetpoint = 0.0;
 
-        leadMotor = new TalonFX(LEAD_MOTOR_ID, "Spicy Mcgee");
+        leadMotor = new TalonFX(LEAD_MOTOR_ID, CAN_BUS);
             leadMotor.setNeutralMode(NeutralModeValue.Brake);
         
-        followerMotor = new TalonFX(FOLLOWER_MOTOR_ID);
+        followerMotor = new TalonFX(FOLLOWER_MOTOR_ID, CAN_BUS);
             followerMotor.setNeutralMode(NeutralModeValue.Brake);
         
         TalonFXConfigurator configurator = leadMotor.getConfigurator();
