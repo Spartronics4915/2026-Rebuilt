@@ -22,7 +22,7 @@ import com.spartronics4915.frc2026.util.TimeVarianceAuthority;
 
 public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
-    private TalonFX motor = new TalonFX(MOTOR_ID);
+    private TalonFX motor = new TalonFX(MOTOR_ID, "Spicy Mcgee");
 
     private TrapezoidProfile trapezoidProfile = new TrapezoidProfile(
         new Constraints(

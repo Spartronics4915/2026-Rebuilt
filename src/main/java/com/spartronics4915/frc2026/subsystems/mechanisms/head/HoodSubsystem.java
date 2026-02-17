@@ -29,7 +29,7 @@ import static com.spartronics4915.frc2026.Constants.HoodConstants.*;
 
 public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
-    TalonFX motor = new TalonFX(MOTOR_ID);
+    TalonFX motor = new TalonFX(MOTOR_ID, "Spicy Mcgee");
     TrapezoidProfile trapezoidProfile = new TrapezoidProfile(
 	    new Constraints(MAX_VELOCITY, MAX_ACCELERATION)
     );

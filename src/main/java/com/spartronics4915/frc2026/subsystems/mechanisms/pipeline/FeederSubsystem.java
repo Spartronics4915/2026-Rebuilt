@@ -33,7 +33,7 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
     public FeederSubsystem() {
         this.currentSetpoint = 0.0;
 
-        motor = new TalonFX(MOTOR_ID);
+        motor = new TalonFX(MOTOR_ID, "Spicy Mcgee");
         motor.setNeutralMode(NeutralModeValue.Brake);
         
         TalonFXConfigurator configurator = motor.getConfigurator();

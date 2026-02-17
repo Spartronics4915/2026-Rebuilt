@@ -40,7 +40,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     public ShooterSubsystem() {
         this.currentSetpoint = 0.0;
 
-        leadMotor = new TalonFX(LEAD_MOTOR_ID);
+        leadMotor = new TalonFX(LEAD_MOTOR_ID, "Spicy Mcgee");
             leadMotor.setNeutralMode(NeutralModeValue.Brake);
         
         followerMotor = new TalonFX(FOLLOWER_MOTOR_ID);
