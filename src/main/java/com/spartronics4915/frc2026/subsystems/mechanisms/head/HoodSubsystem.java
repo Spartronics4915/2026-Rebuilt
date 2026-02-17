@@ -10,7 +10,9 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.spartronics4915.frc2026.util.TimeVarianceAuthority;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
@@ -41,10 +43,14 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
     private Rotation2d minAngle;
     private Rotation2d maxAngle;
 
+    private Pose3d hoodPose = new Pose3d();
+
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("hood").getDoubleTopic("applied out").publish();
     private final StructPublisher<Rotation2d> positionPublisher = NetworkTableInstance.getDefault().getTable("hood").getStructTopic("position", Rotation2d.struct).publish();
     private final StructPublisher<Rotation2d> desiredStatePublisher = NetworkTableInstance.getDefault().getTable("hood").getStructTopic("desiredState", Rotation2d.struct).publish();
     private final StructPublisher<Rotation2d> setpointPublisher = NetworkTableInstance.getDefault().getTable("hood").getStructTopic("setpoint", Rotation2d.struct).publish();
+
+    private final StructPublisher<Pose3d> componentPosePublisher = NetworkTableInstance.getDefault().getTable("hood").getStructTopic("Hood Component", Pose3d.struct).publish();
     
     public HoodSubsystem() {
         TalonFXConfigurator motorConfig = motor.getConfigurator();
@@ -56,7 +62,7 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
             motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
             motorConfig.apply(motorOutputConfigs);
 
-        currentClamp = HoodClamp.RESTRICTED;
+        currentClamp = HoodClamp.UNRESTRICTED;
             minAngle = currentClamp.minAngle;
             maxAngle = currentClamp.maxAngle;
 
@@ -92,6 +98,14 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
         positionPublisher.accept(getPosition());
         desiredStatePublisher.accept(Rotation2d.fromRotations(currentState.position));
         setpointPublisher.accept(currentSetpoint);
+
+        componentPosePublisher.accept(hoodPose.rotateBy(
+            new Rotation3d(
+                0,
+                Rotation2d.fromRotations(currentState.position).getDegrees(),
+                0
+            )
+        ));
     }
 
     public Rotation2d getPosition() {
@@ -133,7 +147,7 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
  
     public enum HoodClamp {
         RESTRICTED(Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
-        UNRESTRICTED(Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0));
+        UNRESTRICTED(Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(35));
 
         Rotation2d minAngle;
         Rotation2d maxAngle;

@@ -211,7 +211,7 @@ public class Superstructure extends SubsystemBase {
 
     private Command transToTraversal() {
         return Commands.sequence(
-            pivot.setStateCommand(PivotState.DOWN),
+            pivot.setStateCommand(PivotState.READY),
             Commands.waitUntil(() -> isPivotSafe()),
             Commands.parallel(
                 setPipelineState(PipelineState.OFF),
@@ -222,7 +222,7 @@ public class Superstructure extends SubsystemBase {
 
     private Command transToCruise() {
         return Commands.sequence(
-            pivot.setStateCommand(PivotState.MIDDLE),
+            pivot.setStateCommand(PivotState.SAFE),
             Commands.waitUntil(() -> isPivotSafe()),
             Commands.parallel(
                 setPipelineState(PipelineState.OFF),
@@ -233,7 +233,7 @@ public class Superstructure extends SubsystemBase {
 
     private Command transToShooting() {
         return Commands.sequence(
-            pivot.setStateCommand(PivotState.DOWN),
+            pivot.setStateCommand(PivotState.READY),
             Commands.waitUntil(() -> isPivotSafe()),
             Commands.parallel(
                 setPipelineState(PipelineState.ON),
@@ -244,7 +244,7 @@ public class Superstructure extends SubsystemBase {
 
     private Command transToClimb() {
         return Commands.sequence(
-            pivot.setStateCommand(PivotState.DOWN),
+            pivot.setStateCommand(PivotState.READY),
             Commands.waitUntil(() -> isPivotSafe()),
             Commands.parallel(
                 setPipelineState(PipelineState.ON),
@@ -255,7 +255,7 @@ public class Superstructure extends SubsystemBase {
 
     private Command transToIdle() {
         return Commands.sequence(
-            pivot.setStateCommand(PivotState.DOWN),
+            pivot.setStateCommand(PivotState.READY),
             Commands.waitUntil(() -> isPivotSafe()),
             Commands.parallel(
                 setPipelineState(PipelineState.OFF),
@@ -269,7 +269,7 @@ public class Superstructure extends SubsystemBase {
             setPipelineState(PipelineState.OFF),
             Commands.waitUntil(() -> isTurretSafe()),
             Commands.parallel(
-                pivot.setStateCommand(PivotState.UP),
+                pivot.setStateCommand(PivotState.STOW),
                 intake.setStateCommand(IntakeState.OFF)
             )
         );

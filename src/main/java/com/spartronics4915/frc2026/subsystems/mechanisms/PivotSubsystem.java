@@ -58,9 +58,9 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
         setMechanismAngle(Rotation2d.fromRotations(encoder.getAbsolutePosition().getValueAsDouble()));
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
-        SmartDashboard.putData("Pivot Down", setStateCommand(PivotState.DOWN));
-        SmartDashboard.putData("Pivot Middle", setStateCommand(PivotState.MIDDLE));
-        SmartDashboard.putData("Pivot Up", setStateCommand(PivotState.UP));
+        SmartDashboard.putData("Pivot Ready", setStateCommand(PivotState.READY));
+        SmartDashboard.putData("Pivot Safe", setStateCommand(PivotState.SAFE));
+        SmartDashboard.putData("Pivot Stow", setStateCommand(PivotState.STOW));
     }
 
     //#region Main Functionality
@@ -129,9 +129,9 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
     }
  
     public enum PivotState {
-        UP(Rotation2d.fromDegrees(0)),
-        DOWN(Rotation2d.fromDegrees(0)),
-        MIDDLE(Rotation2d.fromDegrees(0));
+        READY(Rotation2d.fromDegrees(90)),
+        SAFE(Rotation2d.fromDegrees(80)),
+        STOW(Rotation2d.fromDegrees(0));
 
         Rotation2d angle;
 
