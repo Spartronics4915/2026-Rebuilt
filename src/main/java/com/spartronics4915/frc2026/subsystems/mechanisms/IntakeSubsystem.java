@@ -18,7 +18,6 @@ import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
-import com.spartronics4915.frc2026.util.TimeVarianceAuthority;
 
 public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
@@ -26,12 +25,11 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     private SlewRateLimiter RPSLimiter = new SlewRateLimiter(MAX_ACCELERATION);
 
-    TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
-
     private double currentSetpoint;
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("applied out").publish();
     private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("rps").publish();
+    private final DoublePublisher desiredStatePublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("desired State").publish();
     private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("setpoint").publish();
 
     //#region Main Functionality
@@ -57,12 +55,14 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
             MAX_RPS
         );
 
-        double limitedSetpoint = (currentSetpoint != 0) ? 0 : RPSLimiter.calculate(currentSetpoint);
+        double limitedSetpoint;
 
         if (currentSetpoint != 0) {
+            limitedSetpoint = RPSLimiter.calculate(currentSetpoint);
             VelocityVoltage request = new VelocityVoltage(limitedSetpoint);
             motor.setControl(request);
         } else {
+            limitedSetpoint = 0;
             RPSLimiter.reset(0);
             VoltageOut request = new VoltageOut(0.0);
             motor.setControl(request);
@@ -70,6 +70,7 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPS());
+        desiredStatePublisher.accept(limitedSetpoint);
         setpointPublisher.accept(currentSetpoint);
     }
 
@@ -102,7 +103,7 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
     }
 
     public enum IntakeState {
-        ON(0),
+        ON(45),
         OFF(0);
 
         double rps;

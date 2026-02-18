@@ -57,7 +57,7 @@ public final class Constants {
     }
 
     public static class GeneralConstants {
-        public static final CANBus CAN_BUS = new CANBus("Spicy-Mcgee");
+        public static final CANBus CAN_BUS = new CANBus("Hydra");
     }
 
     //#region Swerve
@@ -318,15 +318,15 @@ public final class Constants {
         public static final int LEAD_MOTOR_ID = 22;
         public static final int FOLLOWER_MOTOR_ID = 23;
 
-        public static final double P = 0.35;
+        public static final double P = 0.46;
         public static final double I = 0;
         public static final double D = 0;
 
-        public static final double MAX_ACCELERATION = 0;
+        public static final double MAX_ACCELERATION = 10;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 40;
-        public static final double LOWER_LIMIT = 20;
+        public static final double CURRENT_LIMIT = 60;
+        public static final double LOWER_LIMIT = 40;
 
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 0.9375;
@@ -391,12 +391,12 @@ public final class Constants {
         public static final int MOTOR_ID = 14;
         public static final int ENCODER_ID = 16;
 
-        public static final double P = 0.01;
+        public static final double P = 60;
         public static final double I = 0.0;
-        public static final double D = 0.0;
+        public static final double D = 0.2;
 
-        public static final double MAX_VELOCITY = 0;
-        public static final double MAX_ACCELERATION = 0;
+        public static final double MAX_VELOCITY = 5;
+        public static final double MAX_ACCELERATION = 5;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
@@ -405,8 +405,8 @@ public final class Constants {
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 50.625;
 
-        public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(3);
-        public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(130);
+        public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(-2);
+        public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(120);
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
@@ -430,13 +430,13 @@ public final class Constants {
         
         public static final int MOTOR_ID = 18;
 
-        public static final double P = 0;
+        public static final double P = 0.8;
         public static final double I = 0;
         public static final double D = 0;
 
         public static final double MAX_RPS = 100;
 
-        public static final double MAX_ACCELERATION = 0;
+        public static final double MAX_ACCELERATION = 6;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 60;
@@ -468,13 +468,13 @@ public final class Constants {
         
         public static final int MOTOR_ID = 17;
 
-        public static final double P = 0;
+        public static final double P = 1;
         public static final double I = 0;
         public static final double D = 0;
 
         public static final double MAX_RPS = 100;
 
-        public static final double MAX_ACCELERATION = 0;
+        public static final double MAX_ACCELERATION = 5;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 60;
@@ -507,12 +507,12 @@ public final class Constants {
         public static final int MOTOR_ID = 19;
         public static final int ENCODER_ID = 20;
 
-        public static final double P = 0.0;
+        public static final double P = 75;
         public static final double I = 0.0;
         public static final double D = 0.0;
 
-        public static final double MAX_VELOCITY = 0;
-        public static final double MAX_ACCELERATION = 0;
+        public static final double MAX_VELOCITY = 7.5;
+        public static final double MAX_ACCELERATION = 7.5;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
@@ -520,8 +520,8 @@ public final class Constants {
 
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 1.0 / ((12.0/38.0) * (18.0/38.0) * (11.0/84.0));
-        public static final double ENCODER_MECHANISM_RATIO = 1.0 / (11.0/84.0);
-        public static final double MAGNET_OFFSET = 0.0;
+        public static final double ENCODER_MECHANISM_RATIO = 11.0/84.0;
+        public static final double MAGNET_OFFSET = -0.229736;
 
         public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.Clockwise_Positive;
 
@@ -550,12 +550,11 @@ public final class Constants {
 
         public static final double MAX_RPS = 100;
 
-        public static final double P = 0;
+        public static final double P = 1.8;
         public static final double I = 0;
-        public static final double D = 0;
+        public static final double D = 0.0001;
 
-        public static final double MAX_VELOCITY = 0;
-        public static final double MAX_ACCELERATION = 0;
+        public static final double MAX_ACCELERATION = 8;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
@@ -587,12 +586,12 @@ public final class Constants {
 
         public static final int MOTOR_ID = 24;
 
-        public static final double P = 0.0;
+        public static final double P = 35.0;
         public static final double I = 0.0;
         public static final double D = 0.0;
 
-        public static final double MAX_VELOCITY = 0;
-        public static final double MAX_ACCELERATION = 0;
+        public static final double MAX_VELOCITY = 4.0;
+        public static final double MAX_ACCELERATION = 4.0;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 60;
@@ -602,7 +601,7 @@ public final class Constants {
         public static final double MOTOR_MECHANISM_RATIO = 20;
 
         public static final double MIN_HEIGHT = 0.0;
-        public static final double MAX_HEIGHT = 1.0;
+        public static final double MAX_HEIGHT = 3.5;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)

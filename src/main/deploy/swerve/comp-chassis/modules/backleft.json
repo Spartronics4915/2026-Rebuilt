@@ -2,17 +2,17 @@
     "angle": {
         "type": "talonfx",
         "id": 7,
-        "canbus": "Spicy Mcgee"
+        "canbus": "Hydra"
     },
     "drive": {
         "type": "talonfx",
         "id": 8,
-        "canbus": "Spicy Mcgee"
+        "canbus": "Hydra"
     },
     "encoder": {
         "type": "cancoder",
         "id": 9,
-        "canbus": "Spicy Mcgee"
+        "canbus": "Hydra"
     },
     "inverted": {
         "drive": false,

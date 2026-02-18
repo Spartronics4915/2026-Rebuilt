@@ -1,7 +1,5 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms;
 
-import static edu.wpi.first.units.Units.Rotations;
-
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
@@ -25,6 +23,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static com.spartronics4915.frc2026.Constants.PivotConstants.*;
+import static edu.wpi.first.units.Units.Rotations;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface {
@@ -53,10 +52,10 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
             motorConfig.apply(FEEDBACK_CONFIG);
 
         MotorOutputConfigs motorOutputConfigs = new MotorOutputConfigs();
-            motorOutputConfigs.Inverted = InvertedValue.CounterClockwise_Positive;
+            motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
             motorConfig.apply(motorOutputConfigs);
 
-        resetMechanism(Rotation2d.fromRotations(encoder.getAbsolutePosition().getValueAsDouble()));
+        setMechanismAngle(Rotation2d.fromRotations(encoder.getAbsolutePosition().getValueAsDouble()));
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         SmartDashboard.putData("Pivot Ready", setStateCommand(PivotState.READY));
@@ -131,9 +130,9 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
     }
  
     public enum PivotState {
-        READY(Rotation2d.fromDegrees(130)),
-        SAFE(Rotation2d.fromDegrees(50)),
-        STOW(Rotation2d.fromDegrees(3));
+        READY(Rotation2d.fromDegrees(4)),
+        SAFE(Rotation2d.fromDegrees(10)),
+        STOW(Rotation2d.fromDegrees(120));
 
         Rotation2d angle;
 

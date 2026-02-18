@@ -28,13 +28,12 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("feeder").getDoubleTopic("applied out").publish();
     private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("feeder").getDoubleTopic("rps").publish();
+    private final DoublePublisher desiredStatePublisher = NetworkTableInstance.getDefault().getTable("feeder").getDoubleTopic("desired State").publish();
     private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("feeder").getDoubleTopic("setpoint").publish();
 
     //#region Main Functionality
 
     public FeederSubsystem() {
-        this.currentSetpoint = 0.0;
-
         motor = new TalonFX(MOTOR_ID, CAN_BUS);
         motor.setNeutralMode(NeutralModeValue.Brake);
         
@@ -43,6 +42,7 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
             configurator.apply(CURRENT_LIMITS_CONFIG);
             configurator.apply(FEEDBACK_CONFIG);
         
+        setState(FeederState.OFF);
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         SmartDashboard.putData("Feeder On", setStateCommand(FeederState.ON));
@@ -57,12 +57,14 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
             MAX_RPS
         );
 
-        double limitedSetpoint = (currentSetpoint != 0) ? 0 : RPSLimiter.calculate(currentSetpoint);
+        double limitedSetpoint;
 
         if (currentSetpoint != 0) {
+            limitedSetpoint = RPSLimiter.calculate(currentSetpoint);
             VelocityVoltage request = new VelocityVoltage(limitedSetpoint);
             motor.setControl(request);
         } else {
+            limitedSetpoint = 0;
             RPSLimiter.reset(0);
             VoltageOut request = new VoltageOut(0.0);
             motor.setControl(request);
@@ -70,6 +72,7 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPM());
+        desiredStatePublisher.accept(limitedSetpoint);
         setpointPublisher.accept(currentSetpoint);
     }
 
@@ -82,7 +85,7 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
     }
 
     public void setState(FeederState state) {
-        setSetpoint(state.rpm);
+        setSetpoint(state.rps);
     }
 
     //#endregion
@@ -94,17 +97,17 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
     }
 
     public Command setStateCommand(FeederState state){
-        return setSetpointCommand(state.rpm);
+        return setSetpointCommand(state.rps);
     }
 
     public enum FeederState{
-        ON(100),
+        ON(40),
         OFF(0);
 
-        double rpm;
+        double rps;
 
-        private FeederState(double rpm) {
-            this.rpm = rpm;
+        private FeederState(double rps) {
+            this.rps = rps;
         }
     }
 

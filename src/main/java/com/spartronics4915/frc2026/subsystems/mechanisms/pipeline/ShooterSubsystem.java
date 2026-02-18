@@ -29,18 +29,18 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private SlewRateLimiter RPSLimiter = new SlewRateLimiter(MAX_ACCELERATION);
 
     private double currentSetpoint;
+
     private ShooterClamp RPSClamp;
     private double maxRPS;
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("applied out").publish();
     private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("rps").publish();
+    private final DoublePublisher desiredStatePublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("desired State").publish();
     private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("setpoint").publish();
 
     //#region Main Functionality
 
     public ShooterSubsystem() {
-        this.currentSetpoint = 0.0;
-
         leadMotor = new TalonFX(LEAD_MOTOR_ID, CAN_BUS);
             leadMotor.setNeutralMode(NeutralModeValue.Brake);
         
@@ -57,14 +57,14 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
             configurator.apply(CURRENT_LIMITS_CONFIG);
             configurator.apply(FEEDBACK_CONFIG);
 
-        followerMotor.setControl(new Follower(FOLLOWER_MOTOR_ID, MotorAlignmentValue.Aligned));
+        followerMotor.setControl(new Follower(LEAD_MOTOR_ID, MotorAlignmentValue.Aligned));
 
-        setClamp(ShooterClamp.RESTRICTED);
+        setClamp(ShooterClamp.UNRESTRICTED);
         
-        leadMotor.set(ShooterClamp.RESTRICTED.maxRPS);
+        setSetpointCommand(0);
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
-        SmartDashboard.putData("Shooter On", setSetpointCommand(60));
+        SmartDashboard.putData("Shooter On", setSetpointCommand(52));
         SmartDashboard.putData("Shooter Off", setSetpointCommand(0));
     }
 
@@ -72,16 +72,18 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     public void periodic() {
         currentSetpoint = MathUtil.clamp(
                 currentSetpoint, 
-                0, 
+                -maxRPS, 
                 maxRPS
             );
 
-        double limitedSetpoint = (currentSetpoint != 0) ? 0 : RPSLimiter.calculate(currentSetpoint);
+        double limitedSetpoint;
 
         if (currentSetpoint != 0) {
+            limitedSetpoint = RPSLimiter.calculate(currentSetpoint);
             VelocityVoltage request = new VelocityVoltage(limitedSetpoint);
             leadMotor.setControl(request);
         } else {
+            limitedSetpoint = 0;
             RPSLimiter.reset(0);
             VoltageOut request = new VoltageOut(0.0);
             leadMotor.setControl(request);
@@ -89,6 +91,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
         appliedOutPublisher.accept(leadMotor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPS());
+        desiredStatePublisher.accept(limitedSetpoint);
         setpointPublisher.accept(currentSetpoint);
     }
 
@@ -123,7 +126,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     public enum ShooterClamp{
         RESTRICTED(0),
-        UNRESTRICTED(0);
+        UNRESTRICTED(100);
 
         double maxRPS;
 
@@ -134,7 +137,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     @Override
     public void onModeSwitch() {
-        setSetpoint(ShooterClamp.RESTRICTED.maxRPS);
+        setSetpoint(0);
     }
 
 }

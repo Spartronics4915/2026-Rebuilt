@@ -17,6 +17,7 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -32,7 +33,7 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
     
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
-    private double currentSetpoint = 0;
+    private double currentSetpoint;
     private State currentState = new State();
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("climber").getDoubleTopic("applied out").publish();
@@ -52,8 +53,12 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
             motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
             motorConfig.apply(motorOutputConfigs);
 
-        setMechanismPosition(0);
+        setMechanismPosition(getPosition());
         ModeSwitchHandler.EnableModeSwitchHandler(this);
+
+        SmartDashboard.putData("Climber Up", setStateCommand(ClimberState.UP));
+        SmartDashboard.putData("Climber Climb", setStateCommand(ClimberState.JORBIT));
+        SmartDashboard.putData("Climber Down", setStateCommand(ClimberState.DOWN));
     }
 
     //#region Main Functionality
@@ -122,7 +127,8 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
     //#endregion
  
     public enum ClimberState {
-        DOWN(0),
+        DOWN(3.5),
+        JORBIT(1.0),
         UP(0);
 
         double position;

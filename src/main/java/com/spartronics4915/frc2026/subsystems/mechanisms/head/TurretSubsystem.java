@@ -3,10 +3,12 @@ package com.spartronics4915.frc2026.subsystems.mechanisms.head;
 import static edu.wpi.first.units.Units.Rotations;
 
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.InvertedValue;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 import com.spartronics4915.frc2026.util.TimeVarianceAuthority;
@@ -31,13 +33,14 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     private TalonFX motor = new TalonFX(MOTOR_ID, CAN_BUS);
     private CANcoder encoder = new CANcoder(ENCODER_ID, CAN_BUS);
+    
     private TrapezoidProfile trapezoidProfile = new TrapezoidProfile(
         new Constraints(MAX_VELOCITY, MAX_ACCELERATION)
     );
     
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
-    private Rotation2d currentSetpoint = Rotation2d.fromDegrees(0);
+    private Rotation2d currentSetpoint;
     private State currentState = new State();
     
     private TurretClamp currentClamp;
@@ -57,12 +60,17 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
             motorConfigurator.apply(CURRENT_LIMITS_CONFIG);
             motorConfigurator.apply(FEEDBACK_CONFIG);
 
+        MotorOutputConfigs motorOutputConfigs = new MotorOutputConfigs();
+            motorOutputConfigs.Inverted = InvertedValue.CounterClockwise_Positive;
+            motorConfigurator.apply(motorOutputConfigs);
+
         CANcoderConfiguration cancoderConfigurator = new CANcoderConfiguration();
             cancoderConfigurator.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 0.5;
             cancoderConfigurator.MagnetSensor.SensorDirection = ENCODER_SENSOR_DIRECTION;
             cancoderConfigurator.MagnetSensor.MagnetOffset = MAGNET_OFFSET;
+            encoder.getConfigurator().apply(cancoderConfigurator);
         
-        currentClamp = TurretClamp.RESTRICTED;
+        currentClamp = TurretClamp.UNRESTRICTED;
             minAngle = currentClamp.minAngle;
             maxAngle = currentClamp.maxAngle;
 
@@ -106,7 +114,7 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
     }
 
     public Rotation2d getEncoderPosition() {
-        double position = encoder.getPosition().getValue().in(Rotations) * ENCODER_MECHANISM_RATIO;
+        double position = encoder.getAbsolutePosition().getValue().in(Rotations) * ENCODER_MECHANISM_RATIO;
         return Rotation2d.fromRotations(position);
     }
     
@@ -146,7 +154,7 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     public enum TurretClamp {
         RESTRICTED(Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
-        UNRESTRICTED(Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0));
+        UNRESTRICTED(Rotation2d.fromDegrees(-Double.MAX_VALUE), Rotation2d.fromDegrees(Double.MAX_VALUE));
 
         Rotation2d minAngle;
         Rotation2d maxAngle;

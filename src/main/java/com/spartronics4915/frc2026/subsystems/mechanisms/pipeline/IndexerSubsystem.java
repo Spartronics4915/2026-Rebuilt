@@ -1,9 +1,11 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
 
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.MathUtil;
@@ -18,6 +20,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static com.spartronics4915.frc2026.Constants.IndexerConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
+
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
@@ -31,6 +34,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("indexer").getDoubleTopic("applied out").publish();
     private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("indexer").getDoubleTopic("rps").publish();
+    private final DoublePublisher desiredStatePublisher = NetworkTableInstance.getDefault().getTable("indexer").getDoubleTopic("desired State").publish();
     private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("indexer").getDoubleTopic("setpoint").publish();
 
     private final StructPublisher<Pose3d> componentPosePublisher = NetworkTableInstance.getDefault().getTable("indexer").getStructTopic("Indexer Component", Pose3d.struct).publish();
@@ -38,8 +42,6 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
     //#region Main Functionality
 
     public IndexerSubsystem() {
-        this.currentSetpoint = 0.0;
-
         motor = new TalonFX(MOTOR_ID, CAN_BUS);
         motor.setNeutralMode(NeutralModeValue.Brake);
         
@@ -47,7 +49,12 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
             configurator.apply(PID_CONFIG);
             configurator.apply(CURRENT_LIMITS_CONFIG);
             configurator.apply(FEEDBACK_CONFIG);
+        
+        MotorOutputConfigs motorOutputConfigs = new MotorOutputConfigs();
+            motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
+            configurator.apply(motorOutputConfigs);
 
+        setState(IndexerState.OFF);
         ModeSwitchHandler.EnableModeSwitchHandler(this);
         
         SmartDashboard.putData("Indexer On", setStateCommand(IndexerState.ON));
@@ -62,12 +69,14 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
             MAX_RPS
         );
 
-        double limitedSetpoint = (currentSetpoint != 0) ? 0 : RPSLimiter.calculate(currentSetpoint);
+        double limitedSetpoint;
 
         if (currentSetpoint != 0) {
+            limitedSetpoint = RPSLimiter.calculate(currentSetpoint);
             VelocityVoltage request = new VelocityVoltage(limitedSetpoint);
             motor.setControl(request);
         } else {
+            limitedSetpoint = 0;
             RPSLimiter.reset(0);
             VoltageOut request = new VoltageOut(0.0);
             motor.setControl(request);
@@ -75,6 +84,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPM());
+        desiredStatePublisher.accept(limitedSetpoint);
         setpointPublisher.accept(currentSetpoint);
     }
 
@@ -87,7 +97,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
     }
 
     public void setState(IndexerState state) {
-        setSetpoint(state.rpm);
+        setSetpoint(state.rps);
     }
 
     //#endregion
@@ -99,16 +109,16 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
     }
 
     public Command setStateCommand(IndexerState state){
-        return setSetpointCommand(state.rpm);
+        return setSetpointCommand(state.rps);
     }
 
     public enum IndexerState {
-        ON(100.0),
+        ON(20.0),
         OFF(0.0);
 
-        public double rpm;
-        private IndexerState(double rpm) {
-            this.rpm = rpm;
+        public double rps;
+        private IndexerState(double rps) {
+            this.rps = rps;
         }
     }
 

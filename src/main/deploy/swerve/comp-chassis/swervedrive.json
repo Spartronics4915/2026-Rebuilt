@@ -2,7 +2,7 @@
     "imu": {
         "type": "pigeon2",
         "id": 13,
-        "canbus": "Spicy Mcgee"
+        "canbus": "Hydra"
     },
     "invertedIMU": false,
     "modules": [
