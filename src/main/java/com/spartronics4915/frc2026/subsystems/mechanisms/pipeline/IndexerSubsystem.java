@@ -49,10 +49,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
             configurator.apply(PID_CONFIG);
             configurator.apply(CURRENT_LIMITS_CONFIG);
             configurator.apply(FEEDBACK_CONFIG);
-        
-        MotorOutputConfigs motorOutputConfigs = new MotorOutputConfigs();
-            motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
-            configurator.apply(motorOutputConfigs);
+            configurator.apply(OUTPUT_CONFIG);
 
         setState(IndexerState.OFF);
         ModeSwitchHandler.EnableModeSwitchHandler(this);

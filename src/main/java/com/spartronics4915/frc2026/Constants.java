@@ -47,7 +47,9 @@ import edu.wpi.first.units.measure.Time;
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.SlotConfigs;
+import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 public final class Constants {
@@ -345,6 +347,8 @@ public final class Constants {
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
+        public static final MotorOutputConfigs OUTPUT_CONFIG = new MotorOutputConfigs()
+            .withPeakReverseDutyCycle(0.0);
     }
 
     //#endregion
@@ -421,6 +425,9 @@ public final class Constants {
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
+
+        public static final MotorOutputConfigs OUTPUT_CONFIG = new MotorOutputConfigs()
+            .withPeakReverseDutyCycle(0.0);
     }
 
     //#endregion
@@ -459,6 +466,8 @@ public final class Constants {
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
+        public static final MotorOutputConfigs OUTPUT_CONFIG = new MotorOutputConfigs()
+            .withPeakReverseDutyCycle(0.0);
     }
 
     //#endregion
@@ -497,6 +506,9 @@ public final class Constants {
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
+        public static final MotorOutputConfigs OUTPUT_CONFIG = new MotorOutputConfigs()
+            .withInverted(InvertedValue.Clockwise_Positive)
+            .withPeakReverseDutyCycle(0.0);
     }
 
     //#endregion
@@ -577,6 +589,8 @@ public final class Constants {
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
+        public static final MotorOutputConfigs OUTPUT_CONFIG = new MotorOutputConfigs()
+            .withPeakReverseDutyCycle(0.0);
     }
 
     //#endregion

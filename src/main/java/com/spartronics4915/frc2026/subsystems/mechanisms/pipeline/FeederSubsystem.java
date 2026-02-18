@@ -41,6 +41,7 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
             configurator.apply(PID_CONFIG);
             configurator.apply(CURRENT_LIMITS_CONFIG);
             configurator.apply(FEEDBACK_CONFIG);
+            configurator.apply(OUTPUT_CONFIG);
         
         setState(FeederState.OFF);
         ModeSwitchHandler.EnableModeSwitchHandler(this);

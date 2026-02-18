@@ -39,6 +39,7 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
             intakeMotorConfig.apply(PID_CONFIG);
             intakeMotorConfig.apply(CURRENT_LIMITS_CONFIG);
             intakeMotorConfig.apply(FEEDBACK_CONFIG);
+            intakeMotorConfig.apply(OUTPUT_CONFIG);
 
         setState(IntakeState.OFF);
         ModeSwitchHandler.EnableModeSwitchHandler(this);
