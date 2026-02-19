@@ -2,11 +2,8 @@ package com.spartronics4915.frc2026.subsystems.mechanisms;
 
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.VelocityVoltage;
-import com.ctre.phoenix6.controls.VoltageOut;
-import com.ctre.phoenix6.hardware.TalonFX;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -18,10 +15,11 @@ import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
+import com.spartronics4915.frc2026.util.MotorHelpers.CTRE.LoggedTalonFX;
 
 public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
-    private TalonFX motor = new TalonFX(MOTOR_ID, CAN_BUS);
+    private LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
 
     private double currentSetpoint;
 
@@ -42,8 +40,11 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
         setState(IntakeState.OFF);
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
+        motor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
+
         SmartDashboard.putData("Intake On", setStateCommand(IntakeState.ON));
         SmartDashboard.putData("Intake Off", setStateCommand(IntakeState.OFF));
+        SmartDashboard.putData("Intake Motor", motor);
     }
 
     @Override

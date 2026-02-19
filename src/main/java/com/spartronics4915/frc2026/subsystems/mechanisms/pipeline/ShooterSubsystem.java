@@ -18,11 +18,12 @@ import static com.spartronics4915.frc2026.Constants.ShooterConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
+import com.spartronics4915.frc2026.util.MotorHelpers.CTRE.LoggedTalonFX;
 
 public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
-    private TalonFX leadMotor;
-    private TalonFX followerMotor;
+    private LoggedTalonFX leadMotor;
+    private LoggedTalonFX followerMotor;
 
     private double currentSetpoint;
 
@@ -38,10 +39,10 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     //#region Main Functionality
 
     public ShooterSubsystem() {
-        leadMotor = new TalonFX(LEAD_MOTOR_ID, CAN_BUS);
+        leadMotor = new LoggedTalonFX(LEAD_MOTOR_ID, CAN_BUS);
             leadMotor.setNeutralMode(NeutralModeValue.Brake);
         
-        followerMotor = new TalonFX(FOLLOWER_MOTOR_ID, CAN_BUS);
+        followerMotor = new LoggedTalonFX(FOLLOWER_MOTOR_ID, CAN_BUS);
             followerMotor.setNeutralMode(NeutralModeValue.Brake);
         
         TalonFXConfigurator configurator = leadMotor.getConfigurator();
@@ -61,8 +62,12 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
         setSetpointCommand(0);
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
+        leadMotor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
+
         SmartDashboard.putData("Shooter On", setSetpointCommand(52));
         SmartDashboard.putData("Shooter Off", setSetpointCommand(0));
+        SmartDashboard.putData("Lead Shooter Motor", leadMotor);
+        SmartDashboard.putData("Follower Shooter Motor", followerMotor);
     }
 
     @Override

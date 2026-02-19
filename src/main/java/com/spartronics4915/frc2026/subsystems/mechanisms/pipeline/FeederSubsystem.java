@@ -2,10 +2,10 @@ package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
 
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.VelocityVoltage;
-import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
+import com.spartronics4915.frc2026.util.MotorHelpers.CTRE.LoggedTalonFX;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.networktables.DoublePublisher;
@@ -19,7 +19,7 @@ import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterface {
     
-    private TalonFX motor;
+    private LoggedTalonFX motor;
     
     private double currentSetpoint;
 
@@ -32,7 +32,7 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
     //#region Main Functionality
 
     public FeederSubsystem() {
-        motor = new TalonFX(MOTOR_ID, CAN_BUS);
+        motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
         motor.setNeutralMode(NeutralModeValue.Brake);
         
         TalonFXConfigurator configurator = motor.getConfigurator();
@@ -43,8 +43,11 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
         setState(FeederState.OFF);
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
+        motor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
+
         SmartDashboard.putData("Feeder On", setStateCommand(FeederState.ON));
         SmartDashboard.putData("Feeder Off", setStateCommand(FeederState.OFF));
+        SmartDashboard.putData("Feeder Motor", motor);
     }
 
     @Override
