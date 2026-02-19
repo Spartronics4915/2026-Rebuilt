@@ -23,12 +23,14 @@ import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
+import com.spartronics4915.frc2026.util.MotorHelpers.CTRE.LoggedTalonFX;
+import com.spartronics4915.frc2026.util.MotorHelpers.LoggedSlewRateLimiter;
 
 public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterface {
     
-    private TalonFX motor;
+    private LoggedTalonFX motor;
     
-    private SlewRateLimiter RPSLimiter = new SlewRateLimiter(MAX_ACCELERATION);
+    private LoggedSlewRateLimiter RPSLimiter = new LoggedSlewRateLimiter(MAX_ACCELERATION);
 
     private double currentSetpoint;
 
@@ -42,7 +44,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
     //#region Main Functionality
 
     public IndexerSubsystem() {
-        motor = new TalonFX(MOTOR_ID, CAN_BUS);
+        motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
         motor.setNeutralMode(NeutralModeValue.Brake);
         
         TalonFXConfigurator configurator = motor.getConfigurator();
@@ -53,6 +55,9 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
         setState(IndexerState.OFF);
         ModeSwitchHandler.EnableModeSwitchHandler(this);
+
+        motor.addProfile(RPSLimiter);
+        motor.addSetpoint(this::getCurrentRPM, this::setSetpoint);
         
         SmartDashboard.putData("Indexer On", setStateCommand(IndexerState.ON));
         SmartDashboard.putData("Indexer Off", setStateCommand(IndexerState.OFF));
