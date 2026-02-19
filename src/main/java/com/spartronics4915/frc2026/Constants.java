@@ -507,8 +507,7 @@ public final class Constants {
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
         public static final MotorOutputConfigs OUTPUT_CONFIG = new MotorOutputConfigs()
-            .withInverted(InvertedValue.Clockwise_Positive)
-            .withPeakReverseDutyCycle(0.0);
+            .withInverted(InvertedValue.Clockwise_Positive);
     }
 
     //#endregion
