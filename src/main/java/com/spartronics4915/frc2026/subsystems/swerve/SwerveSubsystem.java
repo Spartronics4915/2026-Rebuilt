@@ -209,6 +209,9 @@ public class SwerveSubsystem extends SubsystemBase {
         TrapezoidProfile trapezoidProfile = new TrapezoidProfile(trenchAlignConstraints);
         TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
+        PathPlannerTrajectoryState goalState = new PathPlannerTrajectoryState();
+        TrapezoidProfile.State targetState = new TrapezoidProfile.State(0,0);
+
         return () -> {
             Pose2d currentPose = swerve.getPose();
             double override = swerve.getMovementOverride();
@@ -228,23 +231,26 @@ public class SwerveSubsystem extends SubsystemBase {
 
             if (override != 0.0) {
                 if (!swerve.wasOverriding) {
-                    swerve.yState = new TrapezoidProfile.State(currentPose.getY(), fieldVel.vyMetersPerSecond);
+                    swerve.yState.position = currentPose.getY();
+                    swerve.yState.velocity = fieldVel.vyMetersPerSecond;
                     swerve.wasOverriding = true;
                 }
 
                 double targetX = currentPose.getX();
-                double targetY = swerve.yState.position;
                 double targetTheta = currentPose.getRotation().getRadians();
+
+                targetState.position = override;
+                targetState.velocity = 0;
 
                 swerve.yState = trapezoidProfile.calculate(
                     dt, 
                     swerve.yState, 
-                    new TrapezoidProfile.State(override, 0)
+                    targetState
                 );
-                targetY = swerve.yState.position;
+                double targetY = swerve.yState.position;
 
-                PathPlannerTrajectoryState goalState = new PathPlannerTrajectoryState();
                 goalState.pose = new Pose2d(targetX, targetY, Rotation2d.fromRadians(targetTheta));
+                goalState.fieldSpeeds = new ChassisSpeeds();
 
                 ChassisSpeeds robotTarget = driveController.calculateRobotRelativeSpeeds(currentPose, goalState);
                 ChassisSpeeds fieldTarget = ChassisSpeeds.fromRobotRelativeSpeeds(robotTarget, currentPose.getRotation());
@@ -252,7 +258,8 @@ public class SwerveSubsystem extends SubsystemBase {
                 fieldVY = fieldTarget.vyMetersPerSecond;
             } else {
                 swerve.wasOverriding = false;
-                swerve.yState = new TrapezoidProfile.State(currentPose.getY(), fieldVel.vyMetersPerSecond);
+                swerve.yState.position = currentPose.getY();
+                swerve.yState.velocity = fieldVel.vyMetersPerSecond;
             }
 
             // Convert field-relative linear speeds back to robot-relative for the drivetrain
