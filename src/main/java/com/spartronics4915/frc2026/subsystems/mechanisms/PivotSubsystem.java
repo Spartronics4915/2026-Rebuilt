@@ -1,5 +1,6 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms;
 
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
@@ -44,6 +45,8 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
     private final StructPublisher<Rotation2d> positionPublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("Position", Rotation2d.struct).publish();
     private final StructPublisher<Rotation2d> desiredStatePublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("Desired State", Rotation2d.struct).publish();
     private final StructPublisher<Rotation2d> setpointPublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("Setpoint", Rotation2d.struct).publish();
+
+    private final StructPublisher<Rotation2d> encoderPositionPublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("encoder position", Rotation2d.struct).publish();
     
     public PivotSubsystem() {
         TalonFXConfigurator motorConfig = motor.getConfigurator();
@@ -54,6 +57,12 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
         MotorOutputConfigs motorOutputConfigs = new MotorOutputConfigs();
             motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
             motorConfig.apply(motorOutputConfigs);
+
+        CANcoderConfiguration cancoderConfigurator = new CANcoderConfiguration();
+        cancoderConfigurator.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 1.0;
+            cancoderConfigurator.MagnetSensor.SensorDirection = ENCODER_SENSOR_DIRECTION;
+            cancoderConfigurator.MagnetSensor.MagnetOffset = MAGNET_OFFSET;
+            encoder.getConfigurator().apply(cancoderConfigurator);
 
         setMechanismAngle(Rotation2d.fromRotations(encoder.getAbsolutePosition().getValueAsDouble()));
         ModeSwitchHandler.EnableModeSwitchHandler(this);
@@ -88,6 +97,8 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
         positionPublisher.accept(getPosition());
         desiredStatePublisher.accept(Rotation2d.fromRotations(currentState.position));
         setpointPublisher.accept(currentSetpoint);
+
+        encoderPositionPublisher.accept(Rotation2d.fromRotations(encoder.getAbsolutePosition().getValueAsDouble()));
     }
 
     public Rotation2d getPosition() {

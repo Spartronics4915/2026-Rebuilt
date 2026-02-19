@@ -409,6 +409,9 @@ public final class Constants {
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 50.625;
 
+        public static final double MAGNET_OFFSET = -0.665;
+        public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.Clockwise_Positive;
+
         public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(-2);
         public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(120);
 
@@ -437,13 +440,14 @@ public final class Constants {
         
         public static final int MOTOR_ID = 18;
 
-        public static final double P = 0.8;
+        public static final double P = 0.3;
         public static final double I = 0;
-        public static final double D = 0;
+        public static final double D = 0.0003;
+        public static final double V = 0.24;
 
         public static final double MAX_RPS = 100;
 
-        public static final double MAX_ACCELERATION = 6;
+        public static final double MAX_ACCELERATION = 300;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 60;
@@ -455,7 +459,8 @@ public final class Constants {
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
             .withKI(I)
-            .withKD(D);
+            .withKD(D)
+            .withKV(V);
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
@@ -465,9 +470,6 @@ public final class Constants {
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
-
-        public static final MotorOutputConfigs OUTPUT_CONFIG = new MotorOutputConfigs()
-            .withPeakReverseDutyCycle(0.0);
     }
 
     //#endregion
@@ -477,13 +479,12 @@ public final class Constants {
         
         public static final int MOTOR_ID = 17;
 
-        public static final double P = 1;
+        public static final double P = 0;
         public static final double I = 0;
         public static final double D = 0;
+        public static final double V = 0.12;
 
         public static final double MAX_RPS = 100;
-
-        public static final double MAX_ACCELERATION = 5;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 60;
@@ -495,7 +496,8 @@ public final class Constants {
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
             .withKI(I)
-            .withKD(D);
+            .withKD(D)
+            .withKV(V);
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
