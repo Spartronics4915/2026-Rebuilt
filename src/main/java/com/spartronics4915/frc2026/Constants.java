@@ -323,8 +323,7 @@ public final class Constants {
         public static final double P = 0.46;
         public static final double I = 0;
         public static final double D = 0;
-
-        public static final double MAX_ACCELERATION = 10;
+        public static final double V = 0;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 60;
@@ -336,7 +335,8 @@ public final class Constants {
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
             .withKI(I)
-            .withKD(D);
+            .withKD(D)
+            .withKV(V);
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
@@ -346,9 +346,6 @@ public final class Constants {
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
-
-        public static final MotorOutputConfigs OUTPUT_CONFIG = new MotorOutputConfigs()
-            .withPeakReverseDutyCycle(0.0);
     }
 
     //#endregion
@@ -429,8 +426,8 @@ public final class Constants {
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
-        public static final MotorOutputConfigs OUTPUT_CONFIG = new MotorOutputConfigs()
-            .withPeakReverseDutyCycle(0.0);
+        public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
+            .withInverted(InvertedValue.Clockwise_Positive);
     }
 
     //#endregion
@@ -446,8 +443,6 @@ public final class Constants {
         public static final double V = 0.24;
 
         public static final double MAX_RPS = 100;
-
-        public static final double MAX_ACCELERATION = 300;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 60;
@@ -509,8 +504,7 @@ public final class Constants {
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
         public static final MotorOutputConfigs OUTPUT_CONFIG = new MotorOutputConfigs()
-            .withInverted(InvertedValue.Clockwise_Positive)
-            .withPeakReverseDutyCycle(0.0);
+            .withInverted(InvertedValue.Clockwise_Positive);
     }
 
     //#endregion
@@ -567,8 +561,7 @@ public final class Constants {
         public static final double P = 1.8;
         public static final double I = 0;
         public static final double D = 0.0001;
-
-        public static final double MAX_ACCELERATION = 8;
+        public static final double V = 0.12;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
@@ -580,7 +573,8 @@ public final class Constants {
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
             .withKI(I)
-            .withKD(D);
+            .withKD(D)
+            .withKV(V);
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
@@ -590,9 +584,6 @@ public final class Constants {
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
-
-        public static final MotorOutputConfigs OUTPUT_CONFIG = new MotorOutputConfigs()
-            .withPeakReverseDutyCycle(0.0);
     }
 
     //#endregion

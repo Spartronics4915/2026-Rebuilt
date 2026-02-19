@@ -2,11 +2,8 @@ package com.spartronics4915.frc2026.subsystems.mechanisms;
 
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.VelocityVoltage;
-import com.ctre.phoenix6.controls.VoltageOut;
-import com.ctre.phoenix6.hardware.TalonFX;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -18,18 +15,18 @@ import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
+import com.spartronics4915.frc2026.util.MotorHelpers.CTRE.LoggedTalonFX;
 
 public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
-    private TalonFX motor = new TalonFX(MOTOR_ID, CAN_BUS);
-
-    private SlewRateLimiter RPSLimiter = new SlewRateLimiter(MAX_ACCELERATION);
+    private LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
 
     private double currentSetpoint;
 
+    private final VelocityVoltage velocityVoltage = new VelocityVoltage(0.0);
+
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("applied out").publish();
     private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("rps").publish();
-    private final DoublePublisher desiredStatePublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("desired State").publish();
     private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("setpoint").publish();
 
     //#region Main Functionality
@@ -39,13 +36,15 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
             intakeMotorConfig.apply(PID_CONFIG);
             intakeMotorConfig.apply(CURRENT_LIMITS_CONFIG);
             intakeMotorConfig.apply(FEEDBACK_CONFIG);
-            intakeMotorConfig.apply(OUTPUT_CONFIG);
 
         setState(IntakeState.OFF);
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
+        motor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
+
         SmartDashboard.putData("Intake On", setStateCommand(IntakeState.ON));
         SmartDashboard.putData("Intake Off", setStateCommand(IntakeState.OFF));
+        SmartDashboard.putData("Intake Motor", motor);
     }
 
     @Override
@@ -56,22 +55,11 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
             MAX_RPS
         );
 
-        double limitedSetpoint;
-
-        if (currentSetpoint != 0) {
-            limitedSetpoint = RPSLimiter.calculate(currentSetpoint);
-            VelocityVoltage request = new VelocityVoltage(limitedSetpoint);
-            motor.setControl(request);
-        } else {
-            limitedSetpoint = 0;
-            RPSLimiter.reset(0);
-            VoltageOut request = new VoltageOut(0.0);
-            motor.setControl(request);
-        }
+        velocityVoltage.Velocity = currentSetpoint;
+        motor.setControl(velocityVoltage);
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPS());
-        desiredStatePublisher.accept(limitedSetpoint);
         setpointPublisher.accept(currentSetpoint);
     }
 

@@ -5,7 +5,6 @@ import static edu.wpi.first.units.Units.Rotations;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
-import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.spartronics4915.frc2026.util.TimeVarianceAuthority;
 
@@ -13,7 +12,6 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.networktables.DoublePublisher;
@@ -25,13 +23,16 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
+import com.spartronics4915.frc2026.util.MotorHelpers.CTRE.LoggedTalonFX;
+import com.spartronics4915.frc2026.util.MotorHelpers.LoggedTrapezoidProfile;
+
 import static com.spartronics4915.frc2026.Constants.HoodConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
-    TalonFX motor = new TalonFX(MOTOR_ID, CAN_BUS);
-    TrapezoidProfile trapezoidProfile = new TrapezoidProfile(
+    LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
+    LoggedTrapezoidProfile trapezoidProfile = new LoggedTrapezoidProfile(
 	    new Constraints(MAX_VELOCITY, MAX_ACCELERATION)
     );
     
@@ -39,6 +40,8 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
 
     private Rotation2d currentSetpoint = Rotation2d.fromDegrees(0);
     private State currentState = new State();
+
+    private static final PositionVoltage positionVoltage = new PositionVoltage(0.0);
 
     private HoodClamp currentClamp;
     private Rotation2d minAngle;
@@ -70,8 +73,12 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
         setMechanismAngle(Rotation2d.fromDegrees(0));
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
+        motor.addProfile(trapezoidProfile);
+        motor.addSetpoint(() -> currentSetpoint.getDegrees(), (setpoint) -> setSetpoint(Rotation2d.fromDegrees(setpoint)));
+
         SmartDashboard.putData("Hood Up", setSetpointCommand(Rotation2d.fromDegrees(27)));
         SmartDashboard.putData("Hood Down", setSetpointCommand(Rotation2d.fromDegrees(0)));
+        SmartDashboard.putData("Hood Motor", motor);
     }
 
     //#region Main Functionality
@@ -92,8 +99,8 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
             new State(currentSetpoint.getRotations(), 0.0)
         );
         
-        PositionVoltage request = new PositionVoltage(currentState.position);
-            motor.setControl(request);
+        positionVoltage.Position = currentState.position;
+        motor.setControl(positionVoltage);
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         positionPublisher.accept(getPosition());

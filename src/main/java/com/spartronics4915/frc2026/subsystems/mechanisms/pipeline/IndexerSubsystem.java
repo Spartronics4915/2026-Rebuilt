@@ -26,6 +26,8 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     private double currentSetpoint;
 
+    private final VelocityVoltage velocityVoltage = new VelocityVoltage(0.0);
+
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("indexer").getDoubleTopic("applied out").publish();
     private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("indexer").getDoubleTopic("rps").publish();
     private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("indexer").getDoubleTopic("setpoint").publish();
@@ -62,8 +64,8 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
             MAX_RPS
         );
 
-        VelocityVoltage request = new VelocityVoltage(currentSetpoint);
-        motor.setControl(request);
+        velocityVoltage.Velocity = currentSetpoint;
+        motor.setControl(velocityVoltage);
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPM());

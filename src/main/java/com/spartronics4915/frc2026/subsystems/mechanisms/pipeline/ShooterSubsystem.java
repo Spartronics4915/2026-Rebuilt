@@ -3,13 +3,11 @@ package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.VelocityVoltage;
-import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -20,44 +18,42 @@ import static com.spartronics4915.frc2026.Constants.ShooterConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
+import com.spartronics4915.frc2026.util.MotorHelpers.CTRE.LoggedTalonFX;
 
 public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
-    private TalonFX leadMotor;
-    private TalonFX followerMotor;
-
-    private SlewRateLimiter RPSLimiter = new SlewRateLimiter(MAX_ACCELERATION);
+    private LoggedTalonFX leadMotor;
+    private LoggedTalonFX followerMotor;
 
     private double currentSetpoint;
+
+    private final VelocityVoltage velocityVoltage = new VelocityVoltage(0.0);
 
     private ShooterClamp RPSClamp;
     private double maxRPS;
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("applied out").publish();
     private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("rps").publish();
-    private final DoublePublisher desiredStatePublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("desired State").publish();
     private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("setpoint").publish();
 
     //#region Main Functionality
 
     public ShooterSubsystem() {
-        leadMotor = new TalonFX(LEAD_MOTOR_ID, CAN_BUS);
+        leadMotor = new LoggedTalonFX(LEAD_MOTOR_ID, CAN_BUS);
             leadMotor.setNeutralMode(NeutralModeValue.Brake);
         
-        followerMotor = new TalonFX(FOLLOWER_MOTOR_ID, CAN_BUS);
+        followerMotor = new LoggedTalonFX(FOLLOWER_MOTOR_ID, CAN_BUS);
             followerMotor.setNeutralMode(NeutralModeValue.Brake);
         
         TalonFXConfigurator configurator = leadMotor.getConfigurator();
             configurator.apply(PID_CONFIG);
             configurator.apply(CURRENT_LIMITS_CONFIG);
             configurator.apply(FEEDBACK_CONFIG);
-            configurator.apply(OUTPUT_CONFIG);
             
         configurator = followerMotor.getConfigurator();
             configurator.apply(PID_CONFIG);
             configurator.apply(CURRENT_LIMITS_CONFIG);
             configurator.apply(FEEDBACK_CONFIG);
-            configurator.apply(OUTPUT_CONFIG);
 
         followerMotor.setControl(new Follower(LEAD_MOTOR_ID, MotorAlignmentValue.Aligned));
 
@@ -66,8 +62,12 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
         setSetpointCommand(0);
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
+        leadMotor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
+
         SmartDashboard.putData("Shooter On", setSetpointCommand(52));
         SmartDashboard.putData("Shooter Off", setSetpointCommand(0));
+        SmartDashboard.putData("Lead Shooter Motor", leadMotor);
+        SmartDashboard.putData("Follower Shooter Motor", followerMotor);
     }
 
     @Override
@@ -78,22 +78,11 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
                 maxRPS
             );
 
-        double limitedSetpoint;
-
-        if (currentSetpoint != 0) {
-            limitedSetpoint = RPSLimiter.calculate(currentSetpoint);
-            VelocityVoltage request = new VelocityVoltage(limitedSetpoint);
-            leadMotor.setControl(request);
-        } else {
-            limitedSetpoint = 0;
-            RPSLimiter.reset(0);
-            VoltageOut request = new VoltageOut(0.0);
-            leadMotor.setControl(request);
-        }
+        velocityVoltage.Velocity = currentSetpoint;
+        leadMotor.setControl(velocityVoltage);
 
         appliedOutPublisher.accept(leadMotor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPS());
-        desiredStatePublisher.accept(limitedSetpoint);
         setpointPublisher.accept(currentSetpoint);
     }
 

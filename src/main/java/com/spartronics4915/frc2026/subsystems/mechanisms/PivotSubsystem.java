@@ -1,19 +1,17 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms;
 
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
-import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
-import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.InvertedValue;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.TimeVarianceAuthority;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
+import com.spartronics4915.frc2026.util.MotorHelpers.CTRE.LoggedTalonFX;
+import com.spartronics4915.frc2026.util.MotorHelpers.LoggedTrapezoidProfile;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.networktables.DoublePublisher;
@@ -29,10 +27,10 @@ import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
-    TalonFX motor = new TalonFX(MOTOR_ID, CAN_BUS);
+    LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
     CANcoder encoder = new CANcoder(ENCODER_ID, CAN_BUS);
     
-    TrapezoidProfile trapProfile = new TrapezoidProfile(
+    LoggedTrapezoidProfile trapProfile = new LoggedTrapezoidProfile(
 	    new Constraints(MAX_VELOCITY, MAX_ACCELERATION)
     );
 
@@ -40,6 +38,8 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
 
     private Rotation2d currentSetpoint;
     private State currentState = new State();
+
+    private PositionVoltage positionVoltage = new PositionVoltage(0.0);
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("pivot").getDoubleTopic("Applied Out").publish();
     private final StructPublisher<Rotation2d> positionPublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("Position", Rotation2d.struct).publish();
@@ -53,10 +53,7 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
             motorConfig.apply(PID_CONFIG);
             motorConfig.apply(CURRENT_LIMITS_CONFIG);
             motorConfig.apply(FEEDBACK_CONFIG);
-
-        MotorOutputConfigs motorOutputConfigs = new MotorOutputConfigs();
-            motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
-            motorConfig.apply(motorOutputConfigs);
+            motorConfig.apply(MOTOR_OUTPUT_CONFIG);
 
         CANcoderConfiguration cancoderConfigurator = new CANcoderConfiguration();
         cancoderConfigurator.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 1.0;
@@ -67,9 +64,13 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
         setMechanismAngle(Rotation2d.fromRotations(encoder.getAbsolutePosition().getValueAsDouble()));
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
+        motor.addProfile(trapProfile);
+        motor.addSetpoint(() -> currentSetpoint.getDegrees(), (setpoint) -> setSetpoint(Rotation2d.fromDegrees(setpoint)));
+
         SmartDashboard.putData("Pivot Ready", setStateCommand(PivotState.READY));
         SmartDashboard.putData("Pivot Safe", setStateCommand(PivotState.SAFE));
         SmartDashboard.putData("Pivot Stow", setStateCommand(PivotState.STOW));
+        SmartDashboard.putData("Pivot Motor", motor);
     }
 
     //#region Main Functionality
@@ -90,8 +91,8 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
             new State(currentSetpoint.getRotations(), 0.0)
         );
 
-        PositionVoltage request = new PositionVoltage(currentState.position);
-        motor.setControl(request);
+        positionVoltage.Position = currentState.position;
+        motor.setControl(positionVoltage);
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         positionPublisher.accept(getPosition());
