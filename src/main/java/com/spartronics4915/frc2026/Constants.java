@@ -321,10 +321,10 @@ public final class Constants {
         public static final int LEAD_MOTOR_ID = 22;
         public static final int FOLLOWER_MOTOR_ID = 23;
 
-        public static final double P = 0.46;
+        public static final double P = 0.34;
         public static final double I = 0;
-        public static final double D = 0;
-        public static final double V = 0;
+        public static final double D = 0.002;
+        public static final double V = 0.123;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 60;
@@ -485,10 +485,10 @@ public final class Constants {
         
         public static final int MOTOR_ID = 17;
 
-        public static final double P = 0;
+        public static final double P = 0.3;
         public static final double I = 0;
-        public static final double D = 0;
-        public static final double V = 0.02;
+        public static final double D = 0.0003;
+        public static final double V = 0.462;
 
         public static final double MAX_RPS = 100;
 
@@ -573,10 +573,10 @@ public final class Constants {
 
         public static final double MAX_RPS = 100;
 
-        public static final double P = 1.8;
+        public static final double P = 0.08;
         public static final double I = 0;
-        public static final double D = 0.0001;
-        public static final double V = 0.12;
+        public static final double D = 0.00006;
+        public static final double V = 0.37;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;

@@ -24,10 +24,13 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.FeederSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.FeederSubsystem.FeederState;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem.IndexerState;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -71,6 +74,22 @@ public class RobotContainer {
 
     public RobotContainer() {
         configureBindings();
+
+        SmartDashboard.putData(
+            "Pipeline On", 
+            Commands.parallel(
+                feederSubsystem.setStateCommand(FeederState.ON),
+                indexerSubsystem.setStateCommand(IndexerState.ON)
+            )
+        );
+
+        SmartDashboard.putData(
+            "Pipeline Off", 
+            Commands.parallel(
+                feederSubsystem.setStateCommand(FeederState.OFF),
+                indexerSubsystem.setStateCommand(IndexerState.OFF)
+            )
+        );
     }
 
     /**
