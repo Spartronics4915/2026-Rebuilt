@@ -56,13 +56,13 @@ public class RobotContainer {
     public final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
     
     public final SwerveSubsystem swerveSubsystem = new SwerveSubsystem(SwerveConfigurations.COMP_CHASSIS);
-    //public final VisionSubsystem visionSubsystem = new VisionSubsystem(
-    //    VisionConstants.CameraConstants.cameras, 
-    //    VisionConstants.LAYOUT, 
-    //    new VisionConfiguration(), 
-    //    swerveSubsystem::addVisionMeasurement, 
-    //    swerveSubsystem
-    //);
+    public final VisionSubsystem visionSubsystem = new VisionSubsystem(
+        VisionConstants.CameraConstants.cameras, 
+        VisionConstants.LAYOUT, 
+        new VisionConfiguration(), 
+        swerveSubsystem::addVisionMeasurement, 
+        swerveSubsystem
+    );
     
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, null);
     private final DriveToPOI POIfactory = new DriveToPOI(swerveSubsystem);

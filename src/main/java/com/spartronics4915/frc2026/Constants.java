@@ -218,8 +218,8 @@ public final class Constants {
             }
 
         public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.08;
-            public static final double baseThetaStdDev = 0.08;
+            public static final double baseXYStdDev = 0.3;
+            public static final double baseThetaStdDev = 0.3;
             public static final double distanceWeight = 0.8;
             public static final double ambiguityWeight = 0.8;
             public static final double areaWeight = 0.6;
@@ -230,7 +230,7 @@ public final class Constants {
 
         public static final class CameraConstants {
 
-            public static final Transform3d RIGHT_CAMERA_TRANSFORM = new Transform3d(
+            public static final Transform3d LEFT_CAMERA_TRANSFORM = new Transform3d(
                 new Translation3d(
                     -0.1272, 
                     0.329413,
@@ -239,11 +239,11 @@ public final class Constants {
                 new Rotation3d(
                     Math.toRadians(0), 
                     Math.toRadians(0), 
-                    Math.toRadians(200)
+                    Math.toRadians(20)
                 )
             );
 
-            public static final Transform3d LEFT_CAMERA_TRANSFORM =  new Transform3d(
+            public static final Transform3d RIGHT_CAMERA_TRANSFORM =  new Transform3d(
                 new Translation3d(
                     -0.125205, 
                     -0.334776, 
@@ -252,7 +252,7 @@ public final class Constants {
                 new Rotation3d(
                     Math.toRadians(0), 
                     Math.toRadians(0), 
-                    Math.toRadians(70)
+                    Math.toRadians(310)
                 )
             );
 
@@ -270,17 +270,17 @@ public final class Constants {
             );
 
             public static final Map<String, ProcessorInterface> cameras = Map.of(
-                "right", new PhotonProcessor(
-                    "right", 
-                    LAYOUT,
-                    RIGHT_CAMERA_TRANSFORM, 
-                    SIM_CAMERA_PROPERTIES,
-                    () -> new ChassisSpeeds()
-                ),
                 "left", new PhotonProcessor(
                     "left", 
                     LAYOUT,
-                    LEFT_CAMERA_TRANSFORM,
+                    LEFT_CAMERA_TRANSFORM, 
+                    SIM_CAMERA_PROPERTIES,
+                    () -> new ChassisSpeeds()
+                ),
+                "right", new PhotonProcessor(
+                    "right", 
+                    LAYOUT,
+                    RIGHT_CAMERA_TRANSFORM,
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
                 ),
