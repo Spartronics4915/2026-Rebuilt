@@ -36,6 +36,8 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private double currentSetpoint;
     private State currentState = new State();
 
+    private static final PositionVoltage positionVoltage = new PositionVoltage(0.0);
+
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("climber").getDoubleTopic("applied out").publish();
     private final DoublePublisher positionPublisher = NetworkTableInstance.getDefault().getTable("climber").getDoubleTopic("position").publish();
     private final DoublePublisher desiredStatePublisher = NetworkTableInstance.getDefault().getTable("climber").getDoubleTopic("desiredState").publish();
@@ -77,8 +79,8 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
             new State(currentSetpoint, 0.0)
         );
 
-        PositionVoltage request = new PositionVoltage(currentState.position);
-            motor.setControl(request);
+        positionVoltage.Position = currentState.position;
+        motor.setControl(positionVoltage);
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         positionPublisher.accept(getPosition());
