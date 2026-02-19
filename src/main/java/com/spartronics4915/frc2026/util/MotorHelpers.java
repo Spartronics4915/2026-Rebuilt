@@ -22,6 +22,7 @@ public class MotorHelpers {
             private double i;
             private double d;
             private double v;
+            private boolean following;
             private LoggedTrapezoidProfile profile;
             private LoggedSlewRateLimiter slewLimiter;
             private double maxVelocity;
@@ -73,28 +74,33 @@ public class MotorHelpers {
                 d = config.kD;
                 v = config.kV;
 
+                following = this.getControlMode().getValue() == com.ctre.phoenix6.signals.ControlModeValue.Follower;
+
                 builder.setActuator(true);
                 builder.setSmartDashboardType("ProfiledPIDController");
                 builder.publishConstInteger("CanID", canID);
-                builder.addDoubleProperty("p", () -> p, (p) -> {this.p = p; applyPID();});
-                builder.addDoubleProperty("i", () -> i, (i) -> {this.i = i; applyPID();});
-                builder.addDoubleProperty("d", () -> d, (d) -> {this.d = d; applyPID();});
-                builder.addDoubleProperty("v", () -> v, (v) -> {this.v = v; applyPID();});                                                                                                           
-                
-                if (profile != null) {
-                    builder.addDoubleProperty("Max Velocity", () -> maxVelocity, (maxVelocity) -> {profile.updateConstraints(new Constraints(maxVelocity, profile.constraints.maxAcceleration));});
-                    builder.addDoubleProperty("Max Acceleration", () -> maxAcceleration, (maxAcceleration) -> {profile.updateConstraints(new Constraints(profile.constraints.maxVelocity, maxAcceleration));});
-                    builder.addDoubleProperty("Trapezoid Position", () -> profile.lastState.position, null);
-                    builder.addDoubleProperty("Trapezoid Velocity", () -> profile.lastState.velocity, null);
-                }
 
-                if (slewLimiter != null) {
-                    builder.addDoubleProperty("Slew Rate Limit", () -> slewLimiter.rateLimit, (rateLimit) -> slewLimiter.updateRateLimit(rateLimit));
-                    builder.addDoubleProperty("Slew Last Value", () -> slewLimiter.lastValue(), null);
-                }
+                if (!following) {
+                    builder.addDoubleProperty("p", () -> p, (p) -> {this.p = p; applyPID();});
+                    builder.addDoubleProperty("i", () -> i, (i) -> {this.i = i; applyPID();});
+                    builder.addDoubleProperty("d", () -> d, (d) -> {this.d = d; applyPID();});
+                    builder.addDoubleProperty("v", () -> v, (v) -> {this.v = v; applyPID();});                                                                                                           
+                    
+                    if (profile != null) {
+                        builder.addDoubleProperty("Max Velocity", () -> maxVelocity, (maxVelocity) -> {profile.updateConstraints(new Constraints(maxVelocity, profile.constraints.maxAcceleration));});
+                        builder.addDoubleProperty("Max Acceleration", () -> maxAcceleration, (maxAcceleration) -> {profile.updateConstraints(new Constraints(profile.constraints.maxVelocity, maxAcceleration));});
+                        builder.addDoubleProperty("Trapezoid Position", () -> profile.lastState.position, null);
+                        builder.addDoubleProperty("Trapezoid Velocity", () -> profile.lastState.velocity, null);
+                    }
 
-                if (getSetpoint != null && setSetpoint != null) {
-                    builder.addDoubleProperty("goal", getSetpoint, setSetpoint);
+                    if (slewLimiter != null) {
+                        builder.addDoubleProperty("Slew Rate Limit", () -> slewLimiter.rateLimit, (rateLimit) -> slewLimiter.updateRateLimit(rateLimit));
+                        builder.addDoubleProperty("Slew Last Value", () -> slewLimiter.lastValue(), null);
+                    }
+
+                    if (getSetpoint != null && setSetpoint != null) {
+                        builder.addDoubleProperty("goal", getSetpoint, setSetpoint);
+                    }
                 }
 
                 // General logging (that can't be changed since it's just data)
