@@ -21,6 +21,7 @@ public class MotorHelpers {
             private double p;
             private double i;
             private double d;
+            private double v;
             private LoggedTrapezoidProfile profile;
             private LoggedSlewRateLimiter slewLimiter;
             private double maxVelocity;
@@ -60,6 +61,7 @@ public class MotorHelpers {
                 p = config.kP;
                 i = config.kI;
                 d = config.kD;
+                v = config.kV;
 
                 builder.setActuator(true);
                 builder.setSmartDashboardType("ProfiledPIDController");
@@ -67,6 +69,7 @@ public class MotorHelpers {
                 builder.addDoubleProperty("p", () -> p, (p) -> {super.getConfigurator().apply(new SlotConfigs().withKP(p)); this.p = p;});
                 builder.addDoubleProperty("i", () -> i, (i) -> {super.getConfigurator().apply(new SlotConfigs().withKI(i)); this.i = i;});
                 builder.addDoubleProperty("d", () -> d, (d) -> {super.getConfigurator().apply(new SlotConfigs().withKD(d)); this.d = d;});
+                builder.addDoubleProperty("v", () -> v, (v) -> {super.getConfigurator().apply(new SlotConfigs().withKV(v)); this.v = v;});                                                                                                           
                 
                 if (profile != null) {
                     builder.addDoubleProperty("Max Velocity", () -> maxVelocity, (maxVelocity) -> {profile.updateConstraints(new Constraints(maxVelocity, profile.constraints.maxAcceleration));});
