@@ -40,6 +40,8 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
     private Rotation2d currentSetpoint = Rotation2d.fromDegrees(0);
     private State currentState = new State();
 
+    private static final PositionVoltage positionVoltage = new PositionVoltage(0.0);
+
     private HoodClamp currentClamp;
     private Rotation2d minAngle;
     private Rotation2d maxAngle;
@@ -92,8 +94,8 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
             new State(currentSetpoint.getRotations(), 0.0)
         );
         
-        PositionVoltage request = new PositionVoltage(currentState.position);
-            motor.setControl(request);
+        positionVoltage.Position = currentState.position;
+        motor.setControl(positionVoltage);
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         positionPublisher.accept(getPosition());
