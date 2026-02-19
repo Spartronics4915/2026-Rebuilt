@@ -42,6 +42,8 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     private Rotation2d currentSetpoint;
     private State currentState = new State();
+
+    private static final PositionVoltage positionVoltage = new PositionVoltage(0.0);
     
     private TurretClamp currentClamp;
     private Rotation2d minAngle;
@@ -99,8 +101,8 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
             new State(currentSetpoint.getRotations(), 0.0)
         );
 
-        PositionVoltage request = new PositionVoltage(currentState.position);
-            motor.setControl(request);
+        positionVoltage.Position = currentState.position;
+        motor.setControl(positionVoltage);
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         positionPublisher.accept(getPosition());
