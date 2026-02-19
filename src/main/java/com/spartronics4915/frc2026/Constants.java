@@ -426,8 +426,8 @@ public final class Constants {
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
-        public static final MotorOutputConfigs OUTPUT_CONFIG = new MotorOutputConfigs()
-            .withPeakReverseDutyCycle(0.0);
+        public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
+            .withInverted(InvertedValue.Clockwise_Positive);
     }
 
     //#endregion

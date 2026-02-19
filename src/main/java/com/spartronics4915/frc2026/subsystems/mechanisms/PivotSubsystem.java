@@ -41,6 +41,8 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
     private Rotation2d currentSetpoint;
     private State currentState = new State();
 
+    private PositionVoltage positionVoltage = new PositionVoltage(0.0);
+
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("pivot").getDoubleTopic("Applied Out").publish();
     private final StructPublisher<Rotation2d> positionPublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("Position", Rotation2d.struct).publish();
     private final StructPublisher<Rotation2d> desiredStatePublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("Desired State", Rotation2d.struct).publish();
@@ -53,10 +55,7 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
             motorConfig.apply(PID_CONFIG);
             motorConfig.apply(CURRENT_LIMITS_CONFIG);
             motorConfig.apply(FEEDBACK_CONFIG);
-
-        MotorOutputConfigs motorOutputConfigs = new MotorOutputConfigs();
-            motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
-            motorConfig.apply(motorOutputConfigs);
+            motorConfig.apply(MOTOR_OUTPUT_CONFIG);
 
         CANcoderConfiguration cancoderConfigurator = new CANcoderConfiguration();
         cancoderConfigurator.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 1.0;
@@ -90,8 +89,8 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
             new State(currentSetpoint.getRotations(), 0.0)
         );
 
-        PositionVoltage request = new PositionVoltage(currentState.position);
-        motor.setControl(request);
+        positionVoltage.Position = currentState.position;
+        motor.setControl(positionVoltage);
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         positionPublisher.accept(getPosition());
