@@ -323,8 +323,7 @@ public final class Constants {
         public static final double P = 0.46;
         public static final double I = 0;
         public static final double D = 0;
-
-        public static final double MAX_ACCELERATION = 10;
+        public static final double V = 0;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 60;
@@ -336,7 +335,8 @@ public final class Constants {
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
             .withKI(I)
-            .withKD(D);
+            .withKD(D)
+            .withKV(V);
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
@@ -346,9 +346,6 @@ public final class Constants {
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
-
-        public static final MotorOutputConfigs OUTPUT_CONFIG = new MotorOutputConfigs()
-            .withPeakReverseDutyCycle(0.0);
     }
 
     //#endregion
