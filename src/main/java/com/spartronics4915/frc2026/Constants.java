@@ -482,7 +482,7 @@ public final class Constants {
         public static final double P = 0;
         public static final double I = 0;
         public static final double D = 0;
-        public static final double V = 0.12;
+        public static final double V = 0.02;
 
         public static final double MAX_RPS = 100;
 
@@ -491,7 +491,7 @@ public final class Constants {
         public static final double LOWER_LIMIT = 40;
 
         public static final double LOWER_TIME = 1;
-        public static final double MOTOR_MECHANISM_RATIO = 12;
+        public static final double MOTOR_MECHANISM_RATIO = 4;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
