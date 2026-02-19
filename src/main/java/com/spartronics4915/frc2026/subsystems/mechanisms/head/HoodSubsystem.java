@@ -61,6 +61,7 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
             motorConfig.apply(PID_CONFIG);
             motorConfig.apply(CURRENT_LIMITS_CONFIG);
             motorConfig.apply(FEEDBACK_CONFIG);
+            motorConfig.apply(MOTOR_OUTPUT_CONFIG);
 
         MotorOutputConfigs motorOutputConfigs = new MotorOutputConfigs();
             motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;

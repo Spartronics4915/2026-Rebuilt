@@ -61,6 +61,7 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
             motorConfigurator.apply(PID_CONFIG);
             motorConfigurator.apply(CURRENT_LIMITS_CONFIG);
             motorConfigurator.apply(FEEDBACK_CONFIG);
+            motorConfigurator.apply(MOTOR_OUTPUT_CONFIG);
 
         MotorOutputConfigs motorOutputConfigs = new MotorOutputConfigs();
             motorOutputConfigs.Inverted = InvertedValue.CounterClockwise_Positive;

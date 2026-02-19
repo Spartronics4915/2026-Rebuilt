@@ -50,6 +50,7 @@ import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.SlotConfigs;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 public final class Constants {
@@ -346,6 +347,9 @@ public final class Constants {
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
+
+        public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
+            .withNeutralMode(NeutralModeValue.Brake);
     }
 
     //#endregion
@@ -382,6 +386,9 @@ public final class Constants {
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
+
+        public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
+            .withNeutralMode(NeutralModeValue.Brake);
     }
 
     //#endregion
@@ -427,7 +434,8 @@ public final class Constants {
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
         public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
-            .withInverted(InvertedValue.Clockwise_Positive);
+            .withInverted(InvertedValue.Clockwise_Positive)
+            .withNeutralMode(NeutralModeValue.Brake);
     }
 
     //#endregion
@@ -465,6 +473,9 @@ public final class Constants {
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
+
+        public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
+            .withNeutralMode(NeutralModeValue.Brake);
     }
 
     //#endregion
@@ -503,7 +514,8 @@ public final class Constants {
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
-        public static final MotorOutputConfigs OUTPUT_CONFIG = new MotorOutputConfigs()
+        public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
+            .withNeutralMode(NeutralModeValue.Brake)
             .withInverted(InvertedValue.Clockwise_Positive);
     }
 
@@ -547,6 +559,9 @@ public final class Constants {
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
+        public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
+            .withNeutralMode(NeutralModeValue.Brake);
+
     }
 
     //#endregion
@@ -584,6 +599,9 @@ public final class Constants {
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
+
+        public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
+            .withNeutralMode(NeutralModeValue.Brake);
     }
 
     //#endregion
@@ -624,6 +642,8 @@ public final class Constants {
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
+        public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
+            .withNeutralMode(NeutralModeValue.Brake);
     }
 
     //#endregion

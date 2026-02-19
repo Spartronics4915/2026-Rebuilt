@@ -44,7 +44,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
             configurator.apply(PID_CONFIG);
             configurator.apply(CURRENT_LIMITS_CONFIG);
             configurator.apply(FEEDBACK_CONFIG);
-            configurator.apply(OUTPUT_CONFIG);
+            configurator.apply(MOTOR_OUTPUT_CONFIG);
 
         setState(IndexerState.OFF);
         ModeSwitchHandler.EnableModeSwitchHandler(this);
