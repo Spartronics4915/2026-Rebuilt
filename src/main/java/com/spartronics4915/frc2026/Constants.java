@@ -447,8 +447,6 @@ public final class Constants {
 
         public static final double MAX_RPS = 100;
 
-        public static final double MAX_ACCELERATION = 300;
-
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 60;
         public static final double LOWER_LIMIT = 40;

@@ -2,14 +2,12 @@ package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
 
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.VelocityVoltage;
-import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -24,6 +22,8 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private TalonFX motor;
     
     private double currentSetpoint;
+
+    private final VelocityVoltage velocityVoltage = new VelocityVoltage(0.0);
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("feeder").getDoubleTopic("applied out").publish();
     private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("feeder").getDoubleTopic("rps").publish();
@@ -55,8 +55,8 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
             MAX_RPS
         );
 
-        VelocityVoltage request = new VelocityVoltage(currentSetpoint);
-        motor.setControl(request);
+        velocityVoltage.Velocity = currentSetpoint;
+        motor.setControl(velocityVoltage);
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPM());
