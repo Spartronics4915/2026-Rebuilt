@@ -53,6 +53,16 @@ public class MotorHelpers {
                 this.setSetpoint = setSetpoint;
             }
 
+            public void applyPID() {
+                super.getConfigurator().apply(
+                    new SlotConfigs()
+                    .withKP(p)
+                    .withKI(i)
+                    .withKD(d)
+                    .withKV(v)
+                );
+            }
+
             @Override
             public void initSendable(SendableBuilder builder) {
                 SlotConfigs config = new SlotConfigs();
@@ -66,10 +76,10 @@ public class MotorHelpers {
                 builder.setActuator(true);
                 builder.setSmartDashboardType("ProfiledPIDController");
                 builder.publishConstInteger("CanID", canID);
-                builder.addDoubleProperty("p", () -> p, (p) -> {super.getConfigurator().apply(new SlotConfigs().withKP(p)); this.p = p;});
-                builder.addDoubleProperty("i", () -> i, (i) -> {super.getConfigurator().apply(new SlotConfigs().withKI(i)); this.i = i;});
-                builder.addDoubleProperty("d", () -> d, (d) -> {super.getConfigurator().apply(new SlotConfigs().withKD(d)); this.d = d;});
-                builder.addDoubleProperty("v", () -> v, (v) -> {super.getConfigurator().apply(new SlotConfigs().withKV(v)); this.v = v;});                                                                                                           
+                builder.addDoubleProperty("p", () -> p, (p) -> {this.p = p; applyPID();});
+                builder.addDoubleProperty("i", () -> i, (i) -> {this.i = i; applyPID();});
+                builder.addDoubleProperty("d", () -> d, (d) -> {this.d = d; applyPID();});
+                builder.addDoubleProperty("v", () -> v, (v) -> {this.v = v; applyPID();});                                                                                                           
                 
                 if (profile != null) {
                     builder.addDoubleProperty("Max Velocity", () -> maxVelocity, (maxVelocity) -> {profile.updateConstraints(new Constraints(maxVelocity, profile.constraints.maxAcceleration));});
