@@ -16,6 +16,7 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstant
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.trenchTransform;
 
 import com.spartronics4915.frc2026.commands.DriveCommand;
+import com.spartronics4915.frc2026.subsystems.Superstructure;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem;
@@ -56,13 +57,25 @@ public class RobotContainer {
     public final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
     
     public final SwerveSubsystem swerveSubsystem = new SwerveSubsystem(SwerveConfigurations.COMP_CHASSIS);
-    //public final VisionSubsystem visionSubsystem = new VisionSubsystem(
-    //    VisionConstants.CameraConstants.cameras, 
-    //    VisionConstants.LAYOUT, 
-    //    new VisionConfiguration(), 
-    //    swerveSubsystem::addVisionMeasurement, 
-    //    swerveSubsystem
-    //);
+    public final VisionSubsystem visionSubsystem = new VisionSubsystem(
+        VisionConstants.CameraConstants.cameras, 
+        VisionConstants.LAYOUT, 
+        new VisionConfiguration(), 
+        swerveSubsystem::addVisionMeasurement, 
+        swerveSubsystem
+    );
+
+    public final Superstructure superstructure = new Superstructure(
+        hoodSubsystem,
+        turretSubsystem,
+        feederSubsystem,
+        indexerSubsystem,
+        shooterSubsystem,
+        climberSubsystem,
+        null,
+        null,
+        swerveSubsystem
+    );
     
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, null);
     private final DriveToPOI POIfactory = new DriveToPOI(swerveSubsystem);

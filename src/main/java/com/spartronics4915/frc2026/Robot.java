@@ -6,11 +6,13 @@ package com.spartronics4915.frc2026;
 
 import com.pathplanner.lib.commands.FollowPathCommand;
 
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.net.WebServer;
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Filesystem;
@@ -18,6 +20,7 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import swervelib.simulation.ironmaple.simulation.SimulatedArena;
 
 /**
  * The methods in this class are called automatically corresponding to each mode, as described in
@@ -31,6 +34,7 @@ public class Robot extends TimedRobot {
     private final BooleanPublisher hubEnabledPub = NetworkTableInstance.getDefault().getBooleanTopic("IO/Hub Enabled").publish();
     private final DoublePublisher timeUntilSwitchPub = NetworkTableInstance.getDefault().getDoubleTopic("IO/Time Left Until Switch").publish();
     private final BooleanPublisher currentAllianceSelectedPub = NetworkTableInstance.getDefault().getBooleanTopic("IO/Current Alliance Selected").publish();
+    private final StructArrayPublisher<Pose3d> fuelPosesPub = NetworkTableInstance.getDefault().getStructArrayTopic("FieldSimulation/FuelPositions", Pose3d.struct).publish();
     public boolean currentAllianceSelected = false;
     public static boolean hubEnabled;
     public static double timeUntilSwitch;
@@ -180,5 +184,13 @@ public class Robot extends TimedRobot {
 
     /** This function is called periodically whilst in simulation. */
     @Override
-    public void simulationPeriodic() {}
+    public void simulationPeriodic() {
+        SimulatedArena.getInstance().simulationPeriodic();
+        Pose3d[] fuelPoses = SimulatedArena.getInstance()
+            .getGamePiecesArrayByType("Fuel");
+        fuelPosesPub.set(fuelPoses);
+        if (fuelPoses.length > 150) {
+            SimulatedArena.getInstance().clearGamePieces();
+        }
+    }
 }

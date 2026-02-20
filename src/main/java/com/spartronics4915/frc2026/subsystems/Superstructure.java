@@ -1,7 +1,9 @@
 package com.spartronics4915.frc2026.subsystems;
 
 import static com.spartronics4915.frc2026.Constants.SuperstructureConstants.*;
+import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.hubPose;
 
+import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem;
@@ -16,13 +18,29 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsyst
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.FeederSubsystem.FeederState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem.IndexerState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem.ShooterClamp;
+import com.spartronics4915.frc2026.util.AutoAim;
+import com.spartronics4915.frc2026.util.AutoAim.AutoAimResult;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
+import edu.wpi.first.networktables.StructArrayPublisher;
+
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.MetersPerSecond;
+
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import swervelib.simulation.ironmaple.simulation.SimulatedArena;
+import swervelib.simulation.ironmaple.simulation.seasonspecific.rebuilt2026.RebuiltFuelOnFly;
+import swervelib.simulation.ironmaple.utils.FieldMirroringUtils;
 
 public class Superstructure extends SubsystemBase {
 
@@ -49,11 +67,27 @@ public class Superstructure extends SubsystemBase {
     private Zone previousZone;
 
     private boolean stateOverride;
+    private double lastShotTime;
 
     // Publishing for superstructure logging
     private final StringPublisher currentStatePublisher = NetworkTableInstance.getDefault().getTable("Superstructure").getStringTopic("State").publish();
     private final StringPublisher currentZonePublisher = NetworkTableInstance.getDefault().getTable("Superstructure").getStringTopic("Current Zone").publish();
     private final StringPublisher previousZonePublisher = NetworkTableInstance.getDefault().getTable("Superstructure").getStringTopic("Previous State").publish();
+    
+    private final StructArrayPublisher<Pose3d> successfulShotPublisher = NetworkTableInstance.getDefault()
+        .getStructArrayTopic("Flywheel/FuelProjectileSuccessfulShot", Pose3d.struct)
+        .publish();
+    private final StructArrayPublisher<Pose3d> unsuccessfulShotPublisher = NetworkTableInstance.getDefault()
+        .getStructArrayTopic("Flywheel/FuelProjectileUnsuccessfulShot", Pose3d.struct)
+        .publish();
+
+    private final AutoAim autoAim = new AutoAim(
+        10,
+        0.01,
+        new Translation3d(turretTranslation.getX(), turretTranslation.getY(), Units.inchesToMeters(21.443748 + 2.955)),
+        new Rotation2d(),
+        Rotation2d.fromDegrees(90)
+    );
     
     public Superstructure(
         HoodSubsystem hoodSubsystem,
@@ -78,6 +112,11 @@ public class Superstructure extends SubsystemBase {
 
         this.currentZone = getCurrentZone();
         this.previousZone = currentZone;
+
+        NetworkTableInstance.getDefault()
+            .getStructTopic("target", Translation3d.struct)
+            .publish()
+            .set(new Translation3d(hubPose.getX(), hubPose.getY(), Units.inchesToMeters(72)));
     }
 
     private enum RobotState {
@@ -119,6 +158,36 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
+        AutoAimResult result = autoAim.calculateDynamicAim(swerve.getRelativePose(), swerve.getFieldVelocity(), new Translation3d(hubPose.getX(), hubPose.getY(), Units.inchesToMeters(72)), 10);
+        
+        if (Robot.isSimulation() && result != null && (Timer.getFPGATimestamp() - lastShotTime) > 0.1) {
+            lastShotTime = Timer.getFPGATimestamp();
+            RebuiltFuelOnFly fuelOnFly = new RebuiltFuelOnFly(
+                swerve.getRobotPose().getTranslation(),
+                turretTranslation.rotateBy(swerve.getRobotPose().getRotation()).rotateBy(result.yaw().unaryMinus()),
+                // new Translation2d(),
+                swerve.getFieldVelocity(),
+                result.yaw(),
+                Inches.of(21.443748 + 2.955),
+                MetersPerSecond.of(10),
+                Degrees.of(result.pitch().getDegrees())
+            );
+
+            fuelOnFly
+                // Set the target center to the Rebuilt Hub of the current alliance
+                .withTargetPosition(() -> FieldMirroringUtils.toCurrentAllianceTranslation(new Translation3d(hubPose.getX(), hubPose.getY(), Units.inchesToMeters(62))))
+                .withTargetTolerance(new Translation3d(0.67, 0.67, 0.3));
+            
+            fuelOnFly
+                .withProjectileTrajectoryDisplayCallBack(
+                    (pose3ds) -> {successfulShotPublisher.set(pose3ds.toArray(Pose3d[]::new)); unsuccessfulShotPublisher.set(new Pose3d[0]);},
+                    (pose3ds) -> {unsuccessfulShotPublisher.set(pose3ds.toArray(Pose3d[]::new)); successfulShotPublisher.set(new Pose3d[0]);}
+                );
+            fuelOnFly.disableBecomesGamePieceOnFieldAfterTouchGround();
+
+            SimulatedArena.getInstance().addGamePieceProjectile(fuelOnFly);
+        }
+
         currentZone = getCurrentZone();
         if (currentZone != previousZone) {
             stateOverride = false;

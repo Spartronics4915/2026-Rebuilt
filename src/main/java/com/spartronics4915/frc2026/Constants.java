@@ -303,7 +303,7 @@ public final class Constants {
 
     public static final class SuperstructureConstants {
 
-        public static final Translation2d turretTransform = new Translation2d(-0.1185, -0.1568);
+        public static final Translation2d turretTranslation = new Translation2d(-0.1185, -0.1568);
 
         public static final Rotation2d PIVOT_SAFE_THRESHOLD = Rotation2d.fromDegrees(0);
         public static final Rotation2d TURRET_MIN_SAFE_THRESHOLD = Rotation2d.fromDegrees(0);
