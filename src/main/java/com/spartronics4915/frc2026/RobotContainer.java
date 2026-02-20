@@ -47,8 +47,8 @@ public class RobotContainer {
     public final HoodSubsystem hoodSubsystem = new HoodSubsystem();
     public final TurretSubsystem turretSubsystem = new TurretSubsystem();
 
-    public final PivotSubsystem pivotSubsystem = new PivotSubsystem();
-    public final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
+    //public final PivotSubsystem pivotSubsystem = new PivotSubsystem();
+    //public final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
     public final ClimberSubsystem climberSubsystem = new ClimberSubsystem();
 
     public final IndexerSubsystem indexerSubsystem = new IndexerSubsystem();
@@ -56,13 +56,13 @@ public class RobotContainer {
     public final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
     
     public final SwerveSubsystem swerveSubsystem = new SwerveSubsystem(SwerveConfigurations.COMP_CHASSIS);
-    public final VisionSubsystem visionSubsystem = new VisionSubsystem(
-        VisionConstants.CameraConstants.cameras, 
-        VisionConstants.LAYOUT, 
-        new VisionConfiguration(), 
-        swerveSubsystem::addVisionMeasurement, 
-        swerveSubsystem
-    );
+    //public final VisionSubsystem visionSubsystem = new VisionSubsystem(
+    //    VisionConstants.CameraConstants.cameras, 
+    //    VisionConstants.LAYOUT, 
+    //    new VisionConfiguration(), 
+    //    swerveSubsystem::addVisionMeasurement, 
+    //    swerveSubsystem
+    //);
     
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, null);
     private final DriveToPOI POIfactory = new DriveToPOI(swerveSubsystem);
