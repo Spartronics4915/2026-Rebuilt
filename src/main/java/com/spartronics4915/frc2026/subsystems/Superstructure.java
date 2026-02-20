@@ -16,6 +16,7 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsyst
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.FeederSubsystem.FeederState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem.IndexerState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem.ShooterClamp;
+import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
@@ -39,6 +40,9 @@ public class Superstructure extends SubsystemBase {
     private final IntakeSubsystem intake;
     private final PivotSubsystem pivot;
 
+    // Swerve
+    private final SwerveSubsystem swerve;
+
     // Bla bla bla bla 
     private RobotState currentRobotState;
     private Zone currentZone;
@@ -59,7 +63,8 @@ public class Superstructure extends SubsystemBase {
         ShooterSubsystem shooterSubsystem,
         ClimberSubsystem climberSubsystem,
         IntakeSubsystem intakeSubsystem,
-        PivotSubsystem pivotSubsystem
+        PivotSubsystem pivotSubsystem,
+        SwerveSubsystem swerveSubsystem
     ) {
         this.hood = hoodSubsystem;
         this.turret = turretSubsystem;
@@ -69,6 +74,7 @@ public class Superstructure extends SubsystemBase {
         this.climber = climberSubsystem;
         this.intake = intakeSubsystem;
         this.pivot = pivotSubsystem;
+        this.swerve = swerveSubsystem;
 
         this.currentZone = getCurrentZone();
         this.previousZone = currentZone;
