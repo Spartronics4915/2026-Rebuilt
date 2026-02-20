@@ -85,7 +85,7 @@ public class Superstructure extends SubsystemBase {
         10,
         0.01,
         new Translation3d(turretTranslation.getX(), turretTranslation.getY(), Units.inchesToMeters(21.443748 + 2.955)),
-        new Rotation2d(),
+        Rotation2d.fromDegrees(50),
         Rotation2d.fromDegrees(90)
     );
     
@@ -187,6 +187,9 @@ public class Superstructure extends SubsystemBase {
 
             SimulatedArena.getInstance().addGamePieceProjectile(fuelOnFly);
         }
+
+        hood.setSetpoint(Rotation2d.kCCW_Pi_2.minus(result.pitch()));
+        turret.setSetpoint(Rotation2d.k180deg.minus(result.yaw()));
 
         currentZone = getCurrentZone();
         if (currentZone != previousZone) {
