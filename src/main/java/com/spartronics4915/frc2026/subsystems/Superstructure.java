@@ -191,45 +191,45 @@ public class Superstructure extends SubsystemBase {
         hood.setSetpoint(Rotation2d.kCCW_Pi_2.minus(result.pitch()));
         turret.setSetpoint(Rotation2d.k180deg.minus(result.yaw()));
 
-        currentZone = getCurrentZone();
-        if (currentZone != previousZone) {
-            stateOverride = false;
-            previousZone = currentZone;
-        }
+        //currentZone = getCurrentZone();
+        //if (currentZone != previousZone) {
+        //    stateOverride = false;
+        //    previousZone = currentZone;
+        //}
 
-        if (stateOverride != true) {
-            switch (currentZone) {
-                case ALLIANCE_ZONE:
-                    if (currentRobotState == RobotState.SHOOTING) return;
-                    switchState(RobotState.SHOOTING);
-                    break;
+        //if (stateOverride != true) {
+        //    switch (currentZone) {
+        //        case ALLIANCE_ZONE:
+        //            if (currentRobotState == RobotState.SHOOTING) return;
+        //            switchState(RobotState.SHOOTING);
+        //            break;
+//
+        //        case TRENCH:
+        //            hood.setClamp(HoodClamp.RESTRICTED);
+        //            if (currentRobotState == RobotState.TRAVERSAL) return;
+        //            switchState(RobotState.TRAVERSAL);
+        //            break;
+//
+        //        case BUMP:
+        //            if (currentRobotState == RobotState.CRUISE) return;
+        //            switchState(RobotState.CRUISE);
+        //            break;
+//
+        //        case NEUTRAL_ZONE:
+        //            if (currentRobotState == RobotState.TRAVERSAL) return;
+        //            switchState(RobotState.TRAVERSAL);
+        //            break;
+//
+        //        case OPPONENT_ZONE:
+        //            if (currentRobotState == RobotState.CRUISE) return;
+        //            switchState(RobotState.CRUISE);
+        //            break;
+        //    }
+        //} 
 
-                case TRENCH:
-                    hood.setClamp(HoodClamp.RESTRICTED);
-                    if (currentRobotState == RobotState.TRAVERSAL) return;
-                    switchState(RobotState.TRAVERSAL);
-                    break;
-
-                case BUMP:
-                    if (currentRobotState == RobotState.CRUISE) return;
-                    switchState(RobotState.CRUISE);
-                    break;
-
-                case NEUTRAL_ZONE:
-                    if (currentRobotState == RobotState.TRAVERSAL) return;
-                    switchState(RobotState.TRAVERSAL);
-                    break;
-
-                case OPPONENT_ZONE:
-                    if (currentRobotState == RobotState.CRUISE) return;
-                    switchState(RobotState.CRUISE);
-                    break;
-            }
-        } 
-
-        currentStatePublisher.accept(currentRobotState.name());
-        currentZonePublisher.accept(currentZone.name());
-        previousZonePublisher.accept(previousZone.name());
+        //currentStatePublisher.accept(currentRobotState.name());
+        //currentZonePublisher.accept(currentZone.name());
+        //previousZonePublisher.accept(previousZone.name());
     }
 
     private Zone getCurrentZone() {
