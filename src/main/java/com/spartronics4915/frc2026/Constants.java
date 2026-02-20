@@ -304,7 +304,7 @@ public final class Constants {
     public static final class SuperstructureConstants {
 
         public static final Transform2d turretTransform = new Transform2d(
-            new Translation2d(0, 0),
+            new Translation2d(-0.1185, -0.1568), // meters
             new Rotation2d()
         );
 

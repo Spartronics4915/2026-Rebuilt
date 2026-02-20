@@ -45,7 +45,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 public class RobotContainer {
 
     public final HoodSubsystem hoodSubsystem = new HoodSubsystem();
-    //public final TurretSubsystem turretSubsystem = new TurretSubsystem();
+    public final TurretSubsystem turretSubsystem = new TurretSubsystem();
 
     public final PivotSubsystem pivotSubsystem = new PivotSubsystem();
     public final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
