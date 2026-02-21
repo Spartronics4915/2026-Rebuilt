@@ -175,7 +175,7 @@ public class Superstructure extends SubsystemBase {
             new Translation3d(hubPose.getX(), 
             hubPose.getY(), 
             Units.inchesToMeters(72)), 
-            6.5 //((shooter.getCurrentRPS() * Math.PI * Units.inchesToMeters(0.19) * .9) / (2))
+            (Math.PI * 0.04826 * shooter.getCurrentRPS()) / 2
         ); else result = null;
 
         if (result != null) {
