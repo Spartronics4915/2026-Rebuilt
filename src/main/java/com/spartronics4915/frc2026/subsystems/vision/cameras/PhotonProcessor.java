@@ -38,7 +38,7 @@ public class PhotonProcessor implements ProcessorInterface {
     private final ConcurrentLinkedQueue<ResultInterface> resultQueue;
     private final int maxQueueSize;
     private final Notifier processingNotifier;
-    private final int processingFrequency;
+    private final double processingFrequency;
 
     private volatile boolean isRunning;
 
@@ -61,10 +61,10 @@ public class PhotonProcessor implements ProcessorInterface {
         this.cameraSim = new PhotonCameraSim(photonCamera, simProperties);
 
         this.resultQueue = new ConcurrentLinkedQueue<>();
-        this.maxQueueSize = 2;
+        this.maxQueueSize = 5;
         
         this.processingNotifier = new Notifier(this::process);
-        this.processingFrequency = 50;
+        this.processingFrequency = 100.0;
         this.processingNotifier.setName("Spectrum-" + cameraName);
         this.isRunning = false;
 
@@ -76,7 +76,7 @@ public class PhotonProcessor implements ProcessorInterface {
     @Override
     public void start() {
         isRunning = true;
-        processingNotifier.startPeriodic(1 / processingFrequency);
+        processingNotifier.startPeriodic(1.0 / processingFrequency);
     }
 
     @Override

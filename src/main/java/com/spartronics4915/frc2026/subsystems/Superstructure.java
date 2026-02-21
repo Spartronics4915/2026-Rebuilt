@@ -26,6 +26,7 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.networktables.StructArrayPublisher;
@@ -35,6 +36,7 @@ import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -67,12 +69,17 @@ public class Superstructure extends SubsystemBase {
     private Zone previousZone;
 
     private boolean stateOverride;
+
+    private AutoAimResult result;
     private double lastShotTime;
+    private boolean isAutoAiming;
 
     // Publishing for superstructure logging
     private final StringPublisher currentStatePublisher = NetworkTableInstance.getDefault().getTable("Superstructure").getStringTopic("State").publish();
     private final StringPublisher currentZonePublisher = NetworkTableInstance.getDefault().getTable("Superstructure").getStringTopic("Current Zone").publish();
     private final StringPublisher previousZonePublisher = NetworkTableInstance.getDefault().getTable("Superstructure").getStringTopic("Previous State").publish();
+
+    private final BooleanPublisher isAutoAimingPublisher = NetworkTableInstance.getDefault().getTable("Superstructure").getBooleanTopic("Is Auto Aiming").publish();
     
     private final StructArrayPublisher<Pose3d> successfulShotPublisher = NetworkTableInstance.getDefault()
         .getStructArrayTopic("Flywheel/FuelProjectileSuccessfulShot", Pose3d.struct)
@@ -113,10 +120,14 @@ public class Superstructure extends SubsystemBase {
         this.currentZone = getCurrentZone();
         this.previousZone = currentZone;
 
+        this.isAutoAiming = false;
+
         NetworkTableInstance.getDefault()
             .getStructTopic("target", Translation3d.struct)
             .publish()
             .set(new Translation3d(hubPose.getX(), hubPose.getY(), Units.inchesToMeters(72)));
+
+        SmartDashboard.putData("Auto-Aim Toggle", Commands.runOnce(() -> isAutoAiming = !isAutoAiming));
     }
 
     private enum RobotState {
@@ -158,8 +169,15 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
-        AutoAimResult result = autoAim.calculateDynamicAim(swerve.getRelativePose(), swerve.getFieldVelocity(), new Translation3d(hubPose.getX(), hubPose.getY(), Units.inchesToMeters(72)), 10);
-        
+        if (isAutoAiming) result = autoAim.calculateDynamicAim(
+            swerve.getRelativePose(), 
+            swerve.getFieldVelocity(), 
+            new Translation3d(hubPose.getX(), 
+            hubPose.getY(), 
+            Units.inchesToMeters(72)), 
+            6.5 //((shooter.getCurrentRPS() * Math.PI * Units.inchesToMeters(0.19) * .9) / (2))
+        );
+
         if (Robot.isSimulation() && result != null && (Timer.getFPGATimestamp() - lastShotTime) > 0.1) {
             lastShotTime = Timer.getFPGATimestamp();
             RebuiltFuelOnFly fuelOnFly = new RebuiltFuelOnFly(
@@ -187,9 +205,11 @@ public class Superstructure extends SubsystemBase {
 
             SimulatedArena.getInstance().addGamePieceProjectile(fuelOnFly);
         }
-
-        hood.setSetpoint(Rotation2d.kCCW_Pi_2.minus(result.pitch()));
-        turret.setSetpoint(Rotation2d.k180deg.minus(result.yaw()));
+        
+        if (result != null && isAutoAiming) {
+            hood.setSetpoint(Rotation2d.kCCW_Pi_2.minus(result.pitch()));
+            turret.setSetpoint(swerve.getPose().getRotation().minus(result.yaw()).plus(Rotation2d.k180deg));
+        }
 
         //currentZone = getCurrentZone();
         //if (currentZone != previousZone) {
@@ -230,6 +250,8 @@ public class Superstructure extends SubsystemBase {
         //currentStatePublisher.accept(currentRobotState.name());
         //currentZonePublisher.accept(currentZone.name());
         //previousZonePublisher.accept(previousZone.name());
+
+        isAutoAimingPublisher.accept(isAutoAiming);
     }
 
     private Zone getCurrentZone() {

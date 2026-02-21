@@ -238,8 +238,8 @@ public final class Constants {
                 ),
                 new Rotation3d(
                     Math.toRadians(0), 
-                    Math.toRadians(0), 
-                    Math.toRadians(20)
+                    Math.toRadians(-26), 
+                    Math.toRadians(70)
                 )
             );
 
@@ -251,8 +251,8 @@ public final class Constants {
                 ),
                 new Rotation3d(
                     Math.toRadians(0), 
-                    Math.toRadians(0), 
-                    Math.toRadians(310)
+                    Math.toRadians(-26), 
+                    Math.toRadians(-70)
                 )
             );
 
@@ -276,21 +276,21 @@ public final class Constants {
                 //    LEFT_CAMERA_TRANSFORM, 
                 //    SIM_CAMERA_PROPERTIES,
                 //    () -> new ChassisSpeeds()
-                //),
-                //"right", new PhotonProcessor(
-                //    "right", 
-                //    LAYOUT,
-                //    RIGHT_CAMERA_TRANSFORM,
-                //    SIM_CAMERA_PROPERTIES,
-                //    () -> new ChassisSpeeds()
-                //),
-                "back", new PhotonProcessor(
-                    "back", 
+                //)
+                "daniil", new PhotonProcessor(
+                    "daniil", 
                     LAYOUT,
-                    BACK_CAMERA_TRANSFORM,
+                    RIGHT_CAMERA_TRANSFORM,
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
                 )
+                //"back", new PhotonProcessor(
+                //    "back", 
+                //    LAYOUT,
+                //    BACK_CAMERA_TRANSFORM,
+                //    SIM_CAMERA_PROPERTIES,
+                //    () -> new ChassisSpeeds()
+                //)
             );
         }
 
