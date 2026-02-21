@@ -106,7 +106,7 @@ public class AutoAim {
      * @return The result of the auto-aim calculation.
      */
     public AutoAimResult calculateStaticAim(Pose2d robotPose, Translation3d targetTranslation, double projectileSpeed) {
-        if (projectileSpeed <= 0.0) {
+        if (projectileSpeed < 0.0) {
             return null;
         }
 
@@ -135,14 +135,14 @@ public class AutoAim {
 
         Rotation2d selectedPitch;
         if (theta.length == 0) {
-            return null;
+            selectedPitch = null;
         } else if (theta.length == 1) {
             selectedPitch = theta[0];
         } else {
             selectedPitch = theta[0].getDegrees() > theta[1].getDegrees() ? theta[0] : theta[1];
         }
 
-        double t = horizontalDistance / (projectileSpeed * Math.cos(selectedPitch.getRadians()));
+        double t = selectedPitch == null ? -1 : horizontalDistance / (projectileSpeed * Math.cos(selectedPitch.getRadians()));
 
         return new AutoAimResult(yaw, selectedPitch, t, projectileSpeed);
     }

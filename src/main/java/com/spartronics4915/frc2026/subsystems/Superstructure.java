@@ -176,39 +176,39 @@ public class Superstructure extends SubsystemBase {
             hubPose.getY(), 
             Units.inchesToMeters(72)), 
             6.5 //((shooter.getCurrentRPS() * Math.PI * Units.inchesToMeters(0.19) * .9) / (2))
-        );
+        ); else result = null;
 
-        if (Robot.isSimulation() && result != null && (Timer.getFPGATimestamp() - lastShotTime) > 0.1) {
-            lastShotTime = Timer.getFPGATimestamp();
-            RebuiltFuelOnFly fuelOnFly = new RebuiltFuelOnFly(
-                swerve.getRobotPose().getTranslation(),
-                turretTranslation.rotateBy(swerve.getRobotPose().getRotation()).rotateBy(result.yaw().unaryMinus()),
-                // new Translation2d(),
-                swerve.getFieldVelocity(),
-                result.yaw(),
-                Inches.of(21.443748 + 2.955),
-                MetersPerSecond.of(10),
-                Degrees.of(result.pitch().getDegrees())
-            );
+        if (result != null) {
+            if (result.ToF() != -1) hood.setSetpoint(Rotation2d.kCCW_Pi_2.minus(result.pitch()));
+            turret.setSetpoint(result.yaw().minus(swerve.getPose().getRotation()).plus(Rotation2d.kCCW_90deg));
 
-            fuelOnFly
-                // Set the target center to the Rebuilt Hub of the current alliance
-                .withTargetPosition(() -> FieldMirroringUtils.toCurrentAllianceTranslation(new Translation3d(hubPose.getX(), hubPose.getY(), Units.inchesToMeters(62))))
-                .withTargetTolerance(new Translation3d(0.67, 0.67, 0.3));
-            
-            fuelOnFly
-                .withProjectileTrajectoryDisplayCallBack(
-                    (pose3ds) -> {successfulShotPublisher.set(pose3ds.toArray(Pose3d[]::new)); unsuccessfulShotPublisher.set(new Pose3d[0]);},
-                    (pose3ds) -> {unsuccessfulShotPublisher.set(pose3ds.toArray(Pose3d[]::new)); successfulShotPublisher.set(new Pose3d[0]);}
+            if (Robot.isSimulation() && (Timer.getFPGATimestamp() - lastShotTime) > 0.1) {
+                lastShotTime = Timer.getFPGATimestamp();
+                RebuiltFuelOnFly fuelOnFly = new RebuiltFuelOnFly(
+                    swerve.getRobotPose().getTranslation(),
+                    turretTranslation.rotateBy(swerve.getRobotPose().getRotation()).rotateBy(result.yaw().unaryMinus()),
+                    // new Translation2d(),
+                    swerve.getFieldVelocity(),
+                    result.yaw(),
+                    Inches.of(21.443748 + 2.955),
+                    MetersPerSecond.of(10),
+                    Degrees.of(result.pitch().getDegrees())
                 );
-            fuelOnFly.disableBecomesGamePieceOnFieldAfterTouchGround();
 
-            SimulatedArena.getInstance().addGamePieceProjectile(fuelOnFly);
-        }
-        
-        if (result != null && isAutoAiming) {
-            hood.setSetpoint(Rotation2d.kCCW_Pi_2.minus(result.pitch()));
-            turret.setSetpoint(swerve.getPose().getRotation().minus(result.yaw()).plus(Rotation2d.k180deg));
+                fuelOnFly
+                    // Set the target center to the Rebuilt Hub of the current alliance
+                    .withTargetPosition(() -> FieldMirroringUtils.toCurrentAllianceTranslation(new Translation3d(hubPose.getX(), hubPose.getY(), Units.inchesToMeters(62))))
+                    .withTargetTolerance(new Translation3d(0.67, 0.67, 0.3));
+                
+                fuelOnFly
+                    .withProjectileTrajectoryDisplayCallBack(
+                        (pose3ds) -> {successfulShotPublisher.set(pose3ds.toArray(Pose3d[]::new)); unsuccessfulShotPublisher.set(new Pose3d[0]);},
+                        (pose3ds) -> {unsuccessfulShotPublisher.set(pose3ds.toArray(Pose3d[]::new)); successfulShotPublisher.set(new Pose3d[0]);}
+                    );
+                fuelOnFly.disableBecomesGamePieceOnFieldAfterTouchGround();
+
+                SimulatedArena.getInstance().addGamePieceProjectile(fuelOnFly);
+            }
         }
 
         //currentZone = getCurrentZone();
