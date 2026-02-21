@@ -270,27 +270,27 @@ public final class Constants {
             );
 
             public static final Map<String, ProcessorInterface> cameras = Map.of(
-                //"left", new PhotonProcessor(
-                //    "left", 
-                //    LAYOUT,
-                //    LEFT_CAMERA_TRANSFORM, 
-                //    SIM_CAMERA_PROPERTIES,
-                //    () -> new ChassisSpeeds()
-                //)
+                "evan", new PhotonProcessor(
+                    "evan", 
+                    LAYOUT,
+                    LEFT_CAMERA_TRANSFORM, 
+                    SIM_CAMERA_PROPERTIES,
+                    () -> new ChassisSpeeds()
+                ),
                 "daniil", new PhotonProcessor(
                     "daniil", 
                     LAYOUT,
                     RIGHT_CAMERA_TRANSFORM,
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
+                ),
+                "val", new PhotonProcessor(
+                    "val", 
+                    LAYOUT,
+                    BACK_CAMERA_TRANSFORM,
+                    SIM_CAMERA_PROPERTIES,
+                    () -> new ChassisSpeeds()
                 )
-                //"back", new PhotonProcessor(
-                //    "back", 
-                //    LAYOUT,
-                //    BACK_CAMERA_TRANSFORM,
-                //    SIM_CAMERA_PROPERTIES,
-                //    () -> new ChassisSpeeds()
-                //)
             );
         }
 
