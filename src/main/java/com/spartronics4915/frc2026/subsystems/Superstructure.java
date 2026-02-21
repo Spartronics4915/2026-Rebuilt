@@ -22,8 +22,10 @@ import com.spartronics4915.frc2026.util.AutoAim;
 import com.spartronics4915.frc2026.util.AutoAim.AutoAimResult;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.BooleanPublisher;
@@ -35,6 +37,10 @@ import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 
+import java.util.Optional;
+
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -91,7 +97,11 @@ public class Superstructure extends SubsystemBase {
     private final AutoAim autoAim = new AutoAim(
         10,
         0.01,
-        new Translation3d(turretTranslation.getX(), turretTranslation.getY(), Units.inchesToMeters(21.443748 + 2.955)),
+        new Translation3d(
+            TURRET_TRANSLATION.getX(), 
+            TURRET_TRANSLATION.getY(), 
+            Units.inchesToMeters(21.443748 + 2.955)
+        ),
         Rotation2d.fromDegrees(50),
         Rotation2d.fromDegrees(90)
     );
@@ -117,7 +127,7 @@ public class Superstructure extends SubsystemBase {
         this.pivot = pivotSubsystem;
         this.swerve = swerveSubsystem;
 
-        this.currentZone = getCurrentZone();
+        //this.currentZone = getCurrentZone();
         this.previousZone = currentZone;
 
         this.isAutoAiming = false;
@@ -128,6 +138,13 @@ public class Superstructure extends SubsystemBase {
             .set(new Translation3d(hubPose.getX(), hubPose.getY(), Units.inchesToMeters(72)));
 
         SmartDashboard.putData("Auto-Aim Toggle", Commands.runOnce(() -> isAutoAiming = !isAutoAiming));
+
+        SmartDashboard.putData("Traversal", transToTraversal());
+        SmartDashboard.putData("Cruise", transToCruise());
+        SmartDashboard.putData("Shooting", transToShooting());
+        SmartDashboard.putData("Climb", transToClimb());
+        SmartDashboard.putData("Idle", transToIdle());
+        SmartDashboard.putData("Stowed", transToStowed());
     }
 
     private enum RobotState {
@@ -186,7 +203,7 @@ public class Superstructure extends SubsystemBase {
                 lastShotTime = Timer.getFPGATimestamp();
                 RebuiltFuelOnFly fuelOnFly = new RebuiltFuelOnFly(
                     swerve.getRobotPose().getTranslation(),
-                    turretTranslation.rotateBy(swerve.getRobotPose().getRotation()).rotateBy(result.yaw().unaryMinus()),
+                    TURRET_TRANSLATION.rotateBy(swerve.getRobotPose().getRotation()).rotateBy(result.yaw().unaryMinus()),
                     // new Translation2d(),
                     swerve.getFieldVelocity(),
                     result.yaw(),
@@ -211,7 +228,10 @@ public class Superstructure extends SubsystemBase {
             }
         }
 
-        //currentZone = getCurrentZone();
+        //currentZone = getCurrentZone(swerve.getRelativePose().getTranslation().plus(
+        //    TURRET_TRANSLATION.rotateBy(swerve.getPose().getRotation())
+        //));
+
         //if (currentZone != previousZone) {
         //    stateOverride = false;
         //    previousZone = currentZone;
@@ -252,10 +272,6 @@ public class Superstructure extends SubsystemBase {
         //previousZonePublisher.accept(previousZone.name());
 
         isAutoAimingPublisher.accept(isAutoAiming);
-    }
-
-    private Zone getCurrentZone() {
-        return Zone.ALLIANCE_ZONE;
     }
 
     public void setStateOverride(RobotState overrideState) {
