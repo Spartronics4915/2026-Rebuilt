@@ -28,9 +28,11 @@ public class StdDevCalculator {
         double ambiguityFactor = calculateAmbiguityFactor(avgAmbiguity);
         double areaFactor = calculateAreaFactor(avgArea);
         double anisotropyFactor = calculateAnisotropyFactor(xAnisotropy, yAnisotropy);
-        double motionFactor = calculateMotionFactor(chassisSpeeds);
         double latencyFactor = calculateLatencyFactor(latencySeconds);
         double tagCountFactor = calculateTagCountFactor(numTags);
+
+        ChassisSpeeds speeds = chassisSpeeds != null ? chassisSpeeds : new ChassisSpeeds();
+        double motionFactor = calculateMotionFactor(speeds);
         
         double xyMultiplier = 
             Math.pow(distanceFactor, distanceWeight) *
