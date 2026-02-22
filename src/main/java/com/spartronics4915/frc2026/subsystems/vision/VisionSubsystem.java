@@ -33,7 +33,13 @@ import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-
+/**
+ * Manages all vision cameras, processes AprilTag detections, fuses pose estimates
+ * across cameras, and submits measurements to the drivetrain pose estimator.
+ *
+ * <p>Each camera runs its own {@link Notifier} thread via {@link ProcessorInterface}.
+ * Results are collected, filtered, fused, and consumed in {@link #periodic()}.
+ */
 public class VisionSubsystem extends SubsystemBase {
 
     private final Map<String, ProcessorInterface> cameras;
