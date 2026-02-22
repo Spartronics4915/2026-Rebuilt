@@ -139,10 +139,11 @@ public class PoseFusionEngine {
     }
     
     /**
-     * Calculate simple unweighted mean of poses.
-     * 
-     * @param results
-     * @return mean pose
+     * Calculates the unweighted mean of a list of poses. Rotation is averaged
+     * using the circular mean to avoid wrap-around errors near ±π.
+     *
+     * @param results The poses to average — must not be empty
+     * @return The mean pose
      */
     private Pose2d calculateMeanPose(List<ApriltagResult> results) {
         double sumX = 0;
