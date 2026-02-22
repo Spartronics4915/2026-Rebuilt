@@ -161,12 +161,12 @@ public class Superstructure extends SubsystemBase {
 
         SmartDashboard.putData("Auto-Aim Toggle", Commands.runOnce(() -> isAutoAiming = !isAutoAiming));
 
-        SmartDashboard.putData("Traversal", transToTraversal());
-        SmartDashboard.putData("Cruise", transToCruise());
-        SmartDashboard.putData("Shooting", transToShooting());
-        SmartDashboard.putData("Climb", transToClimb());
-        SmartDashboard.putData("Idle", transToIdle());
-        SmartDashboard.putData("Stowed", transToStowed());
+        SmartDashboard.putData("Traversal", Commands.deferredProxy(this::transToTraversal));
+        SmartDashboard.putData("Cruise", Commands.deferredProxy(this::transToCruise));
+        SmartDashboard.putData("Shooting", Commands.deferredProxy(this::transToShooting));
+        SmartDashboard.putData("Climb", Commands.deferredProxy(this::transToClimb));
+        SmartDashboard.putData("Idle", Commands.deferredProxy(this::transToIdle));
+        SmartDashboard.putData("Stowed", Commands.deferredProxy(this::transToStowed));
     }
 
     private enum RobotState {
@@ -217,7 +217,7 @@ public class Superstructure extends SubsystemBase {
             previousZone = currentZone;
         }
         
-        if (!stateOverride) {
+        if (stateOverride != true) {
             Command command = null;
             switch (currentZone) {
                 case ALLIANCE_ZONE:
