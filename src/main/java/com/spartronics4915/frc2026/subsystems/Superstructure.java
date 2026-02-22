@@ -152,6 +152,7 @@ public class Superstructure extends SubsystemBase {
         this.isAutoAiming = false;
 
         this.currentRobotState = RobotState.TESTING;
+        this.stateOverride = true;
 
         NetworkTableInstance.getDefault()
             .getStructTopic("target", Translation3d.struct)
@@ -217,51 +218,56 @@ public class Superstructure extends SubsystemBase {
         }
         
         if (stateOverride != true) {
-            Command command;
+            Command command = Commands.none();
             switch (currentZone) {
                 case ALLIANCE_ZONE:
-                    if (currentRobotState == RobotState.SHOOTING) return;
-                    command = switchState(RobotState.SHOOTING);
+                    if (currentRobotState != RobotState.SHOOTING) {
+                        command = switchState(RobotState.SHOOTING);
+                    }
                     break;
 
                 case TRENCH:
                     hood.setClamp(HoodClamp.RESTRICTED);
-                    if (currentRobotState == RobotState.TRAVERSAL) return;
-                    command = switchState(RobotState.TRAVERSAL);
+                    if (currentRobotState != RobotState.TRAVERSAL) {
+                        command = switchState(RobotState.TRAVERSAL);
+                    }
                     break;
 
                 case BUMP:
-                    if (currentRobotState == RobotState.CRUISE) return;
-                    command = switchState(RobotState.CRUISE);
+                    if (currentRobotState != RobotState.CRUISE) {
+                        command = switchState(RobotState.CRUISE);
+                    }
                     break;
 
                 case NEUTRAL_ZONE:
-                    if (currentRobotState == RobotState.TRAVERSAL) return;
-                    command = switchState(RobotState.TRAVERSAL);
+                    if (currentRobotState != RobotState.TRAVERSAL) {
+                        command = switchState(RobotState.TRAVERSAL);
+                    }
                     break;
 
                 case OPPONENT_ZONE:
-                    if (currentRobotState == RobotState.CRUISE) return;
-                    command = switchState(RobotState.CRUISE);
-                    break;
-
-                default:
-                    command = Commands.none();
+                    if (currentRobotState != RobotState.CRUISE) {
+                        command = switchState(RobotState.CRUISE);
+                    }
                     break;
             }
             CommandScheduler.getInstance().schedule(command);
         }
 
-        if (isAutoAiming) result = autoAim.calculateDynamicAim(
-            swerve.getRelativePose(), 
-            swerve.getFieldVelocity(), 
-            new Translation3d(
-                hubPose.getX(), 
-                hubPose.getY(), 
-                Units.inchesToMeters(72)
-            ), 
-            InchesPerSecond.of(shooter.getCurrentRPS() * Math.PI * 1.92).in(MetersPerSecond)
-        ); else result = null;
+        if (isAutoAiming) {
+            result = autoAim.calculateDynamicAim(
+                swerve.getRelativePose(), 
+                swerve.getFieldVelocity(), 
+                new Translation3d(
+                    hubPose.getX(), 
+                    hubPose.getY(), 
+                    Units.inchesToMeters(72)
+                ), 
+                InchesPerSecond.of(shooter.getCurrentRPS() * Math.PI * 1.92).in(MetersPerSecond)
+            );
+        } else {
+            result = null;
+        } 
 
         if (result != null) {
             if (result.ToF() != -1) hood.setSetpoint(Rotation2d.kCCW_Pi_2.minus(result.pitch()));
