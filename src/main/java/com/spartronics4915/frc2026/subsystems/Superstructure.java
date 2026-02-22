@@ -1,6 +1,7 @@
 package com.spartronics4915.frc2026.subsystems;
 
 import static com.spartronics4915.frc2026.Constants.SuperstructureConstants.*;
+import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.*;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.hubPose;
 
 import com.spartronics4915.frc2026.Robot;
@@ -36,6 +37,7 @@ import edu.wpi.first.networktables.StructArrayPublisher;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.InchesPerSecond;
+import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 
 import java.util.Optional;
@@ -196,6 +198,10 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
+        currentZone = getCurrentZone(swerve.getRelativePose().getTranslation().plus(
+            TURRET_TRANSLATION.rotateBy(swerve.getPose().getRotation())
+        ));
+
         if (isAutoAiming) result = autoAim.calculateDynamicAim(
             swerve.getRelativePose(), 
             swerve.getFieldVelocity(), 
@@ -238,10 +244,6 @@ public class Superstructure extends SubsystemBase {
             }
         }
 
-        //currentZone = getCurrentZone(swerve.getRelativePose().getTranslation().plus(
-        //    TURRET_TRANSLATION.rotateBy(swerve.getPose().getRotation())
-        //));
-
         //if (currentZone != previousZone) {
         //    stateOverride = false;
         //    previousZone = currentZone;
@@ -278,7 +280,7 @@ public class Superstructure extends SubsystemBase {
         //} 
 
         //currentStatePublisher.accept(currentRobotState.name());
-        //currentZonePublisher.accept(currentZone.name());
+        currentZonePublisher.accept(currentZone.name());
         //previousZonePublisher.accept(previousZone.name());
 
         isAutoAimingPublisher.accept(isAutoAiming);
@@ -331,6 +333,27 @@ public class Superstructure extends SubsystemBase {
                 break;
         }
         currentRobotState = desiredState;
+    }
+
+    private Zone getCurrentZone(Translation2d position) {
+        // Checks which zone it is vertically (trench or bump), it considers the hub to be part of the bump
+        boolean trenchZone = Math.abs(position.minus(hubPose).getY()) > bumpTrenchDivTransform.getY();
+
+        // Mirror across center to get the red hub if required
+        boolean closeHub = position.minus(centerPose).getX() < 0;
+        Translation2d closestHub = closeHub ? hubPose : centerPose.minus(hubPose).times(2).plus(hubPose);
+
+        double hubDist = position.minus(closestHub).getX();
+        if (Math.abs(hubDist) < (trenchZone ? trenchLength : bumpLength).in(Meters) / 2) {
+            return trenchZone ? Zone.TRENCH : Zone.BUMP;
+        }
+
+        // Past the first bump/trench before the second bump/trench
+        if (closeHub ? hubDist > 0 : hubDist < 0) {
+            return Zone.NEUTRAL_ZONE;
+        } else {
+            return closeHub ? Zone.ALLIANCE_ZONE : Zone.OPPONENT_ZONE;
+        }
     }
 
     //#region State Transitions

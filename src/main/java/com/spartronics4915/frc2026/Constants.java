@@ -316,6 +316,9 @@ public final class Constants {
         public static final Rotation2d PIVOT_SAFE_THRESHOLD = Rotation2d.fromDegrees(0);
         public static final Rotation2d TURRET_MIN_SAFE_THRESHOLD = Rotation2d.fromDegrees(0);
         public static final Rotation2d TURRET_MAX_SAFE_THRESHOLD = Rotation2d.fromDegrees(0);
+
+        public static final Distance bumpLength = Inches.of(48.93);
+        public static final Distance trenchLength = Inches.of(30);
     }
 
     //#endregion
