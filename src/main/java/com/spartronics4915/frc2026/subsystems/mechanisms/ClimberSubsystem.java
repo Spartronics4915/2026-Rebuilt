@@ -60,7 +60,7 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
         SmartDashboard.putData("Climber Climb", setStateCommand(ClimberState.JORBIT));
         SmartDashboard.putData("Climber Down", setStateCommand(ClimberState.DOWN));
-        // SmartDashboard.putData("Climber Motor", motor);
+        SmartDashboard.putData("Climber Motor", motor);
     }
 
     //#region Main Functionality

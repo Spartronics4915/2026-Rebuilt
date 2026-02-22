@@ -70,7 +70,7 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
         SmartDashboard.putData("Pivot Ready", setStateCommand(PivotState.READY));
         SmartDashboard.putData("Pivot Safe", setStateCommand(PivotState.SAFE));
         SmartDashboard.putData("Pivot Stow", setStateCommand(PivotState.STOW));
-        // SmartDashboard.putData("Pivot Motor", motor);
+        SmartDashboard.putData("Pivot Motor", motor);
     }
 
     //#region Main Functionality

@@ -53,7 +53,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
         
         SmartDashboard.putData("Indexer On", setStateCommand(IndexerState.ON));
         SmartDashboard.putData("Indexer Off", setStateCommand(IndexerState.OFF));
-        // SmartDashboard.putData("Indexer Motor", motor);
+        SmartDashboard.putData("Indexer Motor", motor);
     }
 
     @Override

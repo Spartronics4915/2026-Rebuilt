@@ -48,7 +48,7 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         SmartDashboard.putData("Feeder On", setStateCommand(FeederState.ON));
         SmartDashboard.putData("Feeder Off", setStateCommand(FeederState.OFF));
-        // SmartDashboard.putData("Feeder Motor", motor);
+        SmartDashboard.putData("Feeder Motor", motor);
     }
 
     @Override
