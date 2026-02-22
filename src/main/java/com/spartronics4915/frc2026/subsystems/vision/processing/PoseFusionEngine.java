@@ -31,7 +31,7 @@ public class PoseFusionEngine {
      * @param config Vision configuration with fusion settings
      * @return Fused result, best single result, or null if no valid measurements
      */
-    public Optional<ApriltagResult> fusePoses(List<ApriltagResult> apriltagResults, VisionConfiguration config) {
+    public static Optional<ApriltagResult> fusePoses(List<ApriltagResult> apriltagResults, VisionConfiguration config) {
         
         if (apriltagResults.size() == 1) {
             return Optional.of(apriltagResults.get(0));
@@ -66,7 +66,7 @@ public class PoseFusionEngine {
      * @param timestampThreshold Maximum time difference (seconds) to be in same group
      * @return List of groups, each containing results from the same timestamp
      */
-    private List<List<ApriltagResult>> groupByTimestamp(
+    private static List<List<ApriltagResult>> groupByTimestamp(
         List<ApriltagResult> results,
         double timestampThreshold
     ) {
@@ -111,7 +111,7 @@ public class PoseFusionEngine {
      * @param thresholdSigma How many standard deviations away to reject (typically 2-3)
      * @return Filtered results with outliers removed
      */
-    private List<ApriltagResult> rejectOutliers(
+    private static List<ApriltagResult> rejectOutliers(
         List<ApriltagResult> results,
         double thresholdSigma
     ) {
@@ -145,7 +145,7 @@ public class PoseFusionEngine {
      * @param results The poses to average — must not be empty
      * @return The mean pose
      */
-    private Pose2d calculateMeanPose(List<ApriltagResult> results) {
+    private static Pose2d calculateMeanPose(List<ApriltagResult> results) {
         double sumX = 0;
         double sumY = 0;
         double sumSin = 0;
@@ -178,7 +178,7 @@ public class PoseFusionEngine {
      * @param stdDevs Standard deviations for pose1's [x, y, theta] axes
      * @return Distance in units of standard deviations, or {@link Double#MAX_VALUE} if stdDevs is null
      */
-    private double calculateNormalizedDistance(
+    private static double calculateNormalizedDistance(
         Pose2d pose1,
         Pose2d pose2,
         Matrix<N3, N1> stdDevs
@@ -193,8 +193,6 @@ public class PoseFusionEngine {
             pose1.getRotation().getRadians() - pose2.getRotation().getRadians(),
             2 * Math.PI
         );
-
-        if(stdDevs == null) return Double.MAX_VALUE;
         
         double distX = Math.abs(dx) / Math.max(stdDevs.get(0, 0), 0.001);
         double distY = Math.abs(dy) / Math.max(stdDevs.get(1, 0), 0.001);
@@ -209,7 +207,7 @@ public class PoseFusionEngine {
      * @param results Filtered results to fuse
      * @return Single fused result
      */
-    private Optional<ApriltagResult> performWeightedFusion(List<ApriltagResult> results) {
+    private static Optional<ApriltagResult> performWeightedFusion(List<ApriltagResult> results) {
         double totalWeightX = 0;
         double totalWeightY = 0;
         double totalWeightTheta = 0;
@@ -344,7 +342,7 @@ public class PoseFusionEngine {
      * @param results Results to choose from
      * @return Result with lowest total uncertainty
      */
-    private Optional<ApriltagResult> selectBestResult(List<ApriltagResult> results) {
+    private static Optional<ApriltagResult> selectBestResult(List<ApriltagResult> results) {
         return results.stream()
             .min(Comparator.comparingDouble(r -> {
                 Matrix<N3, N1> std = r.getStdDevs();
@@ -352,4 +350,5 @@ public class PoseFusionEngine {
                 return std.get(0, 0) + std.get(1, 0) + std.get(2, 0);
             }));
     }
+    
 }

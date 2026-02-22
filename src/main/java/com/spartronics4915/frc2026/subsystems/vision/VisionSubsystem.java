@@ -41,7 +41,6 @@ public class VisionSubsystem extends SubsystemBase {
     private final boolean isSimulation;
     
     private final PipelineFilter aprilTagFilter;
-    private final PoseFusionEngine fusionEngine;
     private final VisionPoseConsumer poseConsumer;
     
     private final PerformanceTracker performanceTracker;
@@ -92,7 +91,6 @@ public class VisionSubsystem extends SubsystemBase {
             new ResultFilters.AreaFilter(config.minArea, config.maxArea)
         ));
         
-        this.fusionEngine = new PoseFusionEngine();
         this.performanceTracker = new PerformanceTracker(config.maxPeriodicTimeMs);
 
         isSimulation = Robot.isSimulation();
@@ -155,8 +153,8 @@ public class VisionSubsystem extends SubsystemBase {
         if (!apriltagResults.isEmpty()) {
             performanceTracker.startTiming("pose_fusion");
             
-            if (fusionEngine.fusePoses(apriltagResults, config).isEmpty()) return;
-            ApriltagResult fusedResult = fusionEngine.fusePoses(apriltagResults, config).get();
+            if (PoseFusionEngine.fusePoses(apriltagResults, config).isEmpty()) return;
+            ApriltagResult fusedResult = PoseFusionEngine.fusePoses(apriltagResults, config).get();
             
             if (swerve != null && swerve.isFlatDebounced()) {
                 poseConsumer.accept(
