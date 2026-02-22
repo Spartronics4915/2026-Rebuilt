@@ -254,6 +254,11 @@ public class VisionSubsystem extends SubsystemBase {
         return hasValidPose;
     }
 
+    /**
+     * Callback for submitting a vision pose estimate to the drivetrain's pose estimator.
+     * Accepts the estimated pose, the timestamp when the image was captured, and the
+     * measurement standard deviations representing confidence.
+     */
     @FunctionalInterface
     public interface VisionPoseConsumer {
         void accept(
