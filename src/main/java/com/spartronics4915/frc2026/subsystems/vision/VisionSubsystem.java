@@ -3,6 +3,7 @@ package com.spartronics4915.frc2026.subsystems.vision;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.photonvision.PhotonCamera;
 import org.photonvision.simulation.VisionSystemSim;
@@ -153,8 +154,9 @@ public class VisionSubsystem extends SubsystemBase {
         if (!apriltagResults.isEmpty()) {
             performanceTracker.startTiming("pose_fusion");
             
-            if (PoseFusionEngine.fusePoses(apriltagResults, config).isEmpty()) return;
-            ApriltagResult fusedResult = PoseFusionEngine.fusePoses(apriltagResults, config).get();
+            Optional<ApriltagResult> fusedResultOpt = PoseFusionEngine.fusePoses(apriltagResults, config);
+            if (fusedResultOpt.isEmpty()) return;
+            ApriltagResult fusedResult = fusedResultOpt.get();
             
             if (swerve != null && swerve.isFlatDebounced()) {
                 poseConsumer.accept(
