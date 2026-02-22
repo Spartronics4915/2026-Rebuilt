@@ -19,4 +19,5 @@ public interface FilterInterface {
     default FilterInterface negate() {
         return (result) -> !test(result);
     }
+    
 }

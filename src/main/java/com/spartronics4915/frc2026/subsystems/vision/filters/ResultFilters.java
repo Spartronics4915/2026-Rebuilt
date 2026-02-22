@@ -1,11 +1,13 @@
 package com.spartronics4915.frc2026.subsystems.vision.filters;
 
+import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
 import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
 
 public class ResultFilters {
 
     /**
-     * Filter for a result's latency
+     * A filter for the latency of an {@link ApriltagResult} 
+     * that will filter out results if they exceed a certain max latency.
      */
     public static class LatencyFilter implements FilterInterface {
         private final double maxLatencyMs;
@@ -21,7 +23,8 @@ public class ResultFilters {
     }
 
     /**
-     * Filter for a result's ambiguity
+     * A filter for the ambiguity of an {@link ApriltagResult} 
+     * that will filter out results if they exceed a certain max ambiguity.
      */
     public static class AmbiguityFilter implements FilterInterface {
         private final double maxAmbiguity;
@@ -38,7 +41,9 @@ public class ResultFilters {
     }   
 
     /**
-     * Filter for a result's average distance to its targets
+     * A filter for the distance of an {@link ApriltagResult} 
+     * that will filter out results if they exceed a certain max distance
+     * depending on if its single or multi tag.
      */
     public static class DistanceFilter implements FilterInterface {
         private final double maxSingleTagDistance;
@@ -56,6 +61,10 @@ public class ResultFilters {
         }
     }
 
+    /**
+     * A filter for the area (size in camera frame) of an {@link ApriltagResult} 
+     * that will filter out results if they exceed a certain max or min area.
+     */
     public static class AreaFilter implements FilterInterface {
         private final double minArea;
         private final double maxArea;
@@ -71,6 +80,10 @@ public class ResultFilters {
         }
     }
 
+    /**
+     * A filter for the x and y anisotropy of an {@link ApriltagResult} 
+     * that will filter out results if they exceed a certain max anisotropy.
+     */
     public static class AnisotropyFilter implements FilterInterface {
         private final double maxAnisotropy;
 

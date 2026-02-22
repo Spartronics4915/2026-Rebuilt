@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
 
 public class PipelineFilter {
+    
     private final List<FilterInterface> filters;
 
     public PipelineFilter(List<FilterInterface> filters) {
