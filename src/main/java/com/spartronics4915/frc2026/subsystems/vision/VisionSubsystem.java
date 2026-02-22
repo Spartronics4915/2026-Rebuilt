@@ -156,8 +156,6 @@ public class VisionSubsystem extends SubsystemBase {
         // Fuse poses from multiple cameras
         if (!apriltagResults.isEmpty()) {
             performanceTracker.startTiming("pose_fusion");
-
-            performanceTracker.startTiming("pose_fusion");
             try {
                 Optional<ApriltagResult> fusedResultOpt = PoseFusionEngine.fusePoses(apriltagResults, config);
                 if (fusedResultOpt.isPresent()) {
