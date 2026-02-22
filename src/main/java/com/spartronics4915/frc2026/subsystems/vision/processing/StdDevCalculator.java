@@ -9,8 +9,6 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 
 public class StdDevCalculator {
-    
-    public StdDevCalculator() {}
 
     /**
      * Calculates pose estimation standard deviations based on measurement quality factors.
