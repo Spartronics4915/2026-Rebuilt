@@ -2,6 +2,7 @@ package com.spartronics4915.frc2026.subsystems.vision.processing;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.photonvision.targeting.PhotonTrackedTarget;
 
@@ -203,7 +204,6 @@ public class PoseFusionEngine {
      * @return Single fused result
      */
     private ApriltagResult performWeightedFusion(List<ApriltagResult> results) {
-        
         double totalWeightX = 0;
         double totalWeightY = 0;
         double totalWeightTheta = 0;
@@ -212,49 +212,55 @@ public class PoseFusionEngine {
         double weightedY = 0;
         double weightedSin = 0;
         double weightedCos = 0;
+
+        List<ApriltagResult> validResults = results.stream()
+            .filter(r -> r.getStdDevs() != null)
+            .toList();
+
+        if (validResults.isEmpty()) return selectBestResult(results);
         
-        double avgTimestamp = results.stream()
+        double avgTimestamp = validResults.stream()
             .mapToDouble(ApriltagResult::getTimestampSeconds)
             .average()
             .orElse(0);
         
-        double avgLatency = results.stream()
+        double avgLatency = validResults.stream()
             .mapToDouble(ApriltagResult::getLatencyMs)
             .average()
             .orElse(0);
         
-        double avgDistance = results.stream()
+        double avgDistance = validResults.stream()
             .mapToDouble(ApriltagResult::getAverageDistanceToTargets)
             .average()
             .orElse(0);
         
-        double avgAmbiguity = results.stream()
+        double avgAmbiguity = validResults.stream()
             .mapToDouble(ApriltagResult::getAmbiguity)
             .average()
             .orElse(0);
         
-        double avgArea = results.stream()
+        double avgArea = validResults.stream()
             .mapToDouble(ApriltagResult::getAverageArea)
             .average()
             .orElse(0);
         
-        double avgXAnisotropy = results.stream()
+        double avgXAnisotropy = validResults.stream()
             .mapToDouble(ApriltagResult::getXAnisotropy)
             .average()
             .orElse(1.0);
         
-        double avgYAnisotropy = results.stream()
+        double avgYAnisotropy = validResults.stream()
             .mapToDouble(ApriltagResult::getYAnisotropy)
             .average()
             .orElse(1.0);
     
-        ChassisSpeeds chassisSpeeds = results.stream()
+        ChassisSpeeds chassisSpeeds = validResults.stream()
             .map(ApriltagResult::getChassisSpeeds)
             .filter(speeds -> speeds != null)
             .findFirst()
             .orElse(new ChassisSpeeds());
         
-        for (ApriltagResult result : results) {
+        for (ApriltagResult result : validResults) {
             Matrix<N3, N1> stdDevs = result.getStdDevs();
             Pose2d pose = result.getPose();
             
@@ -294,15 +300,20 @@ public class PoseFusionEngine {
         );
         
 
-        String fusedCameraName = "fused[" + results.stream()
+        String fusedCameraName = "fused[" + validResults.stream()
             .map(ApriltagResult::getSourceName)
             .reduce((s1, s2) -> s1 + "," + s2)
             .orElse("") + "]";
         
-        // Combine all targets from all cameras
-        List<PhotonTrackedTarget> allTargets = results.stream()
+        List<PhotonTrackedTarget> allTargets = validResults.stream()
             .flatMap(r -> r.getTargets().stream())
-            .distinct() // Remove duplicates if same tag seen by multiple cameras
+            .collect(Collectors.toMap(
+                PhotonTrackedTarget::getFiducialId,
+                t -> t,
+                (a, b) -> a
+            ))
+            .values()
+            .stream()
             .toList();
         
         return new ApriltagResult(
