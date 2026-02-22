@@ -205,9 +205,11 @@ public class Superstructure extends SubsystemBase {
         if (isAutoAiming) result = autoAim.calculateDynamicAim(
             swerve.getRelativePose(), 
             swerve.getFieldVelocity(), 
-            new Translation3d(hubPose.getX(), 
-            hubPose.getY(), 
-            Units.inchesToMeters(72)), 
+            new Translation3d(
+                hubPose.getX(), 
+                hubPose.getY(), 
+                Units.inchesToMeters(72)
+            ), 
             InchesPerSecond.of(shooter.getCurrentRPS() * Math.PI * 1.92).in(MetersPerSecond)
         ); else result = null;
 
@@ -215,7 +217,7 @@ public class Superstructure extends SubsystemBase {
             if (result.ToF() != -1) hood.setSetpoint(Rotation2d.kCCW_Pi_2.minus(result.pitch()));
             turret.setSetpoint(result.yaw().minus(swerve.getPose().getRotation()).minus(Rotation2d.kCCW_90deg));
 
-            if (Robot.isSimulation() && (Timer.getFPGATimestamp() - lastShotTime) > 0.1) {
+            if (Robot.isSimulation() && (Timer.getFPGATimestamp() - lastShotTime) > 0.1 && result.ToF() != -1) {
                 lastShotTime = Timer.getFPGATimestamp();
                 RebuiltFuelOnFly fuelOnFly = new RebuiltFuelOnFly(
                     swerve.getRobotPose().getTranslation(),
@@ -224,7 +226,7 @@ public class Superstructure extends SubsystemBase {
                     swerve.getFieldVelocity(),
                     result.yaw(),
                     Inches.of(21.443748 + 2.955),
-                    MetersPerSecond.of(10),
+                    InchesPerSecond.of(shooter.getCurrentRPS() * Math.PI * 1.92),
                     Degrees.of(result.pitch().getDegrees())
                 );
 
