@@ -52,17 +52,12 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
             motorConfig.apply(FEEDBACK_CONFIG);
             motorConfig.apply(MOTOR_OUTPUT_CONFIG);
 
-        MotorOutputConfigs motorOutputConfigs = new MotorOutputConfigs();
-            motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
-            motorConfig.apply(motorOutputConfigs);
-
         setMechanismPosition(getPosition());
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         motor.addProfile(trapProfile);
         motor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
 
-        SmartDashboard.putData("Climber Up", setStateCommand(ClimberState.UP));
         SmartDashboard.putData("Climber Climb", setStateCommand(ClimberState.JORBIT));
         SmartDashboard.putData("Climber Down", setStateCommand(ClimberState.DOWN));
         SmartDashboard.putData("Climber Motor", motor);
@@ -134,9 +129,8 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
     //#endregion
  
     public enum ClimberState {
-        DOWN(3.5),
-        JORBIT(1.0),
-        UP(0);
+        DOWN(0),
+        JORBIT(2.5);
 
         double position;
 
