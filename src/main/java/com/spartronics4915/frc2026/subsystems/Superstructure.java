@@ -97,7 +97,7 @@ public class Superstructure extends SubsystemBase {
     private final StringPublisher currentZonePublisher = superTable.getStringTopic("Current Zone").publish();
     private final StringPublisher previousZonePublisher = superTable.getStringTopic("Previous State").publish();
 
-    private final BooleanPublisher isAutoAimingPublisher = NetworkTableInstance.getDefault().getTable("Superstructure").getBooleanTopic("Is Auto Aiming").publish();
+    private final BooleanPublisher isAutoAimingPublisher = superTable.getBooleanTopic("Is Auto Aiming").publish();
     
     private final StructArrayPublisher<Pose3d> successfulShotPublisher = NetworkTableInstance.getDefault()
         .getStructArrayTopic("Flywheel/FuelProjectileSuccessfulShot", Pose3d.struct)
@@ -150,6 +150,8 @@ public class Superstructure extends SubsystemBase {
         this.previousZone = currentZone;
 
         this.isAutoAiming = false;
+
+        this.currentRobotState = RobotState.TESTING;
 
         NetworkTableInstance.getDefault()
             .getStructTopic("target", Translation3d.struct)
@@ -294,16 +296,16 @@ public class Superstructure extends SubsystemBase {
             }
         }
 
-        //currentStatePublisher.accept(currentRobotState.name());
+        currentStatePublisher.accept(currentRobotState.name());
         currentZonePublisher.accept(currentZone.name());
-        //previousZonePublisher.accept(previousZone.name());
+        previousZonePublisher.accept(previousZone.name());
 
         isAutoAimingPublisher.accept(isAutoAiming);
     }
 
     public void setStateOverride(RobotState overrideState) {
         stateOverride = true;
-        switchState(overrideState);
+        CommandScheduler.getInstance().schedule(switchState(overrideState));
     }
 
     private Command setPipelineState(PipelineState state) {
