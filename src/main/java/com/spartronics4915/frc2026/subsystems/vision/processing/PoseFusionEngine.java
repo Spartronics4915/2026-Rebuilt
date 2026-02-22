@@ -124,7 +124,7 @@ public class PoseFusionEngine {
         List<ApriltagResult> filtered = new ArrayList<>();
         
         for (ApriltagResult result : results) {
-            double distance = calculateMahalanobisDistance(
+            double distance = calculateNormalizedDistance(
                 result.getPose(),
                 meanPose,
                 result.getStdDevs()
@@ -167,15 +167,17 @@ public class PoseFusionEngine {
     }
     
     /**
-     * Calculate Mahalanobis distance between two poses.
-     * This is like Euclidean distance but cooler
-     * 
-     * @param pose1 First pose
-     * @param pose2 Second pose
-     * @param stdDevs Standard deviations for pose1
-     * @return Normalized distance in units of standard deviations
+     * Calculates the normalized distance between two poses, where each axis is
+     * scaled by its corresponding standard deviation. This is a diagonal approximation
+     * of true Mahalanobis distance — it does not account for cross-axis correlations,
+     * but is sufficient for independent x/y/theta estimates.
+     *
+     * @param pose1 The pose to measure from
+     * @param pose2 The reference pose (typically the group mean)
+     * @param stdDevs Standard deviations for pose1's [x, y, theta] axes
+     * @return Distance in units of standard deviations, or {@link Double#MAX_VALUE} if stdDevs is null
      */
-    private double calculateMahalanobisDistance(
+    private double calculateNormalizedDistance(
         Pose2d pose1,
         Pose2d pose2,
         Matrix<N3, N1> stdDevs
