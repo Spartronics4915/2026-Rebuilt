@@ -69,9 +69,7 @@ public final class Constants {
         public static final double MAX_SPEED = 6;
         public static final AngularVelocity MAX_ANGULAR_SPEED = RadiansPerSecond.of(8);
 
-        public static Rotation2d TELEOP_HEADING_OFFSET = Rotation2d.fromDegrees(0.0);
-
-        public static boolean IS_FIELD_RELATIVE = true;
+        public static final boolean DEFAULT_IS_FIELD_RELATIVE = true;
 
         public static final double STICK_DEADBAND = 0.05;
         public static final double TILT_THRESHOLD_DEGREES = 1.0;
@@ -110,6 +108,8 @@ public final class Constants {
                 AutoConstants.alignRotationPID
             );
 
+            public static final double defaultOutpostWaitTime = 3.0;
+
             public static final Time endTriggerDebounce = Seconds.of(0.04);
             public static final Rotation2d rotationTolerance = Rotation2d.fromDegrees(3.0);
             public static final Distance positionTolerance = Centimeter.of(1.5);
@@ -120,11 +120,17 @@ public final class Constants {
             public static final Translation2d hubPose = new Translation2d(4.625, 4.035);
             public static final Translation2d outpostPose = new Translation2d(0.0, 0.666);
             public static final Translation2d depotPose = new Translation2d(0.0, 5.964);
+            public static final Translation2d fuelZoneXAxisPose = new Translation2d(7.512, 4.035);
+
             public static final Translation2d towerTransform = new Translation2d(0.0, 0.445);
             public static final Translation2d trenchTransform = new Translation2d(0, -3.4);
             public static final Translation2d bumpTransform = new Translation2d(0, -1.523);
+            public static final Translation2d bumpTrenchDivTransform = new Translation2d(0, 2.604);
             public static final Translation2d approachTransform = new Translation2d(-1.1, 0);
             public static final Translation2d exitTransform = new Translation2d(centerPose.getX() - hubPose.getX(), 0);
+            public static final Translation2d startOfFuelTransform = new Translation2d(0.0, 1.889);
+            public static final Translation2d endQuadrantTransform = new Translation2d(0.0, 0.708);
+            public static final Translation2d endOfFuelTransform = new Translation2d(0.0, -1.685);
 
             public static final Distance robotLength = Inches.of(30);
             public static final Distance robotWidth = Inches.of(30);
@@ -154,6 +160,8 @@ public final class Constants {
 
             public static final Rotation2d trenchApproachAngle = Rotation2d.fromDegrees(0.0);
             public static final Rotation2d bumpApproachAngle = Rotation2d.fromDegrees(45.0);
+            public static final Rotation2d startOfFuelAngle = Rotation2d.fromDegrees(299); //This guy might need to be changed
+            public static final Rotation2d endOfQuadrantAngle = Rotation2d.fromDegrees(-90.0);
 
             public enum PathplannerConfigs {
                 TEST_CHASSIS(new RobotConfig(

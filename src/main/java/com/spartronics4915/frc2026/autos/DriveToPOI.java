@@ -4,6 +4,7 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstant
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Seconds;
 
+import java.util.EnumSet;
 import java.util.Set;
 
 import com.spartronics4915.frc2026.commands.PositionPIDCommand;
@@ -12,15 +13,29 @@ import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableEvent;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.ScheduleCommand;
 
 public class DriveToPOI {
     private final SwerveSubsystem swerve;
+    private double outpostWaitTime;
     
     public DriveToPOI(SwerveSubsystem swerve) {
         this.swerve = swerve;
+
+        outpostWaitTime = SmartDashboard.getNumber("Auto Chooser/Outpost Wait Time", defaultOutpostWaitTime);
+
+        SmartDashboard.putNumber("Auto Chooser/Outpost Wait Time", outpostWaitTime);
+
+        NetworkTable table = NetworkTableInstance.getDefault().getTable("SmartDashboard/Auto Chooser");
+        table.addListener("Outpost Wait Time", EnumSet.of(NetworkTableEvent.Kind.kValueAll), (filler, key, event) -> {
+            outpostWaitTime = event.valueData.value.getDouble();
+        });
     }
 
     public enum POI {
@@ -113,7 +128,7 @@ public class DriveToPOI {
                         ),
                         Rotation2d.fromDegrees(90.0),
                         Rotation2d.fromDegrees(180.0)
-                    );
+                    ).andThen(Commands.waitSeconds(outpostWaitTime));
                 }
                 default: {
                     return Commands.runOnce(() -> {

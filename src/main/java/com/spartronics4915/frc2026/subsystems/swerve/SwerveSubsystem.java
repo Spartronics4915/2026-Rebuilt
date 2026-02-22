@@ -10,6 +10,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.trajectory.PathPlannerTrajectoryState;
 import com.pathplanner.lib.util.FlippingUtil;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
+import com.spartronics4915.frc2026.util.BumpSim;
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.util.TimeVarianceAuthority;
 
@@ -19,6 +20,7 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstant
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -48,14 +50,20 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 public class SwerveSubsystem extends SubsystemBase {
     public final SwerveDrive swerveDrive;
     public static Pose2d pose;
+    public static Pose3d pose3d;
     public static double movementOverride = 0.0;
+    public static boolean isFieldRelative = DEFAULT_IS_FIELD_RELATIVE;
+    public static Rotation2d teleopHeadingOffset = Rotation2d.fromDegrees(0.0);
     private final File directory;
+    
+    private final BumpSim bumpSim;
 
     public static boolean isRightAlliance;
 
     private TrapezoidProfile.State yState = new TrapezoidProfile.State();
     private boolean wasOverriding = false;    
     StructPublisher<Pose2d> posePublisher = NetworkTableInstance.getDefault().getStructTopic("Pose", Pose2d.struct).publish();
+    StructPublisher<Pose3d> pose3dPublisher = NetworkTableInstance.getDefault().getStructTopic("Pose3d", Pose3d.struct).publish();
 
     public SwerveSubsystem(SwerveConfigurations config) {
         this.directory = new File(Filesystem.getDeployDirectory(), config.directory);
@@ -80,6 +88,12 @@ public class SwerveSubsystem extends SubsystemBase {
             this::shouldFlip,
             this
         );
+
+        if (Robot.isSimulation()) {
+            bumpSim = new BumpSim(swerveDrive.getSwerveModulePoses(new Pose2d()), 20, 0.1);
+        } else {
+            bumpSim = null;
+        }
     }
 
     public boolean shouldFlip() {
@@ -116,7 +130,20 @@ public class SwerveSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        posePublisher.accept(getPose());
+        Pose2d pose = getPose();
+
+        posePublisher.accept(pose);
+
+        if (Robot.isSimulation()) {
+            Pose3d resolvedPose = bumpSim.resolveRobotPose(pose);
+            if (resolvedPose != null) {
+                pose3d = resolvedPose;
+            }
+        } else {
+            pose3d = new Pose3d(pose.getX(), pose.getY(), 0, getHeading().rotation);
+        }
+
+        pose3dPublisher.accept(pose3d);
     }
 
     public void drive(ChassisSpeeds chassisSpeeds) {
@@ -127,8 +154,20 @@ public class SwerveSubsystem extends SubsystemBase {
         return swerveDrive.getFieldVelocity();
     }
 
+    public Rotation3d getGyroRotation3d() {
+        if (Robot.isSimulation()) {
+            return pose3d.getRotation();
+        }
+
+        return new Rotation3d(
+            swerveDrive.getRoll().getRadians(),
+            swerveDrive.getPitch().getRadians(),
+            getPose().getRotation().getRadians()
+        );
+    }
+
     public RobotHeading getHeading() {
-        return new RobotHeading(swerveDrive.getGyroRotation3d(), Timer.getFPGATimestamp());
+        return new RobotHeading(getGyroRotation3d(), Timer.getFPGATimestamp());
     }
 
     public Pose2d getPose() {
@@ -178,8 +217,8 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public boolean isFlat() {
-        return Math.abs(swerveDrive.getPitch().getDegrees()) < TILT_THRESHOLD_DEGREES
-            && Math.abs(swerveDrive.getRoll().getDegrees()) < TILT_THRESHOLD_DEGREES;
+        return Math.abs(Rotation2d.fromRadians(getGyroRotation3d().getY()).getDegrees()) < TILT_THRESHOLD_DEGREES
+            && Math.abs(Rotation2d.fromRadians(getGyroRotation3d().getX()).getDegrees()) < TILT_THRESHOLD_DEGREES;
     }
 
     Trigger flatTrigger = new Trigger(this::isFlat).debounce(TILT_DEBOUNCE);
@@ -223,7 +262,7 @@ public class SwerveSubsystem extends SubsystemBase {
             double joyOmega = applyResponseCurve(MathUtil.applyDeadband(driverController.getRightX() * -1.0, STICK_DEADBAND)) * MAX_ANGULAR_SPEED.in(RadiansPerSecond);
 
             // Determine joystick components in field space
-            ChassisSpeeds fieldJoy = ChassisSpeeds.fromRobotRelativeSpeeds(joyVX, joyVY, 0, isFieldRelative.getAsBoolean() ? TELEOP_HEADING_OFFSET : currentPose.getRotation());
+            ChassisSpeeds fieldJoy = ChassisSpeeds.fromRobotRelativeSpeeds(joyVX, joyVY, 0, isFieldRelative.getAsBoolean() ? teleopHeadingOffset : currentPose.getRotation());
             double fieldVX = fieldJoy.vxMetersPerSecond;
             double fieldVY = fieldJoy.vyMetersPerSecond;
 
@@ -268,7 +307,7 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public static Supplier<ChassisSpeeds> computeVelocitiesFromController(XboxController driverController, SwerveSubsystem swerve) {
-        return computeVelocitiesFromController(driverController, () -> IS_FIELD_RELATIVE, swerve);
+        return computeVelocitiesFromController(driverController, () -> isFieldRelative, swerve);
     }
 
     public static Supplier<ChassisSpeeds> getSwerveTeleopCSSupplier(XboxController driverController, SwerveSubsystem swerve){
