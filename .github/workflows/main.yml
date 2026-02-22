@@ -48,7 +48,7 @@ jobs:
                   echo "Starting build..."
                   echo "--- Build run: $(date -u) ---" > build.log
                   rc=0
-                  ./gradlew build --no-daemon 2>&1 | tee -a build.log || rc=$?
+                  ./gradlew build 2>&1 | tee -a build.log || rc=$?
                   echo $rc > build_exit_code
                   if [ "$rc" -ne 0 ]; then
                       echo "BUILD_FAILED=true" >> "$GITHUB_ENV"
@@ -92,14 +92,14 @@ jobs:
               continue-on-error: true
               run: |
                   set -o pipefail
-                  echo "Starting simulation for 15s (smoke test)..."
+                  echo "Starting simulation for 30s (smoke test)..."
                   # Ensure gradlew is executable (harmless if already set)
                   chmod +x gradlew || true
                   # Capture stdout+stderr to a log file for later inspection
                   echo "--- Simulation run: $(date -u) ---" > simulate.log
                   
                   rc=0
-                  timeout 15s ./gradlew simulateJava --no-daemon 2>&1 | tee -a simulate.log || rc=$?
+                  timeout 30s ./gradlew simulateJava 2>&1 | tee -a simulate.log || rc=$?
                   
                   # Detect if "The robot program quit unexpectedly" exists in log
                   # (indicates a crash even if Gradle returned 0)
@@ -114,7 +114,7 @@ jobs:
                       echo "Simulation completed successfully (rc=$rc)."
                       exit 0
                   elif [ "$rc" -eq 124 ]; then
-                      echo "Simulation timed out after 15s (rc=$rc)."
+                      echo "Simulation timed out after 30s (rc=$rc)."
                       exit 0
                   else
                       echo "Simulation crashed or failed early (rc=$rc). See simulate.log for details."
