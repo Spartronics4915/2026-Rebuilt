@@ -51,6 +51,15 @@ import swervelib.simulation.ironmaple.simulation.SimulatedArena;
 import swervelib.simulation.ironmaple.simulation.seasonspecific.rebuilt2026.RebuiltFuelOnFly;
 import swervelib.simulation.ironmaple.utils.FieldMirroringUtils;
 
+/**
+ * Coordinates all robot mechanisms (hood, turret, feeder, indexer, shooter,
+ * climber, intake, pivot) through a zone-based state machine.
+ *
+ * <p>Manages automatic state transitions based on field position, dynamic
+ * auto-aim calculations via {@link AutoAim}, and simulation projectile
+ * visualization. State transitions are driven by {@link Zone} changes or
+ * explicit overrides via {@link #setStateOverride}.
+ */
 public class Superstructure extends SubsystemBase {
 
     // Head mechanisms
@@ -70,7 +79,7 @@ public class Superstructure extends SubsystemBase {
     // Swerve
     private final SwerveSubsystem swerve;
 
-    // Bla bla bla bla 
+    // State machine tracking
     private RobotState currentRobotState;
     private Zone currentZone;
     private Zone previousZone;
