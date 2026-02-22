@@ -102,8 +102,9 @@ deployArtifact.jarTask = jar
 wpi.java.configureExecutableTasks(jar)
 wpi.java.configureTestTasks(test)
 
-// Configure string concat to always inline compile
+// Configure string concat to always inline compile and enforce UTF-8
 tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
     options.compilerArgs.add '-XDstringConcat=inline'
 }
 
