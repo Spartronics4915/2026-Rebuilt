@@ -59,7 +59,7 @@ public class StdDevCalculator {
     }
     
     private double calculateDistanceFactor(double distance) {
-        double normalized = distance / 2.0;
+        double normalized = Math.max(distance, 0.1) / 2.0;
         double factor = normalized * normalized;
         
         return Math.min(factor, 10.0);
