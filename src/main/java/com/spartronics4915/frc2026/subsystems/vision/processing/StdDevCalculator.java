@@ -58,6 +58,11 @@ public class StdDevCalculator {
             Math.pow(latencyFactor, latencyWeight) *
             tagCountFactor;
         
+        /* 
+         * Theta is less sensitive to distance (0.7x) and tag area (0.5x)
+         * but more sensitive to anisotropy (1.3x) and motion blur (1.5x)
+         * since rotation errors compound with both viewing angle and motion
+         */
         double thetaMultiplier = 
             Math.pow(distanceFactor, distanceWeight * 0.7) *
             Math.pow(ambiguityFactor, ambiguityWeight) *
