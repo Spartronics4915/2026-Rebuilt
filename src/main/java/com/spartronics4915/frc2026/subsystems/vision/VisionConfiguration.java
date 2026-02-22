@@ -18,7 +18,6 @@ public class VisionConfiguration {
     public final double fusionTimestampThreshold;
     public final int minCamerasForFusion;
     public final double fusionOutlierThresholdSigma;
-    public final VisionState startingState;
 
     public VisionConfiguration() {
         this(
@@ -37,8 +36,7 @@ public class VisionConfiguration {
             true,
             0.02,
             2,   
-            3.0,
-            VisionState.GLOBAL
+            3.0
         );
     }
 
@@ -58,8 +56,7 @@ public class VisionConfiguration {
         boolean enablePoseFusion,
         double fusionTimestampThreshold,
         int minCamerasForFusion,
-        double fusionOutlierThresholdSigma,
-        VisionState startState
+        double fusionOutlierThresholdSigma
     ) {
         this.maxLatencyMs = maxLatencyMs;
         this.maxSingleTagDistanceMeters = maxSingleTagDistanceMeters;
@@ -77,11 +74,6 @@ public class VisionConfiguration {
         this.fusionTimestampThreshold = fusionTimestampThreshold;
         this.minCamerasForFusion = minCamerasForFusion;
         this.fusionOutlierThresholdSigma = fusionOutlierThresholdSigma;
-        this.startingState = startState;
-    }
-
-    public enum VisionState {
-        GLOBAL, LOCAL, IDLE
     }
 
 }
