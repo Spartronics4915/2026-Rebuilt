@@ -66,9 +66,8 @@ public class VisionSubsystem extends SubsystemBase {
     // True if the most recent periodic loop produced a valid pose
     private boolean hasValidPose;
 
-    // Cached NetworkTable references to avoid repeated map lookups each loop
-    private static final NetworkTableInstance networkTable = NetworkTableInstance.getDefault();
-    private static final NetworkTable visionTable = networkTable.getTable("vision");
+    // Cached NetworkTable reference to avoid repeated map lookups each loop
+    private static final NetworkTable visionTable = NetworkTableInstance.getDefault().getTable("vision");
 
     // -- Vision Poses --
     private final StructPublisher<Pose2d> posePublisher = visionTable.getStructTopic("Vision Pose", Pose2d.struct).publish();
