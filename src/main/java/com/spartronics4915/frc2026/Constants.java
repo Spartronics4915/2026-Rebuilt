@@ -11,6 +11,7 @@ import static edu.wpi.first.units.Units.InchesPerSecond;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Meter;
 import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.Millimeters;
 import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
@@ -132,9 +133,9 @@ public final class Constants {
             public static final Translation2d endQuadrantTransform = new Translation2d(0.0, 0.708);
             public static final Translation2d endOfFuelTransform = new Translation2d(0.0, -1.685);
 
-            public static final Distance robotLength = Inches.of(30);
-            public static final Distance robotWidth = Inches.of(30);
-            public static final Distance intakeLength = Inches.of(6);
+            public static final Distance robotLength = Millimeters.of(818.5);
+            public static final Distance robotWidth = Millimeters.of(875.65);
+            public static final Distance intakeLength = Millimeters.of(472.4093);
             public static final Distance towerPadding = Inches.of(10);
 
             public static final PathConstraints defaultPathConstraints = new PathConstraints(
