@@ -208,18 +208,13 @@ public class VisionSubsystem extends SubsystemBase {
                 }
             } finally {
                 performanceTracker.stopTiming();
+                performanceTracker.publishMetrics();
             }
         }
         
         if (isSimulation) {
             visionSystemSim.update(swerve.getRobotPose());
         }
-        
-        // Stop periodic_total timing
-        performanceTracker.stopTiming();
-        
-        // Publish performance metrics
-        performanceTracker.publishMetrics();
     }
 
     public boolean hasValidPose() {
