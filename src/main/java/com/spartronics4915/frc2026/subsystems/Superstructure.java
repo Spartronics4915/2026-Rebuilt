@@ -260,7 +260,7 @@ public class Superstructure extends SubsystemBase {
         if (isAutoAiming) {
             result = autoAim.calculateDynamicAim(
                 swerve.getRelativePose(), 
-                swerve.getFieldVelocity(), 
+                swerve.getRelativeFieldVelocity(), 
                 new Translation3d(
                     hubPose.getX(), 
                     hubPose.getY(), 

@@ -112,6 +112,19 @@ public class SwerveSubsystem extends SubsystemBase {
         }
     }
 
+    public ChassisSpeeds getRelativeFieldVelocity() {
+        ChassisSpeeds fieldVelocity = getFieldVelocity();
+        if (shouldFlip()) {
+            return new ChassisSpeeds(
+                -fieldVelocity.vxMetersPerSecond,
+                -fieldVelocity.vyMetersPerSecond,
+                fieldVelocity.omegaRadiansPerSecond
+            );
+        } else {
+            return fieldVelocity;
+        }
+    }
+
     public RobotHeading getRelativeHeading() {
         RobotHeading heading = getHeading();
         if (shouldFlip()) {
