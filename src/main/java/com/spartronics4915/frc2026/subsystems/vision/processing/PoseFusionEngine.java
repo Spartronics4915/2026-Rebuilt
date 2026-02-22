@@ -1,7 +1,9 @@
 package com.spartronics4915.frc2026.subsystems.vision.processing;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.photonvision.targeting.PhotonTrackedTarget;
@@ -29,10 +31,10 @@ public class PoseFusionEngine {
      * @param config Vision configuration with fusion settings
      * @return Fused result, best single result, or null if no valid measurements
      */
-    public ApriltagResult fusePoses(List<ApriltagResult> apriltagResults, VisionConfiguration config) {
+    public Optional<ApriltagResult> fusePoses(List<ApriltagResult> apriltagResults, VisionConfiguration config) {
         
         if (apriltagResults.size() == 1) {
-            return apriltagResults.get(0);
+            return Optional.of(apriltagResults.get(0));
         }
         
         if (!config.enablePoseFusion || apriltagResults.size() < config.minCamerasForFusion) {
@@ -203,7 +205,7 @@ public class PoseFusionEngine {
      * @param results Filtered results to fuse
      * @return Single fused result
      */
-    private ApriltagResult performWeightedFusion(List<ApriltagResult> results) {
+    private Optional<ApriltagResult> performWeightedFusion(List<ApriltagResult> results) {
         double totalWeightX = 0;
         double totalWeightY = 0;
         double totalWeightTheta = 0;
@@ -316,19 +318,21 @@ public class PoseFusionEngine {
             .stream()
             .toList();
         
-        return new ApriltagResult(
-            fusedCameraName,
-            avgTimestamp,
-            avgLatency,
-            fusedPose,
-            fusedStdDevs,
-            allTargets,
-            avgDistance,
-            avgAmbiguity,
-            avgArea,
-            avgXAnisotropy,
-            avgYAnisotropy,
-            chassisSpeeds
+        return Optional.of(
+            new ApriltagResult(
+                fusedCameraName,
+                avgTimestamp,
+                avgLatency,
+                fusedPose,
+                fusedStdDevs,
+                allTargets,
+                avgDistance,
+                avgAmbiguity,
+                avgArea,
+                avgXAnisotropy,
+                avgYAnisotropy,
+                chassisSpeeds
+            )
         );
     }
     
@@ -338,16 +342,12 @@ public class PoseFusionEngine {
      * @param results Results to choose from
      * @return Result with lowest total uncertainty
      */
-    private ApriltagResult selectBestResult(List<ApriltagResult> results) {
+    private Optional<ApriltagResult> selectBestResult(List<ApriltagResult> results) {
         return results.stream()
-            .min((r1, r2) -> {
-                Matrix<N3, N1> std1 = r1.getStdDevs();
-                Matrix<N3, N1> std2 = r2.getStdDevs();
-                
-                double sum1 = std1.get(0, 0) + std1.get(1, 0) + std1.get(2, 0);
-                double sum2 = std2.get(0, 0) + std2.get(1, 0) + std2.get(2, 0);
-                
-                return Double.compare(sum1, sum2);
-            }).orElse(null);
+            .min(Comparator.comparingDouble(r -> {
+                Matrix<N3, N1> std = r.getStdDevs();
+                if (std == null) return Double.MAX_VALUE;
+                return std.get(0, 0) + std.get(1, 0) + std.get(2, 0);
+            }));
     }
 }
