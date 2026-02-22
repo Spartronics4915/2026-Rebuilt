@@ -35,6 +35,7 @@ import edu.wpi.first.networktables.StructArrayPublisher;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.InchesPerSecond;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 
 import java.util.Optional;
@@ -192,12 +193,12 @@ public class Superstructure extends SubsystemBase {
             new Translation3d(hubPose.getX(), 
             hubPose.getY(), 
             Units.inchesToMeters(72)), 
-            (Math.PI * 0.04826 * shooter.getCurrentRPS()) / 2
+            InchesPerSecond.of(shooter.getCurrentRPS() * Math.PI * 1.92).in(MetersPerSecond)
         ); else result = null;
 
         if (result != null) {
             if (result.ToF() != -1) hood.setSetpoint(Rotation2d.kCCW_Pi_2.minus(result.pitch()));
-            turret.setSetpoint(result.yaw().minus(swerve.getPose().getRotation()).plus(Rotation2d.kCCW_90deg));
+            turret.setSetpoint(result.yaw().minus(swerve.getPose().getRotation()).minus(Rotation2d.kCCW_90deg));
 
             if (Robot.isSimulation() && (Timer.getFPGATimestamp() - lastShotTime) > 0.1) {
                 lastShotTime = Timer.getFPGATimestamp();
