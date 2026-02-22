@@ -157,8 +157,9 @@ public class VisionSubsystem extends SubsystemBase {
         if (!apriltagResults.isEmpty()) {
             performanceTracker.startTiming("pose_fusion");
             
-            ApriltagResult fusedResult = fusionEngine.fusePoses(apriltagResults, config);
-
+            if (fusionEngine.fusePoses(apriltagResults, config).isEmpty()) return;
+            ApriltagResult fusedResult = fusionEngine.fusePoses(apriltagResults, config).get();
+            
             if (swerve != null && swerve.isFlatDebounced()) {
                 poseConsumer.accept(
                     fusedResult.getPose(),

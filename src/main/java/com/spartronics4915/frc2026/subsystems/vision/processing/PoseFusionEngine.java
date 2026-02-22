@@ -47,7 +47,7 @@ public class PoseFusionEngine {
         );
         
         List<ApriltagResult> largestGroup = timestampGroups.stream()
-            .max((g1, g2) -> Integer.compare(g1.size(), g2.size()))
+            .max(Comparator.comparingInt(List::size))
             .orElse(List.of());
         
         List<ApriltagResult> filtered = rejectOutliers(largestGroup, config.fusionOutlierThresholdSigma);
@@ -180,6 +180,7 @@ public class PoseFusionEngine {
         Pose2d pose2,
         Matrix<N3, N1> stdDevs
     ) {
+        if (stdDevs == null) return Double.MAX_VALUE;
         
         double dx = pose1.getX() - pose2.getX();
         double dy = pose1.getY() - pose2.getY();
