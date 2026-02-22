@@ -159,7 +159,7 @@ public class Superstructure extends SubsystemBase {
             .publish()
             .set(new Translation3d(hubPose.getX(), hubPose.getY(), Units.inchesToMeters(72)));
 
-        SmartDashboard.putData("Auto-Aim Toggle", Commands.runOnce(() -> isAutoAiming = !isAutoAiming));
+        SmartDashboard.putData("Auto-Aim Toggle", Commands.runOnce(() -> isAutoAiming = !isAutoAiming).ignoringDisable(true));
 
         SmartDashboard.putData("Traversal", Commands.deferredProxy(this::transToTraversal));
         SmartDashboard.putData("Cruise", Commands.deferredProxy(this::transToCruise));
@@ -217,7 +217,7 @@ public class Superstructure extends SubsystemBase {
             previousZone = currentZone;
         }
         
-        if (stateOverride != true) {
+        if (stateOverride != true && currentRobotState != RobotState.TESTING) {
             Command command = null;
             switch (currentZone) {
                 case ALLIANCE_ZONE:
