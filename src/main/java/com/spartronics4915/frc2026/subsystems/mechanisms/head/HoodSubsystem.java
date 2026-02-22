@@ -79,7 +79,7 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
 
         SmartDashboard.putData("Hood Up", setSetpointCommand(Rotation2d.fromDegrees(19)));
         SmartDashboard.putData("Hood Down", setSetpointCommand(Rotation2d.fromDegrees(0)));
-        SmartDashboard.putData("Hood Motor", motor);
+        // SmartDashboard.putData("Hood Motor", motor);
     }
 
     //#region Main Functionality

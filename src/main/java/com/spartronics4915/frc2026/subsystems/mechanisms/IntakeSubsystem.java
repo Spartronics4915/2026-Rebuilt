@@ -45,7 +45,7 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         SmartDashboard.putData("Intake On", setStateCommand(IntakeState.ON));
         SmartDashboard.putData("Intake Off", setStateCommand(IntakeState.OFF));
-        SmartDashboard.putData("Intake Motor", motor);
+        // SmartDashboard.putData("Intake Motor", motor);
     }
 
     @Override

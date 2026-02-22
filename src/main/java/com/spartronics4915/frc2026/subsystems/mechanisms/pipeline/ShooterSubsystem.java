@@ -66,8 +66,8 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
         SmartDashboard.putData("Shooter On", setSetpointCommand(45));
         SmartDashboard.putData("Shooter Off", setSetpointCommand(0));
-        SmartDashboard.putData("Lead Shooter Motor", leadMotor);
-        SmartDashboard.putData("Follower Shooter Motor", followerMotor);
+        // SmartDashboard.putData("Lead Shooter Motor", leadMotor);
+        // SmartDashboard.putData("Follower Shooter Motor", followerMotor);
     }
 
     @Override
