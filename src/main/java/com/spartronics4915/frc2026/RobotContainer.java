@@ -48,8 +48,8 @@ public class RobotContainer {
     public final HoodSubsystem hoodSubsystem = new HoodSubsystem();
     public final TurretSubsystem turretSubsystem = new TurretSubsystem();
 
-    //public final PivotSubsystem pivotSubsystem = new PivotSubsystem();
-    //public final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
+    public final PivotSubsystem pivotSubsystem = new PivotSubsystem();
+    public final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
     public final ClimberSubsystem climberSubsystem = new ClimberSubsystem();
 
     public final IndexerSubsystem indexerSubsystem = new IndexerSubsystem();
@@ -72,8 +72,8 @@ public class RobotContainer {
         indexerSubsystem,
         shooterSubsystem,
         climberSubsystem,
-        null,
-        null,
+        intakeSubsystem,
+        pivotSubsystem,
         swerveSubsystem
     );
     
