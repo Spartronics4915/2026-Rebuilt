@@ -125,22 +125,6 @@ public class SwerveSubsystem extends SubsystemBase {
         }
     }
 
-    public RobotHeading getRelativeHeading() {
-        RobotHeading heading = getHeading();
-        if (shouldFlip()) {
-            return new RobotHeading(
-                new Rotation3d(
-                    heading.rotation.getX(),
-                    heading.rotation.getY() * -1,
-                    heading.rotation.getZ() * -1
-                ),
-                heading.timestamp
-            );
-        } else {
-            return heading;
-        }
-    }
-
     @Override
     public void periodic() {
         Pose2d pose = getPose();
