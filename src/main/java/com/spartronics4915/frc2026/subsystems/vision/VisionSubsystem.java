@@ -59,16 +59,20 @@ public class VisionSubsystem extends SubsystemBase {
     private static final NetworkTableInstance networkTable = NetworkTableInstance.getDefault();
     private static final NetworkTable visionTable = networkTable.getTable("vision");
 
+    // -- Vision Poses --
     private final StructPublisher<Pose2d> posePublisher = visionTable.getStructTopic("Vision Pose", Pose2d.struct).publish();
     private final StructPublisher<Pose2d> usedPosePublisher = visionTable.getStructTopic("Used Vision Pose", Pose2d.struct).publish();
 
+    // -- Camera Visualization --
     private final StructPublisher<Pose3d> rightCameraPosePublisher = visionTable.getStructTopic("Right Camera Pose", Pose3d.struct).publish();
     private final StructPublisher<Pose3d> leftCameraPosePublisher = visionTable.getStructTopic("Left Camera Pose", Pose3d.struct).publish();
     private final StructPublisher<Pose3d> backCameraPosePublisher = visionTable.getStructTopic("Back Camera Pose", Pose3d.struct).publish();
 
+    // -- Standard Deviations --
     private final DoublePublisher transStdDevPublisher = visionTable.getDoubleTopic("XY Std Devs").publish();
     private final DoublePublisher rotStdDevPublisher = visionTable.getDoubleTopic("Theta Std Devs").publish();
 
+    // -- Result Info --
     private final DoublePublisher avgDistancePublisher = visionTable.getDoubleTopic("Avg Distance").publish();
     private final DoublePublisher avgAmbiguityPublisher = visionTable.getDoubleTopic("Avg Ambiguity").publish();
     private final DoublePublisher avgAreaPublisher = visionTable.getDoubleTopic("Avg Area").publish();
@@ -77,6 +81,7 @@ public class VisionSubsystem extends SubsystemBase {
     private final DoublePublisher latencyPublisher = visionTable.getDoubleTopic("Latency").publish();
     private final DoublePublisher targetCountPublisher = visionTable.getDoubleTopic("Target Count").publish();
 
+    // -- Tags Used --
     private final StructArrayPublisher<Pose3d> trackedApriltagsPublisher = NetworkTableInstance.getDefault().getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
     
     public VisionSubsystem(
