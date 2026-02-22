@@ -82,7 +82,7 @@ public class VisionSubsystem extends SubsystemBase {
     private final DoublePublisher targetCountPublisher = visionTable.getDoubleTopic("Target Count").publish();
 
     // -- Tags Used --
-    private final StructArrayPublisher<Pose3d> trackedApriltagsPublisher = NetworkTableInstance.getDefault().getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
+    private final StructArrayPublisher<Pose3d> trackedApriltagsPublisher = visionTable.getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
     
     public VisionSubsystem(
         Map<String, ProcessorInterface> cameras,
@@ -203,51 +203,12 @@ public class VisionSubsystem extends SubsystemBase {
                     targetCountPublisher.set(fusedResult.getTargets().size());
 
                     //#endregion
-
-                    hasValidPose = true;
                 } else {
                     hasValidPose = false;
                 }
             } finally {
                 performanceTracker.stopTiming();
             }
-            
-            Optional<ApriltagResult> fusedResultOpt = PoseFusionEngine.fusePoses(apriltagResults, config);
-            if (fusedResultOpt.isEmpty()) return;
-            ApriltagResult fusedResult = fusedResultOpt.get();
-            
-            if (swerve != null && swerve.isFlatDebounced()) {
-                poseConsumer.accept(
-                    fusedResult.getPose(),
-                    fusedResult.getTimestampSeconds(),
-                    fusedResult.getStdDevs()
-                );
-            }
-            
-            performanceTracker.stopTiming();
-
-            hasValidPose = true;
-
-            // Logging hell (i'm sorry)
-            posePublisher.set(fusedResult.getPose());
-            //usedPosePublisher.set(swerve.getPastVisionPose(fusedResult.getTimestampSeconds()));
-
-            rightCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.RIGHT_CAMERA_TRANSFORM));
-            //leftCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.LEFT_CAMERA_TRANSFORM));
-            //backCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.BACK_CAMERA_TRANSFORM));
-
-            transStdDevPublisher.set(fusedResult.getStdDevs().get(0, 0));
-            rotStdDevPublisher.set(fusedResult.getStdDevs().get(2, 0));
-
-            avgDistancePublisher.set(fusedResult.getAverageDistanceToTargets());
-            avgAmbiguityPublisher.set(fusedResult.getAmbiguity());
-            avgAreaPublisher.set(fusedResult.getAverageArea());
-            xAnisotropyPublisher.set(fusedResult.getXAnisotropy());
-            yAnisotropyPublisher.set(fusedResult.getYAnisotropy());
-            latencyPublisher.set(fusedResult.getLatencyMs());
-            targetCountPublisher.set(fusedResult.getTargets().size());
-        } else {
-            hasValidPose = false;
         }
         
         if (isSimulation) {
