@@ -306,10 +306,8 @@ public class PoseFusionEngine {
         );
         
 
-        String fusedCameraName = "fused[" + validResults.stream()
-            .map(ApriltagResult::getSourceName)
-            .reduce((s1, s2) -> s1 + "," + s2)
-            .orElse("") + "]";
+        String fusedCameraName = "fused[" +
+            String.join(",", results.stream().map(ApriltagResult::getSourceName).toList()) + "]";
         
         List<PhotonTrackedTarget> allTargets = validResults.stream()
             .flatMap(r -> r.getTargets().stream())
