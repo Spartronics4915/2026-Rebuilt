@@ -60,7 +60,7 @@ public class VisionSubsystem extends SubsystemBase {
     private final PipelineFilter aprilTagFilter;
     private final VisionPoseConsumer poseConsumer;
     
-    private final PerformanceTracker performanceTracker;
+    //private final PerformanceTracker performanceTracker;
     private final SwerveSubsystem swerve;
 
     // True if the most recent periodic loop produced a valid pose
@@ -127,7 +127,7 @@ public class VisionSubsystem extends SubsystemBase {
             new ResultFilters.AreaFilter(config.minArea, config.maxArea)
         ));
         
-        this.performanceTracker = new PerformanceTracker(config.maxPeriodicTimeMs);
+        //this.performanceTracker = new PerformanceTracker(config.maxPeriodicTimeMs);
 
         isSimulation = Robot.isSimulation();
         
@@ -155,25 +155,25 @@ public class VisionSubsystem extends SubsystemBase {
      */
     @Override
     public void periodic() {
-        performanceTracker.startTiming("periodic_total");
+        //performanceTracker.startTiming("periodic_total");
         
         // Drain each camera's result queue. Camera threads write asynchronously
         // via Notifier, so getResultQueue() is a destructive thread-safe read.
         List<ResultInterface> allResults = new ArrayList<>();
         for (ProcessorInterface entry : cameras.values()) {
-            performanceTracker.startTiming("camera_" + entry.getCameraName());
+            //performanceTracker.startTiming("camera_" + entry.getCameraName());
             allResults.addAll(entry.getResultQueue());
-            performanceTracker.stopTiming();
+            //performanceTracker.stopTiming();
         }
         
         // Remove results that fail quality thresholds, then narrow the type to
         // ApriltagResult since that's all this currently handles
-        performanceTracker.startTiming("filtering");
+        //performanceTracker.startTiming("filtering");
         List<ApriltagResult> apriltagResults = aprilTagFilter.filter(allResults).stream()
             .filter(ApriltagResult.class::isInstance)
             .map(ApriltagResult.class::cast)
             .toList();
-        performanceTracker.stopTiming();
+        //performanceTracker.stopTiming();
 
         // Each result gets its own std devs based on distance, ambiguity, area,
         // anisotropy, motion, latency, and tag count. These are used both for
@@ -198,7 +198,7 @@ public class VisionSubsystem extends SubsystemBase {
 
         // Fuse poses from multiple cameras
         if (!apriltagResults.isEmpty()) {
-            performanceTracker.startTiming("pose_fusion");
+            //performanceTracker.startTiming("pose_fusion");
             try {
                 Optional<ApriltagResult> fusedResultOpt = PoseFusionEngine.fusePoses(apriltagResults, config);
                 if (fusedResultOpt.isPresent()) {
@@ -242,7 +242,7 @@ public class VisionSubsystem extends SubsystemBase {
                     hasValidPose = false;
                 }
             } finally {
-                performanceTracker.stopTiming();
+                //performanceTracker.stopTiming();
             }
         } else {
             // No results passed filtering this loop
@@ -255,8 +255,8 @@ public class VisionSubsystem extends SubsystemBase {
             visionSystemSim.update(swerve.getRobotPose());
         }
 
-        performanceTracker.stopTiming();
-        performanceTracker.publishMetrics();
+        //performanceTracker.stopTiming();
+        //performanceTracker.publishMetrics();
     }
 
     /**
