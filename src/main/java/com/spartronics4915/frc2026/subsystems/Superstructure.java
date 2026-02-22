@@ -217,41 +217,44 @@ public class Superstructure extends SubsystemBase {
             previousZone = currentZone;
         }
         
-        if (stateOverride != true) {
-            Command command = Commands.none();
+        if (!stateOverride) {
+            Command command = null;
             switch (currentZone) {
                 case ALLIANCE_ZONE:
                     if (currentRobotState != RobotState.SHOOTING) {
                         command = switchState(RobotState.SHOOTING);
                     }
                     break;
-
+                
                 case TRENCH:
                     hood.setClamp(HoodClamp.RESTRICTED);
                     if (currentRobotState != RobotState.TRAVERSAL) {
                         command = switchState(RobotState.TRAVERSAL);
                     }
                     break;
-
+                
                 case BUMP:
                     if (currentRobotState != RobotState.CRUISE) {
                         command = switchState(RobotState.CRUISE);
                     }
                     break;
-
+                
                 case NEUTRAL_ZONE:
                     if (currentRobotState != RobotState.TRAVERSAL) {
                         command = switchState(RobotState.TRAVERSAL);
                     }
                     break;
-
+                
                 case OPPONENT_ZONE:
                     if (currentRobotState != RobotState.CRUISE) {
                         command = switchState(RobotState.CRUISE);
                     }
                     break;
             }
-            CommandScheduler.getInstance().schedule(command);
+        
+            if (command != null) {
+                CommandScheduler.getInstance().schedule(command);
+            }
         }
 
         if (isAutoAiming) {
