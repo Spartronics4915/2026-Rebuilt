@@ -83,7 +83,7 @@ public class RobotContainer {
         swerveSubsystem
     );
     
-    private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, null);
+    private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
     private final DriveToPOI POIfactory = new DriveToPOI(swerveSubsystem);
 
     private final ComplexAutoChooser autoChooser = new ComplexAutoChooser(transitionFactory, POIfactory, 10);
