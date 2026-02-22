@@ -25,7 +25,7 @@ public class StdDevCalculator {
      * @param numTags       Number of visible AprilTags; more tags reduce uncertainty
      * @return 3x1 vector of [xStdDev, yStdDev, thetaStdDev] in meters and radians
      */
-    public Matrix<N3, N1> calculate(
+    public static Matrix<N3, N1> calculate(
         double avgDistance,
         double avgAmbiguity,
         double avgArea,
@@ -76,14 +76,14 @@ public class StdDevCalculator {
         return VecBuilder.fill(xyStdDev, xyStdDev, thetaStdDev);
     }
     
-    private double calculateDistanceFactor(double distance) {
+    private static double calculateDistanceFactor(double distance) {
         double normalized = Math.max(distance, 0.1) / 2.0;
         double factor = normalized * normalized;
 
         return Math.min(factor, 10.0);
     }
 
-    private double calculateAmbiguityFactor(double ambiguity) {
+    private static double calculateAmbiguityFactor(double ambiguity) {
         ambiguity = Math.max(0.0, Math.min(ambiguity, 0.25));
 
         double normalized = ambiguity / 0.1;
@@ -92,7 +92,7 @@ public class StdDevCalculator {
         return Math.min(factor, 8.0);
     }
     
-    private double calculateAreaFactor(double area) {
+    private static double calculateAreaFactor(double area) {
         area = Math.max(0.001, Math.min(area, 1.0));
         
         double normalized = area / 0.01;
@@ -101,7 +101,7 @@ public class StdDevCalculator {
         return Math.min(factor, 5.0);
     }
     
-    private double calculateAnisotropyFactor(double xAnisotropy, double yAnisotropy) {
+    private static double calculateAnisotropyFactor(double xAnisotropy, double yAnisotropy) {
         xAnisotropy = Math.max(1.0, Math.min(xAnisotropy, 10.0));
         yAnisotropy = Math.max(1.0, Math.min(yAnisotropy, 10.0));
         
@@ -110,19 +110,19 @@ public class StdDevCalculator {
         return Math.min(combined, 4.0);
     }
     
-    private double calculateMotionFactor(ChassisSpeeds speeds) {
+    private static double calculateMotionFactor(ChassisSpeeds speeds) {
         double totalMotion = Math.hypot(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond) 
                        + Math.abs(speeds.omegaRadiansPerSecond);
         double factor = 1.0 + (totalMotion * 0.3);
         return Math.min(factor, 3.0);
     }
     
-    private double calculateLatencyFactor(double latencySeconds) {
+    private static double calculateLatencyFactor(double latencySeconds) {
         double factor = 1.0 + (latencySeconds * 5.0);
         return Math.min(factor, 2.0);
     }
     
-    private double calculateTagCountFactor(int numTags) {
+    private static double calculateTagCountFactor(int numTags) {
         return 1.0 / Math.sqrt(Math.max(numTags, 1));
     }
 }

@@ -41,7 +41,6 @@ public class VisionSubsystem extends SubsystemBase {
     private final boolean isSimulation;
     
     private final PipelineFilter aprilTagFilter;
-    private final StdDevCalculator stdDevCalculator;
     private final PoseFusionEngine fusionEngine;
     private final VisionPoseConsumer poseConsumer;
     
@@ -93,7 +92,6 @@ public class VisionSubsystem extends SubsystemBase {
             new ResultFilters.AreaFilter(config.minArea, config.maxArea)
         ));
         
-        this.stdDevCalculator = new StdDevCalculator();
         this.fusionEngine = new PoseFusionEngine();
         this.performanceTracker = new PerformanceTracker(config.maxPeriodicTimeMs);
 
@@ -137,7 +135,7 @@ public class VisionSubsystem extends SubsystemBase {
 
         // Set the standard deviations for the apriltag results
         for (ApriltagResult entry : apriltagResults) {
-            entry.setStdDevs(stdDevCalculator.calculate(
+            entry.setStdDevs(StdDevCalculator.calculate(
                 entry.getAverageDistanceToTargets(),
                 entry.getAmbiguity(),
                 entry.getAverageArea(),
