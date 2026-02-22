@@ -80,7 +80,8 @@ public class RobotContainer {
         climberSubsystem,
         intakeSubsystem,
         pivotSubsystem,
-        swerveSubsystem
+        swerveSubsystem,
+        visionSubsystem
     );
     
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
