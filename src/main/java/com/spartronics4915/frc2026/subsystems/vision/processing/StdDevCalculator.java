@@ -111,15 +111,9 @@ public class StdDevCalculator {
     }
     
     private double calculateMotionFactor(ChassisSpeeds speeds) {
-        double vx = speeds.vxMetersPerSecond;
-        double vy = speeds.vyMetersPerSecond;
-        double omega = speeds.omegaRadiansPerSecond;
-        
-        double translationalSpeed = Math.sqrt(vx * vx + vy * vy);
-        double rotationalSpeed = Math.abs(omega);
-        double totalMotion = translationalSpeed + rotationalSpeed;
+        double totalMotion = Math.hypot(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond) 
+                       + Math.abs(speeds.omegaRadiansPerSecond);
         double factor = 1.0 + (totalMotion * 0.3);
-        
         return Math.min(factor, 3.0);
     }
     
