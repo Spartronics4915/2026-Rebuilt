@@ -27,6 +27,7 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.networktables.DoublePublisher;
+import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
@@ -49,24 +50,26 @@ public class VisionSubsystem extends SubsystemBase {
 
     private boolean hasValidPose;
 
-    // Logging hell :(
-    private final StructPublisher<Pose2d> posePublisher = NetworkTableInstance.getDefault().getTable("vision").getStructTopic("Vision Pose", Pose2d.struct).publish();
-    private final StructPublisher<Pose2d> usedPosePublisher = NetworkTableInstance.getDefault().getTable("vision").getStructTopic("Used Vision Pose", Pose2d.struct).publish();
+    private static final NetworkTableInstance networkTable = NetworkTableInstance.getDefault();
+    private static final NetworkTable visionTable = networkTable.getTable("vision");
 
-    private final StructPublisher<Pose3d> rightCameraPosePublisher = NetworkTableInstance.getDefault().getTable("vision").getStructTopic("Right Camera Pose", Pose3d.struct).publish();
-    private final StructPublisher<Pose3d> leftCameraPosePublisher = NetworkTableInstance.getDefault().getTable("vision").getStructTopic("Left Camera Pose", Pose3d.struct).publish();
-    private final StructPublisher<Pose3d> backCameraPosePublisher = NetworkTableInstance.getDefault().getTable("vision").getStructTopic("Back Camera Pose", Pose3d.struct).publish();
+    private final StructPublisher<Pose2d> posePublisher = visionTable.getStructTopic("Vision Pose", Pose2d.struct).publish();
+    private final StructPublisher<Pose2d> usedPosePublisher = visionTable.getStructTopic("Used Vision Pose", Pose2d.struct).publish();
 
-    private final DoublePublisher transStdDevPublisher = NetworkTableInstance.getDefault().getTable("vision").getDoubleTopic("XY Std Devs").publish();
-    private final DoublePublisher rotStdDevPublisher = NetworkTableInstance.getDefault().getTable("vision").getDoubleTopic("Theta Std Devs").publish();
+    private final StructPublisher<Pose3d> rightCameraPosePublisher = visionTable.getStructTopic("Right Camera Pose", Pose3d.struct).publish();
+    private final StructPublisher<Pose3d> leftCameraPosePublisher = visionTable.getStructTopic("Left Camera Pose", Pose3d.struct).publish();
+    private final StructPublisher<Pose3d> backCameraPosePublisher = visionTable.getStructTopic("Back Camera Pose", Pose3d.struct).publish();
 
-    private final DoublePublisher avgDistancePublisher = NetworkTableInstance.getDefault().getTable("vision").getDoubleTopic("Avg Distance").publish();
-    private final DoublePublisher avgAmbiguityPublisher = NetworkTableInstance.getDefault().getTable("vision").getDoubleTopic("Avg Ambiguity").publish();
-    private final DoublePublisher avgAreaPublisher = NetworkTableInstance.getDefault().getTable("vision").getDoubleTopic("Avg Area").publish();
-    private final DoublePublisher xAnisotropyPublisher = NetworkTableInstance.getDefault().getTable("vision").getDoubleTopic("X Anisotropy").publish();
-    private final DoublePublisher yAnisotropyPublisher = NetworkTableInstance.getDefault().getTable("vision").getDoubleTopic("Y Anisotropy").publish();
-    private final DoublePublisher latencyPublisher = NetworkTableInstance.getDefault().getTable("vision").getDoubleTopic("Latency").publish();
-    private final DoublePublisher targetCountPublisher = NetworkTableInstance.getDefault().getTable("vision").getDoubleTopic("Target Count").publish();
+    private final DoublePublisher transStdDevPublisher = visionTable.getDoubleTopic("XY Std Devs").publish();
+    private final DoublePublisher rotStdDevPublisher = visionTable.getDoubleTopic("Theta Std Devs").publish();
+
+    private final DoublePublisher avgDistancePublisher = visionTable.getDoubleTopic("Avg Distance").publish();
+    private final DoublePublisher avgAmbiguityPublisher = visionTable.getDoubleTopic("Avg Ambiguity").publish();
+    private final DoublePublisher avgAreaPublisher = visionTable.getDoubleTopic("Avg Area").publish();
+    private final DoublePublisher xAnisotropyPublisher = visionTable.getDoubleTopic("X Anisotropy").publish();
+    private final DoublePublisher yAnisotropyPublisher = visionTable.getDoubleTopic("Y Anisotropy").publish();
+    private final DoublePublisher latencyPublisher = visionTable.getDoubleTopic("Latency").publish();
+    private final DoublePublisher targetCountPublisher = visionTable.getDoubleTopic("Target Count").publish();
 
     private final StructArrayPublisher<Pose3d> trackedApriltagsPublisher = NetworkTableInstance.getDefault().getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
     
@@ -153,6 +156,52 @@ public class VisionSubsystem extends SubsystemBase {
         // Fuse poses from multiple cameras
         if (!apriltagResults.isEmpty()) {
             performanceTracker.startTiming("pose_fusion");
+
+            performanceTracker.startTiming("pose_fusion");
+            try {
+                Optional<ApriltagResult> fusedResultOpt = PoseFusionEngine.fusePoses(apriltagResults, config);
+                if (fusedResultOpt.isPresent()) {
+                    ApriltagResult fusedResult = fusedResultOpt.get();
+            
+                    if (swerve != null && swerve.isFlatDebounced()) {
+                        poseConsumer.accept(
+                            fusedResult.getPose(),
+                            fusedResult.getTimestampSeconds(),
+                            fusedResult.getStdDevs()
+                        );
+                    }
+                
+                    hasValidPose = true;
+                
+                    //#region Logging :)
+
+                    posePublisher.set(fusedResult.getPose());
+                    usedPosePublisher.set(swerve.getPastVisionPose(fusedResult.getTimestampSeconds()));
+                
+                    rightCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.RIGHT_CAMERA_TRANSFORM));
+                    leftCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.LEFT_CAMERA_TRANSFORM));
+                    backCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.BACK_CAMERA_TRANSFORM));
+                
+                    transStdDevPublisher.set(fusedResult.getStdDevs().get(0, 0));
+                    rotStdDevPublisher.set(fusedResult.getStdDevs().get(2, 0));
+                
+                    avgDistancePublisher.set(fusedResult.getAverageDistanceToTargets());
+                    avgAmbiguityPublisher.set(fusedResult.getAmbiguity());
+                    avgAreaPublisher.set(fusedResult.getAverageArea());
+                    xAnisotropyPublisher.set(fusedResult.getXAnisotropy());
+                    yAnisotropyPublisher.set(fusedResult.getYAnisotropy());
+                    latencyPublisher.set(fusedResult.getLatencyMs());
+                    targetCountPublisher.set(fusedResult.getTargets().size());
+
+                    //#endregion
+
+                    hasValidPose = true;
+                } else {
+                    hasValidPose = false;
+                }
+            } finally {
+                performanceTracker.stopTiming();
+            }
             
             Optional<ApriltagResult> fusedResultOpt = PoseFusionEngine.fusePoses(apriltagResults, config);
             if (fusedResultOpt.isEmpty()) return;
