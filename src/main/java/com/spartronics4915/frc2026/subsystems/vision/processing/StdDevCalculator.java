@@ -12,6 +12,21 @@ public class StdDevCalculator {
     
     public StdDevCalculator() {}
 
+    /**
+     * Calculates pose estimation standard deviations based on measurement quality factors.
+     * Higher values indicate lower confidence. The result is used to weight this measurement
+     * against odometry in the pose estimator.
+     *
+     * @param avgDistance   Average distance to visible tags in meters
+     * @param avgAmbiguity  Average pose ambiguity [0.0, 0.25]; lower is better
+     * @param avgArea       Average tag area as fraction of frame [0.0, 1.0]; higher is better
+     * @param xAnisotropy   Horizontal view angle uncertainty multiplier [1.0, 10.0]
+     * @param yAnisotropy   Vertical view angle uncertainty multiplier [1.0, 10.0]
+     * @param chassisSpeeds Current robot velocity; may be null (treated as stationary)
+     * @param latencyMs     Pipeline latency in milliseconds
+     * @param numTags       Number of visible AprilTags; more tags reduce uncertainty
+     * @return 3x1 vector of [xStdDev, yStdDev, thetaStdDev] in meters and radians
+     */
     public Matrix<N3, N1> calculate(
         double avgDistance,
         double avgAmbiguity,
@@ -61,7 +76,7 @@ public class StdDevCalculator {
     private double calculateDistanceFactor(double distance) {
         double normalized = Math.max(distance, 0.1) / 2.0;
         double factor = normalized * normalized;
-        
+
         return Math.min(factor, 10.0);
     }
 
