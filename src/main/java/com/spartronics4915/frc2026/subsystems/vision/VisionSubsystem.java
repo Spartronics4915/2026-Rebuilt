@@ -31,6 +31,7 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 /**
@@ -215,6 +216,9 @@ public class VisionSubsystem extends SubsystemBase {
         if (isSimulation) {
             visionSystemSim.update(swerve.getRobotPose());
         }
+
+        performanceTracker.stopTiming();
+        performanceTracker.publishMetrics();
     }
 
     public boolean hasValidPose() {
