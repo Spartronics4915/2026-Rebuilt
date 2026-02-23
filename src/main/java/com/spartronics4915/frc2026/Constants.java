@@ -320,6 +320,8 @@ public final class Constants {
 
         public static final Distance bumpLength = Inches.of(48.93);
         public static final Distance trenchLength = Inches.of(30);
+
+        public static final double percentLoss = 0.08; // Percent loss on shooter to ball transfer
     }
 
     //#endregion

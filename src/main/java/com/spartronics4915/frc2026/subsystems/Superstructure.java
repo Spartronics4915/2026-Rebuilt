@@ -266,7 +266,7 @@ public class Superstructure extends SubsystemBase {
                     hubPose.getY(), 
                     Units.inchesToMeters(72)
                 ), 
-                InchesPerSecond.of(shooter.getCurrentRPS() * Math.PI * 1.92).in(MetersPerSecond)
+                InchesPerSecond.of(shooter.getCurrentRPS() * Math.PI * 1.92).in(MetersPerSecond) * (1 - percentLoss)
             );
         } else {
             result = null;
