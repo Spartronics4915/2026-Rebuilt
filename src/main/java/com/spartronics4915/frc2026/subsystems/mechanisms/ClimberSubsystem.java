@@ -92,6 +92,10 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
         return motor.getPosition().getValueAsDouble();
     }
 
+    public double getCurrentSetpoint() {
+        return currentSetpoint;
+    }
+
     public void setSetpoint(double setpoint){
         currentSetpoint = setpoint;
     }
