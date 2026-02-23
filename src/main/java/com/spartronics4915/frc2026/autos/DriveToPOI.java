@@ -94,7 +94,9 @@ public class DriveToPOI {
                         new ScheduleCommand(
                             Commands.sequence(
                                 // Make sure / wait for climber to be fully extended,
-                                Commands.waitUntil(() -> climber.getPosition() == climber.getCurrentSetpoint()),
+                                Commands.waitUntil(
+                                    () -> Math.abs(climber.getCurrentSetpoint() - climber.getPosition()) <= 0.05
+                                ),
                                 PositionPIDCommand.generateCommand(
                                     swerve,
                                     Autos.flipIfNeeded(
