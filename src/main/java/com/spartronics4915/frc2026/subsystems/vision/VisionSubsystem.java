@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import org.photonvision.PhotonCamera;
 import org.photonvision.simulation.VisionSystemSim;
+import org.photonvision.targeting.PhotonTrackedTarget;
 
 import com.spartronics4915.frc2026.Constants.VisionConstants;
 import com.spartronics4915.frc2026.Robot;
@@ -213,7 +214,7 @@ public class VisionSubsystem extends SubsystemBase {
                             fusedResult.getStdDevs()
                         );
                     }
-                
+                    
                     hasValidPose = true;
                 
                     //#region Logging :)
@@ -236,6 +237,8 @@ public class VisionSubsystem extends SubsystemBase {
                     latencyPublisher.set(fusedResult.getLatencyMs());
                     targetCountPublisher.set(fusedResult.getTargets().size());
 
+                    trackedApriltagsPublisher.accept(getTargetPoses(fusedResult.getTargets()));
+
                     //#endregion
                 } else {
                     // Results exist but fusion produced no usable estimate
@@ -257,6 +260,20 @@ public class VisionSubsystem extends SubsystemBase {
 
         //performanceTracker.stopTiming();
         //performanceTracker.publishMetrics();
+    }
+
+    /**
+     * 
+     * @return
+     */
+    public static Pose3d[] getTargetPoses(List<PhotonTrackedTarget> targets) {
+        Pose3d[] poses = new Pose3d[targets.size()];
+
+        for (int i = 0; i < targets.size(); i++) {
+            poses[i] = new Pose3d().transformBy(targets.get(i).getBestCameraToTarget());
+        }
+
+        return poses;
     }
 
     /**
