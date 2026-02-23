@@ -40,6 +40,7 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
 
     private Rotation2d currentSetpoint = Rotation2d.fromDegrees(0);
     private State currentState = new State();
+    private final State targetState = new State();
 
     private static final PositionVoltage positionVoltage = new PositionVoltage(0.0);
 
@@ -94,11 +95,13 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
             )
         );
 
-        currentState = trapezoidProfile.calculate(
+        targetState.position = currentSetpoint.getRotations();
+        targetState.velocity = 0.0;
+        currentState.position = trapezoidProfile.calculate(
             dtCalc.update(), 
             currentState, 
-            new State(currentSetpoint.getRotations(), 0.0)
-        );
+            targetState
+        ).position;
         
         positionVoltage.Position = currentState.position;
         motor.setControl(positionVoltage);
@@ -107,14 +110,6 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
         positionPublisher.accept(getPosition());
         desiredStatePublisher.accept(Rotation2d.fromRotations(currentState.position));
         setpointPublisher.accept(currentSetpoint);
-
-        componentPosePublisher.accept(hoodPose.rotateBy(
-            new Rotation3d(
-                0,
-                Rotation2d.fromRotations(currentState.position).getDegrees(),
-                0
-            )
-        ));
     }
 
     public Rotation2d getPosition() {

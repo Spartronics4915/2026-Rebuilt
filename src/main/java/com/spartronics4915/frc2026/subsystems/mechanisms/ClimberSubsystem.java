@@ -92,6 +92,10 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
         return motor.getPosition().getValueAsDouble();
     }
 
+    public double getCurrentSetpoint() {
+        return currentSetpoint;
+    }
+
     public void setSetpoint(double setpoint){
         currentSetpoint = setpoint;
     }
@@ -130,7 +134,7 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
  
     public enum ClimberState {
         DOWN(0),
-        JORBIT(2.5);
+        JORBIT(2.8);
 
         double position;
 

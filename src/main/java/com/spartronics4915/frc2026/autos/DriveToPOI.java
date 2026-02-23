@@ -8,6 +8,8 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import com.spartronics4915.frc2026.commands.PositionPIDCommand;
+import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem.ClimberState;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -23,10 +25,12 @@ import edu.wpi.first.wpilibj2.command.ScheduleCommand;
 
 public class DriveToPOI {
     private final SwerveSubsystem swerve;
+    private final ClimberSubsystem climber;
     private double outpostWaitTime;
     
-    public DriveToPOI(SwerveSubsystem swerve) {
-        this.swerve = swerve;
+    public DriveToPOI(SwerveSubsystem swerveSubsystem, ClimberSubsystem climberSubsystem) {
+        this.swerve = swerveSubsystem;
+        this.climber = climberSubsystem;
 
         outpostWaitTime = SmartDashboard.getNumber("Auto Chooser/Outpost Wait Time", defaultOutpostWaitTime);
 
@@ -67,7 +71,7 @@ public class DriveToPOI {
 
                     return Commands.sequence(
                         Commands.parallel(
-                            // Move climber up while driving up,
+                            climber.setStateCommand(ClimberState.JORBIT),
                             Autos.generatePathFromWaypoint(
                                 swerve,
                                 climbApproachPose, 
@@ -90,6 +94,9 @@ public class DriveToPOI {
                         // new ScheduleCommand(
                             Commands.sequence(
                                 // Make sure / wait for climber to be fully extended,
+                                Commands.waitUntil(
+                                    () -> Math.abs(climber.getCurrentSetpoint() - climber.getPosition()) <= 0.05
+                                ),
                                 PositionPIDCommand.generateCommand(
                                     swerve,
                                     Autos.flipIfNeeded(
@@ -100,13 +107,15 @@ public class DriveToPOI {
                                         )
                                     ),
                                     Seconds.of(10.0)
-                                )
+                                ),
                                 // Pull climber back down to move robot up
+                                climber.setStateCommand(ClimberState.DOWN)
                             )
                         // )
                     ).finallyDo(
                         (interrupted) -> {
                             // Put climber back down only if interrupted since the command got canceled on the way there
+                            climber.setStateCommand(ClimberState.JORBIT);
                         }
                     );
                 }

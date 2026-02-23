@@ -85,8 +85,8 @@ public class AutoAim {
         for (int i = 0; i < maxIterations; i++) {
             Translation3d virtualTarget = targetTranslation.minus(prevDisplacement);
             result = calculateStaticAim(robotPose, virtualTarget, projectileSpeed);
-            if (result == null) {
-                return null;
+            if (result == null || result.ToF() == -1) {
+                return result;
             }
             Translation3d displacement = new Translation3d(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, 0).times(result.ToF());
             if (displacement.minus(prevDisplacement).getNorm() < convergenceThreshold) {

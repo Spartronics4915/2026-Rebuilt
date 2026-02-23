@@ -2,7 +2,6 @@ package com.spartronics4915.frc2026.subsystems;
 
 import static com.spartronics4915.frc2026.Constants.SuperstructureConstants.*;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.*;
-import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.hubPose;
 
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
@@ -22,6 +21,7 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsyst
 import com.spartronics4915.frc2026.util.AutoAim;
 import com.spartronics4915.frc2026.util.AutoAim.AutoAimResult;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
+import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -29,6 +29,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.BooleanPublisher;
+import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.networktables.StructArrayPublisher;
@@ -42,6 +43,7 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import swervelib.simulation.ironmaple.simulation.SimulatedArena;
@@ -73,8 +75,9 @@ public class Superstructure extends SubsystemBase {
     private final IntakeSubsystem intake;
     private final PivotSubsystem pivot;
 
-    // Swerve
+    // Other subsystems
     private final SwerveSubsystem swerve;
+    private final VisionSubsystem vision;
 
     // State machine tracking
     private RobotState currentRobotState;
@@ -87,12 +90,14 @@ public class Superstructure extends SubsystemBase {
     private double lastShotTime;
     private boolean isAutoAiming;
 
-    // Publishing for superstructure logging
-    private final StringPublisher currentStatePublisher = NetworkTableInstance.getDefault().getTable("Superstructure").getStringTopic("State").publish();
-    private final StringPublisher currentZonePublisher = NetworkTableInstance.getDefault().getTable("Superstructure").getStringTopic("Current Zone").publish();
-    private final StringPublisher previousZonePublisher = NetworkTableInstance.getDefault().getTable("Superstructure").getStringTopic("Previous State").publish();
+    // Publishing for superstructure logging    
+    private static final NetworkTable superTable = NetworkTableInstance.getDefault().getTable("superstructure");
 
-    private final BooleanPublisher isAutoAimingPublisher = NetworkTableInstance.getDefault().getTable("Superstructure").getBooleanTopic("Is Auto Aiming").publish();
+    private final StringPublisher currentStatePublisher = superTable.getStringTopic("State").publish();
+    private final StringPublisher currentZonePublisher = superTable.getStringTopic("Current Zone").publish();
+    private final StringPublisher previousZonePublisher = superTable.getStringTopic("Previous State").publish();
+
+    private final BooleanPublisher isAutoAimingPublisher = superTable.getBooleanTopic("Is Auto Aiming").publish();
     
     private final StructArrayPublisher<Pose3d> successfulShotPublisher = NetworkTableInstance.getDefault()
         .getStructArrayTopic("Flywheel/FuelProjectileSuccessfulShot", Pose3d.struct)
@@ -122,7 +127,8 @@ public class Superstructure extends SubsystemBase {
         ClimberSubsystem climberSubsystem,
         IntakeSubsystem intakeSubsystem,
         PivotSubsystem pivotSubsystem,
-        SwerveSubsystem swerveSubsystem
+        SwerveSubsystem swerveSubsystem,
+        VisionSubsystem visionSubsystem
     ) {
         this.hood = hoodSubsystem;
         this.turret = turretSubsystem;
@@ -133,25 +139,43 @@ public class Superstructure extends SubsystemBase {
         this.intake = intakeSubsystem;
         this.pivot = pivotSubsystem;
         this.swerve = swerveSubsystem;
+        this.vision = visionSubsystem;
 
-        //this.currentZone = getCurrentZone();
+        this.currentZone = vision.hasValidPose()
+            ? getCurrentZone(swerve.getRelativePose().getTranslation().plus(
+                 TURRET_TRANSLATION.rotateBy(swerve.getPose().getRotation())
+            ))
+            : Zone.OPPONENT_ZONE;
+
         this.previousZone = currentZone;
 
         this.isAutoAiming = false;
+
+        this.currentRobotState = RobotState.TESTING;
+        this.stateOverride = true;
 
         NetworkTableInstance.getDefault()
             .getStructTopic("target", Translation3d.struct)
             .publish()
             .set(new Translation3d(hubPose.getX(), hubPose.getY(), Units.inchesToMeters(72)));
 
-        SmartDashboard.putData("Auto-Aim Toggle", Commands.runOnce(() -> isAutoAiming = !isAutoAiming));
+        SmartDashboard.putData("Auto-Aim Toggle", Commands.runOnce(() -> isAutoAiming = !isAutoAiming).ignoringDisable(true));
 
-        SmartDashboard.putData("Traversal", transToTraversal());
-        SmartDashboard.putData("Cruise", transToCruise());
-        SmartDashboard.putData("Shooting", transToShooting());
-        SmartDashboard.putData("Climb", transToClimb());
-        SmartDashboard.putData("Idle", transToIdle());
-        SmartDashboard.putData("Stowed", transToStowed());
+        SmartDashboard.putData("Traversal", Commands.deferredProxy(this::transToTraversal));
+        SmartDashboard.putData("Cruise", Commands.deferredProxy(this::transToCruise));
+        SmartDashboard.putData("Shooting", Commands.deferredProxy(this::transToShooting));
+        SmartDashboard.putData("Climb", Commands.deferredProxy(this::transToClimb));
+        SmartDashboard.putData("Idle", Commands.deferredProxy(this::transToIdle));
+        SmartDashboard.putData("Stowed", Commands.deferredProxy(this::transToStowed));
+
+        SmartDashboard.putData(
+            "Reset Dynamics",
+            Commands.parallel(
+                Commands.runOnce(() -> isAutoAiming = false),
+                turret.setSetpointCommand(Rotation2d.fromDegrees(0)),
+                hood.setSetpointCommand(Rotation2d.fromDegrees(0))
+            )
+        );
     }
 
     private enum RobotState {
@@ -197,16 +221,65 @@ public class Superstructure extends SubsystemBase {
             TURRET_TRANSLATION.rotateBy(swerve.getPose().getRotation())
         ));
 
-        if (isAutoAiming) result = autoAim.calculateDynamicAim(
-            swerve.getRelativePose(), 
-            swerve.getFieldVelocity(), 
-            new Translation3d(
-                hubPose.getX(), 
-                hubPose.getY(), 
-                Units.inchesToMeters(72)
-            ), 
-            InchesPerSecond.of(shooter.getCurrentRPS() * Math.PI * 1.92).in(MetersPerSecond)
-        ); else result = null;
+        if (currentZone != previousZone) {
+            stateOverride = false;
+            previousZone = currentZone;
+        }
+        
+        if (stateOverride != true && currentRobotState != RobotState.TESTING) {
+            Command command = null;
+            switch (currentZone) {
+                case ALLIANCE_ZONE:
+                    if (currentRobotState != RobotState.SHOOTING) {
+                        command = switchState(RobotState.SHOOTING);
+                    }
+                    break;
+                
+                case TRENCH:
+                    hood.setClamp(HoodClamp.RESTRICTED);
+                    if (currentRobotState != RobotState.TRAVERSAL) {
+                        command = switchState(RobotState.TRAVERSAL);
+                    }
+                    break;
+                
+                case BUMP:
+                    if (currentRobotState != RobotState.CRUISE) {
+                        command = switchState(RobotState.CRUISE);
+                    }
+                    break;
+                
+                case NEUTRAL_ZONE:
+                    if (currentRobotState != RobotState.TRAVERSAL) {
+                        command = switchState(RobotState.TRAVERSAL);
+                    }
+                    break;
+                
+                case OPPONENT_ZONE:
+                    if (currentRobotState != RobotState.CRUISE) {
+                        command = switchState(RobotState.CRUISE);
+                    }
+                    break;
+            }
+        
+            if (command != null) {
+                CommandScheduler.getInstance().schedule(command);
+            }
+        }
+
+        if (isAutoAiming) {
+            result = autoAim.calculateDynamicAim(
+                swerve.getRelativePose(), 
+                swerve.getRelativeFieldVelocity(), 
+                new Translation3d(
+                    hubPose.getX(), 
+                    hubPose.getY(), 
+                    Units.inchesToMeters(72)
+                ), 
+                InchesPerSecond.of(shooter.getCurrentRPS() * Math.PI * 1.92).in(MetersPerSecond) * (1 - percentLoss)
+            );
+        } else {
+            result = null;
+        } 
 
         if (result != null) {
             if (result.ToF() != -1) hood.setSetpoint(Rotation2d.kCCW_Pi_2.minus(result.pitch()));
@@ -241,51 +314,16 @@ public class Superstructure extends SubsystemBase {
             }
         }
 
-        //if (currentZone != previousZone) {
-        //    stateOverride = false;
-        //    previousZone = currentZone;
-        //}
-
-        //if (stateOverride != true) {
-        //    switch (currentZone) {
-        //        case ALLIANCE_ZONE:
-        //            if (currentRobotState == RobotState.SHOOTING) return;
-        //            switchState(RobotState.SHOOTING);
-        //            break;
-//
-        //        case TRENCH:
-        //            hood.setClamp(HoodClamp.RESTRICTED);
-        //            if (currentRobotState == RobotState.TRAVERSAL) return;
-        //            switchState(RobotState.TRAVERSAL);
-        //            break;
-//
-        //        case BUMP:
-        //            if (currentRobotState == RobotState.CRUISE) return;
-        //            switchState(RobotState.CRUISE);
-        //            break;
-//
-        //        case NEUTRAL_ZONE:
-        //            if (currentRobotState == RobotState.TRAVERSAL) return;
-        //            switchState(RobotState.TRAVERSAL);
-        //            break;
-//
-        //        case OPPONENT_ZONE:
-        //            if (currentRobotState == RobotState.CRUISE) return;
-        //            switchState(RobotState.CRUISE);
-        //            break;
-        //    }
-        //} 
-
-        //currentStatePublisher.accept(currentRobotState.name());
+        currentStatePublisher.accept(currentRobotState.name());
         currentZonePublisher.accept(currentZone.name());
-        //previousZonePublisher.accept(previousZone.name());
+        previousZonePublisher.accept(previousZone.name());
 
         isAutoAimingPublisher.accept(isAutoAiming);
     }
 
     public void setStateOverride(RobotState overrideState) {
         stateOverride = true;
-        switchState(overrideState);
+        CommandScheduler.getInstance().schedule(switchState(overrideState));
     }
 
     private Command setPipelineState(PipelineState state) {
@@ -299,37 +337,30 @@ public class Superstructure extends SubsystemBase {
         );
     }
 
-    private void switchState(RobotState desiredState) {
+    private Command switchState(RobotState desiredState) {
+        currentRobotState = desiredState;
         switch (desiredState) {
             case TRAVERSAL:
-                transToTraversal();
-                break;
+                return transToTraversal();
 
             case CRUISE:
-                transToCruise();
-                break;
+                return transToCruise();
 
             case SHOOTING:
-                transToShooting();
-                break;
+                return transToShooting();
 
             case CLIMB:
-                transToClimb();
-                break;
+                return transToClimb();
 
             case IDLE:
-                transToIdle();
-                break;
+                return transToIdle();
 
             case STOWED:
-                transToStowed();
-                break;
+                return transToStowed();
 
-            case TESTING:
-                System.out.println("Chat, what are we doing?");
-                break;
+            default:
+                return Commands.none();
         }
-        currentRobotState = desiredState;
     }
 
     private Zone getCurrentZone(Translation2d position) {

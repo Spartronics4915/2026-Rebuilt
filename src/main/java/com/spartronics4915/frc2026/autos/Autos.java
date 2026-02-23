@@ -46,7 +46,7 @@ public final class Autos {
 
         return new IdealStartingState(
             startingVel,
-            swerve.getRelativeHeading().rotation().toRotation2d()
+            swerve.getRelativePose().getRotation()
         );
     }
 
