@@ -86,8 +86,8 @@ public class DriveToPOI {
                             ),
                             Seconds.of(2.0)
                         ),
-                        // This makes all climb operations beyond uncancelable so that climb isn't stopped halfway through
-                        new ScheduleCommand(
+                        // This makes all climb operations beyond uncancelable so that climb isn't stopped halfway through (Currently removed)
+                        // new ScheduleCommand(
                             Commands.sequence(
                                 // Make sure / wait for climber to be fully extended,
                                 PositionPIDCommand.generateCommand(
@@ -103,7 +103,7 @@ public class DriveToPOI {
                                 )
                                 // Pull climber back down to move robot up
                             )
-                        )
+                        // )
                     ).finallyDo(
                         (interrupted) -> {
                             // Put climber back down only if interrupted since the command got canceled on the way there
