@@ -167,6 +167,14 @@ public class Superstructure extends SubsystemBase {
         SmartDashboard.putData("Climb", Commands.deferredProxy(this::transToClimb));
         SmartDashboard.putData("Idle", Commands.deferredProxy(this::transToIdle));
         SmartDashboard.putData("Stowed", Commands.deferredProxy(this::transToStowed));
+
+        SmartDashboard.putData(
+            "Reset Dynamics",
+            Commands.parallel(
+                turret.setSetpointCommand(Rotation2d.fromDegrees(0)),
+                hood.setSetpointCommand(Rotation2d.fromDegrees(0))
+            )
+        );
     }
 
     private enum RobotState {
