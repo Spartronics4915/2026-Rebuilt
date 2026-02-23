@@ -330,7 +330,7 @@ public final class Constants {
         public static final int LEAD_MOTOR_ID = 22;
         public static final int FOLLOWER_MOTOR_ID = 23;
 
-        public static final double P = 0.34;
+        public static final double P = 0.4;
         public static final double I = 0;
         public static final double D = 0.002;
         public static final double V = 0.123;
@@ -536,7 +536,7 @@ public final class Constants {
         public static final int MOTOR_ID = 19;
         public static final int ENCODER_ID = 20;
 
-        public static final double P = 75;
+        public static final double P = 220;
         public static final double I = 0.0;
         public static final double D = 0.0;
 
