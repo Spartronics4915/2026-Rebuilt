@@ -123,7 +123,7 @@ public final class Constants {
             public static final Translation2d depotPose = new Translation2d(0.0, 5.964);
             public static final Translation2d fuelZoneXAxisPose = new Translation2d(7.512, 4.035);
 
-            public static final Translation2d towerTransform = new Translation2d(0.0, 0.445);
+            public static final Translation2d towerTransform = new Translation2d(0.0, 0.49075);
             public static final Translation2d trenchTransform = new Translation2d(0, -3.4);
             public static final Translation2d bumpTransform = new Translation2d(0, -1.523);
             public static final Translation2d bumpTrenchDivTransform = new Translation2d(0, 2.604);
@@ -135,8 +135,9 @@ public final class Constants {
 
             public static final Distance robotLength = Millimeters.of(818.5);
             public static final Distance robotWidth = Millimeters.of(875.65);
-            public static final Distance intakeLength = Millimeters.of(472.4093);
+            public static final Distance intakeLength = Millimeters.of(213.05);
             public static final Distance towerPadding = Inches.of(10);
+            public static final Distance bumperThickness = Millimeters.of(72.7);
 
             public static final PathConstraints defaultPathConstraints = new PathConstraints(
                 3.0,

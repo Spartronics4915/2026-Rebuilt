@@ -58,7 +58,7 @@ public class DriveToPOI {
 
                     Translation2d climbPose = towerPose.plus(
                         towerTransform.plus(
-                            new Translation2d(0, robotLength.in(Meters) / 2.0)
+                            new Translation2d(0, robotLength.in(Meters) / 2.0 - bumperThickness.in(Meters))
                         ).times(shouldFlip ? -1 : 1)
                     );
                     Translation2d climbApproachPose = climbPose.plus(
