@@ -171,6 +171,7 @@ public class Superstructure extends SubsystemBase {
         SmartDashboard.putData(
             "Reset Dynamics",
             Commands.parallel(
+                Commands.runOnce(() -> isAutoAiming = false),
                 turret.setSetpointCommand(Rotation2d.fromDegrees(0)),
                 hood.setSetpointCommand(Rotation2d.fromDegrees(0))
             )
