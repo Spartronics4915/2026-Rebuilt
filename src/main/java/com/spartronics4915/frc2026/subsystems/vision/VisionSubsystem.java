@@ -171,11 +171,15 @@ public class VisionSubsystem extends SubsystemBase {
         // Remove results that fail quality thresholds, then narrow the type to
         // ApriltagResult since that's all this currently handles
         //performanceTracker.startTiming("filtering");
+        //List<ApriltagResult> apriltagResults = aprilTagFilter.filter(allResults).stream()
+        //    .filter(ApriltagResult.class::isInstance)
+        //    .map(ApriltagResult.class::cast)
+        //    .toList();
+        //performanceTracker.stopTiming();
+
         List<ApriltagResult> apriltagResults = aprilTagFilter.filter(allResults).stream()
-            .filter(ApriltagResult.class::isInstance)
             .map(ApriltagResult.class::cast)
             .toList();
-        //performanceTracker.stopTiming();
 
         // Each result gets its own std devs based on distance, ambiguity, area,
         // anisotropy, motion, latency, and tag count. These are used both for

@@ -9,7 +9,6 @@ public class VisionConfiguration {
     public final double maxAnisotropy;
     public final double minArea;
     public final double maxArea;
-    public final double cameraProcessingFrequencyHz;
     public final double maxPeriodicTimeMs;
     public final boolean enableMotionPunishment;
     public final double velocityPunishmentThreshold;
@@ -21,20 +20,19 @@ public class VisionConfiguration {
 
     public VisionConfiguration() {
         this(
-            100,
-            20.0, 
-            20.0,
-            0.4,
+            90,
+            7.0, 
+            10.0,
+            0.5,
             1.2,
             0.01,
             0.70,
-            100,
-            15.0, 
+            14.0, 
             true,  
-            10.0,
-            10.0,
+            3.0,
+            2.0,
             true,
-            0.02,
+            0.05,
             2,   
             3.0
         );
@@ -48,7 +46,6 @@ public class VisionConfiguration {
         double maxAnisotropy,
         double minArea,
         double maxArea,
-        double cameraProcessingFrequencyHz,
         double maxPeriodicTimeMs,
         boolean enableMotionPunishment,
         double velocityPunishmentThreshold,
@@ -65,7 +62,6 @@ public class VisionConfiguration {
         this.maxAnisotropy = maxAnisotropy;
         this.minArea = minArea;
         this.maxArea = maxArea;
-        this.cameraProcessingFrequencyHz = cameraProcessingFrequencyHz;
         this.maxPeriodicTimeMs = maxPeriodicTimeMs;
         this.enableMotionPunishment = enableMotionPunishment;
         this.velocityPunishmentThreshold = velocityPunishmentThreshold;

@@ -75,7 +75,7 @@ public class PhotonProcessor implements ProcessorInterface {
         this.cameraSim = new PhotonCameraSim(photonCamera, simProperties);
 
         this.resultQueue = new ConcurrentLinkedQueue<>();
-        this.maxQueueSize = 5;
+        this.maxQueueSize = 10;
         
         this.processingNotifier = new Notifier(this::process);
         this.processingFrequency = 100.0;
