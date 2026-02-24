@@ -264,8 +264,10 @@ public class VisionSubsystem extends SubsystemBase {
     }
 
     /**
+     * Returns a list of pose3ds from a list of {@link PhotonTrackedTarget}
      * 
-     * @return
+     * @param targets a list of {@link PhotonTrackedTarget}
+     * @return a list of all the pose3ds of the list of tags
      */
     public static Pose3d[] getTargetPoses(List<PhotonTrackedTarget> targets) {
         return targets.stream()
