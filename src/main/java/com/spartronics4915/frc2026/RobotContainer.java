@@ -8,6 +8,7 @@ import com.spartronics4915.frc2026.Constants.OperatorConstants;
 import com.spartronics4915.frc2026.autos.Autos;
 import com.spartronics4915.frc2026.autos.ComplexAutoChooser;
 import com.spartronics4915.frc2026.autos.DriveToPOI;
+import com.spartronics4915.frc2026.autos.NeutralZoneAutos;
 import com.spartronics4915.frc2026.autos.DriveToPOI.POI;
 import com.spartronics4915.frc2026.autos.ZoneTransition;
 import com.spartronics4915.frc2026.autos.ZoneTransition.TraversalMethod;
@@ -85,9 +86,10 @@ public class RobotContainer {
     );
     
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
-    private final DriveToPOI POIfactory = new DriveToPOI(swerveSubsystem, climberSubsystem);
+    private final DriveToPOI POIFactory = new DriveToPOI(swerveSubsystem, climberSubsystem);
+    private final NeutralZoneAutos neutralZoneFactory = new NeutralZoneAutos(swerveSubsystem);
 
-    private final ComplexAutoChooser autoChooser = new ComplexAutoChooser(transitionFactory, POIfactory, 10);
+    private final ComplexAutoChooser autoChooser = new ComplexAutoChooser(transitionFactory, POIFactory, neutralZoneFactory, 10);
 
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
     private final CommandXboxController operatorController = new CommandXboxController(OperatorConstants.OPERATOR_CONTROLLER_PORT);
@@ -153,15 +155,15 @@ public class RobotContainer {
         );
 
         driverController.povUp().whileTrue(
-            POIfactory.generateCommand(POI.DEPOT)
+            POIFactory.generateCommand(POI.DEPOT)
         );
 
         driverController.povDown().whileTrue(
-            POIfactory.generateCommand(POI.OUTPOST)
+            POIFactory.generateCommand(POI.OUTPOST)
         );
         
         driverController.y().whileTrue(
-            POIfactory.generateCommand(POI.TOWER)
+            POIFactory.generateCommand(POI.TOWER)
         );
 
         driverController.leftTrigger().onTrue(
