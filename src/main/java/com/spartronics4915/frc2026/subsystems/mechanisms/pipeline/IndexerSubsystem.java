@@ -97,7 +97,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
     }
 
     public enum IndexerState {
-        ON(22.0),
+        ON(12),
         OFF(0.0);
 
         public double rps;
