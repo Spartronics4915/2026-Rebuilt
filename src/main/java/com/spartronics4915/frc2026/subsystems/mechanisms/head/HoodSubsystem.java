@@ -97,11 +97,11 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
 
         targetState.position = currentSetpoint.getRotations();
         targetState.velocity = 0.0;
-        currentState.position = trapezoidProfile.calculate(
+        currentState = trapezoidProfile.calculate(
             dtCalc.update(), 
             currentState, 
             targetState
-        ).position;
+        );
         
         positionVoltage.Position = currentState.position;
         motor.setControl(positionVoltage);
