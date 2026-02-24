@@ -234,8 +234,8 @@ public final class Constants {
             }
 
         public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.3;
-            public static final double baseThetaStdDev = 0.3;
+            public static final double baseXYStdDev = 0.5;
+            public static final double baseThetaStdDev = 0.5;
             public static final double distanceWeight = 0.8;
             public static final double ambiguityWeight = 0.8;
             public static final double areaWeight = 0.6;
