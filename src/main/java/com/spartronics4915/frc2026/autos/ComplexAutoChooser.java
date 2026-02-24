@@ -70,7 +70,8 @@ public class ComplexAutoChooser {
     }
 
     private final ZoneTransition transitionFactory;
-    private final DriveToPOI POIfactory;
+    private final DriveToPOI POIFactory;
+    private final NeutralZoneAutos neutralZoneFactory;
 
     private AutoSegment[] selectedSegments;
     private SendableChooser<AutoSegment>[] segmentChoosers;
@@ -80,11 +81,13 @@ public class ComplexAutoChooser {
      * Constructor for ComplexAutoChooser. Initializes the SendableChoosers for each auto segment step, and sets up the default options and onChange listeners.
      * @param transitionFactory Factory for generating zone transition commands.
      * @param POIfactory Factory for generating drive-to-POI commands.
+     * @param neutralZoneFactory Factory for generating neutral zone commands.
      * @param maxSegments Maximum number of auto segments.
      */
-    public ComplexAutoChooser(ZoneTransition transitionFactory, DriveToPOI POIfactory, int maxSegments) {
+    public ComplexAutoChooser(ZoneTransition transitionFactory, DriveToPOI POIFactory, NeutralZoneAutos neutralZoneFactory, int maxSegments) {
         this.transitionFactory = transitionFactory;
-        this.POIfactory = POIfactory;
+        this.POIFactory = POIFactory;
+        this.neutralZoneFactory = neutralZoneFactory;
 
         this.selectedSegments = new AutoSegment[maxSegments];
         this.segmentChoosers = (SendableChooser<AutoSegment>[]) new SendableChooser[maxSegments];
@@ -134,12 +137,21 @@ public class ComplexAutoChooser {
         }
     }
 
+    private Command addNeutralZoneCommand(boolean inRight, boolean outRight) {
+        if (inRight == outRight) {
+            return neutralZoneFactory.generateQuadrantCommand(inRight);
+        } else {
+            return neutralZoneFactory.generateHalfCommand(inRight);
+        }
+    }
+
     /**
      * Generates the auto command based on the currently selected segments.
      * @return The command representing the selected autonomous routine.
      */
     public Command getAuto() {
         ArrayList<Command> commands = new ArrayList<>();
+        boolean right = false;
         for (int i = 0; i < selectedSegments.length; i++) {
             AutoSegment segment = selectedSegments[i];
 
@@ -149,37 +161,45 @@ public class ComplexAutoChooser {
 
             switch (segment) {
                 case L_TRENCH_TO_NEUTRAL:
+                    right = false;
                     commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, true));
                     break;
                 case L_BUMP_TO_NEUTRAL:
+                    right = false;
                     commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP, true));
                     break;
                 case R_TRENCH_TO_NEUTRAL:
+                    right = true;
                     commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, true));
                     break;
                 case R_BUMP_TO_NEUTRAL:
+                    right = true;
                     commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, true));
                     break;
                 case L_TRENCH_TO_ALLIANCE:
+                    commands.add(addNeutralZoneCommand(right, false));
                     commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, false));
                     break;
                 case L_BUMP_TO_ALLIANCE:
+                    commands.add(addNeutralZoneCommand(right, false));
                     commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP, false));
                     break;
                 case R_TRENCH_TO_ALLIANCE:
+                    commands.add(addNeutralZoneCommand(right, true));
                     commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, false));
                     break;
                 case R_BUMP_TO_ALLIANCE:
+                    commands.add(addNeutralZoneCommand(right, true));
                     commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, false));
                     break;
                 case DEPOT:
-                    commands.add(POIfactory.generateCommand(DriveToPOI.POI.DEPOT));
+                    commands.add(POIFactory.generateCommand(DriveToPOI.POI.DEPOT));
                     break;
                 case OUTPOST:
-                    commands.add(POIfactory.generateCommand(DriveToPOI.POI.OUTPOST));
+                    commands.add(POIFactory.generateCommand(DriveToPOI.POI.OUTPOST));
                     break;
                 case TOWER:
-                    commands.add(POIfactory.generateCommand(DriveToPOI.POI.TOWER));
+                    commands.add(POIFactory.generateCommand(DriveToPOI.POI.TOWER));
                     break;
                 case UNUSED:
                     System.out.println("Chat what are we doing?");
