@@ -22,6 +22,7 @@ import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
 import com.spartronics4915.frc2026.util.PerformanceTracker;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -267,13 +268,11 @@ public class VisionSubsystem extends SubsystemBase {
      * @return
      */
     public static Pose3d[] getTargetPoses(List<PhotonTrackedTarget> targets) {
-        Pose3d[] poses = new Pose3d[targets.size()];
-
-        for (int i = 0; i < targets.size(); i++) {
-            poses[i] = new Pose3d().transformBy(targets.get(i).getBestCameraToTarget());
-        }
-
-        return poses;
+        return targets.stream()
+            .map(target -> VisionConstants.LAYOUT.getTagPose(target.fiducialId))
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .toArray(Pose3d[]::new);
     }
 
     /**
