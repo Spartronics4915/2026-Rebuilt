@@ -139,7 +139,7 @@ public class AutoAim {
         } else if (theta.length == 1) {
             selectedPitch = theta[0];
         } else {
-            selectedPitch = theta[0].getDegrees() > theta[1].getDegrees() ? theta[0] : theta[1];
+            selectedPitch = theta[0].getDegrees() < theta[1].getDegrees() ? theta[0] : theta[1];
         }
 
         double t = selectedPitch == null ? -1 : horizontalDistance / (projectileSpeed * Math.cos(selectedPitch.getRadians()));
