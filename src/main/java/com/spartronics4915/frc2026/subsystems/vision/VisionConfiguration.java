@@ -21,8 +21,8 @@ public class VisionConfiguration {
     public VisionConfiguration() {
         this(
             90,
-            7.0, 
-            10.0,
+            5.0, 
+            7.0,
             0.5,
             1.2,
             0.01,

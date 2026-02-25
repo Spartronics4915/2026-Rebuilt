@@ -22,6 +22,7 @@ import org.photonvision.simulation.SimCameraProperties;
 
 import com.spartronics4915.frc2026.subsystems.vision.cameras.PhotonProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
+import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.PathplannerConfigs;
 import com.pathplanner.lib.config.ModuleConfig;
 import com.pathplanner.lib.config.PIDConstants;
@@ -33,7 +34,6 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -227,21 +227,28 @@ public final class Constants {
         public static final SimCameraProperties SIM_CAMERA_PROPERTIES = new SimCameraProperties();
             static {
                 SIM_CAMERA_PROPERTIES.setCalibration(1600, 1200, Rotation2d.fromDegrees(97.65));
-                SIM_CAMERA_PROPERTIES.setCalibError(0.64, 0.02);
+                SIM_CAMERA_PROPERTIES.setCalibError(0.05, 0.005);
                 SIM_CAMERA_PROPERTIES.setFPS(100);
-                SIM_CAMERA_PROPERTIES.setAvgLatencyMs(40);
-                SIM_CAMERA_PROPERTIES.setLatencyStdDevMs(0);
+                SIM_CAMERA_PROPERTIES.setAvgLatencyMs(20);
+                SIM_CAMERA_PROPERTIES.setLatencyStdDevMs(5);
             }
 
         public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.8;
-            public static final double baseThetaStdDev = 0.8;
-            public static final double distanceWeight = 0.8;
-            public static final double ambiguityWeight = 0.8;
-            public static final double areaWeight = 0.6;
-            public static final double anisotropyWeight = 0.6;
-            public static final double motionWeight = 0.4;
-            public static final double latencyWeight = 0.4;
+            public static final double baseXYStdDev = 0.1;  // 0.5 — trust vision closer to odometry levels
+            public static final double baseThetaStdDev = 0.2;  // 0.5 — heading from vision is still less reliable
+            public static final double distanceWeight = 0.8;  // 1.0 — less aggressive distance penalty
+            public static final double ambiguityWeight = 0.6;  // 0.8
+            public static final double areaWeight = 0.5;  // 0.6
+            public static final double anisotropyWeight = 0.5;  // 0.6
+            public static final double motionWeight = 0.3;  // 0.4
+            public static final double latencyWeight = 0.3;  // 0.4
+
+            /**
+             * Smoothing factor for the exponential moving average applied to distance and area.
+             * Range [0.0, 1.0] — lower values smooth more but react slower to real changes.
+             * At 20fps: 0.05 - 1s lag, 0.15 - 0.3s lag, 0.30 - 0.15s lag.
+             */
+            public static final double smoothingAlpha = 0.15;
         }
 
         public static final class CameraConstants {
@@ -290,6 +297,7 @@ public final class Constants {
                     "evan", 
                     LAYOUT,
                     LEFT_CAMERA_TRANSFORM, 
+                    new StdDevCalculator(),
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
                 ),
@@ -297,6 +305,7 @@ public final class Constants {
                     "daniil", 
                     LAYOUT,
                     RIGHT_CAMERA_TRANSFORM,
+                    new StdDevCalculator(),
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
                 ),
@@ -304,6 +313,7 @@ public final class Constants {
                     "val", 
                     LAYOUT,
                     BACK_CAMERA_TRANSFORM,
+                    new StdDevCalculator(),
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
                 )

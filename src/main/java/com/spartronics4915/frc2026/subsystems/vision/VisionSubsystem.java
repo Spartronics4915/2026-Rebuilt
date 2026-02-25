@@ -16,13 +16,11 @@ import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
 import com.spartronics4915.frc2026.subsystems.vision.filters.PipelineFilter;
 import com.spartronics4915.frc2026.subsystems.vision.filters.ResultFilters;
 import com.spartronics4915.frc2026.subsystems.vision.processing.PoseFusionEngine;
-import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
 import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
 import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
 import com.spartronics4915.frc2026.util.PerformanceTracker;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
-import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -42,11 +40,11 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  * pose estimator.
  *
  * <p>Each camera runs its own {@link Notifier} thread via
- * {@link ProcessorInterface}, producing results asynchronously.
+ * {@link ProcessorInterface}, producing results asynchronously — including
+ * their own standard deviations computed by a per-camera {@link StdDevCalculator}.
  * Every robot loop iteration, {@link #periodic()} drains those queues,
- * filters bad measurements, calculates per-result standard deviations,
- * fuses across cameras via {@link PoseFusionEngine}, and forwards the
- * final estimate to the drivetrain via {@link VisionPoseConsumer}.
+ * filters bad measurements, fuses across cameras via {@link PoseFusionEngine},
+ * and forwards the final estimate to the drivetrain via {@link VisionPoseConsumer}.
  *
  * <p>In simulation, a {@link VisionSystemSim} mirrors the real camera
  * pipeline using the robot's ground-truth pose.
@@ -62,7 +60,7 @@ public class VisionSubsystem extends SubsystemBase {
     private final PipelineFilter aprilTagFilter;
     private final VisionPoseConsumer poseConsumer;
     
-    //private final PerformanceTracker performanceTracker;
+    private final PerformanceTracker performanceTracker;
     private final SwerveSubsystem swerve;
 
     // True if the most recent periodic loop produced a valid pose
@@ -128,8 +126,8 @@ public class VisionSubsystem extends SubsystemBase {
             new ResultFilters.AnisotropyFilter(config.maxAnisotropy),
             new ResultFilters.AreaFilter(config.minArea, config.maxArea)
         ));
-        
-        //this.performanceTracker = new PerformanceTracker(config.maxPeriodicTimeMs);
+
+        this.performanceTracker = new PerformanceTracker(config.maxPeriodicTimeMs);
 
         isSimulation = Robot.isSimulation();
         
@@ -148,63 +146,36 @@ public class VisionSubsystem extends SubsystemBase {
     }
     
     /**
-     * Collects queued camera results, filters bad measurements, 
-     * computes standard deviations, fuses across cameras, and
-     * forwards the result to the drivetrain pose estimator.
+     * Collects queued camera results, filters bad measurements, fuses across
+     * cameras, and forwards the result to the drivetrain pose estimator.
      *
-     * <p>Performance of each stage is tracked via {@link PerformanceTracker}
-     * and published to NetworkTables for tuning and diagnostics.
+     * <p>Std devs are already populated by each camera's own
+     * {@link StdDevCalculator} before results enter this queue,
+     * so no std dev computation happens here.
      */
     @Override
     public void periodic() {
-        //performanceTracker.startTiming("periodic_total");
-        
+        performanceTracker.startTiming("periodic_total");
+
         // Drain each camera's result queue. Camera threads write asynchronously
         // via Notifier, so getResultQueue() is a destructive thread-safe read.
         List<ResultInterface> allResults = new ArrayList<>();
         for (ProcessorInterface entry : cameras.values()) {
-            //performanceTracker.startTiming("camera_" + entry.getCameraName());
             allResults.addAll(entry.getResultQueue());
-            //performanceTracker.stopTiming();
         }
         
-        // Remove results that fail quality thresholds, then narrow the type to
-        // ApriltagResult since that's all this currently handles
-        //performanceTracker.startTiming("filtering");
-        //List<ApriltagResult> apriltagResults = aprilTagFilter.filter(allResults).stream()
-        //    .filter(ApriltagResult.class::isInstance)
-        //    .map(ApriltagResult.class::cast)
-        //    .toList();
-        //performanceTracker.stopTiming();
-
+        // Remove results that fail quality thresholds, then narrow to ApriltagResult
         List<ApriltagResult> apriltagResults = aprilTagFilter.filter(allResults).stream()
             .map(ApriltagResult.class::cast)
             .toList();
 
-        // Each result gets its own std devs based on distance, ambiguity, area,
-        // anisotropy, motion, latency, and tag count. These are used both for
-        // outlier rejection in fusion and for weighting in the pose estimator.
-        for (ApriltagResult entry : apriltagResults) {
-            entry.setStdDevs(StdDevCalculator.calculate(
-                entry.getAverageDistanceToTargets(),
-                entry.getAmbiguity(),
-                entry.getAverageArea(),
-                entry.getXAnisotropy(),
-                entry.getYAnisotropy(),
-                entry.getChassisSpeeds(),
-                entry.getLatencyMs(), 
-                entry.getTargetCount()
-            ));
-        }
-
-        // Drop any results where std dev calculation returned null
+        // Drop any results where std devs are missing (shouldn't happen, but guard anyway)
         apriltagResults = apriltagResults.stream()
             .filter(result -> result.getStdDevs() != null)
             .toList();
 
         // Fuse poses from multiple cameras
         if (!apriltagResults.isEmpty()) {
-            //performanceTracker.startTiming("pose_fusion");
             try {
                 Optional<ApriltagResult> fusedResultOpt = PoseFusionEngine.fusePoses(apriltagResults, config);
                 if (fusedResultOpt.isPresent()) {
@@ -250,7 +221,7 @@ public class VisionSubsystem extends SubsystemBase {
                     hasValidPose = false;
                 }
             } finally {
-                //performanceTracker.stopTiming();
+                performanceTracker.stopTiming();
             }
         } else {
             // No results passed filtering this loop
@@ -263,8 +234,8 @@ public class VisionSubsystem extends SubsystemBase {
             visionSystemSim.update(swerve.getRobotPose());
         }
 
-        //performanceTracker.stopTiming();
-        //performanceTracker.publishMetrics();
+        performanceTracker.stopTiming();
+        performanceTracker.publishMetrics();
     }
 
     /**
@@ -303,5 +274,4 @@ public class VisionSubsystem extends SubsystemBase {
             Matrix<N3, N1> stdDevs
         );
     }
-
 }

@@ -14,20 +14,28 @@ import org.photonvision.simulation.SimCameraProperties;
 import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 
+import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
 import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
 import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
 import static com.spartronics4915.frc2026.Constants.VisionConstants.*;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Notifier;
 
 /**
  * A processor that utilizes photon vision's pre-existing camera class. 
  * The processor keeps a linked queue containing its most recent results 
  * which can be grabbed and used for further use.
+ *
+ * <p>Each instance owns a {@link StdDevCalculator} that maintains smoothed
+ * distance and area state across frames. This means std devs are computed
+ * here, camera-by-camera, rather than centrally in VisionSubsystem.
  */
 public class PhotonProcessor implements ProcessorInterface {
 
@@ -36,6 +44,7 @@ public class PhotonProcessor implements ProcessorInterface {
     private final AprilTagFieldLayout fieldLayout;
     private final Transform3d cameraTransform;
     private final PhotonPoseEstimator poseEstimator;
+    private final StdDevCalculator stdDevCalculator;
 
     private final SimCameraProperties simProperties;
     private final PhotonCameraSim cameraSim;
@@ -53,15 +62,17 @@ public class PhotonProcessor implements ProcessorInterface {
      * Constructs a photon processor with a set of parameters
      * 
      * @param name the name of the processor
-     * @param layout the apriltag field layout of the current 
-     * @param transform the transform from the center of the robot to the cameras lens
+     * @param layout the apriltag field layout of the current field
+     * @param transform the transform from the center of the robot to the camera lens
+     * @param calculator per-camera std dev calculator; must not be shared between cameras
      * @param properties the simulator properties for the camera
-     * @param chassisSpeedsSupplier the supplier for the robots field relative speeds
+     * @param chassisSpeedsSupplier the supplier for the robot's field-relative speeds
      */
     public PhotonProcessor(
         String name,
         AprilTagFieldLayout layout,
         Transform3d transform,
+        StdDevCalculator calculator,
         SimCameraProperties properties,
         Supplier<ChassisSpeeds> chassisSpeedsSupplier
     ) {
@@ -70,15 +81,16 @@ public class PhotonProcessor implements ProcessorInterface {
         this.fieldLayout = layout;
         this.cameraTransform = transform;
         this.poseEstimator = new PhotonPoseEstimator(fieldLayout, cameraTransform);
+        this.stdDevCalculator = calculator;
         
         this.simProperties = properties;
         this.cameraSim = new PhotonCameraSim(photonCamera, simProperties);
 
         this.resultQueue = new ConcurrentLinkedQueue<>();
-        this.maxQueueSize = 10;
+        this.maxQueueSize = 4;
         
         this.processingNotifier = new Notifier(this::process);
-        this.processingFrequency = 100.0;
+        this.processingFrequency = 50.0;
         this.processingNotifier.setName("Spectrum-" + cameraName);
         this.isRunning = false;
 
@@ -111,17 +123,18 @@ public class PhotonProcessor implements ProcessorInterface {
             if (apriltagResult.isPresent()) {
                 while (resultQueue.size() >= maxQueueSize) {
                     resultQueue.poll();
-                } resultQueue.add(apriltagResult.get());
+                }
+                resultQueue.add(apriltagResult.get());
             }
         }
     }
 
     /**
-     * Processes a photon vision pipeline result and turns it into a {@link ApriltagResult} 
-     * without the standard deviations.
-     *  
+     * Processes a photon vision pipeline result into an {@link ApriltagResult},
+     * including std dev calculation via this camera's {@link StdDevCalculator}.
+     *
      * @param rawResult a raw photon vision pipeline result given by the camera
-     * @return an optional of a {@link ApriltagResult} 
+     * @return an optional of a fully populated {@link ApriltagResult}, including std devs
      */
     private Optional<ApriltagResult> processApriltagResult(PhotonPipelineResult rawResult) {
         if (!rawResult.hasTargets()) return Optional.empty();
@@ -132,18 +145,17 @@ public class PhotonProcessor implements ProcessorInterface {
         /* 
          * Calculating the different aspects of the camera result 
          * enables the filtering of bad poses + we can use them
-         * for standard deviation calculation later on
+         * for standard deviation calculation
          */
-        double avgDistance = calculateAverageDistance(targets);
+        double avgDistance  = calculateAverageDistance(targets);
         double avgAmbiguity = calculateAmbiguity(targets);
-        double avgArea = calculateAverageArea(targets);
-        double x_anisotropy = calculateXAnisotropy(targets);
-        double y_anisotropy = calculateYAnisotropy(targets);
+        double avgArea      = calculateAverageArea(targets);
+        double xAnisotropy  = calculateXAnisotropy(targets);
+        double yAnisotropy  = calculateYAnisotropy(targets);
 
         /* 
-         * Grabbing the robots velocity at the timestamp of the pose 
-         * allows the system to take into account motion blur 
-         * for standard deviation calculation later on
+         * Grabbing the robot's velocity at the timestamp of the pose 
+         * allows the system to account for motion blur
          */
         ChassisSpeeds robotVelocity = robotVelocitySupplier.get();
         if (robotVelocity == null) {
@@ -154,38 +166,38 @@ public class PhotonProcessor implements ProcessorInterface {
             ? poseEstimator.estimateCoprocMultiTagPose(rawResult)
             : poseEstimator.estimateLowestAmbiguityPose(rawResult);
         
-        /* 
-         * Make sure to do a null safety check here so we dont
-         * End up causing a full system crash
-         */
         if (poseOptional.isEmpty()) return Optional.empty();
         EstimatedRobotPose estimatedPose = poseOptional.get();
         Pose2d resultantPose = estimatedPose.estimatedPose.toPose2d();
 
-        /*
-         * Get the timestamp here so we can pass it to the 
-         * kalman filter used by addVisionMeasurement later
-         */
         double timestamp = estimatedPose.timestampSeconds;
-        double latency = rawResult.metadata.getLatencyMillis();
+        double latency   = rawResult.metadata.getLatencyMillis();
 
-        /*
-         * Return the optional of all of the previous collected data 
-         * from the result, also standard deviations are null for now 
-         * as we will calculate them later on
-         */
+        // Calculate std devs here using this camera's own instance, which
+        // maintains smoothed distance/area state across frames.
+        Matrix<N3, N1> stdDevs = stdDevCalculator.calculate(
+            avgDistance,
+            avgAmbiguity,
+            avgArea,
+            xAnisotropy,
+            yAnisotropy,
+            robotVelocity,
+            latency,
+            targetCount
+        );
+
         return Optional.of(new ApriltagResult(
-            cameraName, 
-            timestamp, 
-            latency, 
+            cameraName,
+            timestamp,
+            latency,
             resultantPose,
-            null, 
-            targets, 
-            avgDistance, 
-            avgAmbiguity, 
-            avgArea, 
-            x_anisotropy,
-            y_anisotropy,
+            stdDevs,
+            targets,
+            avgDistance,
+            avgAmbiguity,
+            avgArea,
+            xAnisotropy,
+            yAnisotropy,
             robotVelocity
         ));
     }
@@ -196,9 +208,6 @@ public class PhotonProcessor implements ProcessorInterface {
     
     /**
      * Calculates the average distance to a list of photon vision targets
-     * 
-     * @param targets the targets from a list of photon tracked targets
-     * @return the average distance to the list of targets
      */
     private double calculateAverageDistance(List<PhotonTrackedTarget> targets) {
         return targets.stream()
@@ -209,9 +218,6 @@ public class PhotonProcessor implements ProcessorInterface {
 
     /**
      * Calculates the average ambiguity from a list of photon vision targets
-     * 
-     * @param targets the targets from a list of photon tracked targets
-     * @return the average ambiguity from the list of targets
      */
     private static double calculateAmbiguity(List<PhotonTrackedTarget> targets) {
         if (targets.size() == 1) {
@@ -227,12 +233,8 @@ public class PhotonProcessor implements ProcessorInterface {
         return minAmbiguity / Math.sqrt(targets.size());
     }
 
-    
     /**
      * Calculates the average area (size in frame) of a list of photon vision targets
-     * 
-     * @param targets the targets from a list of photon tracked targets
-     * @return the average area from the list of targets
      */
     private static double calculateAverageArea(List<PhotonTrackedTarget> targets) {
         return targets.stream()
@@ -242,11 +244,8 @@ public class PhotonProcessor implements ProcessorInterface {
     }
     
     /**
-     * Calculates the average x anisotropy (y-tilt in camera frame)
+     * Calculates the average x anisotropy (yaw-based uncertainty)
      * from a list of photon vision targets
-     * 
-     * @param targets the targets from a list of photon tracked targets
-     * @return the average x anisotropy from the list of targets
      */
     private static double calculateXAnisotropy(List<PhotonTrackedTarget> targets) {
         double avgYawRad = Math.toRadians(
@@ -259,11 +258,8 @@ public class PhotonProcessor implements ProcessorInterface {
     }
 
     /**
-     * Calculates the average y anisotropy (x-tilt in camera frame)
+     * Calculates the average y anisotropy (pitch-based uncertainty)
      * from a list of photon vision targets
-     * 
-     * @param targets the targets from a list of photon tracked targets
-     * @return the average y anisotropy from the list of targets
      */
     private static double calculateYAnisotropy(List<PhotonTrackedTarget> targets) {
         double avgPitchRad = Math.toRadians(
@@ -369,5 +365,4 @@ public class PhotonProcessor implements ProcessorInterface {
     }
 
     //#endregion
-
 }
