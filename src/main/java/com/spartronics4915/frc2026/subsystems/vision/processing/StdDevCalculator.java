@@ -38,7 +38,7 @@ public class StdDevCalculator {
         double latencySeconds = latencyMs / 1000.0;
         
         double distanceFactor = calculateDistanceFactor(avgDistance);
-        double ambiguityFactor = calculateAmbiguityFactor(avgAmbiguity);
+        double ambiguityFactor = (numTags > 1) ? 1.0 : calculateAmbiguityFactor(avgAmbiguity);
         double areaFactor = calculateAreaFactor(avgArea);
         double anisotropyFactor = calculateAnisotropyFactor(xAnisotropy, yAnisotropy);
         double latencyFactor = calculateLatencyFactor(latencySeconds);
@@ -94,11 +94,7 @@ public class StdDevCalculator {
     
     private static double calculateAreaFactor(double area) {
         area = Math.max(0.001, Math.min(area, 1.0));
-        
-        double normalized = area / 0.01;
-        double factor = 1.0 / Math.sqrt(normalized);
-        
-        return Math.min(factor, 5.0);
+        return Math.min(0.1 / Math.sqrt(area), 5.0);
     }
     
     private static double calculateAnisotropyFactor(double xAnisotropy, double yAnisotropy) {
