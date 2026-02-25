@@ -166,6 +166,7 @@ public class VisionSubsystem extends SubsystemBase {
         
         // Remove results that fail quality thresholds, then narrow to ApriltagResult
         List<ApriltagResult> apriltagResults = aprilTagFilter.filter(allResults).stream()
+            .filter(ApriltagResult.class::isInstance)
             .map(ApriltagResult.class::cast)
             .toList();
 
