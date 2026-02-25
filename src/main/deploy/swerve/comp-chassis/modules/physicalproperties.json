@@ -14,6 +14,6 @@
         "angle": 0.0
     },
 
-    "wheelGripCoefficientOfFriction": 1.916,
+    "wheelGripCoefficientOfFriction": 2.255,
     "optimalVoltage": 12
 }
