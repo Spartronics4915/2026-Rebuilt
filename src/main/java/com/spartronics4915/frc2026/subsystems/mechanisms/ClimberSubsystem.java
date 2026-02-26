@@ -1,9 +1,7 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms;
 
-import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
-import com.ctre.phoenix6.signals.InvertedValue;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
 import com.spartronics4915.frc2026.util.MotorHelpers.CTRE.LoggedTalonFX;

@@ -14,7 +14,6 @@ import com.spartronics4915.frc2026.autos.ZoneTransition;
 import com.spartronics4915.frc2026.autos.ZoneTransition.TraversalMethod;
 import com.spartronics4915.frc2026.Constants.VisionConstants;
 
-import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.hubPose;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.trenchTransform;
 import static com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem.isFieldRelative;
