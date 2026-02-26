@@ -84,6 +84,8 @@ public class Superstructure extends SubsystemBase {
     private Zone currentZone;
     private Zone previousZone;
 
+    private PipelineState currentPipelineState;
+
     private boolean stateOverride;
 
     private AutoAimResult result;
@@ -188,7 +190,7 @@ public class Superstructure extends SubsystemBase {
         TESTING
     }
 
-    private enum PipelineState {
+    public enum PipelineState {
         ON(IndexerState.ON, FeederState.ON, ShooterClamp.UNRESTRICTED),
         OFF(IndexerState.OFF, FeederState.OFF, ShooterClamp.RESTRICTED);
 
@@ -326,14 +328,29 @@ public class Superstructure extends SubsystemBase {
         CommandScheduler.getInstance().schedule(switchState(overrideState));
     }
 
-    private Command setPipelineState(PipelineState state) {
+    public Command setPipelineState(PipelineState state) {
         return Commands.sequence(
+            Commands.runOnce(() -> currentPipelineState = state),
             shooter.setClampCommand(state.shooterClamp),
             Commands.waitUntil(() -> isShooterReady()),
             Commands.parallel(
                 indexer.setStateCommand(state.indexerState),
                 feeder.setStateCommand(state.feederState)
             )
+        );
+    }
+
+    public Command toggleAutoAimState() {
+        return Commands.runOnce(
+            () -> isAutoAiming = !isAutoAiming
+        ).ignoringDisable(true);
+    }
+
+    public Command resetDynamics() {
+        return Commands.parallel(
+            Commands.runOnce(() -> isAutoAiming = false),
+            turret.setSetpointCommand(Rotation2d.fromDegrees(0)),
+            hood.setSetpointCommand(Rotation2d.fromDegrees(0))
         );
     }
 
@@ -382,6 +399,10 @@ public class Superstructure extends SubsystemBase {
         } else {
             return closeHub ? Zone.ALLIANCE_ZONE : Zone.OPPONENT_ZONE;
         }
+    }
+
+    public PipelineState getPipelineState() {
+        return currentPipelineState;
     }
 
     //#region State Transitions

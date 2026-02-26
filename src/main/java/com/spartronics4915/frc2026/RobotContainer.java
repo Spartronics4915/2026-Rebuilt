@@ -5,7 +5,7 @@
 package com.spartronics4915.frc2026;
 
 import com.spartronics4915.frc2026.Constants.OperatorConstants;
-import com.spartronics4915.frc2026.autos.Autos;
+import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
 import com.spartronics4915.frc2026.autos.ComplexAutoChooser;
 import com.spartronics4915.frc2026.autos.DriveToPOI;
 import com.spartronics4915.frc2026.autos.NeutralZoneAutos;
@@ -24,9 +24,12 @@ import java.util.Set;
 
 import com.spartronics4915.frc2026.commands.DriveCommand;
 import com.spartronics4915.frc2026.subsystems.Superstructure;
+import com.spartronics4915.frc2026.subsystems.Superstructure.PipelineState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem.IntakeState;
+import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem.PivotState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.HoodSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.FeederSubsystem;
@@ -93,6 +96,7 @@ public class RobotContainer {
 
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
     private final CommandXboxController operatorController = new CommandXboxController(OperatorConstants.OPERATOR_CONTROLLER_PORT);
+    private final CommandXboxController testingController = new CommandXboxController(OperatorConstants.TESTING_CONTROLLER_PORT);
 
     public DriveCommand driveCommand = new DriveCommand(driverController, swerveSubsystem);
 
@@ -125,6 +129,8 @@ public class RobotContainer {
      */
     private void configureBindings() {
         swerveSubsystem.setDefaultCommand(driveCommand);
+
+        //#region Driver Controller
 
         driverController.b().onTrue(
             Commands.runOnce(() -> {
@@ -188,6 +194,52 @@ public class RobotContainer {
             Commands.runOnce(() -> {
                 swerveSubsystem.setMovementOverride(0.0);
             })
+        );
+
+        //#endregion
+        //#region Testing Controller
+
+        // Toggle Auto-Aim
+        testingController.start().onTrue(
+            superstructure.toggleAutoAimState()
+        );
+
+        // Reset Dynamics
+        testingController.back().onTrue(
+            superstructure.resetDynamics()
+        );
+
+        // Pipeline Toggle
+        testingController.rightTrigger().onTrue(
+            Commands.runOnce(() -> 
+                superstructure.setPipelineState(
+                    superstructure.getPipelineState() == PipelineState.OFF 
+                        ? PipelineState.ON 
+                        : PipelineState.OFF
+                )
+            )
+        );
+
+        // Pivot Safe
+        testingController.povUp().onTrue(
+            pivotSubsystem.setStateCommand(PivotState.SAFE)
+        );
+
+        // Pivot Stow
+        testingController.povLeft().onTrue(
+            pivotSubsystem.setStateCommand(PivotState.STOW)
+        );
+
+        // Pivot Ready
+        testingController.povRight().onTrue(
+            pivotSubsystem.setStateCommand(PivotState.READY)
+        );
+
+        // Pivot Jostle
+
+        // Intake On
+        testingController.leftTrigger().onTrue(
+            intakeSubsystem.setStateCommand(IntakeState.ON)
         );
     }
 
