@@ -1,24 +1,39 @@
 package com.spartronics4915.frc2026.subsystems.bling;
 
-import edu.wpi.first.wpilibj.XboxController;
+import static edu.wpi.first.units.Units.*;
 
-import com.ctre.phoenix.led.*;
-import com.ctre.phoenix.led.CANdle.LEDStripType;
-import com.ctre.phoenix.led.CANdle.VBatOutputMode;
-import com.ctre.phoenix.led.ColorFlowAnimation.Direction;
-import com.ctre.phoenix.led.LarsonAnimation.BounceMode;
-import com.ctre.phoenix.led.TwinkleAnimation.TwinklePercent;
-import com.ctre.phoenix.led.TwinkleOffAnimation.TwinkleOffPercent;
-import com.spartronics4915.frc2026.Constants;
+import com.ctre.phoenix6.CANBus;
+import com.ctre.phoenix6.configs.CANdleConfiguration;
+import com.ctre.phoenix6.controls.*;
+import com.ctre.phoenix6.hardware.CANdle;
+import com.ctre.phoenix6.signals.AnimationDirectionValue;
+import com.ctre.phoenix6.signals.RGBWColor;
+import com.ctre.phoenix6.signals.StatusLedWhenActiveValue;
+import com.ctre.phoenix6.signals.StripTypeValue;
+
+import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.util.Color;
+
 
 public class BlingSubsystem {
-    @SuppressWarnings("removal")
-    private final CANdle candle = new CANdle(Constants.BlingConstants.CANdleID, "rio");
-    private XboxController joystick;
+    private static final RGBWColor Green = new RGBWColor(0, 255, 0, 0);
+    private static final RGBWColor Red = new RGBWColor(255, 255, 0, 0);
+    private static final RGBWColor Blue = new RGBWColor(0, 0, 255, 0);
+    private static final RGBWColor White = new RGBWColor(Color.kWhite).scaleBrightness(0.5);
+    private static final RGBWColor Violet = RGBWColor.fromHSV(Degrees.of(270), 0.9, 0.8);
 
-    private Animation toAnimate = null;
+    private static final int Slot0StartIdx = 8;
+    private static final int Slot0EndIdx = 37;
 
-    public enum AnimationTypes {
+    private static final int Slot1StartIdx =38;
+    private static final int Slot1EndIdx = 67;
+
+    private final CANdle candle = new CANdle(1, CANBus.roboRIO());
+
+    private enum AnimationType {
+        None,
         ColorFlow,
         Fire,
         Larson,
@@ -28,131 +43,37 @@ public class BlingSubsystem {
         Strobe,
         Twinkle,
         TwinkleOff,
-        SetAll
     }
 
-    private AnimationTypes currentAnimation;
+    private AnimationType anim0State = AnimationType.None;
+    private AnimationType anim1State = AnimationType.None;
 
-    @SuppressWarnings("removal")
-    public BlingSubsystem(XboxController joy) {
-        this.joystick = joy;
-        changeAnimation(AnimationTypes.SetAll);
+    private final SendableChooser<AnimationType> anim0Chooser = new SendableChooser<AnimationType>();
+    private final SendableChooser<AnimationType> anim1Chooser = new SendableChooser<AnimationType>();
 
-        CANdleConfiguration configAll = new CANdleConfiguration();
+    public BlingSubsystem() {
+        var cfg = new CANdleConfiguration();
 
-        configAll.statusLedOffWhenActive = true;
-        configAll.disableWhenLOS = false;
-        configAll.stripType = LEDStripType.GRB;
-        configAll.brightnessScalar = 0.1;
-        configAll.vBatOutputMode = VBatOutputMode.Modulated;
-        candle.configAllSettings(configAll, 100);
-    }
+        cfg.LED.StripType = StripTypeValue.GRB;
+        cfg.LED.BrightnessScalar = 0.5;
 
-    public void incrementAnimation() {
-        switch(currentAnimation) {
-            case ColorFlow: changeAnimation(AnimationTypes.Fire); break;
-            case Fire: changeAnimation(AnimationTypes.Fire); break;
-            case Larson: changeAnimation(AnimationTypes.Larson); break;
-            case Rainbow: changeAnimation(AnimationTypes.Rainbow); break;
-            case RgbFade: changeAnimation(AnimationTypes.RgbFade); break;
-            case SingleFade: changeAnimation(AnimationTypes.SingleFade); break;
-            case Strobe: changeAnimation(AnimationTypes.Strobe); break;
-            case TwinkleOff: changeAnimation(AnimationTypes.TwinkleOff); break;
-            case SetAll: changeAnimation(AnimationTypes.SetAll); break;
+        cfg.CANdleFeatures.StatusLedWhenActive = StatusLedWhenActiveValue.Disabled;
+
+        candle.getConfigurator().apply(cfg);
+
+        for (int i = 0; i < 8; ++i) {
+            candle.setControl(new EmptyAnimation(i));
         }
+        
+        candle.setControl(new SolidColor(0, 1).withColor(Green));
+        candle.setControl(new SolidColor(2, 3).withColor(White));
+        candle.setControl(new SolidColor(4, 5).withColor(Blue));
+        candle.setControl(new SolidColor(6, 7).withColor(Red));
+
+        anim0Chooser.setDefaultOption("Color Flow", AnimationType.ColorFlow);
+        anim0Chooser.addOption("Rainbow", AnimationType.Rainbow);
+        anim0Chooser.addOption("Twinkle", AnimationType.Twinkle);
+        anim0Chooser.addOption("Twinkle Off", AnimationType.TwinkleOff);
+        anim0Chooser.addOption("Fire", AnimationType.Fire);
     }
-
-    public void decrementAnimation() {
-        switch(currentAnimation) {
-            case ColorFlow: changeAnimation(AnimationTypes.ColorFlow); break;
-            case Fire: changeAnimation(AnimationTypes.Fire); break;
-            case Larson: changeAnimation(AnimationTypes.Larson); break;
-            case Rainbow: changeAnimation(AnimationTypes.Rainbow); break;
-            case RgbFade: changeAnimation(AnimationTypes.RgbFade); break;
-            case SingleFade: changeAnimation(AnimationTypes.SingleFade); break;
-            case Strobe: changeAnimation(AnimationTypes.Strobe); break;
-            case Twinkle: changeAnimation(AnimationTypes.Twinkle); break;
-            case TwinkleOff: changeAnimation(AnimationTypes.TwinkleOff); break;
-            case SetAll: changeAnimation(AnimationTypes.SetAll); break;
-        }
-    }
-
-    public void setColors() {
-        changeAnimation(AnimationTypes.SetAll);
-    }
-
-    //Wrappers to access CANdle from the subsystem
-    @SuppressWarnings("removal")
-    public double getVbat() { return candle.getBusVoltage(); }
-    @SuppressWarnings("removal")
-    public double get5V() { return candle.get5VRailVoltage(); }
-    @SuppressWarnings("removal")
-    public double getCurrent() { return candle.getCurrent(); }
-    @SuppressWarnings("removal")
-    public double getTemperature() { return candle.getTemperature(); }
-    @SuppressWarnings("removal")
-    public void configBrightness(double percent) { candle.configBrightnessScalar(percent, 0); }
-    @SuppressWarnings("removal")
-    public void configLos(boolean disableWhenLos) { candle.configLOSBehavior(disableWhenLos, 0); }
-    @SuppressWarnings("removal")
-    public void configLedType(LEDStripType type) { candle.configLEDType(type, 0); }
-    @SuppressWarnings("removal")
-    public void configStatusLedBehavior(boolean offWhenActive) { candle.configStatusLedState(offWhenActive, 0); }
-
-    @SuppressWarnings("removal")
-    public void changeAnimation(AnimationTypes toChange) {
-        currentAnimation = toChange;
-
-        switch(toChange) {
-            case ColorFlow:
-                toAnimate = new ColorFlowAnimation(128, 20, 70, 0, 0.7, Constants.BlingConstants.LedCount, Direction.Forward);
-                break;
-            case Fire:
-                toAnimate = new FireAnimation(0.5, 0.7, Constants.BlingConstants.LedCount, 0.7, 0.5);
-                break;
-            case Larson:
-                toAnimate = new LarsonAnimation(0, 255, 46, 0, 1, Constants.BlingConstants.LedCount, BounceMode.Front,3);
-                break;
-            case Rainbow:
-                toAnimate = new RainbowAnimation(1, 0.1, Constants.BlingConstants.LedCount);
-                break;
-            case RgbFade:
-                toAnimate = new RgbFadeAnimation(0.7, 0.4, Constants.BlingConstants.LedCount);
-                break;
-            case SingleFade:
-                toAnimate = new SingleFadeAnimation(50, 2, 200, 0, 0.5, Constants.BlingConstants.LedCount);
-                break;
-            case Strobe:
-                toAnimate = new StrobeAnimation(240, 10, 180, 0, 98.0 / 256.0, Constants.BlingConstants.LedCount);
-                break;
-            case Twinkle:
-                toAnimate = new TwinkleAnimation(30, 70, 60, 0, 0.4, Constants.BlingConstants.LedCount, TwinklePercent.Percent6);
-                break;
-            case TwinkleOff:
-                toAnimate = new TwinkleOffAnimation(70, 90, 175, 0, 0.8, Constants.BlingConstants.LedCount, TwinkleOffPercent.Percent100);
-                break;
-            case SetAll:
-                toAnimate = null;
-                break;
-        }
-    System.out.println("Changed to " + currentAnimation.toString());
-    }
-/*
-    @Override
-    public void periodic() {
-        if(toAnimate == null) {
-            candle.setLEDs((int)(joystick.getLeftTriggerAxis() * 255),
-                            (int)(joystick.getRightTriggerAxis() * 255),
-                            (int)(joystick.getLeftX() * 255));
-        } else {
-            candle.animate(toAnimate);
-        }
-        candle.modulateVBatOutput(joystick.getRightY());
-    }
-
-    @Override
-    public void simulationPeriodic() {
-
-    }
-    */
 }
