@@ -1,7 +1,7 @@
 package com.spartronics4915.frc2026.util;
 
 import java.util.Arrays;
-import java.util.function.BooleanSupplier;
+import java.util.function.BiPredicate;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -15,7 +15,7 @@ public class AutoAim {
     private final Translation3d turretTransform;
     private final Rotation2d minAngle;
     private final Rotation2d maxAngle;
-    private BooleanSupplier collisionMap;
+    private BiPredicate<Rotation2d, Double> collisionMap;
 
     private final double g = 9.81;
 
@@ -45,9 +45,9 @@ public class AutoAim {
     /**
      * Sets the collision map for the auto-aim system. Supplier should return true if the shot collides with an obstacle, and false if the shot does not.
      * 
-     * @param collisionMap A BooleanSupplier that provides the collision map, or null for no collision map.
+     * @param collisionMap A BiPredicate that provides the collision map, or null for no collision map.
      */
-    public void setCollisionMap(BooleanSupplier collisionMap) {
+    public void setCollisionMap(BiPredicate<Rotation2d, Double> collisionMap) {
         this.collisionMap = collisionMap;
     }
 
