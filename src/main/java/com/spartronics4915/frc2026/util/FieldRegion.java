@@ -7,6 +7,7 @@ import edu.wpi.first.math.geometry.Translation2d;
  */
 @FunctionalInterface
 public interface FieldRegion {
+
     /** @return true if the given field-relative position is inside this region */
     boolean contains(Translation2d position);
 
@@ -20,4 +21,5 @@ public interface FieldRegion {
     static FieldRegion circle(Translation2d center, double radiusMeters) {
         return pos -> pos.getDistance(center) <= radiusMeters;
     }
+    
 }
