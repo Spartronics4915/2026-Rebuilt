@@ -203,10 +203,10 @@ public final class Constants {
                         Amps.of(60),
                         1
                     ),
-                    new Translation2d(Inches.of(14).in(Meter), Inches.of(13).in(Meter)), // Front left
-                    new Translation2d(Inches.of(14).in(Meter), Inches.of(-13).in(Meter)), // Front right
-                    new Translation2d(Inches.of(-14).in(Meter), Inches.of(13).in(Meter)), // Back left
-                    new Translation2d(Inches.of(-14).in(Meter), Inches.of(-13).in(Meter))  // Back right
+                    new Translation2d(Inches.of(12.1640885).in(Meter), Inches.of(9.585892).in(Meter)), // Front left
+                    new Translation2d(Inches.of(12.1640885).in(Meter), Inches.of(-9.585892).in(Meter)), // Front right
+                    new Translation2d(Inches.of(-12.1640885).in(Meter), Inches.of(9.585892).in(Meter)), // Back left
+                    new Translation2d(Inches.of(-12.1640885).in(Meter), Inches.of(-9.585892).in(Meter))  // Back right
                 ));
 
                 public com.pathplanner.lib.config.RobotConfig config;
