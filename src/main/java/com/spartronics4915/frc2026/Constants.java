@@ -197,7 +197,7 @@ public final class Constants {
                     new ModuleConfig(
                         Inches.of(2.0),
                         MetersPerSecond.of(24),
-                        1.916,
+                        2.255,
                         DCMotor.getKrakenX60(1),
                         6.03,
                         Amps.of(60),
