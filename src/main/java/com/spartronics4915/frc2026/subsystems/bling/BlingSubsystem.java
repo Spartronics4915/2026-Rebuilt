@@ -75,5 +75,47 @@ public class BlingSubsystem {
         anim0Chooser.addOption("Twinkle", AnimationType.Twinkle);
         anim0Chooser.addOption("Twinkle Off", AnimationType.TwinkleOff);
         anim0Chooser.addOption("Fire", AnimationType.Fire);
+
+        anim1Chooser.setDefaultOption("Larson", AnimationType.Larson);
+        anim1Chooser.setDefaultOption("RGB Fade", AnimationType.RgbFade);
+        anim1Chooser.setDefaultOption("Single Fade", AnimationType.SingleFade);
+        anim1Chooser.setDefaultOption("Strobe", AnimationType.Strobe);
+        anim1Chooser.setDefaultOption("Fire", AnimationType.Fire);
+
+        SmartDashboard.putData("Animation 0", anim0Chooser);
+        SmartDashboard.putData("Animation 1", anim1Chooser);
+    }
+
+    @Override
+    public void blingSubsystemPeriodic() {
+        final var anim0Selection = anim0Chooser.getSelected();
+        if (anim0State != anim0Selection) {
+            anim0State = anim0Selection;
+
+            switch (anim0State) {
+                default:
+                case ColorFlow:
+                    candle.setControl(
+                        new ColorFlowAnimation(Slot0StartIdx, Slot0EndIdx).withSlot(0)
+                            .withColor(Violet)
+                    );
+                    break;
+                case Rainbow:
+                    candle.setControl(
+                        new RainbowAnimation(Slot0StartIdx, Slot0EndIdx).withSlot(0)
+                    );
+                    break;
+                case Twinkle:
+                    candle.setControl(
+                        new TwinkleAnimation(Slot0StartIdx, Slot0EndIdx).withSlot(0)
+                    );
+                    break;
+                case Fire:
+                    candle.setControl(
+                        new FireAnimation(Slot0StartIdx, Slot0EndIdx).withSlot(0)
+                    );
+                    break;
+            }
+        }
     }
 }
