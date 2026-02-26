@@ -147,6 +147,10 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
     public Command setSetpointCommand(Rotation2d newSetpoint){
         return this.runOnce(() -> setSetpoint(newSetpoint));
     }
+
+    public Command setClampCommand(HoodClamp newClamp) {
+        return this.runOnce(() -> setClamp(newClamp));
+    }
  
     public enum HoodClamp {
         RESTRICTED(Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
