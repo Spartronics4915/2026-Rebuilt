@@ -41,6 +41,7 @@ import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -152,6 +153,35 @@ public class RobotContainer {
         
         driverController.y().whileTrue(
             POIFactory.generateCommand(POI.TOWER)
+        );
+
+        ChassisSpeeds driverNudgeUp = new ChassisSpeeds(0.25, 0, 0);
+        ChassisSpeeds driverNudgeLeft = new ChassisSpeeds(0, 0.25, 0);
+        ChassisSpeeds driverNudgeRight = new ChassisSpeeds(0, -0.25, 0);
+        ChassisSpeeds driverNudgeDown = new ChassisSpeeds(-0.25, 0, 0);
+
+        driverController.povUp().whileTrue(
+            Commands.run(() -> {
+                swerveSubsystem.drive(driverNudgeUp);
+            })
+        );
+
+        driverController.povLeft().whileTrue(
+            Commands.run(() -> {
+                swerveSubsystem.drive(driverNudgeLeft);
+            })
+        );
+
+        driverController.povRight().whileTrue(
+            Commands.run(() -> {
+                swerveSubsystem.drive(driverNudgeRight);
+            })
+        );
+
+        driverController.povDown().whileTrue(
+            Commands.run(() -> {
+                swerveSubsystem.drive(driverNudgeDown);
+            })
         );
 
         driverController.leftTrigger().onTrue(
