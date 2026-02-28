@@ -132,7 +132,7 @@ public class AutoAim {
             theta[i++] = new Rotation2d(Math.atan(t));
         }
 
-        theta = discardExtraneous(theta, minAngle, maxAngle);
+        theta = discardExtraneous(theta);
 
         Rotation2d selectedPitch;
         if (theta.length == 0) {
@@ -178,10 +178,10 @@ public class AutoAim {
         return value * value;
     }
 
-    private Rotation2d[] discardExtraneous(Rotation2d[] solutions, Rotation2d min, Rotation2d max) {
+    private Rotation2d[] discardExtraneous(Rotation2d[] solutions) {
         ArrayList<Rotation2d> result = new ArrayList<>();
         for (Rotation2d solution : solutions) {
-            if (solution.getRadians() >= min.getRadians() && solution.getRadians() <= max.getRadians()) {
+            if (solution.getRadians() >= minAngle.getRadians() && solution.getRadians() <= maxAngle.getRadians()) {
                 result.add(solution);
             }
         }
