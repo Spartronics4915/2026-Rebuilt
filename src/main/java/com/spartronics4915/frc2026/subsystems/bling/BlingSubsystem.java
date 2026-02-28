@@ -117,5 +117,75 @@ public class BlingSubsystem {
                     break;
             }
         }
+
+        final var anim1Selection = anim1Chooser.getSelected();
+        if (anim1State != anim1Selection) {
+            anim1State = anim1Selection;
+
+            switch (anim1State) {
+                default:
+                case Larson:
+                    candle.setControl(
+                        new LarsonAnimation(Slot1StartIdx, Slot1EndIdx).withSlot(1)
+                        .withColor(Red)
+                    );
+                    break;
+                case RgbFade:
+                    candle.setControl(
+                        new RgbFadeAnimation(Slot1StartIdx, Slot1EndIdx).withSlot(1)
+                    );
+                    break;
+                case SingleFade:
+                    candle.setControl(
+                        new SingleFadeAnimation(Slot1StartIdx,Slot1EndIdx).withSlot(1)
+                            .withColor(Red)
+                    );
+                    break;
+                case Strobe:
+                    candle.setControl(
+                        new StrobeAnimation(Slot1StartIdx, Slot1EndIdx).withSlot(1)
+                            .withColor(Red)
+                    );
+                    break;
+                case Fire:
+                    candle.setControl(
+                        new FireAnimation(Slot1StartIdx, Slot1EndIdx).withSlot(1)
+                            .withDirection(AnimationDirectionValue.Backward)
+                            .withCooling(0.4)
+                            .withSparking(0.5)
+                    );
+                    break;
+            }
+        }
     }
+
+    //@Override
+    //public void autonomousInit() {}
+
+    //@Override
+    //public void autonomousPeriodic() {}
+
+    //@Override
+    //public void teleopInit() {}
+
+    //@Override
+    //public void teleopPeriodic() {}
+
+    //@Override
+    //public void disabledInit() {}
+
+    //@Override
+    //public void disabledPeriodic() {}
+
+    //@Override
+    //public void testInit() {}
+
+    //@Override
+    //public void testPeriodic() {}
+
+    //@Override
+    //public void simulationInit() {}
+
+    //@Override
+    //public void simulationPeriodic() {}
 }
