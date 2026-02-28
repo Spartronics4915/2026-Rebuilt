@@ -212,16 +212,6 @@ public class AutoAim {
         return value * value;
     }
 
-    private Rotation2d[] discardExtraneous(Rotation2d[] solutions) {
-        ArrayList<Rotation2d> result = new ArrayList<>();
-        for (Rotation2d solution : solutions) {
-            if (solution.getRadians() >= minAngle.getRadians() && solution.getRadians() <= maxAngle.getRadians()) {
-                result.add(solution);
-            }
-        }
-        return result.toArray(new Rotation2d[0]);
-    }
-
     private boolean collisionCheck(Rotation2d pitch, Rotation2d yaw, double projectileSpeed, ChassisSpeeds robotSpeeds) {
         double v_launch_xy = projectileSpeed * pitch.getCos();
         double v_launch_z = projectileSpeed * pitch.getSin();
