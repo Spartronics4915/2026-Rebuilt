@@ -55,16 +55,16 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  */
 public class RobotContainer {
 
-    public final HoodSubsystem hoodSubsystem = new HoodSubsystem();
-    public final TurretSubsystem turretSubsystem = new TurretSubsystem();
+    //public final HoodSubsystem hoodSubsystem = new HoodSubsystem();
+    //public final TurretSubsystem turretSubsystem = new TurretSubsystem();
 
-    public final PivotSubsystem pivotSubsystem = new PivotSubsystem();
-    public final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
+    //public final PivotSubsystem pivotSubsystem = new PivotSubsystem();
+    //public final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
     public final ClimberSubsystem climberSubsystem = new ClimberSubsystem();
 
-    public final IndexerSubsystem indexerSubsystem = new IndexerSubsystem();
-    public final FeederSubsystem feederSubsystem = new FeederSubsystem();
-    public final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
+    //public final IndexerSubsystem indexerSubsystem = new IndexerSubsystem();
+    //public final FeederSubsystem feederSubsystem = new FeederSubsystem();
+    //public final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
     
     public final SwerveSubsystem swerveSubsystem = new SwerveSubsystem(SwerveConfigurations.COMP_CHASSIS);
     public final VisionSubsystem visionSubsystem = new VisionSubsystem(
@@ -80,50 +80,50 @@ public class RobotContainer {
     private final NeutralZoneAutos neutralZoneFactory = new NeutralZoneAutos(swerveSubsystem);
 
     private final ComplexAutoChooser autoChooser = new ComplexAutoChooser(transitionFactory, POIFactory, neutralZoneFactory, 10);
-    private final AutoAimController autoAimController = new AutoAimController(hoodSubsystem, turretSubsystem, swerveSubsystem, shooterSubsystem);
+    //private final AutoAimController autoAimController = new AutoAimController(hoodSubsystem, turretSubsystem, swerveSubsystem, shooterSubsystem);
 
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
     private final CommandXboxController operatorController = new CommandXboxController(OperatorConstants.OPERATOR_CONTROLLER_PORT);
     private final CommandXboxController testingController = new CommandXboxController(OperatorConstants.TESTING_CONTROLLER_PORT);
 
     public DriveCommand driveCommand = new DriveCommand(driverController, swerveSubsystem);
-    public SuperstructureCommands superstructureCommands = new SuperstructureCommands(
-        hoodSubsystem, 
-        turretSubsystem, 
-        feederSubsystem, 
-        indexerSubsystem, 
-        shooterSubsystem, 
-        climberSubsystem, 
-        intakeSubsystem,
-        pivotSubsystem, 
-        autoAimController
-    );
+    //public SuperstructureCommands superstructureCommands = new SuperstructureCommands(
+    //    hoodSubsystem, 
+    //    turretSubsystem, 
+    //    feederSubsystem, 
+    //    indexerSubsystem, 
+    //    shooterSubsystem, 
+    //    climberSubsystem, 
+    //    intakeSubsystem,
+    //    pivotSubsystem, 
+    //    autoAimController
+    //);
 
-    public final Superstructure superstructure = new Superstructure(
-        swerveSubsystem, 
-        visionSubsystem, 
-        autoAimController,
-        superstructureCommands
-    );
+    //public final Superstructure superstructure = new Superstructure(
+    //    swerveSubsystem, 
+    //    visionSubsystem, 
+    //    autoAimController,
+    //    superstructureCommands
+    //);
 
     public RobotContainer() {
         configureBindings();
 
-        SmartDashboard.putData(
-            "Pipeline On", 
-            Commands.parallel(
-                feederSubsystem.setStateCommand(FeederState.ON),
-                indexerSubsystem.setStateCommand(IndexerState.ON)
-            )
-        );
+        //SmartDashboard.putData(
+        //    "Pipeline On", 
+        //    Commands.parallel(
+        //        feederSubsystem.setStateCommand(FeederState.ON),
+        //        indexerSubsystem.setStateCommand(IndexerState.ON)
+        //    )
+        //);
 
-        SmartDashboard.putData(
-            "Pipeline Off", 
-            Commands.parallel(
-                feederSubsystem.setStateCommand(FeederState.OFF),
-                indexerSubsystem.setStateCommand(IndexerState.OFF)
-            )
-        );
+        //SmartDashboard.putData(
+        //    "Pipeline Off", 
+        //    Commands.parallel(
+        //        feederSubsystem.setStateCommand(FeederState.OFF),
+        //        indexerSubsystem.setStateCommand(IndexerState.OFF)
+        //    )
+        //);
     }
 
     /**
@@ -206,41 +206,41 @@ public class RobotContainer {
         //#region Testing Controller
 
         // Toggle Auto-Aim
-        testingController.start().onTrue(
-            autoAimController.toggle()
-        );
+        //testingController.start().onTrue(
+        //    autoAimController.toggle()
+        //);
 
         // Reset Dynamics
-        testingController.back().onTrue(
-            superstructureCommands.resetDynamics()
-        );
+        //testingController.back().onTrue(
+        //    superstructureCommands.resetDynamics()
+        //);
 
         // Pipeline Toggle
-        testingController.rightTrigger().onTrue(
-            superstructureCommands.togglePipelineState()
-        );
+        //testingController.rightTrigger().onTrue(
+        //    superstructureCommands.togglePipelineState()
+        //);
 
         // Pivot Safe
-        testingController.povUp().onTrue(
-            pivotSubsystem.setStateCommand(PivotState.SAFE)
-        );
+        //testingController.povUp().onTrue(
+        //    pivotSubsystem.setStateCommand(PivotState.SAFE)
+        //);
 
         // Pivot Stow
-        testingController.povLeft().onTrue(
-            pivotSubsystem.setStateCommand(PivotState.STOW)
-        );
+        //testingController.povLeft().onTrue(
+        //    pivotSubsystem.setStateCommand(PivotState.STOW)
+        //);
 
         // Pivot Ready
-        testingController.povRight().onTrue(
-            pivotSubsystem.setStateCommand(PivotState.READY)
-        );
+        //testingController.povRight().onTrue(
+        //    pivotSubsystem.setStateCommand(PivotState.READY)
+        //);
 
         // Pivot Jostle
 
         // Intake On
-        testingController.leftTrigger().onTrue(
-            intakeSubsystem.setStateCommand(IntakeState.ON)
-        );
+        //testingController.leftTrigger().onTrue(
+        //    intakeSubsystem.setStateCommand(IntakeState.ON)
+        //);
 
         //#endregion
 

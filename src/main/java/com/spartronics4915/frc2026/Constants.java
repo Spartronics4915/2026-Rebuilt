@@ -233,7 +233,7 @@ public final class Constants {
             static {
                 SIM_CAMERA_PROPERTIES.setCalibration(1600, 1200, Rotation2d.fromDegrees(97.65));
                 SIM_CAMERA_PROPERTIES.setCalibError(0.05, 0.005);
-                SIM_CAMERA_PROPERTIES.setFPS(100);
+                SIM_CAMERA_PROPERTIES.setFPS(50);
                 SIM_CAMERA_PROPERTIES.setAvgLatencyMs(20);
                 SIM_CAMERA_PROPERTIES.setLatencyStdDevMs(0);
             }
