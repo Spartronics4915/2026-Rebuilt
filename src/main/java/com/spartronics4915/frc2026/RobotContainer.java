@@ -149,30 +149,6 @@ public class RobotContainer {
                 teleopHeadingOffset = swerveSubsystem.getPose().getRotation();
             })
         );
-
-        driverController.leftBumper().whileTrue(
-            transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP)
-        );
-
-        driverController.rightBumper().whileTrue(
-            transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP)
-        );
-
-        driverController.povLeft().whileTrue(
-            transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH)
-        );
-
-        driverController.povRight().whileTrue(
-            transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH)
-        );
-
-        driverController.povUp().whileTrue(
-            POIFactory.generateCommand(POI.DEPOT)
-        );
-
-        driverController.povDown().whileTrue(
-            POIFactory.generateCommand(POI.OUTPOST)
-        );
         
         driverController.y().whileTrue(
             POIFactory.generateCommand(POI.TOWER)
