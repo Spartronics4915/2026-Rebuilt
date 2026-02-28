@@ -187,6 +187,6 @@ public class BlingSubsystem extends SubsystemBase {
     //@Override
     //public void simulationInit() {}
 
-    //@Override
-    //public void simulationPeriodic() {}
+    @Override
+    public void simulationPeriodic() {}
 }
