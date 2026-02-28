@@ -78,8 +78,7 @@ public class AutoAimController extends SubsystemBase {
         ),
         Rotation2d.fromDegrees(50),
         Rotation2d.fromDegrees(90),
-        InchesPerSecond.of(MAX_SHOOTER_RPS * Math.PI * 1.92)
-            .in(MetersPerSecond) * (1 - percentLoss) 
+        RPSToMPS(MAX_SHOOTER_RPS)
     );
 
     private boolean isEnabled;
@@ -139,15 +138,12 @@ public class AutoAimController extends SubsystemBase {
      * @return A result, or {@code null} if the solver could not find a solution.
      */
     private AutoAimResult computeAimResult() {
-        double shooterSpeedMps =
-            InchesPerSecond.of(shooter.getCurrentRPS() * Math.PI * 1.92)
-                .in(MetersPerSecond) * (1 - percentLoss);
 
         return autoAim.calculateDynamicAim(
             swerve.getRelativePose(),
             swerve.getRelativeFieldVelocity(),
             new Translation3d(hubPose.getX(), hubPose.getY(), HUB_AIM_HEIGHT_METERS),
-            shooterSpeedMps
+            RPSToMPS(shooter.getCurrentRPS())
         );
     }
 
@@ -186,7 +182,7 @@ public class AutoAimController extends SubsystemBase {
             swerve.getFieldVelocity(),
             result.yaw(),
             Inches.of(21.443748 + 2.955),
-            InchesPerSecond.of(shooter.getCurrentRPS() * Math.PI * 1.92),
+            InchesPerSecond.of(RPSToMPS(shooter.getCurrentSetpoint())),
             Degrees.of(result.pitch().getDegrees())
         );
 
@@ -235,5 +231,9 @@ public class AutoAimController extends SubsystemBase {
             turret.setSetpointCommand(Rotation2d.fromDegrees(0)),
             hood.setSetpointCommand(Rotation2d.fromDegrees(0))
         );
+    }
+
+    private double RPSToMPS(double rps) {
+        return InchesPerSecond.of(rps * Math.PI * 1.92).in(MetersPerSecond) * (1 - percentLoss);
     }
 }
