@@ -84,7 +84,7 @@ public class AutoAim {
         AutoAimResult result = null;
         for (int i = 0; i < maxIterations; i++) {
             Translation3d virtualTarget = targetTranslation.minus(prevDisplacement);
-            result = calculateStaticAim(robotPose, virtualTarget, projectileSpeed);
+            result = calculateStaticAim(robotPose, virtualTarget, projectileSpeed, speeds);
             if (result == null || result.ToF() == -1) {
                 return result;
             }
@@ -106,46 +106,80 @@ public class AutoAim {
      * @return The result of the auto-aim calculation.
      */
     public AutoAimResult calculateStaticAim(Pose2d robotPose, Translation3d targetTranslation, double projectileSpeed) {
+        return calculateStaticAim(robotPose, targetTranslation, projectileSpeed, new ChassisSpeeds());
+    }
+
+    /**
+     * Utility function to calculate static aim but collision check with robot velocity.
+     * 
+     * @param robotPose The current pose of the robot.
+     * @param targetTranslation The translation of the target relative to the field.
+     * @param projectileSpeed The shooting speed of the projectile.
+     * @param robotSpeeds The speeds of the robot (including turret velocity relative to field).
+     * @return The result of the auto-aim calculation.
+     */
+    private AutoAimResult calculateStaticAim(Pose2d robotPose, Translation3d targetTranslation, double projectileSpeed, ChassisSpeeds robotSpeeds) {
         if (projectileSpeed < 0.0) {
             return null;
         }
 
-        Translation3d robotToTurret = new Translation3d(robotPose.getX(), robotPose.getY(), 0.0)
+        // Calculate robot-to-turret transform in field space
+        Translation3d turretToField = new Translation3d(robotPose.getX(), robotPose.getY(), 0.0)
             .plus(turretTransform.rotateBy(new Rotation3d(0, 0, robotPose.getRotation().getRadians())));
         
-        Translation3d relativeTransform3d = targetTranslation.minus(robotToTurret);
+        // Vector from turret to target
+        Translation3d relativeTransform3d = targetTranslation.minus(turretToField);
         
         double horizontalDistance = relativeTransform3d.toTranslation2d().getNorm();
         double verticalHeight = relativeTransform3d.getZ();
 
+        // Calculate Yaw
         Rotation2d yaw = new Rotation2d(Math.atan2(relativeTransform3d.getY(), relativeTransform3d.getX()));
 
-        double[] tan_theta = quadraticSolver(
-            (g*squared(horizontalDistance))/(2*squared(projectileSpeed)),
-            -horizontalDistance,
-            verticalHeight + (g*squared(horizontalDistance))/(2*squared(projectileSpeed))
-        );
+        // Physics constants
+        double g_x2 = g * squared(horizontalDistance);
+        double v2 = squared(projectileSpeed);
+        
+        // coefficients for a*tan(theta)^2 + b*tan(theta) + c = 0
+        double a = g_x2 / (2 * v2);
+        double b = -horizontalDistance;
+        double c = verticalHeight + a;
 
-        Rotation2d[] theta = new Rotation2d[tan_theta.length];
-        int i = 0;
-        for (double t : tan_theta) {
-            theta[i++] = new Rotation2d(Math.atan(t));
+        double[] tan_thetas = quadraticSolver(a, b, c);
+
+        // Filter valid solutions
+        ArrayList<Rotation2d> validSolutions = new ArrayList<>();
+        
+        for (double tan_t : tan_thetas) {
+            Rotation2d pitch = new Rotation2d(Math.atan(tan_t));
+            // Check min/max angle constraints
+            if (pitch.getRadians() < minAngle.getRadians() || pitch.getRadians() > maxAngle.getRadians()) {
+                continue;
+            }
+            
+            // Check collision map if it exists and if it collides
+            if (collisionMap != null && collisionCheck(pitch, yaw, projectileSpeed, robotSpeeds)) {
+                continue;
+            }
+
+            validSolutions.add(pitch);
         }
 
-        theta = discardExtraneous(theta);
-
-        Rotation2d selectedPitch;
-        if (theta.length == 0) {
-            selectedPitch = null;
-        } else if (theta.length == 1) {
-            selectedPitch = theta[0];
-        } else {
-            selectedPitch = theta[0].getDegrees() < theta[1].getDegrees() ? theta[0] : theta[1];
+        if (validSolutions.isEmpty()) {
+            return new AutoAimResult(yaw, null, -1, projectileSpeed);
         }
 
-        double t = selectedPitch == null ? -1 : horizontalDistance / (projectileSpeed * Math.cos(selectedPitch.getRadians()));
+        // Select the best solution (usually lowest angle)
+        Rotation2d selectedPitch = validSolutions.get(0);
+        for (Rotation2d pitch : validSolutions) {
+            if (Math.abs(pitch.getRadians()) < Math.abs(selectedPitch.getRadians())) {
+                selectedPitch = pitch;
+            }
+        }
 
-        return new AutoAimResult(yaw, selectedPitch, t, projectileSpeed);
+        double timeOfFlight = horizontalDistance / (projectileSpeed * selectedPitch.getCos());
+
+        return new AutoAimResult(yaw, selectedPitch, timeOfFlight, projectileSpeed);
     }
 
     private double[] quadraticSolver(double a, double b, double c) {
@@ -186,5 +220,22 @@ public class AutoAim {
             }
         }
         return result.toArray(new Rotation2d[0]);
+    }
+
+    private boolean collisionCheck(Rotation2d pitch, Rotation2d yaw, double projectileSpeed, ChassisSpeeds robotSpeeds) {
+        double v_launch_xy = projectileSpeed * pitch.getCos();
+        double v_launch_z = projectileSpeed * pitch.getSin();
+        
+        double v_launch_x = v_launch_xy * yaw.getCos();
+        double v_launch_y = v_launch_xy * yaw.getSin();
+        
+        double v_ground_x = v_launch_x + robotSpeeds.vxMetersPerSecond;
+        double v_ground_y = v_launch_y + robotSpeeds.vyMetersPerSecond;
+        double v_ground_z = v_launch_z; // Assuming no vertical robot speed
+
+        double ground_pitch = Math.atan2(v_ground_z, Math.hypot(v_ground_x, v_ground_y));
+        double ground_speed = Math.sqrt(squared(v_ground_x) + squared(v_ground_y) + squared(v_ground_z));
+
+        return collisionMap.test(new Rotation2d(ground_pitch), ground_speed);
     }
 }
