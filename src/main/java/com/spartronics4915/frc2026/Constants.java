@@ -171,6 +171,13 @@ public final class Constants {
                 1 * Math.PI
             );
 
+            public static final PathConstraints climbPathConstraints = new PathConstraints(
+                1.5,
+                2.0,
+                1/2 * Math.PI,
+                1 * Math.PI
+            );
+
             public static final Rotation2d trenchApproachAngle = Rotation2d.fromDegrees(0.0);
             public static final Rotation2d bumpApproachAngle = Rotation2d.fromDegrees(45.0);
             public static final Rotation2d startOfFuelAngle = Rotation2d.fromDegrees(299); //This guy might need to be changed

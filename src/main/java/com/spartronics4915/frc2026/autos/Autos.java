@@ -15,6 +15,7 @@ import java.util.List;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.GoalEndState;
 import com.pathplanner.lib.path.IdealStartingState;
+import com.pathplanner.lib.path.PathConstraints;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.path.Waypoint;
 import com.pathplanner.lib.util.FlippingUtil;
@@ -63,6 +64,10 @@ public final class Autos {
     }
 
     public static Command generatePathFromWaypoint(SwerveSubsystem swerve, Translation2d translation, Rotation2d endingHeading, Rotation2d endingVelocityHeading) {
+        return generatePathFromWaypoint(swerve, translation, endingHeading, endingVelocityHeading, AutoConstants.defaultPathConstraints);
+    }
+
+    public static Command generatePathFromWaypoint(SwerveSubsystem swerve, Translation2d translation, Rotation2d endingHeading, Rotation2d endingVelocityHeading, PathConstraints pathConstraints) {
         Pose2d waypoint = new Pose2d(translation, endingVelocityHeading);
         List<Pose2d> poses = new ArrayList<>(List.of(waypoint));
 
@@ -72,7 +77,7 @@ public final class Autos {
 
         PathPlannerPath path = new PathPlannerPath(
             waypoints,
-            AutoConstants.defaultPathConstraints,
+            pathConstraints,
             generateStartingState(swerve),
             new GoalEndState(0.0, endingHeading)
         );

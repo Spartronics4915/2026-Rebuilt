@@ -7,6 +7,7 @@ import static edu.wpi.first.units.Units.Seconds;
 import java.util.EnumSet;
 import java.util.Set;
 
+import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants;
 import com.spartronics4915.frc2026.commands.PositionPIDCommand;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem.ClimberState;
@@ -21,7 +22,6 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.ScheduleCommand;
 
 public class DriveToPOI {
     private final SwerveSubsystem swerve;
@@ -76,7 +76,8 @@ public class DriveToPOI {
                                 swerve,
                                 climbApproachPose, 
                                 shouldFlip ? Rotation2d.fromDegrees(270.0) : Rotation2d.fromDegrees(90.0),
-                                shouldFlip ? Rotation2d.fromDegrees(90.0) : Rotation2d.fromDegrees(270.0)
+                                shouldFlip ? Rotation2d.fromDegrees(90.0) : Rotation2d.fromDegrees(270.0),
+                                AutoConstants.climbPathConstraints
                             )
                         ),
                         PositionPIDCommand.generateCommand(
