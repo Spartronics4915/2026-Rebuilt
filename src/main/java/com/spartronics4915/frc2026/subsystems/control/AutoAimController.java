@@ -61,6 +61,7 @@ public class AutoAimController extends SubsystemBase {
      */
     private static final double HUB_AIM_HEIGHT_METERS    = Units.inchesToMeters(72);
     private static final double HUB_DISPLAY_HEIGHT_METERS = Units.inchesToMeters(62);
+    private static final double MAX_SHOOTER_RPS = 100;
 
     private final HoodSubsystem hood;
     private final TurretSubsystem turret;
@@ -76,7 +77,9 @@ public class AutoAimController extends SubsystemBase {
             Units.inchesToMeters(21.443748 + 2.955)
         ),
         Rotation2d.fromDegrees(50),
-        Rotation2d.fromDegrees(90)
+        Rotation2d.fromDegrees(90),
+        InchesPerSecond.of(MAX_SHOOTER_RPS * Math.PI * 1.92)
+            .in(MetersPerSecond) * (1 - percentLoss) 
     );
 
     private boolean isEnabled;
