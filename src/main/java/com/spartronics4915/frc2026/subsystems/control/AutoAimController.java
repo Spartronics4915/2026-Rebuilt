@@ -13,6 +13,7 @@ import com.spartronics4915.frc2026.util.AutoAim.AutoAimResult;
 
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.BooleanPublisher;
@@ -111,6 +112,8 @@ public class AutoAimController extends SubsystemBase {
         this.swerve = swerve;
         this.shooter = shooter;
         this.isEnabled = false;
+
+        autoAim.setCollisionMap(this::collidesWithHub);
     }
 
     @Override
@@ -161,6 +164,63 @@ public class AutoAimController extends SubsystemBase {
                 .minus(swerve.getPose().getRotation())
                 .minus(Rotation2d.kCCW_90deg)
         );
+    }
+
+    private boolean collidesWithHub(Rotation2d pitch, double shotSpeed) {
+        Translation2d robotPos2d = swerve.getRobotPose().getTranslation()
+            .plus(TURRET_TRANSLATION.rotateBy(swerve.getRobotPose().getRotation()));
+        
+        Translation2d targetPos2d = new Translation2d(hubPose.getX(), hubPose.getY());
+        
+        // Shooter height from ground
+        double shooterZ = Units.inchesToMeters(21.443748 + 2.955); // Flywheel top height + fuel radius
+        
+        // Distance to target in XY plane
+        double distToTarget = robotPos2d.getDistance(targetPos2d);
+        
+        // Projectile horizontal velocity (v_xy) and vertical velocity (v_z)
+        double vXY = shotSpeed * pitch.getCos();
+        double vZ = shotSpeed * pitch.getSin();
+        
+        double sideLength = Units.inchesToMeters(47);
+        double halfSide = sideLength / 2.0;
+
+        // Vector from robot to target
+        Translation2d toTarget = targetPos2d.minus(robotPos2d);
+        
+        // Angle to target
+        Rotation2d angleToTarget = toTarget.getAngle();
+        double absCos = Math.abs(angleToTarget.getCos());
+        double absSin = Math.abs(angleToTarget.getSin());
+        
+        // Distance from center to the square boundary along the shot line
+        // We are firing AT the center. The distance from center to edge is determined by
+        // which wall we hit first (based on angle).
+        // If |cos(theta)| > |sin(theta)|, we hit the vertical walls at x = +/- L/2
+        // Else we hit horizontal walls at y = +/- L/2
+        
+        double distCenterToWall;
+        if (absCos > absSin) {
+            distCenterToWall = halfSide / absCos;
+        } else {
+            distCenterToWall = halfSide / absSin;
+        }
+
+        // Distance from robot to the collision wall
+        double collisionDist = distToTarget - distCenterToWall;
+        
+        if (collisionDist <= 0) return true; 
+
+        // Time to travel that horizontal distance
+        double t = collisionDist / vXY;
+
+        // Height at that time: z = z0 + vz*t - 0.5*g*t^2
+        double g = 9.81;
+        double zAtCollision = shooterZ + vZ * t - 0.5 * g * t * t;
+
+        // Check if z is less than hub height. 
+        // If it is lower than the rim height when crossing the rim boundary, it hits the side of the hub.
+        return zAtCollision < HUB_AIM_HEIGHT_METERS;
     }
 
     /**
