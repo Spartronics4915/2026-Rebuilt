@@ -14,9 +14,12 @@ public class DriveCommand extends Command {
     private final SwerveSubsystem swerveSubsystem;
     private final Supplier<ChassisSpeeds> speedSupplier;
 
-    public DriveCommand(CommandXboxController driverController, SwerveSubsystem swerveSubsystem) {
+    public DriveCommand(CommandXboxController driverController, CommandXboxController testingController, SwerveSubsystem swerveSubsystem) {
         this.swerveSubsystem = swerveSubsystem;
-        this.speedSupplier = getSwerveTeleopCSSupplier(driverController.getHID(), swerveSubsystem);
+        this.speedSupplier = getSwerveTeleopCSSupplier(
+            () -> testingController.getHID().isConnected() ? testingController.getHID() : driverController.getHID(),
+            swerveSubsystem
+        );
 
         addRequirements(swerveSubsystem);
     }

@@ -85,9 +85,9 @@ public class RobotContainer {
 
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
     private final CommandXboxController operatorController = new CommandXboxController(OperatorConstants.OPERATOR_CONTROLLER_PORT);
-    private final CommandXboxController testingController = new CommandXboxController(OperatorConstants.TESTING_CONTROLLER_PORT);
+    private final CommandXboxController debugController = new CommandXboxController(OperatorConstants.DEBUG_CONTROLLER_PORT);
 
-    public DriveCommand driveCommand = new DriveCommand(driverController, swerveSubsystem);
+    public DriveCommand driveCommand = new DriveCommand(driverController, debugController, swerveSubsystem);
     //public SuperstructureCommands superstructureCommands = new SuperstructureCommands(
     //    hoodSubsystem, 
     //    turretSubsystem, 

@@ -237,7 +237,7 @@ public class SwerveSubsystem extends SubsystemBase {
         );
     }
 
-    public static Supplier<ChassisSpeeds> computeVelocitiesFromController(XboxController driverController, BooleanSupplier isFieldRelative, SwerveSubsystem swerve) {
+    public static Supplier<ChassisSpeeds> computeVelocitiesFromController(Supplier<XboxController> controllerSupplier, BooleanSupplier isFieldRelative, SwerveSubsystem swerve) {
         TrapezoidProfile trapezoidProfile = new TrapezoidProfile(trenchAlignConstraints);
         TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
@@ -245,10 +245,12 @@ public class SwerveSubsystem extends SubsystemBase {
         TrapezoidProfile.State targetState = new TrapezoidProfile.State(0,0);
 
         return () -> {
+            XboxController driverController = controllerSupplier.get();
+
             Pose2d currentPose = swerve.getPose();
             double override = swerve.getMovementOverride();
             ChassisSpeeds fieldVel = swerve.getFieldVelocity();
-
+            
             // Raw joystick inputs
             double joyVX = applyResponseCurve(MathUtil.applyDeadband(driverController.getLeftY() * -1.0, STICK_DEADBAND)) * MAX_SPEED;
             double joyVY = applyResponseCurve(MathUtil.applyDeadband(driverController.getLeftX() * -1.0, STICK_DEADBAND)) * MAX_SPEED;
@@ -299,12 +301,12 @@ public class SwerveSubsystem extends SubsystemBase {
         };
     }
 
-    public static Supplier<ChassisSpeeds> computeVelocitiesFromController(XboxController driverController, SwerveSubsystem swerve) {
-        return computeVelocitiesFromController(driverController, () -> isFieldRelative, swerve);
+    public static Supplier<ChassisSpeeds> computeVelocitiesFromController(Supplier<XboxController> controllerSupplier, SwerveSubsystem swerve) {
+        return computeVelocitiesFromController(controllerSupplier, () -> isFieldRelative, swerve);
     }
 
-    public static Supplier<ChassisSpeeds> getSwerveTeleopCSSupplier(XboxController driverController, SwerveSubsystem swerve){
-        return computeVelocitiesFromController(driverController, swerve);
+    public static Supplier<ChassisSpeeds> getSwerveTeleopCSSupplier(Supplier<XboxController> controllerSupplier, SwerveSubsystem swerve){
+        return computeVelocitiesFromController(controllerSupplier, swerve);
     }
 
     public Command driveCommand(ChassisSpeeds chassisSpeeds){
