@@ -15,6 +15,7 @@ public class AutoAim {
     private final Translation3d turretTransform;
     private final Rotation2d minAngle;
     private final Rotation2d maxAngle;
+    private final double maxSpeed;
     private BiPredicate<Rotation2d, Double> collisionMap;
 
     private final double g = 9.81;
@@ -27,13 +28,15 @@ public class AutoAim {
      * @param turretTransform The transform from the robot's center to the turret's center, in the robot's coordinate frame.
      * @param minAngle The minimum angle for auto-aim.
      * @param maxAngle The maximum angle for auto-aim.
+     * @param maxSpeed The maximum speed for auto-aim.
      */
-    public AutoAim(int maxIterations, double convergenceThreshold, Translation3d turretTransform, Rotation2d minAngle, Rotation2d maxAngle) {
+    public AutoAim(int maxIterations, double convergenceThreshold, Translation3d turretTransform, Rotation2d minAngle, Rotation2d maxAngle, double maxSpeed) {
         this.maxIterations = maxIterations;
         this.convergenceThreshold = convergenceThreshold;
         this.turretTransform = turretTransform;
         this.minAngle = minAngle;
         this.maxAngle = maxAngle;
+        this.maxSpeed = maxSpeed;
     }
 
     /**
