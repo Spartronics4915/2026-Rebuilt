@@ -1,6 +1,6 @@
 package com.spartronics4915.frc2026.util;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.function.BiPredicate;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -126,10 +126,11 @@ public class AutoAim {
             verticalHeight + (g*squared(horizontalDistance))/(2*squared(projectileSpeed))
         );
 
-        Rotation2d[] theta = Arrays.stream(tan_theta)
-            .map(Math::atan)
-            .mapToObj(Rotation2d::new)
-            .toArray(Rotation2d[]::new);
+        Rotation2d[] theta = new Rotation2d[tan_theta.length];
+        int i = 0;
+        for (double t : tan_theta) {
+            theta[i++] = new Rotation2d(Math.atan(t));
+        }
 
         theta = discardExtraneous(theta, minAngle, maxAngle);
 
@@ -178,8 +179,12 @@ public class AutoAim {
     }
 
     private Rotation2d[] discardExtraneous(Rotation2d[] solutions, Rotation2d min, Rotation2d max) {
-        return Arrays.stream(solutions)
-                     .filter(solution -> solution.getRadians() >= min.getRadians() && solution.getRadians() <= max.getRadians())
-                     .toArray(Rotation2d[]::new);
+        ArrayList<Rotation2d> result = new ArrayList<>();
+        for (Rotation2d solution : solutions) {
+            if (solution.getRadians() >= min.getRadians() && solution.getRadians() <= max.getRadians()) {
+                result.add(solution);
+            }
+        }
+        return result.toArray(new Rotation2d[0]);
     }
 }
