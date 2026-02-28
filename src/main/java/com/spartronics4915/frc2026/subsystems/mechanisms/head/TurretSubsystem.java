@@ -157,6 +157,10 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
         return this.runOnce(() -> setSetpoint(newSetpoint));
     }
 
+    public Command setClampCommand(TurretClamp newClamp) {
+        return this.runOnce(() -> setClamp(newClamp));
+    }
+
     //#endregion
 
     public enum TurretClamp {

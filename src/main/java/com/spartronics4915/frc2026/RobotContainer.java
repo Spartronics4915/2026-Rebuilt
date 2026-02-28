@@ -22,8 +22,9 @@ import static com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem.tele
 import java.util.Set;
 
 import com.spartronics4915.frc2026.commands.DriveCommand;
-import com.spartronics4915.frc2026.subsystems.Superstructure;
-import com.spartronics4915.frc2026.subsystems.Superstructure.PipelineState;
+import com.spartronics4915.frc2026.commands.SuperstructureCommands;
+import com.spartronics4915.frc2026.subsystems.control.AutoAimController;
+import com.spartronics4915.frc2026.subsystems.control.Superstructure;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem;
@@ -73,31 +74,37 @@ public class RobotContainer {
         swerveSubsystem::addVisionMeasurement, 
         swerveSubsystem
     );
-
-    public final Superstructure superstructure = new Superstructure(
-        hoodSubsystem,
-        turretSubsystem,
-        feederSubsystem,
-        indexerSubsystem,
-        shooterSubsystem,
-        climberSubsystem,
-        intakeSubsystem,
-        pivotSubsystem,
-        swerveSubsystem,
-        visionSubsystem
-    );
     
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
     private final DriveToPOI POIFactory = new DriveToPOI(swerveSubsystem, climberSubsystem);
     private final NeutralZoneAutos neutralZoneFactory = new NeutralZoneAutos(swerveSubsystem);
 
     private final ComplexAutoChooser autoChooser = new ComplexAutoChooser(transitionFactory, POIFactory, neutralZoneFactory, 10);
+    private final AutoAimController autoAimController = new AutoAimController(hoodSubsystem, turretSubsystem, swerveSubsystem, shooterSubsystem);
 
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
     private final CommandXboxController operatorController = new CommandXboxController(OperatorConstants.OPERATOR_CONTROLLER_PORT);
     private final CommandXboxController testingController = new CommandXboxController(OperatorConstants.TESTING_CONTROLLER_PORT);
 
     public DriveCommand driveCommand = new DriveCommand(driverController, swerveSubsystem);
+    public SuperstructureCommands superstructureCommands = new SuperstructureCommands(
+        hoodSubsystem, 
+        turretSubsystem, 
+        feederSubsystem, 
+        indexerSubsystem, 
+        shooterSubsystem, 
+        climberSubsystem, 
+        intakeSubsystem,
+        pivotSubsystem, 
+        autoAimController
+    );
+
+    public final Superstructure superstructure = new Superstructure(
+        swerveSubsystem, 
+        visionSubsystem, 
+        autoAimController,
+        superstructureCommands
+    );
 
     public RobotContainer() {
         configureBindings();
@@ -200,23 +207,17 @@ public class RobotContainer {
 
         // Toggle Auto-Aim
         testingController.start().onTrue(
-            superstructure.toggleAutoAimState()
+            autoAimController.toggle()
         );
 
         // Reset Dynamics
         testingController.back().onTrue(
-            superstructure.resetDynamics()
+            superstructureCommands.resetDynamics()
         );
 
         // Pipeline Toggle
         testingController.rightTrigger().onTrue(
-            Commands.runOnce(() -> 
-                superstructure.setPipelineState(
-                    superstructure.getPipelineState() == PipelineState.OFF 
-                        ? PipelineState.ON 
-                        : PipelineState.OFF
-                )
-            )
+            superstructureCommands.togglePipelineState()
         );
 
         // Pivot Safe

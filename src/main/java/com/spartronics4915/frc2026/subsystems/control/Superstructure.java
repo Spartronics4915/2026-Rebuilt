@@ -1,4 +1,4 @@
-package com.spartronics4915.frc2026;
+package com.spartronics4915.frc2026.subsystems.control;
 
 import static com.spartronics4915.frc2026.Constants.SuperstructureConstants.*;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.*;
@@ -6,6 +6,7 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstant
 import static edu.wpi.first.units.Units.Meters;
 
 import com.spartronics4915.frc2026.commands.SuperstructureCommands;
+import com.spartronics4915.frc2026.commands.SuperstructureCommands.PipelineState;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 import com.spartronics4915.frc2026.util.FieldRegion;
@@ -36,6 +37,7 @@ public class Superstructure extends SubsystemBase {
 
     private final SwerveSubsystem swerve;
     private final VisionSubsystem vision;
+    private final AutoAimController controller;
     private final SuperstructureCommands commands;
 
     private final FieldZoneMap<Zone> zoneMap;
@@ -47,10 +49,12 @@ public class Superstructure extends SubsystemBase {
     public Superstructure(
         SwerveSubsystem swerve, 
         VisionSubsystem vision, 
+        AutoAimController controller,
         SuperstructureCommands commands
     ) {
         this.swerve = swerve;
         this.vision = vision;
+        this.controller = controller;
         this.commands = commands;
 
         this.zoneMap = buildZoneMap();
@@ -103,6 +107,12 @@ public class Superstructure extends SubsystemBase {
             .plus(TURRET_TRANSLATION.rotateBy(swerve.getPose().getRotation()));
 
         Zone newZone = zoneMap.evaluate(turretTranslation);
+
+        if (controller.hasValidResult()) {
+            commands.setPipelineState(PipelineState.ON);
+        } else {
+            commands.setPipelineState(PipelineState.OFF);
+        }
         
         if (newZone != currentZone) {
             currentZone = newZone;

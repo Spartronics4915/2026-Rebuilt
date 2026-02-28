@@ -55,16 +55,20 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 public final class Constants {
+
     public static class OperatorConstants {
         public static final int DRIVER_CONTROLLER_PORT = 0;
         public static final int OPERATOR_CONTROLLER_PORT = 1;
         public static final int TESTING_CONTROLLER_PORT = 2;
     }
 
+    //#region General
+
     public static class GeneralConstants {
         public static final CANBus CAN_BUS = new CANBus("Hydra");
-    }
+    }  
 
+    //#endregion
     //#region Swerve
 
     public static final class SwerveConstants {
@@ -231,7 +235,7 @@ public final class Constants {
                 SIM_CAMERA_PROPERTIES.setCalibError(0.05, 0.005);
                 SIM_CAMERA_PROPERTIES.setFPS(100);
                 SIM_CAMERA_PROPERTIES.setAvgLatencyMs(20);
-                SIM_CAMERA_PROPERTIES.setLatencyStdDevMs(5);
+                SIM_CAMERA_PROPERTIES.setLatencyStdDevMs(0);
             }
 
         public static final class StdDevConstants {
@@ -329,7 +333,7 @@ public final class Constants {
     //#region Superstructure
 
     public static final class SuperstructureConstants {
-
+        
         public static final Translation2d TURRET_TRANSLATION = new Translation2d(-0.1185, -0.1568);
 
         public static final Rotation2d PIVOT_SAFE_THRESHOLD = Rotation2d.fromDegrees(0);
