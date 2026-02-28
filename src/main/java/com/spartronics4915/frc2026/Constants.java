@@ -246,14 +246,14 @@ public final class Constants {
             }
 
         public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.1;  // 0.5 — trust vision closer to odometry levels
+            public static final double baseXYStdDev = 0.05;  // 0.5 — trust vision closer to odometry levels
             public static final double baseThetaStdDev = 0.2;  // 0.5 — heading from vision is still less reliable
-            public static final double distanceWeight = 0.8;  // 1.0 — less aggressive distance penalty
-            public static final double ambiguityWeight = 0.6;  // 0.8
-            public static final double areaWeight = 0.5;  // 0.6
-            public static final double anisotropyWeight = 0.5;  // 0.6
+            public static final double distanceWeight = 1.0;  // 1.0 — less aggressive distance penalty
+            public static final double ambiguityWeight = 0.7;  // 0.8
+            public static final double areaWeight = 0.8;  // 0.6
+            public static final double anisotropyWeight = 1.0;  // 0.6
             public static final double motionWeight = 0.3;  // 0.4
-            public static final double latencyWeight = 0.3;  // 0.4
+            public static final double latencyWeight = 1.0;  // 0.4
 
             /**
              * Smoothing factor for the exponential moving average applied to distance and area.
