@@ -15,9 +15,10 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 
-public class BlingSubsystem {
+public class BlingSubsystem extends SubsystemBase {
     private static final RGBWColor green = new RGBWColor(0, 255, 0, 0);
     private static final RGBWColor red = new RGBWColor(255, 255, 0, 0);
     private static final RGBWColor blue = new RGBWColor(0, 0, 255, 0);
@@ -87,7 +88,7 @@ public class BlingSubsystem {
     }
 
     @Override
-    public void blingSubsystemPeriodic() {
+    public void periodic() {
         final var anim0Selection = anim0Chooser.getSelected();
         if (anim0State != anim0Selection) {
             anim0State = anim0Selection;
