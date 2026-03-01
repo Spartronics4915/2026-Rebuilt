@@ -111,7 +111,7 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
-        if (!vision.hasValidPose()) {
+        if (vision.hasValidPose()) {
             zonePublisher.accept(currentZone.name());
         } else {
             return;
@@ -122,7 +122,7 @@ public class Superstructure extends SubsystemBase {
 
         Zone newZone = zoneMap.evaluate(turretTranslation);
 
-        if (!testingMode) {
+        if (testingMode == false) {
             if (controller.hasValidResult()) {
                 commands.setPipelineState(PipelineState.ON);
             } else {
