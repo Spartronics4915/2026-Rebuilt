@@ -236,65 +236,65 @@ public class RobotContainer {
         );
 
         operatorController.leftTrigger().onTrue(
-            null
+            Commands.none()
             // Command that turns on Intake
         ).onFalse(
-            null
+            Commands.none()
             // Command that turns off Intake
         );
 
         operatorController.rightTrigger().onTrue(
-            null
+            Commands.none()
             // Command that sets the superstructure state override to shooting
         ).onFalse(
-            null
+            Commands.none()
             // Command that returns superstructure state to what it was before
         );
 
         operatorController.leftBumper().onTrue(
-            null
+            Commands.none()
             // Command that sets auto-aim target to left target in alliance
         ).onFalse(
-            null
+            Commands.none()
             // Command that turns off auto-aim target override
         );
 
         operatorController.rightBumper().onTrue(
-            null
+            Commands.none()
             // Command that sets auto-aim target to right target in alliance
         ).onFalse(
-            null
+            Commands.none()
             // Command that turns off auto-aim target override
         );
 
         operatorController.a().onTrue(
-            null
+            Commands.none()
             // Command that runs intake backwards (unjam)
         ).onFalse(
-            null
+            Commands.none()
             // Command that stops intake
         );
 
         operatorController.b().onTrue(
-            null
+            Commands.none()
             // Command that runs feeder and spindexer backwards
         ).onFalse(
-            null
+            Commands.none()
             // Command that stops feeder and spindexer
         );
 
         operatorController.x().onTrue(
-            null
+            Commands.none()
             // Command that toggles auto scoring
         );
 
         operatorController.y().onTrue(
-            null
+            Commands.none()
             // Command that sets pivot setpoint to full stow
         );
 
         operatorController.start().onTrue(
-            null
+            Commands.none()
             // Command that toggles auto aiming
         );
 
@@ -328,34 +328,34 @@ public class RobotContainer {
         );
 
         debugController.leftTrigger().onTrue(
-            null
+            Commands.none()
             // Command that turns on Intake
         ).onFalse(
-            null
+            Commands.none()
             // Command that turns off Intake
         );
 
         debugController.rightTrigger().onTrue(
-            null
+            Commands.none()
             // Command that sets the superstructure state override to shooting
         ).onFalse(
-            null
+            Commands.none()
             // Command that returns superstructure state to what it was before
         );
 
         debugController.leftBumper().onTrue(
-            null
+            Commands.none()
             // Command that sets auto-aim target to left target in alliance
         ).onFalse(
-            null
+            Commands.none()
             // Command that turns off auto-aim target override
         );
 
         debugController.rightBumper().onTrue(
-            null
+            Commands.none()
             // Command that sets auto-aim target to right target in alliance
         ).onFalse(
-            null
+            Commands.none()
             // Command that turns off auto-aim target override
         );
 
@@ -372,7 +372,7 @@ public class RobotContainer {
         );
 
         debugController.x().onTrue(
-            null
+            Commands.none()
             // Command that toggles auto scoring
         );
 
@@ -387,7 +387,7 @@ public class RobotContainer {
         );
 
         debugController.start().onTrue(
-            null
+            Commands.none()
             // Command that toggles auto aiming
         );
 
