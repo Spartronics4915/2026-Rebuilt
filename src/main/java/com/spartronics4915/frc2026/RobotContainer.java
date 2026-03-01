@@ -38,6 +38,7 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsyst
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
+import com.spartronics4915.frc2026.util.AutoAim.AutoAimResult;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -236,8 +237,9 @@ public class RobotContainer {
 
         operatorController.rightTrigger().onTrue(
             Commands.runOnce(() -> {
-                if (autoAimController.getLastResult().recommendedShotSpeed() != -1) {
-                    shooterSubsystem.setSetpoint(autoAimController.getLastResult().recommendedShotSpeed());
+                AutoAimResult result = autoAimController.getLastResult();
+                if (result != null && result.recommendedShotSpeed() != -1) {
+                    shooterSubsystem.setSetpoint(result.recommendedShotSpeed());
                 }
             })
         ).onFalse(
@@ -329,8 +331,9 @@ public class RobotContainer {
 
         debugController.rightTrigger().onTrue(
             Commands.runOnce(() -> {
-                if (autoAimController.getLastResult().recommendedShotSpeed() != -1) {
-                    shooterSubsystem.setSetpoint(autoAimController.getLastResult().recommendedShotSpeed());
+                AutoAimResult result = autoAimController.getLastResult();
+                if (result != null &&result.recommendedShotSpeed() != -1) {
+                    shooterSubsystem.setSetpoint(result.recommendedShotSpeed());
                 }
             })
         ).onFalse(
