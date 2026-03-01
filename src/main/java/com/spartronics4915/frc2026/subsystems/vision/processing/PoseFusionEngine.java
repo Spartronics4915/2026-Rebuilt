@@ -2,9 +2,7 @@ package com.spartronics4915.frc2026.subsystems.vision.processing;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.photonvision.targeting.PhotonTrackedTarget;
@@ -59,8 +57,7 @@ public class PoseFusionEngine {
 
     /**
      * Finds the largest group of results that fall within the timestamp threshold,
-     * without building all groups first. Replaces the previous two-step
-     * groupByTimestamp + stream().max() pattern.
+     * without building all groups first.
      *
      * @param results All results to group
      * @param timestampThreshold Maximum time difference (seconds) to be in same group
@@ -151,8 +148,6 @@ public class PoseFusionEngine {
             Pose2d pose = result.getPose();
             sumX += pose.getX();
             sumY += pose.getY();
-
-            // Circular mean for rotation
             sumSin += Math.sin(pose.getRotation().getRadians());
             sumCos += Math.cos(pose.getRotation().getRadians());
         }
@@ -169,8 +164,8 @@ public class PoseFusionEngine {
      * of true Mahalanobis distance — it does not account for cross-axis correlations,
      * but is sufficient for independent x/y/theta estimates.
      *
-     * @param pose1   The pose to measure from
-     * @param pose2   The reference pose (typically the group mean)
+     * @param pose1 The pose to measure from
+     * @param pose2 The reference pose (typically the group mean)
      * @param stdDevs Standard deviations for pose1's [x, y, theta] axes
      * @return Distance in units of standard deviations, or {@link Double#MAX_VALUE} if stdDevs is null
      */
@@ -184,7 +179,6 @@ public class PoseFusionEngine {
         double dx = pose1.getX() - pose2.getX();
         double dy = pose1.getY() - pose2.getY();
 
-        // Wrap to [-π, π]
         double dtheta = Math.IEEEremainder(
             pose1.getRotation().getRadians() - pose2.getRotation().getRadians(),
             2 * Math.PI
@@ -199,7 +193,7 @@ public class PoseFusionEngine {
 
     /**
      * Fuse multiple measurements using inverse variance weighting.
-     * All aggregation is performed in a single loop to avoid multiple stream passes.
+     * All aggregation is performed in a single loop to avoid multiple passes.
      *
      * @param results Filtered results to fuse
      * @return Single fused result
@@ -214,19 +208,17 @@ public class PoseFusionEngine {
         double weightedCos = 0;
 
         double sumTimestamp = 0;
-        double sumLatency = 0; 
+        double sumLatency = 0;
         double sumDistance = 0;
         double sumAmbiguity = 0;
         double sumArea = 0;
-        double sumXAnisotropy = 0; 
+        double sumXAnisotropy = 0;
         double sumYAnisotropy = 0;
 
         ChassisSpeeds chassisSpeeds = null;
 
-        // Reuse a sized list instead of streaming to .toList()
         List<ApriltagResult> validResults = new ArrayList<>(results.size());
 
-        // Single pass: filter, accumulate weights, and sum all aggregate fields at once
         for (ApriltagResult result : results) {
             Matrix<N3, N1> stdDevs = result.getStdDevs();
             if (stdDevs == null) continue;
@@ -270,9 +262,8 @@ public class PoseFusionEngine {
 
         double invN = 1.0 / validResults.size();
 
-        // Compute fused pose
-        double fusedX = weightedX / totalWeightX;
         double fusedY = weightedY / totalWeightY;
+        double fusedX = weightedX / totalWeightX;
         double fusedTheta = Math.atan2(
             weightedSin / totalWeightTheta,
             weightedCos / totalWeightTheta
@@ -286,16 +277,21 @@ public class PoseFusionEngine {
             Math.sqrt(1.0 / totalWeightTheta)
         );
 
-        // Deduplicate targets using a plain loop + HashMap instead of stream + Collectors.toMap
-        Map<Integer, PhotonTrackedTarget> targetMap = new HashMap<>();
+        // Deduplicate targets by fiducial ID using a boolean array instead of a HashMap.
+        // This avoids a per-call HashMap allocation. IDs outside [1, MAX_TAG_ID) are skipped.
+        List<PhotonTrackedTarget> allTargets = new ArrayList<>();
         for (ApriltagResult r : validResults) {
-            for (PhotonTrackedTarget t : r.getTargets()) {
-                targetMap.putIfAbsent(t.getFiducialId(), t);
-            }
+            outer:
+                for (PhotonTrackedTarget t : r.getTargets()) {
+                    int id = t.getFiducialId();
+                    for (PhotonTrackedTarget existing : allTargets) {
+                        if (existing.getFiducialId() == id) continue outer;
+                    }
+                    allTargets.add(t);
+                }
         }
-        List<PhotonTrackedTarget> allTargets = new ArrayList<>(targetMap.values());
 
-        // Build camera name with StringBuilder instead of stream + String.join
+        // Build the fused camera name
         StringBuilder nameBuilder = new StringBuilder("fused[");
         for (int i = 0; i < validResults.size(); i++) {
             if (i > 0) nameBuilder.append(',');
@@ -331,17 +327,26 @@ public class PoseFusionEngine {
      * @return Result with lowest total normalized uncertainty
      */
     private static Optional<ApriltagResult> selectBestResult(List<ApriltagResult> results) {
-        return results.stream()
-            .min(Comparator.comparingDouble(r -> {
-                Matrix<N3, N1> std = r.getStdDevs();
-                if (std == null) return Double.MAX_VALUE;
+        ApriltagResult best = null;
+        double bestScore = Double.MAX_VALUE;
 
-                double normalizedXY    = std.get(0, 0) / StdDevConstants.baseXYStdDev;
-                double normalizedTheta = std.get(2, 0) / StdDevConstants.baseThetaStdDev;
+        for (ApriltagResult r : results) {
+            Matrix<N3, N1> std = r.getStdDevs();
+            if (std == null) continue;
 
-                // Weight xy twice since it has two independent axes (x and y)
-                return (2.0 * normalizedXY) + normalizedTheta;
-            }));
+            double normalizedXY = std.get(0, 0) / StdDevConstants.baseXYStdDev;
+            double normalizedTheta = std.get(2, 0) / StdDevConstants.baseThetaStdDev;
+
+            // Weight XY twice since it has two independent axes
+            double score = (2.0 * normalizedXY) + normalizedTheta;
+
+            if (score < bestScore) {
+                bestScore = score;
+                best = r;
+            }
+        }
+
+        return Optional.ofNullable(best);
     }
 
 }
