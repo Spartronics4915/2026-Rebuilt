@@ -5,12 +5,15 @@ import static com.spartronics4915.frc2026.Constants.SuperstructureConstants.*;
 import com.spartronics4915.frc2026.subsystems.control.AutoAimController;
 import com.spartronics4915.frc2026.subsystems.mechanisms.*;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem.ClimberState;
+import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem.IntakeState;
+import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem.PivotState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.*;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.HoodSubsystem.HoodClamp;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem.TurretClamp;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.*;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem.ShooterClamp;
 
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -21,7 +24,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 public class SuperstructureCommands {
 
     public enum PipelineState {
-        ON(IndexerSubsystem.IndexerState.ON, FeederSubsystem.FeederState.ON),
+        ON(IndexerSubsystem.IndexerState.FORWARD, FeederSubsystem.FeederState.FORWARD),
         OFF(IndexerSubsystem.IndexerState.OFF, FeederSubsystem.FeederState.OFF);
 
         final IndexerSubsystem.IndexerState indexerState;
@@ -69,7 +72,7 @@ public class SuperstructureCommands {
         this.currentPipelineState = PipelineState.OFF;
     }
 
-    //#region Helpers
+    //#region Controls
 
     public Command setPipelineState(PipelineState state) {
         return Commands.sequence(
@@ -95,8 +98,47 @@ public class SuperstructureCommands {
                 ? PipelineState.OFF
                 : PipelineState.ON;
             CommandScheduler.getInstance().schedule(setPipelineState(next));
-    });
-}
+        });
+    }
+
+    public Command intakeOn() {
+        return Commands.sequence(
+            Commands.parallel(
+                pivot.setStateCommand(PivotState.READY),
+                intake.setStateCommand(IntakeState.INTAKE)
+            )
+        );
+    }
+
+    public Command intakeOff() {
+        return Commands.sequence(
+            Commands.parallel(
+                pivot.setStateCommand(PivotState.SAFE),
+                intake.setStateCommand(IntakeState.OFF)
+            )
+        );
+    }
+
+    //#endregion
+    //#region Conditionals
+
+    /** Moves the pivot to READY only during autonomous; no-ops in teleop. */
+    private Command conditionalPivotReady() {
+        return Commands.either(
+            pivot.setStateCommand(PivotSubsystem.PivotState.READY),
+            Commands.none(),
+            DriverStation::isAutonomous
+        );
+    }
+    
+    /** Turns the intake ON only during autonomous; no-ops in teleop. */
+    private Command conditionalIntakeOn() {
+        return Commands.either(
+            intake.setStateCommand(IntakeSubsystem.IntakeState.INTAKE),
+            Commands.none(),
+            DriverStation::isAutonomous
+        );
+    }
 
     //#endregion
     //#region State Commands
@@ -105,12 +147,12 @@ public class SuperstructureCommands {
         return Commands.sequence(
             Commands.parallel(
                 shooter.setClampCommand(ShooterClamp.RESTRICTED),
-                pivot.setStateCommand(PivotSubsystem.PivotState.READY),
+                conditionalPivotReady(),
                 climber.setStateCommand(ClimberState.DOWN)),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
                 turret.setClampCommand(TurretClamp.UNRESTRICTED),
-                intake.setStateCommand(IntakeSubsystem.IntakeState.ON)
+                conditionalIntakeOn()
             )
         );
     }
@@ -141,12 +183,12 @@ public class SuperstructureCommands {
         return Commands.sequence(
             Commands.parallel(
                 shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
-                pivot.setStateCommand(PivotSubsystem.PivotState.READY),
+                conditionalPivotReady(),
                 climber.setStateCommand(ClimberState.DOWN)),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
                 turret.setClampCommand(TurretClamp.UNRESTRICTED),
-                intake.setStateCommand(IntakeSubsystem.IntakeState.ON)
+                conditionalIntakeOn()
             )
         );
     }

@@ -2,6 +2,7 @@ package com.spartronics4915.frc2026.subsystems.control;
 
 import static com.spartronics4915.frc2026.Constants.SuperstructureConstants.*;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.*;
+import static com.spartronics4915.frc2026.Constants.AutoAimConstants.*;
 
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.HoodSubsystem;
@@ -52,18 +53,6 @@ import swervelib.simulation.ironmaple.utils.FieldMirroringUtils;
  */
 public class AutoAimController extends SubsystemBase {
 
-    /** Throttle rate for simulation projectile spawning (seconds between shots). */
-    private static final double SIM_SHOT_INTERVAL_SECONDS = 0.1;
-
-    /**
-     * Height of the hub target used for both aim calculation and sim display.
-     * The aim calculator targets the top of the hub; the sim tolerance check
-     * uses a slightly lower center point for a more forgiving hit window.
-     */
-    private static final double HUB_AIM_HEIGHT_METERS    = Units.inchesToMeters(72);
-    private static final double HUB_DISPLAY_HEIGHT_METERS = Units.inchesToMeters(62);
-    private static final double MAX_SHOOTER_RPS = 100;
-
     private final HoodSubsystem hood;
     private final TurretSubsystem turret;
     private final ShooterSubsystem shooter;
@@ -85,6 +74,7 @@ public class AutoAimController extends SubsystemBase {
     private boolean isEnabled;
     private AutoAimResult lastResult;
     private double lastSimShotTime;
+    private Translation2d targetOverride;
 
     private final BooleanPublisher isEnabledPublisher =
         NetworkTableInstance.getDefault()
@@ -112,6 +102,7 @@ public class AutoAimController extends SubsystemBase {
         this.swerve = swerve;
         this.shooter = shooter;
         this.isEnabled = false;
+        this.targetOverride = null;
 
         autoAim.setCollisionMap(this::collidesWithHub);
     }
@@ -141,11 +132,13 @@ public class AutoAimController extends SubsystemBase {
      * @return A result, or {@code null} if the solver could not find a solution.
      */
     private AutoAimResult computeAimResult() {
+        Translation2d target = (targetOverride != null) ? targetOverride 
+            : new Translation2d(hubPose.getX(), hubPose.getY());
 
         return autoAim.calculateDynamicAim(
             swerve.getRelativePose(),
             swerve.getRelativeFieldVelocity(),
-            new Translation3d(hubPose.getX(), hubPose.getY(), HUB_AIM_HEIGHT_METERS),
+            new Translation3d(target.getX(), target.getY(), HUB_AIM_HEIGHT_METERS),
             RPSToMPS(shooter.getCurrentRPS())
         );
     }
@@ -291,6 +284,14 @@ public class AutoAimController extends SubsystemBase {
             turret.setSetpointCommand(Rotation2d.fromDegrees(0)),
             hood.setSetpointCommand(Rotation2d.fromDegrees(0))
         );
+    }
+
+    public Command setTargetOverride(Translation2d target) {
+        return Commands.runOnce(() -> targetOverride = target);
+    }
+
+    public Command clearTargetOverride() {
+        return Commands.runOnce(() -> targetOverride = null);
     }
 
     private double RPSToMPS(double rps) {

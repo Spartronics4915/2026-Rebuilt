@@ -51,7 +51,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
         motor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
         
-        SmartDashboard.putData("Indexer On", setStateCommand(IndexerState.ON));
+        SmartDashboard.putData("Indexer On", setStateCommand(IndexerState.FORWARD));
         SmartDashboard.putData("Indexer Off", setStateCommand(IndexerState.OFF));
         SmartDashboard.putData("Indexer Motor", motor);
     }
@@ -97,7 +97,8 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
     }
 
     public enum IndexerState {
-        ON(12),
+        FORWARD(12),
+        REVERSE(-12),
         OFF(0.0);
 
         public double rps;

@@ -40,6 +40,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearVelocity;
@@ -352,6 +353,23 @@ public final class Constants {
         public static final Distance trenchLength = Inches.of(30);
 
         public static final double percentLoss = 0.08; // Percent loss on shooter to ball transfer
+    }
+
+    //#endregion
+    //#region Auto-Aim
+
+    public static final class AutoAimConstants {
+        /** Throttle rate for simulation projectile spawning (seconds between shots). */
+        public static final double SIM_SHOT_INTERVAL_SECONDS = 0.1;
+        
+        /**
+         * Height of the hub target used for both aim calculation and sim display.
+         * The aim calculator targets the top of the hub; the sim tolerance check
+         * uses a slightly lower center point for a more forgiving hit window.
+         */
+        public static final double HUB_AIM_HEIGHT_METERS = Units.inchesToMeters(72);
+        public static final double HUB_DISPLAY_HEIGHT_METERS = Units.inchesToMeters(62);
+        public static final double MAX_SHOOTER_RPS = 100;
     }
 
     //#endregion

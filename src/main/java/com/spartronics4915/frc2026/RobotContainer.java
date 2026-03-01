@@ -4,6 +4,8 @@
 
 package com.spartronics4915.frc2026;
 
+import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.*;
+
 import com.spartronics4915.frc2026.Constants.OperatorConstants;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
 import com.spartronics4915.frc2026.autos.ComplexAutoChooser;
@@ -27,16 +29,20 @@ import com.spartronics4915.frc2026.subsystems.control.Superstructure;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem.IntakeState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.HoodSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.FeederSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.FeederSubsystem.FeederState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem.IndexerState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -236,66 +242,63 @@ public class RobotContainer {
         );
 
         operatorController.leftTrigger().onTrue(
-            Commands.none()
-            // Command that turns on Intake
+            superstructureCommands.intakeOn()
         ).onFalse(
-            Commands.none()
-            // Command that turns off Intake
+            superstructureCommands.intakeOff()
         );
 
         operatorController.rightTrigger().onTrue(
-            Commands.none()
-            // Command that sets the superstructure state override to shooting
+            superstructureCommands.shooting()
         ).onFalse(
-            Commands.none()
-            // Command that returns superstructure state to what it was before
+            superstructure.getReturnToZoneCommand()
         );
 
         operatorController.leftBumper().onTrue(
-            Commands.none()
-            // Command that sets auto-aim target to left target in alliance
+            autoAimController.setTargetOverride(
+                new Translation2d()
+            )
         ).onFalse(
-            Commands.none()
-            // Command that turns off auto-aim target override
+            autoAimController.clearTargetOverride()
         );
 
         operatorController.rightBumper().onTrue(
-            Commands.none()
-            // Command that sets auto-aim target to right target in alliance
+            autoAimController.setTargetOverride(
+                new Translation2d()
+            )
         ).onFalse(
-            Commands.none()
-            // Command that turns off auto-aim target override
+            autoAimController.clearTargetOverride()
         );
 
         operatorController.a().onTrue(
-            Commands.none()
-            // Command that runs intake backwards (unjam)
+            intakeSubsystem.setStateCommand(IntakeState.OUTTAKE)
         ).onFalse(
-            Commands.none()
-            // Command that stops intake
+            intakeSubsystem.setStateCommand(IntakeState.OFF)
         );
 
         operatorController.b().onTrue(
-            Commands.none()
-            // Command that runs feeder and spindexer backwards
+            Commands.parallel(
+                feederSubsystem.setStateCommand(FeederState.REVERSE),
+                indexerSubsystem.setStateCommand(IndexerState.REVERSE)
+            )
         ).onFalse(
-            Commands.none()
-            // Command that stops feeder and spindexer
+            Commands.parallel(
+                feederSubsystem.setStateCommand(FeederState.OFF),
+                indexerSubsystem.setStateCommand(IndexerState.OFF)
+            )
         );
 
+        // Im not doing this rn
         operatorController.x().onTrue(
             Commands.none()
             // Command that toggles auto scoring
         );
 
         operatorController.y().onTrue(
-            Commands.none()
-            // Command that sets pivot setpoint to full stow
+            superstructureCommands.stowed()
         );
 
         operatorController.start().onTrue(
-            Commands.none()
-            // Command that toggles auto aiming
+            autoAimController.toggle()
         );
 
         //#endregion
@@ -328,19 +331,15 @@ public class RobotContainer {
         );
 
         debugController.leftTrigger().onTrue(
-            Commands.none()
-            // Command that turns on Intake
+            superstructureCommands.intakeOn()
         ).onFalse(
-            Commands.none()
-            // Command that turns off Intake
+            superstructureCommands.intakeOff()
         );
 
         debugController.rightTrigger().onTrue(
-            Commands.none()
-            // Command that sets the superstructure state override to shooting
+            superstructureCommands.shooting()
         ).onFalse(
-            Commands.none()
-            // Command that returns superstructure state to what it was before
+            superstructure.getReturnToZoneCommand()
         );
 
         debugController.leftBumper().onTrue(
@@ -387,8 +386,7 @@ public class RobotContainer {
         );
 
         debugController.start().onTrue(
-            Commands.none()
-            // Command that toggles auto aiming
+            autoAimController.toggle()
         );
 
         //#endregion

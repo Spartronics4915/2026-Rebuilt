@@ -46,7 +46,7 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         motor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
 
-        SmartDashboard.putData("Feeder On", setStateCommand(FeederState.ON));
+        SmartDashboard.putData("Feeder On", setStateCommand(FeederState.FORWARD));
         SmartDashboard.putData("Feeder Off", setStateCommand(FeederState.OFF));
         SmartDashboard.putData("Feeder Motor", motor);
     }
@@ -92,7 +92,8 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
     }
 
     public enum FeederState{
-        ON(30),
+        FORWARD(30),
+        REVERSE(-30),
         OFF(0);
 
         double rps;
