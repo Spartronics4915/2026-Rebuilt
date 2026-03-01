@@ -40,7 +40,7 @@ import com.spartronics4915.frc2026.subsystems.vision.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -241,7 +241,7 @@ public class RobotContainer {
 
         operatorController.leftBumper().onTrue(
             autoAimController.setTargetOverride(
-                new Translation2d()
+                new Translation3d(1.358, 6.9, 0)
             )
         ).onFalse(
             autoAimController.clearTargetOverride()
@@ -249,7 +249,7 @@ public class RobotContainer {
 
         operatorController.rightBumper().onTrue(
             autoAimController.setTargetOverride(
-                new Translation2d()
+                new Translation3d(1.358, 0.9, 0)
             )
         ).onFalse(
             autoAimController.clearTargetOverride()

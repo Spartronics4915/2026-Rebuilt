@@ -75,7 +75,7 @@ public class AutoAimController extends SubsystemBase {
     private boolean isShootingEnabled;
     private AutoAimResult lastResult;
     private double lastSimShotTime;
-    private Translation2d targetOverride;
+    private Translation3d targetOverride;
 
     private final BooleanPublisher isShootingEnabledPublisher =
         NetworkTableInstance.getDefault()
@@ -140,13 +140,13 @@ public class AutoAimController extends SubsystemBase {
      * @return A result, or {@code null} if the solver could not find a solution.
      */
     private AutoAimResult computeAimResult() {
-        Translation2d target = (targetOverride != null) ? targetOverride 
-            : new Translation2d(hubPose.getX(), hubPose.getY());
+        Translation3d target = (targetOverride != null) ? targetOverride 
+            : new Translation3d(hubPose.getX(), hubPose.getY(), HUB_AIM_HEIGHT_METERS);
 
         return autoAim.calculateDynamicAim(
             swerve.getRelativePose(),
             swerve.getRelativeFieldVelocity(),
-            new Translation3d(target.getX(), target.getY(), HUB_AIM_HEIGHT_METERS),
+            target,
             RPSToMPS(Robot.isSimulation() ? shooter.getCurrentSetpoint() : shooter.getCurrentRPS())
         );
     }
@@ -315,7 +315,7 @@ public class AutoAimController extends SubsystemBase {
         );
     }
 
-    public Command setTargetOverride(Translation2d target) {
+    public Command setTargetOverride(Translation3d target) {
         return Commands.runOnce(() -> targetOverride = target);
     }
 
