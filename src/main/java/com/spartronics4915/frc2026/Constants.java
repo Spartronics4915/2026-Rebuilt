@@ -211,7 +211,7 @@ public final class Constants {
                         Inches.of(2.0),
                         MetersPerSecond.of(24),
                         2.255,
-                        DCMotor.getKrakenX60(1),
+                        DCMotor.getKrakenX60Foc(1),
                         6.03,
                         Amps.of(60),
                         1
@@ -462,8 +462,8 @@ public final class Constants {
         public static final double I = 0.0;
         public static final double D = 0.2;
 
-        public static final double MAX_VELOCITY = 5;
-        public static final double MAX_ACCELERATION = 5;
+        public static final double MAX_VELOCITY = 0.2;
+        public static final double MAX_ACCELERATION = 0.2;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
@@ -472,7 +472,7 @@ public final class Constants {
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 50.625;
 
-        public static final double MAGNET_OFFSET = -0.665;
+        public static final double MAGNET_OFFSET = 0.4521;
         public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.Clockwise_Positive;
 
         public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(-2);

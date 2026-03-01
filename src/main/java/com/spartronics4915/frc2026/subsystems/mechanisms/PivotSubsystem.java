@@ -56,7 +56,7 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
             motorConfig.apply(MOTOR_OUTPUT_CONFIG);
 
         CANcoderConfiguration cancoderConfigurator = new CANcoderConfiguration();
-        cancoderConfigurator.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 1.0;
+            cancoderConfigurator.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 0.5;
             cancoderConfigurator.MagnetSensor.SensorDirection = ENCODER_SENSOR_DIRECTION;
             cancoderConfigurator.MagnetSensor.MagnetOffset = MAGNET_OFFSET;
             encoder.getConfigurator().apply(cancoderConfigurator);
@@ -142,8 +142,8 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
     }
  
     public enum PivotState {
-        READY(Rotation2d.fromDegrees(4)),
-        SAFE(Rotation2d.fromDegrees(10)),
+        READY(Rotation2d.fromDegrees(0)),
+        SAFE(Rotation2d.fromDegrees(30)),
         STOW(Rotation2d.fromDegrees(120));
 
         Rotation2d angle;
