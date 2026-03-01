@@ -66,6 +66,7 @@ public final class Constants {
 
     public static class GeneralConstants {
         public static final CANBus CAN_BUS = new CANBus("Hydra");
+        public static final CANBus DEACTIVATED_CAN_BUS = new CANBus("Deactivated");
     }  
 
     //#endregion
