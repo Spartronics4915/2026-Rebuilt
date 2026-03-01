@@ -151,22 +151,25 @@ public class AutoAimController extends SubsystemBase {
      * uses to signal that the shot cannot land.
      */
     private void applyAimResult(AutoAimResult result) {
-        if (result.ToF() != -1) {
+        if (!isAimEnabled) return;
+        if (result.pitch() != null) {
             hood.setSetpoint(Rotation2d.kCCW_Pi_2.minus(result.pitch()));
         }
         turret.setSetpoint(
             result.yaw()
-                .minus(swerve.getPose().getRotation())
+                .minus(swerve.getRelativePose().getRotation())
                 .minus(Rotation2d.kCCW_90deg)
         );
-        if (isShootingEnabled) {
-            // Daniil do your stuff here
+
+        if (!isShootingEnabled) return;
+        if (result.recommendedShotSpeed() != -1) {
+            shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed()));
         }
     }
 
     private boolean collidesWithHub(Rotation2d pitch, double shotSpeed) {
-        Translation2d robotPos2d = swerve.getRobotPose().getTranslation()
-            .plus(TURRET_TRANSLATION.rotateBy(swerve.getRobotPose().getRotation()));
+        Translation2d robotPos2d = swerve.getRelativePose().getTranslation()
+            .plus(TURRET_TRANSLATION.rotateBy(swerve.getRelativePose().getRotation()));
         
         Translation2d targetPos2d = new Translation2d(hubPose.getX(), hubPose.getY());
         
@@ -232,13 +235,16 @@ public class AutoAimController extends SubsystemBase {
 
         lastSimShotTime = Timer.getFPGATimestamp();
 
+        Rotation2d yaw = result.yaw();
+        if (swerve.shouldFlip()) {
+            yaw = FieldMirroringUtils.toCurrentAllianceRotation(yaw);
+        }
+
         RebuiltFuelOnFly projectile = new RebuiltFuelOnFly(
             swerve.getRobotPose().getTranslation(),
-            TURRET_TRANSLATION
-                .rotateBy(swerve.getRobotPose().getRotation())
-                .rotateBy(result.yaw().unaryMinus()),
+            TURRET_TRANSLATION.rotateBy(swerve.getRobotPose().getRotation()),
             swerve.getFieldVelocity(),
-            result.yaw(),
+            yaw,
             Inches.of(21.443748 + 2.955),
             InchesPerSecond.of(RPSToMPS(shooter.getCurrentSetpoint())),
             Degrees.of(result.pitch().getDegrees())
@@ -308,5 +314,9 @@ public class AutoAimController extends SubsystemBase {
 
     private double RPSToMPS(double rps) {
         return InchesPerSecond.of(rps * Math.PI * 1.92).in(MetersPerSecond) * (1 - percentLoss);
+    }
+
+    private double MPSToRPS(double mps) {
+        return MetersPerSecond.of(mps / (1 - percentLoss)).in(InchesPerSecond) / (Math.PI * 1.92);
     }
 }

@@ -170,8 +170,36 @@ public class AutoAim {
             validSolutions.add(pitch);
         }
 
+        double recommendedSpeed = -1;
+        for (
+            Rotation2d angle=minAngle; 
+            angle.minus(maxAngle).getDegrees() < 0; 
+            angle = angle.plus(maxAngle.minus(minAngle).div(maxIterations))
+        ) {
+            // Calculate height difference between straight-line path and target at distance x
+            // dist = x * tan(theta) - (targetZ - turretZ)
+            double distAboveHub = horizontalDistance * angle.getTan() - (targetTranslation.getZ() - turretToField.getZ());
+
+            // If we are aiming lower than the target, no velocity can get us there (ignoring lift)
+            if (distAboveHub <= 0) continue;
+
+            // v^2 = g * x^2 / (2 * cos^2(theta) * distAboveHub)
+            double vSquared = (g * squared(horizontalDistance)) / (2 * squared(angle.getCos()) * distAboveHub);
+            double v = Math.sqrt(vSquared);
+
+            if (v > maxSpeed) continue;
+            if (collisionCheck(angle, yaw, v, robotSpeeds)) continue;
+
+            recommendedSpeed = v;
+            break;
+        }
+
+        if (recommendedSpeed == -1) {
+            return new AutoAimResult(yaw, null, -1, -1);
+        }
+
         if (validSolutions.isEmpty()) {
-            return new AutoAimResult(yaw, null, -1, projectileSpeed);
+            return calculateStaticAim(robotPose, targetTranslation, recommendedSpeed);
         }
 
         // Select the best solution (usually lowest angle)
@@ -184,7 +212,7 @@ public class AutoAim {
 
         double timeOfFlight = horizontalDistance / (projectileSpeed * selectedPitch.getCos());
 
-        return new AutoAimResult(yaw, selectedPitch, timeOfFlight, projectileSpeed);
+        return new AutoAimResult(yaw, selectedPitch, timeOfFlight, recommendedSpeed);
     }
 
     private double[] quadraticSolver(double a, double b, double c) {
