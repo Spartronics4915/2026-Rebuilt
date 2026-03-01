@@ -43,7 +43,7 @@ public class ApriltagResult implements ResultInterface {
         this.sourceName = name;
         this.timestampSeconds = timestamp;
         this.latencyMs = latency;
-        this.pose = resultPose;
+        this.pose  = resultPose;
         this.stdDevs = resultStdDevs;
         this.targets = List.copyOf(targets);
         this.targetCount = targets.size();
@@ -56,7 +56,7 @@ public class ApriltagResult implements ResultInterface {
     }
 
     //#region ------ Getters ------
-    
+
     /**
      * Gets the name of the source
      */
@@ -84,6 +84,7 @@ public class ApriltagResult implements ResultInterface {
     /**
      * Gets the pose
      */
+    @Override
     public Pose2d getPose() {
         return pose;
     }
@@ -91,6 +92,7 @@ public class ApriltagResult implements ResultInterface {
     /**
      * Gets the standard deviations
      */
+    @Override
     public Matrix<N3, N1> getStdDevs() {
         return stdDevs;
     }
@@ -122,7 +124,7 @@ public class ApriltagResult implements ResultInterface {
     /**
      * Gets the average ambiguity
      */
-    @Override   
+    @Override
     public double getAmbiguity() {
         return avgAmbiguity;
     }
@@ -141,7 +143,7 @@ public class ApriltagResult implements ResultInterface {
     @Override
     public double getXAnisotropy() {
         return x_anisotropy;
-    } 
+    }
 
     /**
      * Gets the vertical anisotropy
@@ -149,7 +151,7 @@ public class ApriltagResult implements ResultInterface {
     @Override
     public double getYAnisotropy() {
         return y_anisotropy;
-    } 
+    }
 
     /**
      * Gets the chassis speeds of the robot at the capture timestamp
@@ -159,12 +161,14 @@ public class ApriltagResult implements ResultInterface {
         return speeds;
     }
 
-    //#endregion
+    //#endregion ------ Getters ------
 
     //#region ------ Setters ------
 
     public void setStdDevs(Matrix<N3, N1> newStdDevs) {
         stdDevs = newStdDevs;
     }
+
+    //#endregion ------ Setters ------
 
 }
