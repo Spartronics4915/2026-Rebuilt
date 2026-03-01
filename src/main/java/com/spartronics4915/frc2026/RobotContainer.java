@@ -353,8 +353,7 @@ public class RobotContainer {
         );
 
         debugController.x().onTrue(
-            Commands.none()
-            // Command that toggles auto scoring
+            autoAimController.shootingToggle()
         );
 
         debugController.y().whileTrue(
