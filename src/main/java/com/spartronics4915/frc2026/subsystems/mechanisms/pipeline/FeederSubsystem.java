@@ -59,7 +59,7 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
             MAX_RPS
         );
 
-        velocityVoltage.Velocity = currentSetpoint;
+        velocityVoltage.withEnableFOC(ENABLE_FOC).Velocity = currentSetpoint;
         motor.setControl(velocityVoltage);
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());

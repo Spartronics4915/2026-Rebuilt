@@ -64,7 +64,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
             MAX_RPS
         );
 
-        velocityVoltage.Velocity = currentSetpoint;
+        velocityVoltage.withEnableFOC(ENABLE_FOC).Velocity = currentSetpoint;
         motor.setControl(velocityVoltage);
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());

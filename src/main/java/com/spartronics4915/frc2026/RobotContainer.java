@@ -4,8 +4,6 @@
 
 package com.spartronics4915.frc2026;
 
-import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.*;
-
 import com.spartronics4915.frc2026.Constants.OperatorConstants;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
 import com.spartronics4915.frc2026.autos.ComplexAutoChooser;
@@ -90,42 +88,26 @@ public class RobotContainer {
 
     public DriveCommand driveCommand = new DriveCommand(driverController, debugController, swerveSubsystem);
     public SuperstructureCommands superstructureCommands = new SuperstructureCommands(
-       hoodSubsystem, 
-       turretSubsystem, 
-       feederSubsystem, 
-       indexerSubsystem, 
-       shooterSubsystem, 
-       climberSubsystem, 
-       intakeSubsystem,
-       pivotSubsystem, 
-       autoAimController
+        hoodSubsystem, 
+        turretSubsystem, 
+        feederSubsystem, 
+        indexerSubsystem, 
+        shooterSubsystem, 
+        climberSubsystem, 
+        intakeSubsystem,
+        pivotSubsystem, 
+        autoAimController
     );
 
     public final Superstructure superstructure = new Superstructure(
-       swerveSubsystem, 
-       visionSubsystem, 
-       autoAimController,
-       superstructureCommands
+        swerveSubsystem, 
+        visionSubsystem, 
+        autoAimController,
+        superstructureCommands
     );
 
     public RobotContainer() {
         configureBindings();
-
-        //SmartDashboard.putData(
-        //    "Pipeline On", 
-        //    Commands.parallel(
-        //        feederSubsystem.setStateCommand(FeederState.ON),
-        //        indexerSubsystem.setStateCommand(IndexerState.ON)
-        //    )
-        //);
-
-        //SmartDashboard.putData(
-        //    "Pipeline Off", 
-        //    Commands.parallel(
-        //        feederSubsystem.setStateCommand(FeederState.OFF),
-        //        indexerSubsystem.setStateCommand(IndexerState.OFF)
-        //    )
-        //);
     }
 
     /**

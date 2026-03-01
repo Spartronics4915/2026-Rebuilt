@@ -281,7 +281,7 @@ public class AutoAimController extends SubsystemBase {
     }
 
     /**
-     * Flips the auto-aim enabled flag. Safe to call while the robot is disabled.
+     * Flips the auto-shooting enabled flag. Safe to call while the robot is disabled.
      */
     public Command shootingToggle() {
         return Commands.runOnce(() -> isShootingEnabled = !isShootingEnabled).ignoringDisable(true);

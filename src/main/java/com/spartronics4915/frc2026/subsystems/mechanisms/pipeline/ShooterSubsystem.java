@@ -78,7 +78,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
                 maxRPS
             );
 
-        velocityVoltage.Velocity = currentSetpoint;
+        velocityVoltage.withEnableFOC(ENABLE_FOC).Velocity = currentSetpoint;
         leadMotor.setControl(velocityVoltage);
 
         appliedOutPublisher.accept(leadMotor.getDutyCycle().getValueAsDouble());

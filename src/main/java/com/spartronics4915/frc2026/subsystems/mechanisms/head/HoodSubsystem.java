@@ -102,7 +102,7 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
             targetState
         );
         
-        positionVoltage.Position = currentState.position;
+        positionVoltage.withEnableFOC(ENABLE_FOC).Position = currentState.position;
         motor.setControl(positionVoltage);
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
