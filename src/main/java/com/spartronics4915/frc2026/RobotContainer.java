@@ -327,20 +327,21 @@ public class RobotContainer {
         );
 
         debugController.leftBumper().onTrue(
-            Commands.none()
-            // Command that sets auto-aim target to left target in alliance
+            autoAimController.setTargetOverride(
+                new Translation3d(1.358, 6.9, 0)
+            )
         ).onFalse(
-            Commands.none()
-            // Command that turns off auto-aim target override
+            autoAimController.clearTargetOverride()
         );
 
         debugController.rightBumper().onTrue(
-            Commands.none()
-            // Command that sets auto-aim target to right target in alliance
+            autoAimController.setTargetOverride(
+                new Translation3d(1.358, 0.9, 0)
+            )
         ).onFalse(
-            Commands.none()
-            // Command that turns off auto-aim target override
+            autoAimController.clearTargetOverride()
         );
+
 
         debugController.a().onTrue(
             Commands.runOnce(() -> {
