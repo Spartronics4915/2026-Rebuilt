@@ -89,7 +89,7 @@ public class AutoAim {
         AutoAimResult result = null;
         for (int i = 0; i < maxIterations; i++) {
             Translation3d virtualTarget = targetTranslation.minus(prevDisplacement);
-            result = calculateStaticAim(robotPose, virtualTarget, projectileSpeed, speeds);
+            result = calculateStaticAim(robotPose, virtualTarget, projectileSpeed, speeds, false);
             if (result == null || result.ToF() == -1) {
                 return result;
             }
@@ -111,7 +111,7 @@ public class AutoAim {
      * @return The result of the auto-aim calculation.
      */
     public AutoAimResult calculateStaticAim(Pose2d robotPose, Translation3d targetTranslation, double projectileSpeed) {
-        return calculateStaticAim(robotPose, targetTranslation, projectileSpeed, new ChassisSpeeds());
+        return calculateStaticAim(robotPose, targetTranslation, projectileSpeed, new ChassisSpeeds(), false);
     }
 
     /**
@@ -123,7 +123,7 @@ public class AutoAim {
      * @param robotSpeeds The speeds of the robot (including turret velocity relative to field).
      * @return The result of the auto-aim calculation.
      */
-    private AutoAimResult calculateStaticAim(Pose2d robotPose, Translation3d targetTranslation, double projectileSpeed, ChassisSpeeds robotSpeeds) {
+    private AutoAimResult calculateStaticAim(Pose2d robotPose, Translation3d targetTranslation, double projectileSpeed, ChassisSpeeds robotSpeeds, boolean idealPath) {
         if (projectileSpeed < 0.0) {
             return null;
         }
@@ -199,7 +199,11 @@ public class AutoAim {
         }
 
         if (validSolutions.isEmpty()) {
-            return calculateStaticAim(robotPose, targetTranslation, recommendedSpeed);
+            if (!idealPath) {
+                return calculateStaticAim(robotPose, targetTranslation, recommendedSpeed, robotSpeeds, true);
+            } else {
+                return new AutoAimResult(yaw, null, -1, -1);
+            }
         }
 
         // Select the best solution (usually lowest angle)
