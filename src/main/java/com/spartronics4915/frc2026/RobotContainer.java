@@ -273,10 +273,8 @@ public class RobotContainer {
             )
         );
 
-        // Im not doing this rn
         operatorController.x().onTrue(
-            Commands.none()
-            // Command that toggles auto scoring
+            autoAimController.shootingToggle()
         );
 
         operatorController.y().onTrue(

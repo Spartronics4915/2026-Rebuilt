@@ -77,9 +77,14 @@ public class AutoAimController extends SubsystemBase {
     private double lastSimShotTime;
     private Translation2d targetOverride;
 
-    private final BooleanPublisher isEnabledPublisher =
+    private final BooleanPublisher isShootingEnabledPublisher =
         NetworkTableInstance.getDefault()
-            .getBooleanTopic("superstructure/AutoAim/Enabled")
+            .getBooleanTopic("superstructure/AutoAim/ShootingEnabled")
+            .publish();
+
+    private final BooleanPublisher isAimEnabledPublisher =
+        NetworkTableInstance.getDefault()
+            .getBooleanTopic("superstructure/AutoAim/AimEnabled")
             .publish();
 
     private final StructArrayPublisher<Pose3d> successPublisher =
@@ -111,7 +116,8 @@ public class AutoAimController extends SubsystemBase {
 
     @Override
     public void periodic() {
-        isEnabledPublisher.accept(isAimEnabled);
+        isShootingEnabledPublisher.accept(isAimEnabled);
+        isAimEnabledPublisher.accept(isAimEnabled);
 
         if (!isAimEnabled) {
             lastResult = null;
