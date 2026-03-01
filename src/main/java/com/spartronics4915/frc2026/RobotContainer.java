@@ -42,6 +42,7 @@ import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -108,6 +109,9 @@ public class RobotContainer {
 
     public RobotContainer() {
         configureBindings();
+
+        SmartDashboard.putData("Auto-Aim Toggle", autoAimController.aimToggle());
+        SmartDashboard.putData("Auto-Shoot Toggle", autoAimController.shootingToggle());
     }
 
     /**

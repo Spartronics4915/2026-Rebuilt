@@ -161,7 +161,7 @@ public class AutoAimController extends SubsystemBase {
                 .minus(Rotation2d.kCCW_90deg)
         );
 
-        if (!isShootingEnabled) return;
+        if (!isShootingEnabled && shouldAutoShoot()) return;
         if (result.recommendedShotSpeed() != -1) {
             shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed()));
         }
@@ -263,6 +263,11 @@ public class AutoAimController extends SubsystemBase {
         projectile.disableBecomesGamePieceOnFieldAfterTouchGround();
 
         SimulatedArena.getInstance().addGamePieceProjectile(projectile);
+    }
+
+    private boolean shouldAutoShoot() {
+        return (Robot.hubEnabled || (!Robot.hubEnabled && Robot.timeUntilSwitch < lastResult.ToF())) 
+            && swerve.getRelativePose().getX() < hubPose.getX();
     }
 
     /** @return The most recent aim solution, or {@code null} if auto-aim is off or unsolved */
