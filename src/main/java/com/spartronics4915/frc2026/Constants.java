@@ -410,7 +410,7 @@ public final class Constants {
         public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
             .withNeutralMode(NeutralModeValue.Brake);
 
-        public static final boolean ENABLE_FOC = true;
+        public static final boolean ENABLE_FOC = false;
     }
 
     //#endregion
@@ -542,7 +542,7 @@ public final class Constants {
         public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
             .withNeutralMode(NeutralModeValue.Brake);
 
-        public static final boolean ENABLE_FOC = true;
+        public static final boolean ENABLE_FOC = false;
     }
 
     //#endregion
@@ -585,7 +585,7 @@ public final class Constants {
             .withNeutralMode(NeutralModeValue.Brake)
             .withInverted(InvertedValue.Clockwise_Positive);
         
-        public static final boolean ENABLE_FOC = true;
+        public static final boolean ENABLE_FOC = false;
     }
 
     //#endregion
@@ -673,7 +673,7 @@ public final class Constants {
         public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
             .withNeutralMode(NeutralModeValue.Brake);
 
-        public static final boolean ENABLE_FOC = true;
+        public static final boolean ENABLE_FOC = false;
     }
 
     //#endregion
