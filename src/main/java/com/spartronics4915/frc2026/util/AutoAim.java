@@ -10,6 +10,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 
 public class AutoAim {
+    
     private final int maxIterations;
     private double convergenceThreshold;
     private final Translation3d turretTransform;
