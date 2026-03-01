@@ -38,7 +38,7 @@ public class Superstructure extends SubsystemBase {
      * Set to false to restore full autonomous zone behavior.
      */
     private static final boolean testingMode = true;
-
+    
     public enum Zone {
         ALLIANCE_ZONE,
         TRENCH,

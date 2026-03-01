@@ -39,7 +39,7 @@ import swervelib.simulation.ironmaple.utils.FieldMirroringUtils;
  * hood and turret. Simulation projectile visualization is handled here as well.
  *
  * <p>Auto-aim can be toggled at any time, including while the robot is
- * disabled, via {@link #toggle()}. When disabled, the hood and turret retain
+ * disabled, via {@link #aimToggle()}. When disabled, the hood and turret retain
  * their last commanded setpoints; call {@link #reset()} to return them home.
  *
  * <p>The calculation pipeline each loop:
@@ -71,7 +71,8 @@ public class AutoAimController extends SubsystemBase {
         RPSToMPS(MAX_SHOOTER_RPS)
     );
 
-    private boolean isEnabled;
+    private boolean isAimEnabled;
+    private boolean isShootingEnabled;
     private AutoAimResult lastResult;
     private double lastSimShotTime;
     private Translation2d targetOverride;
@@ -101,7 +102,8 @@ public class AutoAimController extends SubsystemBase {
         this.turret = turret;
         this.swerve = swerve;
         this.shooter = shooter;
-        this.isEnabled = false;
+        this.isAimEnabled = false;
+        this.isShootingEnabled = false;
         this.targetOverride = null;
 
         autoAim.setCollisionMap(this::collidesWithHub);
@@ -109,9 +111,9 @@ public class AutoAimController extends SubsystemBase {
 
     @Override
     public void periodic() {
-        isEnabledPublisher.accept(isEnabled);
+        isEnabledPublisher.accept(isAimEnabled);
 
-        if (!isEnabled) {
+        if (!isAimEnabled) {
             lastResult = null;
             return;
         }
@@ -157,6 +159,9 @@ public class AutoAimController extends SubsystemBase {
                 .minus(swerve.getPose().getRotation())
                 .minus(Rotation2d.kCCW_90deg)
         );
+        if (isShootingEnabled) {
+            // Daniil do your stuff here
+        }
     }
 
     private boolean collidesWithHub(Rotation2d pitch, double shotSpeed) {
@@ -259,8 +264,8 @@ public class AutoAimController extends SubsystemBase {
         return lastResult;
     }
 
-    public boolean isEnabled() {
-        return isEnabled;
+    public boolean isAimEnabled() {
+        return isAimEnabled;
     }
 
     public boolean hasValidResult() {
@@ -271,8 +276,15 @@ public class AutoAimController extends SubsystemBase {
     /**
      * Flips the auto-aim enabled flag. Safe to call while the robot is disabled.
      */
-    public Command toggle() {
-        return Commands.runOnce(() -> isEnabled = !isEnabled).ignoringDisable(true);
+    public Command aimToggle() {
+        return Commands.runOnce(() -> isAimEnabled = !isAimEnabled).ignoringDisable(true);
+    }
+
+    /**
+     * Flips the auto-aim enabled flag. Safe to call while the robot is disabled.
+     */
+    public Command shootingToggle() {
+        return Commands.runOnce(() -> isShootingEnabled = !isShootingEnabled).ignoringDisable(true);
     }
 
     /**
@@ -280,7 +292,7 @@ public class AutoAimController extends SubsystemBase {
      */
     public Command reset() {
         return Commands.parallel(
-            Commands.runOnce(() -> isEnabled = false),
+            Commands.runOnce(() -> isAimEnabled = false),
             turret.setSetpointCommand(Rotation2d.fromDegrees(0)),
             hood.setSetpointCommand(Rotation2d.fromDegrees(0))
         );

@@ -298,7 +298,7 @@ public class RobotContainer {
         );
 
         operatorController.start().onTrue(
-            autoAimController.toggle()
+            autoAimController.aimToggle()
         );
 
         //#endregion
@@ -386,7 +386,7 @@ public class RobotContainer {
         );
 
         debugController.start().onTrue(
-            autoAimController.toggle()
+            autoAimController.aimToggle()
         );
 
         //#endregion
