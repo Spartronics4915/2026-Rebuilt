@@ -22,9 +22,22 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 /**
  * Tracks the robot's position on the field and automatically schedules 
- * SuperstructureCommands based on the current zone using Triggers
+ * SuperstructureCommands based on the current zone using Triggers.
+ *
+ * <p>Set {@link #testingMode} to {@code true} to disable all automatic zone
+ * triggers and pipeline management. Zone tracking and NetworkTables publishing
+ * will continue to run regardless, so field position can still be observed.
+ * Set to {@code false} to restore full autonomous zone behavior.
  */
 public class Superstructure extends SubsystemBase {
+
+    /**
+     * When true, zone triggers and automatic pipeline management are disabled.
+     * The robot will still track and publish the current zone to NetworkTables,
+     * but no SuperstructureCommands will be scheduled automatically.
+     * Set to false to restore full autonomous zone behavior.
+     */
+    private static final boolean testingMode = true;
 
     public enum Zone {
         ALLIANCE_ZONE,
@@ -108,10 +121,12 @@ public class Superstructure extends SubsystemBase {
 
         Zone newZone = zoneMap.evaluate(turretTranslation);
 
-        if (controller.hasValidResult()) {
-            commands.setPipelineState(PipelineState.ON);
-        } else {
-            commands.setPipelineState(PipelineState.OFF);
+        if (!testingMode) {
+            if (controller.hasValidResult()) {
+                commands.setPipelineState(PipelineState.ON);
+            } else {
+                commands.setPipelineState(PipelineState.OFF);
+            }
         }
         
         if (newZone != currentZone) {
@@ -121,6 +136,8 @@ public class Superstructure extends SubsystemBase {
     }
 
     private void configureZoneTriggers() {
+        if (testingMode) return;
+
         Trigger inAllianceZone = new Trigger(() -> currentZone == Zone.ALLIANCE_ZONE);
         Trigger inTrench = new Trigger(() -> currentZone == Zone.TRENCH);
         Trigger inNeutralZone = new Trigger(() -> currentZone == Zone.NEUTRAL_ZONE);
