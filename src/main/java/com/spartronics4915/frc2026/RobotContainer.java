@@ -235,9 +235,15 @@ public class RobotContainer {
         );
 
         operatorController.rightTrigger().onTrue(
-            superstructureCommands.shooting()
+            Commands.runOnce(() -> {
+                if (autoAimController.getLastResult().recommendedShotSpeed() != -1) {
+                    shooterSubsystem.setSetpoint(autoAimController.getLastResult().recommendedShotSpeed());
+                }
+            })
         ).onFalse(
-            superstructure.getReturnToZoneCommand()
+            Commands.runOnce(() -> {
+                shooterSubsystem.setSetpoint(0);
+            })
         );
 
         operatorController.leftBumper().onTrue(
@@ -322,9 +328,15 @@ public class RobotContainer {
         );
 
         debugController.rightTrigger().onTrue(
-            superstructureCommands.shooting()
+            Commands.runOnce(() -> {
+                if (autoAimController.getLastResult().recommendedShotSpeed() != -1) {
+                    shooterSubsystem.setSetpoint(autoAimController.getLastResult().recommendedShotSpeed());
+                }
+            })
         ).onFalse(
-            superstructure.getReturnToZoneCommand()
+            Commands.runOnce(() -> {
+                shooterSubsystem.setSetpoint(0);
+            })
         );
 
         debugController.leftBumper().onTrue(
