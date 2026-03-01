@@ -26,6 +26,7 @@ public class AutoAim {
      * 
      * @param maxIterations The max number of iterations used to calculate moving auto-aim and collision avoidance. Should be set high enough to
      *                      allow convergence, but low enough to prevent long runtimes in edge cases.
+     * @param convergenceThreshold The threshold for convergence in meters for the auto-aim calculation.
      * @param turretTransform The transform from the robot's center to the turret's center, in the robot's coordinate frame.
      * @param minAngle The minimum angle for auto-aim.
      * @param maxAngle The maximum angle for auto-aim.
