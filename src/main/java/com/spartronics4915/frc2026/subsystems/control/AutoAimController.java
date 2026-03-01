@@ -59,7 +59,7 @@ public class AutoAimController extends SubsystemBase {
     private final SwerveSubsystem swerve;
 
     private final AutoAim autoAim = new AutoAim(
-        10,
+        30,
         0.01,
         new Translation3d(
             TURRET_TRANSLATION.getX(),
@@ -147,7 +147,7 @@ public class AutoAimController extends SubsystemBase {
             swerve.getRelativePose(),
             swerve.getRelativeFieldVelocity(),
             new Translation3d(target.getX(), target.getY(), HUB_AIM_HEIGHT_METERS),
-            RPSToMPS(shooter.getCurrentRPS())
+            RPSToMPS(Robot.isSimulation() ? shooter.getCurrentSetpoint() : shooter.getCurrentRPS())
         );
     }
 
@@ -167,9 +167,9 @@ public class AutoAimController extends SubsystemBase {
                 .minus(Rotation2d.kCCW_90deg)
         );
 
-        if (!isShootingEnabled && shouldAutoShoot()) return;
+        if (!isShootingEnabled && !shouldAutoShoot()) return;
         if (result.recommendedShotSpeed() != -1) {
-            shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed()));
+            shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed() + 0.1));
         }
     }
 
@@ -252,7 +252,7 @@ public class AutoAimController extends SubsystemBase {
             swerve.getFieldVelocity(),
             yaw,
             Inches.of(21.443748 + 2.955),
-            InchesPerSecond.of(RPSToMPS(shooter.getCurrentSetpoint())),
+            MetersPerSecond.of(RPSToMPS(shooter.getCurrentSetpoint())),
             Degrees.of(result.pitch().getDegrees())
         );
 
