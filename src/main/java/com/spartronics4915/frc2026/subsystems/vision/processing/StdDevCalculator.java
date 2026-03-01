@@ -8,20 +8,55 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 
+/**
+ * Computes pose estimation standard deviations for a single camera.
+ *
+ * <p>Distance and area inputs are smoothed via an exponential moving average
+ * to reduce frame-to-frame jitter. Tag count is also smoothed as a {@code double}
+ * so re-acquisition doesn't cause an abrupt step change in the uncertainty model —
+ * for example, jumping from 1.0 to 2.0 tags instantly. The smoothed value feeds
+ * {@link #calculateTagCountFactor}, where fractional counts (e.g. 1.6 tags) produce
+ * a sensible interpolated confidence.
+ *
+ * <p>Motion punishment can be disabled via the constructor flag. When disabled,
+ * {@link #calculateMotionFactor} is skipped and its contribution is treated as 1.0,
+ * which is useful during static tuning or when odometry already accounts for motion.
+ */
 public class StdDevCalculator {
+
+    /**
+     * Whether to apply the motion blur punishment factor.
+     * When {@code false}, robot velocity has no effect on std devs.
+     */
+    private final boolean enableMotionPunishment;
 
     private double smoothedDistance;
     private double smoothedArea;
+
+    /**
+     * Smoothed tag count stored as a {@code double} rather than {@code int}.
+     * This intentional — an EMA of integer counts produces fractional values
+     * that give a smoother response to tag acquisition/loss than snapping
+     * between whole numbers.
+     */
     private double smoothedTagCount;
+
     private int previousNumTags;
     private boolean initialized;
 
-    public StdDevCalculator() {
-        smoothedDistance = 2.0;
-        smoothedArea = 0.1;
-        smoothedTagCount = 1;
-        previousNumTags = 0;
-        initialized = false;
+    /**
+     * Constructs a calculator with explicit motion punishment control.
+     *
+     * @param enableMotionPunishment {@code true} to scale std devs up when the robot
+     *                               is moving fast; {@code false} to ignore velocity
+     */
+    public StdDevCalculator(boolean enableMotionPunishment) {
+        this.enableMotionPunishment = enableMotionPunishment;
+        this.smoothedDistance = 2.0;
+        this.smoothedArea = 0.1;
+        this.smoothedTagCount = 1;
+        this.previousNumTags = 0;
+        this.initialized = false;
     }
 
     /**
@@ -76,7 +111,11 @@ public class StdDevCalculator {
         double anisotropyFactor = calculateAnisotropyFactor(xAnisotropy, yAnisotropy);
         double latencyFactor = calculateLatencyFactor(latencySeconds);
         double tagCountFactor = calculateTagCountFactor(smoothedTagCount);
-        double motionFactor = calculateMotionFactor(chassisSpeeds);
+
+        // Motion factor is 1.0 (no effect) when motion punishment is disabled
+        double motionFactor = enableMotionPunishment
+            ? calculateMotionFactor(chassisSpeeds)
+            : 1.0;
 
         double xyMultiplier =
             Math.pow(distanceFactor, distanceWeight) *
@@ -90,7 +129,7 @@ public class StdDevCalculator {
         /*
          * Theta is less sensitive to distance (0.7x) and tag area (0.5x)
          * but more sensitive to anisotropy (1.3x) and motion blur (1.5x)
-         * since rotation errors compound with both viewing angle and motion
+         * since rotation errors compound with both viewing angle and motion.
          */
         double thetaMultiplier =
             Math.pow(distanceFactor, distanceWeight * 0.7) *
