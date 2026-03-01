@@ -15,6 +15,7 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.FeederSubsyste
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem.IndexerState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem.ShooterClamp;
 
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -77,12 +78,9 @@ public class SuperstructureCommands {
     //#region Controls
 
     public Command setPipelineState(PipelineState state) {
-        return Commands.sequence(
-            //Commands.waitUntil(this::isShooterReady),
-            Commands.parallel(
-                indexer.setStateCommand(IndexerState.FORWARD),
-                feeder.setStateCommand(FeederState.FORWARD)
-            )
+        return Commands.parallel(
+            indexer.setStateCommand(state.indexerState),
+            feeder.setStateCommand(state.feederState)
         );
     }
 
@@ -96,10 +94,9 @@ public class SuperstructureCommands {
 
     public Command togglePipelineState() {
         return Commands.runOnce(() -> {
-            PipelineState next = currentPipelineState == PipelineState.ON
-                ? PipelineState.OFF
-                : PipelineState.ON;
-            CommandScheduler.getInstance().schedule(setPipelineState(next));
+            currentPipelineState = currentPipelineState == PipelineState.ON
+                ? PipelineState.OFF : PipelineState.ON;
+            CommandScheduler.getInstance().schedule(setPipelineState(currentPipelineState));
         });
     }
 
@@ -163,7 +160,8 @@ public class SuperstructureCommands {
     public Command trenchTraversal() {
         return Commands.sequence(
             hood.setClampCommand(HoodClamp.RESTRICTED),
-            traversal() // Chain into the standard traversal sequence
+            hood.setSetpointCommand(Rotation2d.fromDegrees(0)),
+            traversal()
         );
     }
 

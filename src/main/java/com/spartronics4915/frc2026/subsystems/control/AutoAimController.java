@@ -170,7 +170,7 @@ public class AutoAimController extends SubsystemBase {
 
         if (!isShootingEnabled && !shouldAutoShoot() || shooter.getShooterClamp() != ShooterClamp.UNRESTRICTED) return;
         if (result.recommendedShotSpeed() != -1) {
-            shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed() + 0.1));
+            shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed()));
         }
     }
 

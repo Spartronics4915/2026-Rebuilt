@@ -184,6 +184,6 @@ public class StdDevCalculator {
     }
 
     private static double calculateTagCountFactor(double smoothedTagCount) {
-        return 1.0 / Math.sqrt(smoothedTagCount + 0.5);
+        return (1.0 / Math.log(smoothedTagCount + 0.5)) * 1.4;
     }
 }

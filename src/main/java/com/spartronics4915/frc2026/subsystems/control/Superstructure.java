@@ -17,6 +17,7 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -113,9 +114,9 @@ public class Superstructure extends SubsystemBase {
     public void periodic() {
         if (vision.hasValidPose()) {
             zonePublisher.accept(currentZone.name());
-        } else {
-            return;
-        }
+        } //else {
+            //return;
+        //}
 
         Translation2d turretTranslation = swerve.getRelativePose().getTranslation()
             .plus(TURRET_TRANSLATION.rotateBy(swerve.getPose().getRotation()));
@@ -124,9 +125,9 @@ public class Superstructure extends SubsystemBase {
 
         if (testingMode == false) {
             if (controller.hasValidResult()) {
-                commands.setPipelineState(PipelineState.ON);
+                CommandScheduler.getInstance().schedule(commands.setPipelineState(PipelineState.ON));
             } else {
-                commands.setPipelineState(PipelineState.OFF);
+                CommandScheduler.getInstance().schedule(commands.setPipelineState(PipelineState.OFF));
             }
         }
         
