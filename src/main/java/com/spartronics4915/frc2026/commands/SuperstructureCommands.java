@@ -243,13 +243,13 @@ public class SuperstructureCommands {
     }
 
     private boolean isPivotSafe() {
-        return pivot.getPosition().getDegrees() > PIVOT_SAFE_THRESHOLD.getDegrees();
+        return pivot.getPosition().getDegrees() <= PIVOT_SAFE_THRESHOLD.getDegrees();
     }
 
     private boolean isTurretSafe() {
         double degrees = turret.getPosition().getDegrees();
-        return degrees > TURRET_MIN_SAFE_THRESHOLD.getDegrees() 
-            && degrees < TURRET_MAX_SAFE_THRESHOLD.getDegrees();
+        return degrees >= TURRET_MIN_SAFE_THRESHOLD.getDegrees() 
+            && degrees <= TURRET_MAX_SAFE_THRESHOLD.getDegrees();
     }
 
     //#endregion
