@@ -29,13 +29,16 @@ import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Notifier;
 
 /**
- * A processor that utilizes photon vision's pre-existing camera class. 
- * The processor keeps a linked queue containing its most recent results 
+ * A processor that utilizes photon vision's pre-existing camera class.
+ * The processor keeps a linked queue containing its most recent results
  * which can be grabbed and used for further use.
  *
  * <p>Each instance owns a {@link StdDevCalculator} that maintains smoothed
  * distance and area state across frames. This means std devs are computed
  * here, camera-by-camera, rather than centrally in VisionSubsystem.
+ *
+ * <p>All per-frame calculation methods use plain loops rather than stream
+ * pipelines to avoid iterator and lambda allocation on the hot Notifier path.
  */
 public class PhotonProcessor implements ProcessorInterface {
 
@@ -48,7 +51,7 @@ public class PhotonProcessor implements ProcessorInterface {
 
     private final SimCameraProperties simProperties;
     private final PhotonCameraSim cameraSim;
-    
+
     private final ConcurrentLinkedQueue<ResultInterface> resultQueue;
     private final int maxQueueSize;
     private final Notifier processingNotifier;
@@ -60,7 +63,7 @@ public class PhotonProcessor implements ProcessorInterface {
 
     /**
      * Constructs a photon processor with a set of parameters
-     * 
+     *
      * @param name the name of the processor
      * @param layout the apriltag field layout of the current field
      * @param transform the transform from the center of the robot to the camera lens
@@ -82,13 +85,13 @@ public class PhotonProcessor implements ProcessorInterface {
         this.cameraTransform = transform;
         this.poseEstimator = new PhotonPoseEstimator(fieldLayout, cameraTransform);
         this.stdDevCalculator = calculator;
-        
+
         this.simProperties = properties;
         this.cameraSim = new PhotonCameraSim(photonCamera, simProperties);
 
         this.resultQueue = new ConcurrentLinkedQueue<>();
         this.maxQueueSize = 4;
-        
+
         this.processingNotifier = new Notifier(this::process);
         this.processingFrequency = 50.0;
         this.processingNotifier.setName("Spectrum-" + cameraName);
@@ -117,7 +120,7 @@ public class PhotonProcessor implements ProcessorInterface {
         if (!isRunning) return;
 
         List<PhotonPipelineResult> rawResults = photonCamera.getAllUnreadResults();
-        
+
         for (PhotonPipelineResult rawResult : rawResults) {
             Optional<ApriltagResult> apriltagResult = processApriltagResult(rawResult);
             if (apriltagResult.isPresent()) {
@@ -142,21 +145,12 @@ public class PhotonProcessor implements ProcessorInterface {
         List<PhotonTrackedTarget> targets = rawResult.getTargets();
         int targetCount = targets.size();
 
-        /* 
-         * Calculating the different aspects of the camera result 
-         * enables the filtering of bad poses + we can use them
-         * for standard deviation calculation
-         */
-        double avgDistance  = calculateAverageDistance(targets);
+        double avgDistance = calculateAverageDistance(targets);
         double avgAmbiguity = calculateAmbiguity(targets);
-        double avgArea      = calculateAverageArea(targets);
-        double xAnisotropy  = calculateXAnisotropy(targets);
-        double yAnisotropy  = calculateYAnisotropy(targets);
+        double avgArea = calculateAverageArea(targets);
+        double xAnisotropy = calculateXAnisotropy(targets);
+        double yAnisotropy = calculateYAnisotropy(targets);
 
-        /* 
-         * Grabbing the robot's velocity at the timestamp of the pose 
-         * allows the system to account for motion blur
-         */
         ChassisSpeeds robotVelocity = robotVelocitySupplier.get();
         if (robotVelocity == null) {
             robotVelocity = new ChassisSpeeds();
@@ -165,16 +159,14 @@ public class PhotonProcessor implements ProcessorInterface {
         Optional<EstimatedRobotPose> poseOptional = (targetCount > 1)
             ? poseEstimator.estimateCoprocMultiTagPose(rawResult)
             : poseEstimator.estimateLowestAmbiguityPose(rawResult);
-        
+
         if (poseOptional.isEmpty()) return Optional.empty();
         EstimatedRobotPose estimatedPose = poseOptional.get();
         Pose2d resultantPose = estimatedPose.estimatedPose.toPose2d();
 
         double timestamp = estimatedPose.timestampSeconds;
-        double latency   = rawResult.metadata.getLatencyMillis();
+        double latency = rawResult.metadata.getLatencyMillis();
 
-        // Calculate std devs here using this camera's own instance, which
-        // maintains smoothed distance/area state across frames.
         Matrix<N3, N1> stdDevs = stdDevCalculator.calculate(
             avgDistance,
             avgAmbiguity,
@@ -205,69 +197,78 @@ public class PhotonProcessor implements ProcessorInterface {
     //#endregion
 
     //#region Calculation
-    
+
     /**
-     * Calculates the average distance to a list of photon vision targets
+     * Calculates the average distance to a list of photon vision targets.
+     * Uses a plain loop instead of a stream to avoid iterator allocation on the hot path.
      */
     private double calculateAverageDistance(List<PhotonTrackedTarget> targets) {
-        return targets.stream()
-            .mapToDouble(target -> target.getBestCameraToTarget().getTranslation().getNorm())
-            .average()
-            .orElse(0.0);
+        if (targets.isEmpty()) return 0.0;
+        double sum = 0.0;
+        for (PhotonTrackedTarget target : targets) {
+            sum += target.getBestCameraToTarget().getTranslation().getNorm();
+        }
+        return sum / targets.size();
     }
 
     /**
-     * Calculates the average ambiguity from a list of photon vision targets
+     * Calculates the average ambiguity from a list of photon vision targets.
+     * Uses a plain loop instead of a stream to avoid iterator allocation on the hot path.
+     * For multi-tag results, returns the minimum non-negative ambiguity scaled by tag count.
      */
     private static double calculateAmbiguity(List<PhotonTrackedTarget> targets) {
         if (targets.size() == 1) {
             return targets.get(0).getPoseAmbiguity();
         }
-    
-        double minAmbiguity = targets.stream()
-            .mapToDouble(PhotonTrackedTarget::getPoseAmbiguity)
-            .filter(a -> a >= 0)
-            .min()
-            .orElse(0.15);
 
+        double minAmbiguity = 0.15;
+        for (PhotonTrackedTarget target : targets) {
+            double a = target.getPoseAmbiguity();
+            if (a >= 0 && a < minAmbiguity) minAmbiguity = a;
+        }
         return minAmbiguity / Math.sqrt(targets.size());
     }
 
     /**
-     * Calculates the average area (size in frame) of a list of photon vision targets
+     * Calculates the average area (size in frame) of a list of photon vision targets.
+     * Uses a plain loop instead of a stream to avoid iterator allocation on the hot path.
      */
     private static double calculateAverageArea(List<PhotonTrackedTarget> targets) {
-        return targets.stream()
-            .mapToDouble(PhotonTrackedTarget::getArea)
-            .average()
-            .orElse(0.0);
+        if (targets.isEmpty()) return 0.0;
+        double sum = 0.0;
+        for (PhotonTrackedTarget target : targets) {
+            sum += target.getArea();
+        }
+        return sum / targets.size();
     }
-    
+
     /**
      * Calculates the average x anisotropy (yaw-based uncertainty)
-     * from a list of photon vision targets
+     * from a list of photon vision targets.
+     * Uses a plain loop instead of a stream to avoid iterator allocation on the hot path.
      */
     private static double calculateXAnisotropy(List<PhotonTrackedTarget> targets) {
-        double avgYawRad = Math.toRadians(
-            targets.stream()
-                .mapToDouble(target -> Math.abs(target.getYaw()))
-                .average()
-                .orElse(0.0)
-        );
+        if (targets.isEmpty()) return 1.0;
+        double sumAbsYaw = 0.0;
+        for (PhotonTrackedTarget target : targets) {
+            sumAbsYaw += Math.abs(target.getYaw());
+        }
+        double avgYawRad = Math.toRadians(sumAbsYaw / targets.size());
         return 1.0 / Math.max(Math.cos(avgYawRad), MIN_COSINE_VALUE);
     }
 
     /**
      * Calculates the average y anisotropy (pitch-based uncertainty)
-     * from a list of photon vision targets
+     * from a list of photon vision targets.
+     * Uses a plain loop instead of a stream to avoid iterator allocation on the hot path.
      */
     private static double calculateYAnisotropy(List<PhotonTrackedTarget> targets) {
-        double avgPitchRad = Math.toRadians(
-            targets.stream()
-                .mapToDouble(target -> Math.abs(target.getPitch()))
-                .average()
-                .orElse(0.0)
-        );
+        if (targets.isEmpty()) return 1.0;
+        double sumAbsPitch = 0.0;
+        for (PhotonTrackedTarget target : targets) {
+            sumAbsPitch += Math.abs(target.getPitch());
+        }
+        double avgPitchRad = Math.toRadians(sumAbsPitch / targets.size());
         return 1.0 / Math.max(Math.cos(avgPitchRad), MIN_COSINE_VALUE);
     }
 
@@ -310,13 +311,28 @@ public class PhotonProcessor implements ProcessorInterface {
         return cameraSim;
     }
 
+    /**
+     * Drains all pending results from the queue into the provided destination list.
+     * Prefer this over {@link #getResultQueue()} to avoid allocating a new list per call.
+     *
+     * @param destination the list to drain results into; existing contents are preserved
+     */
+    @Override
+    public void drainResultQueue(List<ResultInterface> destination) {
+        ResultInterface result;
+        while ((result = resultQueue.poll()) != null) {
+            destination.add(result);
+        }
+    }
+
+    /**
+     * Convenience wrapper that drains the queue into a new list and returns it.
+     * Use {@link #drainResultQueue(List)} instead in performance-sensitive paths.
+     */
     @Override
     public List<ResultInterface> getResultQueue() {
         List<ResultInterface> results = new ArrayList<>();
-        ResultInterface result;
-        while ((result = resultQueue.poll()) != null) {
-            results.add(result);
-        }
+        drainResultQueue(results);
         return results;
     }
 

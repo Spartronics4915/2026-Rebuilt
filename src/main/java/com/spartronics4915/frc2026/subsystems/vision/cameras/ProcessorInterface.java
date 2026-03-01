@@ -18,7 +18,7 @@ import edu.wpi.first.wpilibj.Notifier;
 public interface ProcessorInterface {
 
     // ------ Main Functionality ------
-    
+
     void start();
     void stop();
     void process();
@@ -32,17 +32,33 @@ public interface ProcessorInterface {
     PhotonPoseEstimator getPoseEstimator();
     SimCameraProperties getSimProperties();
     PhotonCameraSim getCameraSim();
+
+    /**
+     * Drains all pending results from this camera's queue into the provided
+     * destination list. Prefer this over {@link #getResultQueue()} in hot paths
+     * because it avoids allocating a new {@link java.util.ArrayList} on every call.
+     *
+     * @param destination the list to drain results into; existing contents are preserved
+     */
+    void drainResultQueue(List<ResultInterface> destination);
+
+    /**
+     * Drains all pending results and returns them as a new list.
+     * Convenience wrapper around {@link #drainResultQueue(List)} for callers
+     * that don't already hold a scratch list.
+     */
     List<ResultInterface> getResultQueue();
+
     int getMaxQueueSize();
     Notifier getNotifier();
     double getFrequency();
     boolean isRunning();
     Supplier<ChassisSpeeds> getSpeedSupplier();
-    
+
     // ------ Setters ------
 
     void setPipeline(int newPipelineIndex);
     void setCameraTransform(Transform3d newCameraTransform);
     void setSpeedSupplier(Supplier<ChassisSpeeds> speedSupplier);
-    
+
 }
