@@ -12,12 +12,14 @@ public class StdDevCalculator {
 
     private double smoothedDistance;
     private double smoothedArea;
+    private double smoothedTagCount;
     private int previousNumTags;
     private boolean initialized;
 
     public StdDevCalculator() {
         smoothedDistance = 2.0;
         smoothedArea = 0.1;
+        smoothedTagCount = 1;
         previousNumTags = 0;
         initialized = false;
     }
@@ -57,21 +59,23 @@ public class StdDevCalculator {
         if (!initialized || reAcquired) {
             smoothedDistance = avgDistance;
             smoothedArea = avgArea;
+            smoothedTagCount = numTags;
             initialized = true;
         } else {
             smoothedDistance = smoothingAlpha * avgDistance + (1.0 - smoothingAlpha) * smoothedDistance;
             smoothedArea = smoothingAlpha * avgArea + (1.0 - smoothingAlpha) * smoothedArea;
+            smoothedTagCount = smoothingAlpha * numTags + (1.0 - smoothingAlpha) * smoothedTagCount;
         }
         previousNumTags = numTags;
 
         double latencySeconds = latencyMs / 1000.0;
 
         double distanceFactor = calculateDistanceFactor(smoothedDistance);
-        double ambiguityFactor = (numTags > 1) ? 1.0 : calculateAmbiguityFactor(avgAmbiguity);
+        double ambiguityFactor = (smoothedTagCount > 1) ? 1.0 : calculateAmbiguityFactor(avgAmbiguity);
         double areaFactor = calculateAreaFactor(smoothedArea);
         double anisotropyFactor = calculateAnisotropyFactor(xAnisotropy, yAnisotropy);
         double latencyFactor = calculateLatencyFactor(latencySeconds);
-        double tagCountFactor = calculateTagCountFactor(numTags);
+        double tagCountFactor = calculateTagCountFactor(smoothedTagCount);
         double motionFactor = calculateMotionFactor(chassisSpeeds);
 
         double xyMultiplier =
@@ -140,7 +144,7 @@ public class StdDevCalculator {
         return Math.min(factor, 2.0);
     }
 
-    private static double calculateTagCountFactor(int numTags) {
-        return 1.0 / Math.sqrt(numTags);
+    private static double calculateTagCountFactor(double smoothedTagCount) {
+        return 1.0 / Math.sqrt(smoothedTagCount + 0.5);
     }
 }

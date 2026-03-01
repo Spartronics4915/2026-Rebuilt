@@ -260,7 +260,7 @@ public final class Constants {
              * Range [0.0, 1.0] — lower values smooth more but react slower to real changes.
              * At 20fps: 0.05 - 1s lag, 0.15 - 0.3s lag, 0.30 - 0.15s lag.
              */
-            public static final double smoothingAlpha = 0.15;
+            public static final double smoothingAlpha = 0.8;
         }
 
         public static final class CameraConstants {
