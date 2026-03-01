@@ -129,6 +129,8 @@ public class Superstructure extends SubsystemBase {
             } else {
                 CommandScheduler.getInstance().schedule(commands.setPipelineState(PipelineState.OFF));
             }
+        } else {
+            CommandScheduler.getInstance().schedule(commands.setPipelineState(PipelineState.OFF));
         }
         
         if (newZone != currentZone) {
