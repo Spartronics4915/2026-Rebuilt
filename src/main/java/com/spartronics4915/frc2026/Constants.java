@@ -210,7 +210,7 @@ public final class Constants {
                         Inches.of(2.0),
                         MetersPerSecond.of(24),
                         2.255,
-                        DCMotor.getKrakenX60(1),
+                        DCMotor.getKrakenX60Foc(1),
                         6.03,
                         Amps.of(60),
                         1
