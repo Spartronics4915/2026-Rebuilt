@@ -346,8 +346,8 @@ public final class Constants {
         public static final Translation2d TURRET_TRANSLATION = new Translation2d(-0.1185, -0.1568);
 
         public static final Rotation2d PIVOT_SAFE_THRESHOLD = Rotation2d.fromDegrees(100);
-        public static final Rotation2d TURRET_MIN_SAFE_THRESHOLD = Rotation2d.fromDegrees(0);
-        public static final Rotation2d TURRET_MAX_SAFE_THRESHOLD = Rotation2d.fromDegrees(0);
+        public static final Rotation2d TURRET_MIN_SAFE_THRESHOLD = Rotation2d.fromDegrees(-10);
+        public static final Rotation2d TURRET_MAX_SAFE_THRESHOLD = Rotation2d.fromDegrees(10);
 
         public static final Distance bumpLength = Inches.of(48.93);
         public static final Distance trenchLength = Inches.of(30);

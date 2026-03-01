@@ -11,6 +11,8 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.head.*;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.HoodSubsystem.HoodClamp;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem.TurretClamp;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.*;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.FeederSubsystem.FeederState;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem.IndexerState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem.ShooterClamp;
 
 import edu.wpi.first.wpilibj.DriverStation;
@@ -76,10 +78,10 @@ public class SuperstructureCommands {
 
     public Command setPipelineState(PipelineState state) {
         return Commands.sequence(
-            Commands.waitUntil(this::isShooterReady),
+            //Commands.waitUntil(this::isShooterReady),
             Commands.parallel(
-                indexer.setStateCommand(state.indexerState),
-                feeder.setStateCommand(state.feederState)
+                indexer.setStateCommand(IndexerState.FORWARD),
+                feeder.setStateCommand(FeederState.FORWARD)
             )
         );
     }

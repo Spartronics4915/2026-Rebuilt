@@ -8,6 +8,7 @@ import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.HoodSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem.ShooterClamp;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.util.AutoAim;
 import com.spartronics4915.frc2026.util.AutoAim.AutoAimResult;
@@ -116,7 +117,7 @@ public class AutoAimController extends SubsystemBase {
 
     @Override
     public void periodic() {
-        isShootingEnabledPublisher.accept(isAimEnabled);
+        isShootingEnabledPublisher.accept(isShootingEnabled);
         isAimEnabledPublisher.accept(isAimEnabled);
 
         if (!isAimEnabled) {
@@ -164,10 +165,10 @@ public class AutoAimController extends SubsystemBase {
         turret.setSetpoint(
             result.yaw()
                 .minus(swerve.getRelativePose().getRotation())
-                .minus(Rotation2d.kCCW_90deg)
+                .minus(Rotation2d.kCW_90deg)
         );
 
-        if (!isShootingEnabled && !shouldAutoShoot()) return;
+        if (!isShootingEnabled && !shouldAutoShoot() || shooter.getShooterClamp() != ShooterClamp.UNRESTRICTED) return;
         if (result.recommendedShotSpeed() != -1) {
             shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed() + 0.1));
         }

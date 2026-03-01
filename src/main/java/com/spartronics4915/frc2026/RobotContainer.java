@@ -112,6 +112,7 @@ public class RobotContainer {
 
         SmartDashboard.putData("Auto-Aim Toggle", autoAimController.aimToggle());
         SmartDashboard.putData("Auto-Shoot Toggle", autoAimController.shootingToggle());
+        SmartDashboard.putData("Reset Dynamics", superstructureCommands.resetDynamics());
     }
 
     /**

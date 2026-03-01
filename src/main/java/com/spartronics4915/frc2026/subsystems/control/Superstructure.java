@@ -15,6 +15,7 @@ import com.spartronics4915.frc2026.util.FieldZoneMap;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -37,7 +38,7 @@ public class Superstructure extends SubsystemBase {
      * but no SuperstructureCommands will be scheduled automatically.
      * Set to false to restore full autonomous zone behavior.
      */
-    private static final boolean testingMode = true;
+    private static boolean testingMode = true;
     
     public enum Zone {
         ALLIANCE_ZONE,
@@ -73,6 +74,8 @@ public class Superstructure extends SubsystemBase {
         this.zoneMap = buildZoneMap();
         
         configureZoneTriggers();
+
+        SmartDashboard.putData("Toggle Testing", toggleTestingMode());
     }
 
     private FieldZoneMap<Zone> buildZoneMap() {
@@ -109,10 +112,8 @@ public class Superstructure extends SubsystemBase {
     @Override
     public void periodic() {
         if (!vision.hasValidPose()) {
-            if (currentZone != Zone.UNKNOWN) {
-                currentZone = Zone.UNKNOWN;
-                zonePublisher.accept(currentZone.name());
-            }
+            zonePublisher.accept(currentZone.name());
+        } else {
             return;
         }
 
@@ -164,5 +165,9 @@ public class Superstructure extends SubsystemBase {
                 default: return commands.idle();
             }
         }, java.util.Set.of()).withName("Restore Zone State");
+    }
+
+    public Command toggleTestingMode() {
+        return Commands.runOnce(() -> testingMode = !testingMode).ignoringDisable(true);
     }
 }

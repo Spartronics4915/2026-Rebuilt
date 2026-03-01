@@ -90,6 +90,10 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
         return leadMotor.getVelocity().getValueAsDouble();
     }
 
+    public ShooterClamp getShooterClamp() {
+        return RPSClamp;
+    }
+
     public double getCurrentSetpoint() {
         return currentSetpoint;
     }
