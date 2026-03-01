@@ -311,7 +311,7 @@ public final class Constants {
                     "evan", 
                     LAYOUT,
                     LEFT_CAMERA_TRANSFORM, 
-                    new StdDevCalculator(true),
+                    new StdDevCalculator(false),
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
                 ),
@@ -319,7 +319,7 @@ public final class Constants {
                     "daniil", 
                     LAYOUT,
                     RIGHT_CAMERA_TRANSFORM,
-                    new StdDevCalculator(true),
+                    new StdDevCalculator(false),
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
                 ),
@@ -327,7 +327,7 @@ public final class Constants {
                     "val", 
                     LAYOUT,
                     BACK_CAMERA_TRANSFORM,
-                    new StdDevCalculator(true),
+                    new StdDevCalculator(false),
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
                 )
