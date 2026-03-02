@@ -39,6 +39,8 @@ public class Robot extends TimedRobot {
     public static boolean hubEnabled;
     public static double timeUntilSwitch;
 
+    private boolean isPureTeleop = false;
+
     /**
      * This function is run when the robot is first started up and should be used for any
      * initialization code.
@@ -116,11 +118,26 @@ public class Robot extends TimedRobot {
         if (autonomousCommand != null) {
             autonomousCommand.cancel();
         }
+
+        // If match time is near zero (or negative), we are likely in pure Teleop mode (counting up)
+        // In practice mode or real matches, teleop starts with a high number (e.g. 135) and counts down.
+        isPureTeleop = DriverStation.getMatchTime() < 10.0;
     }
 
     /** This function is called periodically during operator control. */
     @Override
     public void teleopPeriodic() {
+
+        if (isPureTeleop) {
+            hubEnabled = true;
+            timeUntilSwitch = 999.0;
+            currentAllianceSelected = false;
+
+            hubEnabledPub.set(hubEnabled);
+            timeUntilSwitchPub.set(timeUntilSwitch);
+            currentAllianceSelectedPub.set(currentAllianceSelected);
+            return;
+        }
 
         // Hub enable/disable flashing logic
         String gameData = DriverStation.getGameSpecificMessage();
