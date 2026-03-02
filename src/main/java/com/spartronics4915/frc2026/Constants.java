@@ -4,6 +4,7 @@
 
 package com.spartronics4915.frc2026;
 
+import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.hubPose;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Centimeter;
 import static edu.wpi.first.units.Units.Inches;
@@ -344,6 +345,7 @@ public final class Constants {
     public static final class SuperstructureConstants {
         
         public static final Translation2d TURRET_TRANSLATION = new Translation2d(-0.1185, -0.1568);
+        public static final Translation3d TURRET_TRANSLATION_3D = new Translation3d(TURRET_TRANSLATION.getX(), TURRET_TRANSLATION.getY(), 21.443748 + 2.955);
 
         public static final Rotation2d PIVOT_SAFE_THRESHOLD = Rotation2d.fromDegrees(100);
         public static final Rotation2d TURRET_MIN_SAFE_THRESHOLD = Rotation2d.fromDegrees(-10);
@@ -367,8 +369,8 @@ public final class Constants {
          * The aim calculator targets the top of the hub; the sim tolerance check
          * uses a slightly lower center point for a more forgiving hit window.
          */
-        public static final double HUB_AIM_HEIGHT_METERS = Units.inchesToMeters(72);
-        public static final double HUB_DISPLAY_HEIGHT_METERS = Units.inchesToMeters(62);
+        public static final double HUB_HEIGHT = Units.inchesToMeters(72);
+        public static final Translation3d HUB_POSITION = new Translation3d(hubPose.getX(), hubPose.getY(), HUB_HEIGHT);
         public static final double MAX_SHOOTER_RPS = 100;
     }
 

@@ -62,11 +62,7 @@ public class AutoAimController extends SubsystemBase {
     private final AutoAim autoAim = new AutoAim(
         30,
         0.01,
-        new Translation3d(
-            TURRET_TRANSLATION.getX(),
-            TURRET_TRANSLATION.getY(),
-            Units.inchesToMeters(21.443748 + 2.955)
-        ),
+        TURRET_TRANSLATION_3D,
         Rotation2d.fromDegrees(50),
         Rotation2d.fromDegrees(90),
         RPSToMPS(MAX_SHOOTER_RPS)
@@ -145,8 +141,7 @@ public class AutoAimController extends SubsystemBase {
      * @return A result, or {@code null} if the solver could not find a solution.
      */
     private AutoAimResult computeAimResult() {
-        Translation3d target = (targetOverride != null) ? targetOverride 
-            : new Translation3d(hubPose.getX(), hubPose.getY(), HUB_AIM_HEIGHT_METERS);
+        Translation3d target = (targetOverride != null) ? targetOverride : HUB_POSITION;
 
         return autoAim.calculateDynamicAim(
             swerve.getRelativePose(),
@@ -236,7 +231,7 @@ public class AutoAimController extends SubsystemBase {
 
         // Check if z is less than hub height. 
         // If it is lower than the rim height when crossing the rim boundary, it hits the side of the hub.
-        return zAtCollision < HUB_AIM_HEIGHT_METERS;
+        return zAtCollision < HUB_POSITION.getZ();
     }
 
     /**
@@ -267,7 +262,7 @@ public class AutoAimController extends SubsystemBase {
 
         projectile
             .withTargetPosition(() -> FieldMirroringUtils.toCurrentAllianceTranslation(
-                new Translation3d(hubPose.getX(), hubPose.getY(), HUB_DISPLAY_HEIGHT_METERS)
+                HUB_POSITION
             ))
             .withTargetTolerance(new Translation3d(0.67, 0.67, 0.3));
 
