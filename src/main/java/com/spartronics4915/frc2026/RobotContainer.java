@@ -239,7 +239,7 @@ public class RobotContainer {
             Commands.runOnce(() -> {
                 AutoAimResult result = autoAimController.getLastResult();
                 if (result != null && result.recommendedShotSpeed() != -1) {
-                    shooterSubsystem.setSetpoint(result.recommendedShotSpeed());
+                    shooterSubsystem.setSetpoint(autoAimController.MPSToRPS(result.recommendedShotSpeed()));
                 }
             })
         ).onFalse(
@@ -332,8 +332,8 @@ public class RobotContainer {
         debugController.rightTrigger().onTrue(
             Commands.runOnce(() -> {
                 AutoAimResult result = autoAimController.getLastResult();
-                if (result != null &&result.recommendedShotSpeed() != -1) {
-                    shooterSubsystem.setSetpoint(result.recommendedShotSpeed());
+                if (result != null && result.recommendedShotSpeed() != -1) {
+                    shooterSubsystem.setSetpoint(autoAimController.MPSToRPS(result.recommendedShotSpeed()));
                 }
             })
         ).onFalse(

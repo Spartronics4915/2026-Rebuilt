@@ -328,7 +328,7 @@ public class AutoAimController extends SubsystemBase {
         return InchesPerSecond.of(rps * Math.PI * 1.92).in(MetersPerSecond) * (1 - percentLoss);
     }
 
-    private double MPSToRPS(double mps) {
+    public double MPSToRPS(double mps) {
         return MetersPerSecond.of(mps / (1 - percentLoss)).in(InchesPerSecond) / (Math.PI * 1.92);
     }
 }
