@@ -235,17 +235,8 @@ public class RobotContainer {
             superstructureCommands.intakeOff()
         );
 
-        operatorController.rightTrigger().onTrue(
-            Commands.runOnce(() -> {
-                AutoAimResult result = autoAimController.getLastResult();
-                if (result != null && result.recommendedShotSpeed() != -1) {
-                    shooterSubsystem.setSetpoint(autoAimController.MPSToRPS(result.recommendedShotSpeed()));
-                }
-            })
-        ).onFalse(
-            Commands.runOnce(() -> {
-                shooterSubsystem.setSetpoint(0);
-            })
+        operatorController.rightTrigger().whileTrue(
+            autoAimController.shootingToggle()
         );
 
         operatorController.leftBumper().whileTrue(
@@ -325,17 +316,8 @@ public class RobotContainer {
             superstructureCommands.intakeOff()
         );
 
-        debugController.rightTrigger().onTrue(
-            Commands.runOnce(() -> {
-                AutoAimResult result = autoAimController.getLastResult();
-                if (result != null && result.recommendedShotSpeed() != -1) {
-                    shooterSubsystem.setSetpoint(autoAimController.MPSToRPS(result.recommendedShotSpeed()));
-                }
-            })
-        ).onFalse(
-            Commands.runOnce(() -> {
-                shooterSubsystem.setSetpoint(0);
-            })
+        debugController.rightTrigger().whileTrue(
+            autoAimController.overrideShootCommand()
         );
 
         debugController.leftBumper().onTrue(

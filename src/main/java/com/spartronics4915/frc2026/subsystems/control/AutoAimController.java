@@ -72,11 +72,12 @@ public class AutoAimController extends SubsystemBase {
         RPSToMPS(MAX_SHOOTER_RPS)
     );
 
-    private boolean isAimEnabled;
-    private boolean isShootingEnabled;
+    private boolean isAimEnabled = false;
+    private boolean isShootingEnabled = false;
     private AutoAimResult lastResult;
     private double lastSimShotTime;
-    private Translation3d targetOverride;
+    private Translation3d targetOverride = null;
+    private boolean shootOverride = false;
 
     private final BooleanPublisher isShootingEnabledPublisher =
         NetworkTableInstance.getDefault()
@@ -113,9 +114,6 @@ public class AutoAimController extends SubsystemBase {
         this.turret = turret;
         this.swerve = swerve;
         this.shooter = shooter;
-        this.isAimEnabled = false;
-        this.isShootingEnabled = false;
-        this.targetOverride = null;
 
         autoAim.setCollisionMap(this::collidesWithHub);
     }
@@ -174,7 +172,11 @@ public class AutoAimController extends SubsystemBase {
                 .minus(Rotation2d.kCW_90deg)
         );
 
-        if (!isShootingEnabled && !shouldAutoShoot() || shooter.getShooterClamp() != ShooterClamp.UNRESTRICTED) return;
+        boolean shouldShoot = isShootingEnabled || shouldAutoShoot();
+        boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
+
+        if (!shootOverride && (!isUnrestricted || !shouldShoot)) return;
+
         if (result.recommendedShotSpeed() != -1) {
             shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed()));
         }
@@ -330,6 +332,13 @@ public class AutoAimController extends SubsystemBase {
         return Commands.startEnd(
             () -> targetOverride = target,
             () -> targetOverride = null
+        );
+    }
+
+    public Command overrideShootCommand() {
+        return Commands.startEnd(
+            () -> shootOverride = true,
+            () -> shootOverride = false
         );
     }
 
