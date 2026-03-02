@@ -7,6 +7,7 @@ import static edu.wpi.first.units.Units.Meters;
 
 import com.spartronics4915.frc2026.commands.SuperstructureCommands;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands.PipelineState;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 import com.spartronics4915.frc2026.util.FieldRegion;
@@ -52,6 +53,8 @@ public class Superstructure extends SubsystemBase {
 
     private final SwerveSubsystem swerve;
     private final VisionSubsystem vision;
+    private final ShooterSubsystem shooter;
+
     private final AutoAimController controller;
     private final SuperstructureCommands commands;
 
@@ -64,11 +67,13 @@ public class Superstructure extends SubsystemBase {
     public Superstructure(
         SwerveSubsystem swerve, 
         VisionSubsystem vision, 
+        ShooterSubsystem shooter,
         AutoAimController controller,
         SuperstructureCommands commands
     ) {
         this.swerve = swerve;
         this.vision = vision;
+        this.shooter = shooter;
         this.controller = controller;
         this.commands = commands;
 
@@ -123,7 +128,7 @@ public class Superstructure extends SubsystemBase {
 
         Zone newZone = zoneMap.evaluate(turretTranslation);
 
-        if (controller.hasValidResult()) {
+        if (controller.hasValidResult() && shooter.getCurrentSetpoint() != 0) {
             CommandScheduler.getInstance().schedule(commands.setPipelineState(PipelineState.ON));
         } else {
             CommandScheduler.getInstance().schedule(commands.setPipelineState(PipelineState.OFF));

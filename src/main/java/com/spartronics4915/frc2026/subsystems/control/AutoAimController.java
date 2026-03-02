@@ -98,6 +98,11 @@ public class AutoAimController extends SubsystemBase {
             .getStructArrayTopic("Flywheel/FuelProjectileUnsuccessfulShot", Pose3d.struct)
             .publish();
 
+    private final BooleanPublisher hasValidResultPublisher =
+        NetworkTableInstance.getDefault()
+            .getBooleanTopic("superstructure/AutoAim/HasValidResult")
+            .publish();
+
     public AutoAimController(
         HoodSubsystem hood,
         TurretSubsystem turret,
@@ -119,6 +124,7 @@ public class AutoAimController extends SubsystemBase {
     public void periodic() {
         isShootingEnabledPublisher.accept(isShootingEnabled);
         isAimEnabledPublisher.accept(isAimEnabled);
+        hasValidResultPublisher.accept(hasValidResult());
 
         if (!isAimEnabled) {
             lastResult = null;

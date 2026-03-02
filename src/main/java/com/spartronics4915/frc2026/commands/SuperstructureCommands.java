@@ -78,9 +78,12 @@ public class SuperstructureCommands {
     //#region Controls
 
     public Command setPipelineState(PipelineState state) {
-        return Commands.parallel(
-            indexer.setStateCommand(state.indexerState),
-            feeder.setStateCommand(state.feederState)
+        return Commands.sequence(
+            Commands.waitUntil(() -> isShooterReady()),
+            Commands.parallel(
+                indexer.setStateCommand(state.indexerState),
+                feeder.setStateCommand(state.feederState)
+            )
         );
     }
 
