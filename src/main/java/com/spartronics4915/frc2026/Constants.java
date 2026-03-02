@@ -345,7 +345,7 @@ public final class Constants {
     public static final class SuperstructureConstants {
         
         public static final Translation2d TURRET_TRANSLATION = new Translation2d(-0.1185, -0.1568);
-        public static final Translation3d TURRET_TRANSLATION_3D = new Translation3d(TURRET_TRANSLATION.getX(), TURRET_TRANSLATION.getY(), 21.443748 + 2.955);
+        public static final Translation3d TURRET_TRANSLATION_3D = new Translation3d(TURRET_TRANSLATION.getX(), TURRET_TRANSLATION.getY(), Units.inchesToMeters(21.443748 + 2.955));
 
         public static final Rotation2d PIVOT_SAFE_THRESHOLD = Rotation2d.fromDegrees(100);
         public static final Rotation2d TURRET_MIN_SAFE_THRESHOLD = Rotation2d.fromDegrees(-10);

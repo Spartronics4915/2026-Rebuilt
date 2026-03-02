@@ -161,16 +161,18 @@ public class AutoAimController extends SubsystemBase {
         if (result.pitch() != null) {
             hood.setSetpoint(Rotation2d.kCCW_Pi_2.minus(result.pitch()));
         }
-        turret.setSetpoint(
-            result.yaw()
-                .minus(swerve.getRelativePose().getRotation())
-                .minus(Rotation2d.kCW_90deg)
-        );
+        if (result.yaw() != null) {
+            turret.setSetpoint(
+                result.yaw()
+                    .minus(swerve.getRelativePose().getRotation())
+                    .minus(Rotation2d.kCW_90deg)
+            );
+        }
 
-        boolean shouldShoot = isShootingEnabled || shouldAutoShoot();
+        boolean shouldShoot = isShootingEnabled && shouldAutoShoot();
         boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
 
-        if (shootOverride || isUnrestricted && shouldShoot) {
+        if (shootOverride || (isUnrestricted && shouldShoot)) {
             if (result.recommendedShotSpeed() != -1) {
                 shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed()));
             }
