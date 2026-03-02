@@ -1,6 +1,6 @@
 // Utility class for logging Krakens to SmartDashboard
 
-package com.spartronics4915.frc2026.util;
+package com.spartronics4915.frc2026.util.mechanism;
 
 import java.util.function.DoubleConsumer;
 import java.util.function.DoubleSupplier;

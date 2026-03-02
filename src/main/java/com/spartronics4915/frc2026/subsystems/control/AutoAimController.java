@@ -10,8 +10,8 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem.ShooterClamp;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
-import com.spartronics4915.frc2026.util.AutoAim;
-import com.spartronics4915.frc2026.util.AutoAim.AutoAimResult;
+import com.spartronics4915.frc2026.util.control.AutoAim;
+import com.spartronics4915.frc2026.util.control.AutoAim.AutoAimResult;
 
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;

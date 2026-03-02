@@ -13,9 +13,9 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import static com.spartronics4915.frc2026.Constants.IntakeConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
-import com.spartronics4915.frc2026.util.ModeSwitchHandler;
-import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
-import com.spartronics4915.frc2026.util.MotorHelpers.CTRE.LoggedTalonFX;
+import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
+import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
+import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
 
 public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterface {
 

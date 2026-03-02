@@ -1,6 +1,6 @@
 //LimelightHelpers v1.12 (REQUIRES LLOS 2025.0 OR LATER)
 
-package com.spartronics4915.frc2026.util;
+package com.spartronics4915.frc2026.util.vision;
 
 import edu.wpi.first.networktables.DoubleArrayEntry;
 import edu.wpi.first.networktables.NetworkTable;

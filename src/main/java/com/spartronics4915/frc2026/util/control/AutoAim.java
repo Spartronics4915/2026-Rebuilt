@@ -1,4 +1,4 @@
-package com.spartronics4915.frc2026.util;
+package com.spartronics4915.frc2026.util.control;
 
 import java.util.ArrayList;
 import java.util.function.BiPredicate;

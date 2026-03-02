@@ -18,7 +18,7 @@ import com.spartronics4915.frc2026.subsystems.vision.filters.ResultFilters;
 import com.spartronics4915.frc2026.subsystems.vision.processing.PoseFusionEngine;
 import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
 import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
-import com.spartronics4915.frc2026.util.PerformanceTracker;
+import com.spartronics4915.frc2026.util.general.PerformanceTracker;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.Matrix;

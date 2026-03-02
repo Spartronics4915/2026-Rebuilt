@@ -6,7 +6,6 @@ import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.signals.InvertedValue;
-import com.spartronics4915.frc2026.util.TimeVarianceAuthority;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -20,10 +19,11 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-import com.spartronics4915.frc2026.util.ModeSwitchHandler;
-import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
-import com.spartronics4915.frc2026.util.MotorHelpers.CTRE.LoggedTalonFX;
-import com.spartronics4915.frc2026.util.MotorHelpers.LoggedTrapezoidProfile;
+import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
+import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
+import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
+import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.LoggedTrapezoidProfile;
+import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
 
 import static com.spartronics4915.frc2026.Constants.HoodConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;

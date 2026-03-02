@@ -1,4 +1,4 @@
-package com.spartronics4915.frc2026.util;
+package com.spartronics4915.frc2026.util.control;
 
 import edu.wpi.first.math.geometry.Translation2d;
 import java.util.LinkedHashMap;

@@ -10,9 +10,9 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.trajectory.PathPlannerTrajectoryState;
 import com.pathplanner.lib.util.FlippingUtil;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
-import com.spartronics4915.frc2026.util.BumpSim;
 import com.spartronics4915.frc2026.Robot;
-import com.spartronics4915.frc2026.util.TimeVarianceAuthority;
+import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
+import com.spartronics4915.frc2026.util.simulation.BumpSim;
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.driveController;

@@ -38,7 +38,7 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsyst
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
-import com.spartronics4915.frc2026.util.AutoAim.AutoAimResult;
+import com.spartronics4915.frc2026.util.control.AutoAim.AutoAimResult;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -103,8 +103,7 @@ public class RobotContainer {
 
     public final Superstructure superstructure = new Superstructure(
         swerveSubsystem, 
-        visionSubsystem, 
-        autoAimController,
+        autoAimController, 
         superstructureCommands
     );
 

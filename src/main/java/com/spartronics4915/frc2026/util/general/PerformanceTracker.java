@@ -1,4 +1,4 @@
-package com.spartronics4915.frc2026.util;
+package com.spartronics4915.frc2026.util.general;
 
 import java.util.HashMap;
 import java.util.Map;

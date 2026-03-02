@@ -1,4 +1,4 @@
-package com.spartronics4915.frc2026.util;
+package com.spartronics4915.frc2026.util.general;
 
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;

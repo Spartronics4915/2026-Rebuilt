@@ -10,8 +10,8 @@ import com.spartronics4915.frc2026.commands.SuperstructureCommands.PipelineState
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
-import com.spartronics4915.frc2026.util.FieldRegion;
-import com.spartronics4915.frc2026.util.FieldZoneMap;
+import com.spartronics4915.frc2026.util.control.FieldRegion;
+import com.spartronics4915.frc2026.util.control.FieldZoneMap;
 
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -52,7 +52,6 @@ public class Superstructure extends SubsystemBase {
     }
 
     private final SwerveSubsystem swerve;
-    private final VisionSubsystem vision;
 
     private final AutoAimController controller;
     private final SuperstructureCommands commands;
@@ -65,12 +64,10 @@ public class Superstructure extends SubsystemBase {
 
     public Superstructure(
         SwerveSubsystem swerve, 
-        VisionSubsystem vision, 
         AutoAimController controller,
         SuperstructureCommands commands
     ) {
         this.swerve = swerve;
-        this.vision = vision;
         this.controller = controller;
         this.commands = commands;
 
@@ -114,12 +111,6 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
-        if (vision.hasValidPose()) {
-            zonePublisher.accept(currentZone.name());
-        } //else {
-            //return;
-        //}
-
         Translation2d turretTranslation = swerve.getRelativePose().getTranslation()
             .plus(TURRET_TRANSLATION.rotateBy(swerve.getPose().getRotation()));
 

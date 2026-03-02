@@ -8,11 +8,11 @@ import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.signals.InvertedValue;
-import com.spartronics4915.frc2026.util.ModeSwitchHandler;
-import com.spartronics4915.frc2026.util.ModeSwitchHandler.ModeSwitchInterface;
-import com.spartronics4915.frc2026.util.MotorHelpers.CTRE.LoggedTalonFX;
-import com.spartronics4915.frc2026.util.MotorHelpers.LoggedTrapezoidProfile;
-import com.spartronics4915.frc2026.util.TimeVarianceAuthority;
+import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
+import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
+import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
+import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.LoggedTrapezoidProfile;
+import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose3d;
