@@ -44,8 +44,9 @@ public class AutoAim {
     /**
      * Output of auto-aim calculation, containing the yaw and pitch angles to aim at, as well as the time of flight for a projectile to
      * reach the target. Contains a recommended shot speed for the projectile for more consistent shots given current conditions.
+     * The IdealShot flag being true indicates that the shot is impossible given current flywheel speeds, but yaw and pitch for the ideal flywheel speed is returned.
      */
-    public record AutoAimResult(Rotation2d yaw, Rotation2d pitch, double ToF, double recommendedShotSpeed) {}
+    public record AutoAimResult(Rotation2d yaw, Rotation2d pitch, double ToF, double recommendedShotSpeed, boolean idealShot) {}
 
     /**
      * Sets the collision map for the auto-aim system. Supplier should return true if the shot collides with an obstacle, and false if the shot does not.
@@ -89,7 +90,7 @@ public class AutoAim {
         AutoAimResult result = null;
         for (int i = 0; i < maxIterations; i++) {
             Translation3d virtualTarget = targetTranslation.minus(prevDisplacement);
-            result = calculateStaticAim(robotPose, virtualTarget, projectileSpeed, speeds, false);
+            result = calculateStaticAim(robotPose, virtualTarget, projectileSpeed, speeds);
             if (result == null || result.ToF() == -1) {
                 return result;
             }
@@ -111,7 +112,7 @@ public class AutoAim {
      * @return The result of the auto-aim calculation.
      */
     public AutoAimResult calculateStaticAim(Pose2d robotPose, Translation3d targetTranslation, double projectileSpeed) {
-        return calculateStaticAim(robotPose, targetTranslation, projectileSpeed, new ChassisSpeeds(), false);
+        return calculateStaticAim(robotPose, targetTranslation, projectileSpeed, new ChassisSpeeds());
     }
 
     /**
@@ -123,7 +124,7 @@ public class AutoAim {
      * @param robotSpeeds The speeds of the robot (including turret velocity relative to field).
      * @return The result of the auto-aim calculation.
      */
-    private AutoAimResult calculateStaticAim(Pose2d robotPose, Translation3d targetTranslation, double projectileSpeed, ChassisSpeeds robotSpeeds, boolean idealPath) {
+    private AutoAimResult calculateStaticAim(Pose2d robotPose, Translation3d targetTranslation, double projectileSpeed, ChassisSpeeds robotSpeeds) {
         if (projectileSpeed < 0.0) {
             return null;
         }
@@ -171,6 +172,7 @@ public class AutoAim {
         }
 
         double recommendedSpeed = -1;
+        Rotation2d recommendedPitch = null;
         for (
             Rotation2d angle=minAngle; 
             angle.minus(maxAngle).getDegrees() < 0; 
@@ -191,19 +193,17 @@ public class AutoAim {
             if (collisionCheck(angle, yaw, v, robotSpeeds)) continue;
 
             recommendedSpeed = v;
+            recommendedPitch = angle;
             break;
         }
 
         if (recommendedSpeed == -1) {
-            return new AutoAimResult(yaw, null, -1, -1);
+            return new AutoAimResult(yaw, null, -1, -1, false);
         }
 
         if (validSolutions.isEmpty()) {
-            if (!idealPath) {
-                return calculateStaticAim(robotPose, targetTranslation, recommendedSpeed, robotSpeeds, true);
-            } else {
-                return new AutoAimResult(yaw, null, -1, -1);
-            }
+            double timeOfFlight = horizontalDistance / (recommendedSpeed * recommendedPitch.getCos());
+            return new AutoAimResult(yaw, recommendedPitch, timeOfFlight, recommendedSpeed, true);
         }
 
         // Select the best solution (usually lowest angle)
@@ -216,7 +216,7 @@ public class AutoAim {
 
         double timeOfFlight = horizontalDistance / (projectileSpeed * selectedPitch.getCos());
 
-        return new AutoAimResult(yaw, selectedPitch, timeOfFlight, recommendedSpeed);
+        return new AutoAimResult(yaw, selectedPitch, timeOfFlight, recommendedSpeed, false);
     }
 
     private double[] quadraticSolver(double a, double b, double c) {

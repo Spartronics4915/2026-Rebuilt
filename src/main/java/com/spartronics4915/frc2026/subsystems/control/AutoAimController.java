@@ -294,6 +294,7 @@ public class AutoAimController extends SubsystemBase {
 
     public boolean hasValidResult() {
         if (lastResult == null) return false;
+        if (lastResult.idealShot()) return false;
         return (lastResult.ToF() != -1) ? true : false;
     }
 
