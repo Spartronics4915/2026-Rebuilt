@@ -138,12 +138,10 @@ public class Superstructure extends SubsystemBase {
     }
 
     private void configureZoneTriggers() {
-        if (testingMode) return;
-
-        Trigger inAllianceZone = new Trigger(() -> currentZone == Zone.ALLIANCE_ZONE);
-        Trigger inTrench = new Trigger(() -> currentZone == Zone.TRENCH);
-        Trigger inNeutralZone = new Trigger(() -> currentZone == Zone.NEUTRAL_ZONE);
-        Trigger inCruiseZones = new Trigger(() -> currentZone == Zone.BUMP || currentZone == Zone.OPPONENT_ZONE);
+        Trigger inAllianceZone = new Trigger(() -> !testingMode && currentZone == Zone.ALLIANCE_ZONE);
+        Trigger inTrench = new Trigger(() -> !testingMode && currentZone == Zone.TRENCH);
+        Trigger inNeutralZone = new Trigger(() -> !testingMode && currentZone == Zone.NEUTRAL_ZONE);
+        Trigger inCruiseZones = new Trigger(() -> !testingMode && (currentZone == Zone.BUMP || currentZone == Zone.OPPONENT_ZONE));
 
         inAllianceZone.onTrue(commands.shooting().withName("Auto: Shooting Zone"));
         inTrench.onTrue(commands.trenchTraversal().withName("Auto: Trench Traversal"));
