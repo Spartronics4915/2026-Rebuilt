@@ -158,7 +158,7 @@ public class RobotContainer {
             })
         );
 
-        driverController.leftTrigger().onTrue(
+        driverController.leftBumper().onTrue(
             Commands.runOnce(() -> {
                 swerveSubsystem.setMovementOverride(
                     hubPose.minus(trenchTransform.times(swerveSubsystem.shouldFlip() ? -1 : 1)).getY()
@@ -170,7 +170,7 @@ public class RobotContainer {
             })
         );
 
-        driverController.rightTrigger().onTrue(
+        driverController.rightBumper().onTrue(
             Commands.runOnce(() -> {
                 swerveSubsystem.setMovementOverride(
                     hubPose.plus(trenchTransform.times(swerveSubsystem.shouldFlip() ? -1 : 1)).getY()
@@ -343,7 +343,7 @@ public class RobotContainer {
             })
         );
 
-        debugController.leftTrigger().onTrue(
+        debugController.leftBumper().onTrue(
             Commands.runOnce(() -> {
                 swerveSubsystem.setMovementOverride(
                     hubPose.minus(trenchTransform.times(swerveSubsystem.shouldFlip() ? -1 : 1)).getY()
@@ -355,7 +355,7 @@ public class RobotContainer {
             })
         );
 
-        debugController.rightTrigger().onTrue(
+        debugController.rightBumper().onTrue(
             Commands.runOnce(() -> {
                 swerveSubsystem.setMovementOverride(
                     hubPose.plus(trenchTransform.times(swerveSubsystem.shouldFlip() ? -1 : 1)).getY()
