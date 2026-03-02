@@ -343,20 +343,28 @@ public class RobotContainer {
             })
         );
 
-        debugController.leftBumper().onTrue(
-            autoAimController.setTargetOverride(
-                new Translation3d(1.358, 6.9, 0)
-            )
+        debugController.leftTrigger().onTrue(
+            Commands.runOnce(() -> {
+                swerveSubsystem.setMovementOverride(
+                    hubPose.minus(trenchTransform.times(swerveSubsystem.shouldFlip() ? -1 : 1)).getY()
+                );
+            })
         ).onFalse(
-            autoAimController.clearTargetOverride()
+            Commands.runOnce(() -> {
+                swerveSubsystem.setMovementOverride(0.0);
+            })
         );
 
-        debugController.rightBumper().onTrue(
-            autoAimController.setTargetOverride(
-                new Translation3d(1.358, 0.9, 0)
-            )
+        debugController.rightTrigger().onTrue(
+            Commands.runOnce(() -> {
+                swerveSubsystem.setMovementOverride(
+                    hubPose.plus(trenchTransform.times(swerveSubsystem.shouldFlip() ? -1 : 1)).getY()
+                );
+            })
         ).onFalse(
-            autoAimController.clearTargetOverride()
+            Commands.runOnce(() -> {
+                swerveSubsystem.setMovementOverride(0.0);
+            })
         );
 
 
