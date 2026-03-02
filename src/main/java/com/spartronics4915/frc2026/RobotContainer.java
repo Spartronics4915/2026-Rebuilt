@@ -248,20 +248,16 @@ public class RobotContainer {
             })
         );
 
-        operatorController.leftBumper().onTrue(
-            autoAimController.setTargetOverride(
+        operatorController.leftBumper().whileTrue(
+            autoAimController.overrideTargetCommand(
                 new Translation3d(1.358, 6.9, 0)
             )
-        ).onFalse(
-            autoAimController.clearTargetOverride()
         );
 
-        operatorController.rightBumper().onTrue(
-            autoAimController.setTargetOverride(
+        operatorController.rightBumper().whileTrue(
+            autoAimController.overrideTargetCommand(
                 new Translation3d(1.358, 0.9, 0)
             )
-        ).onFalse(
-            autoAimController.clearTargetOverride()
         );
 
         operatorController.a().onTrue(

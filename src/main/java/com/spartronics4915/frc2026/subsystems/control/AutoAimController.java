@@ -323,12 +323,14 @@ public class AutoAimController extends SubsystemBase {
         );
     }
 
-    public Command setTargetOverride(Translation3d target) {
-        return Commands.runOnce(() -> targetOverride = target);
-    }
-
-    public Command clearTargetOverride() {
-        return Commands.runOnce(() -> targetOverride = null);
+    /**
+     * Sets a target override for the duration of the command, and clears it when the command ends.
+     */
+    public Command overrideTargetCommand(Translation3d target) {
+        return Commands.startEnd(
+            () -> targetOverride = target,
+            () -> targetOverride = null
+        );
     }
 
     private double RPSToMPS(double rps) {
