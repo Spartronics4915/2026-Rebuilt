@@ -53,7 +53,6 @@ public class Superstructure extends SubsystemBase {
 
     private final SwerveSubsystem swerve;
     private final VisionSubsystem vision;
-    private final ShooterSubsystem shooter;
 
     private final AutoAimController controller;
     private final SuperstructureCommands commands;
@@ -67,13 +66,11 @@ public class Superstructure extends SubsystemBase {
     public Superstructure(
         SwerveSubsystem swerve, 
         VisionSubsystem vision, 
-        ShooterSubsystem shooter,
         AutoAimController controller,
         SuperstructureCommands commands
     ) {
         this.swerve = swerve;
         this.vision = vision;
-        this.shooter = shooter;
         this.controller = controller;
         this.commands = commands;
 
@@ -128,7 +125,7 @@ public class Superstructure extends SubsystemBase {
 
         Zone newZone = zoneMap.evaluate(turretTranslation);
 
-        if (controller.hasValidResult() && shooter.getCurrentSetpoint() != 0) {
+        if (controller.hasValidResult()) {
             CommandScheduler.getInstance().schedule(commands.setPipelineState(PipelineState.ON));
         } else {
             CommandScheduler.getInstance().schedule(commands.setPipelineState(PipelineState.OFF));
