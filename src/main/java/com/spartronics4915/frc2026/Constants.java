@@ -118,6 +118,7 @@ public final class Constants {
             );
 
             public static final double defaultOutpostWaitTime = 3.0;
+            public static final double defaultShootWaitTime = 3.0;
 
             public static final Time endTriggerDebounce = Seconds.of(0.04);
             public static final Rotation2d rotationTolerance = Rotation2d.fromDegrees(3.0);

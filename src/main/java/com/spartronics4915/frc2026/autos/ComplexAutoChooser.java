@@ -3,15 +3,21 @@ package com.spartronics4915.frc2026.autos;
 import static com.spartronics4915.frc2026.autos.ComplexAutoChooser.AutoSegment.*;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.function.Supplier;
 
 import com.spartronics4915.frc2026.autos.ZoneTransition.TraversalMethod;
 
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableEvent;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 
+import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.defaultShootWaitTime;
 import static com.spartronics4915.frc2026.autos.ComplexAutoChooser.AllowedTransitions.*;
 
 public class ComplexAutoChooser {
@@ -31,6 +37,7 @@ public class ComplexAutoChooser {
         DEPOT("-> D", WITHIN_ALLIANCE),
         OUTPOST("-> O", WITHIN_ALLIANCE),
         TOWER("-> T", NONE),
+        PAUSE("P", WITHIN_ALLIANCE),
         UNUSED(" ", NONE);
 
         public final String userFacingName;
@@ -51,7 +58,7 @@ public class ComplexAutoChooser {
      */
     public enum AllowedTransitions {
         WITHIN_NEUTRAL(() -> new AutoSegment[]{L_TRENCH_TO_ALLIANCE, L_BUMP_TO_ALLIANCE, R_TRENCH_TO_ALLIANCE, R_BUMP_TO_ALLIANCE}),
-        WITHIN_ALLIANCE(() -> new AutoSegment[]{L_TRENCH_TO_NEUTRAL, L_BUMP_TO_NEUTRAL, R_TRENCH_TO_NEUTRAL, R_BUMP_TO_NEUTRAL, DEPOT, OUTPOST, TOWER}),
+        WITHIN_ALLIANCE(() -> new AutoSegment[]{L_TRENCH_TO_NEUTRAL, L_BUMP_TO_NEUTRAL, R_TRENCH_TO_NEUTRAL, R_BUMP_TO_NEUTRAL, DEPOT, OUTPOST, TOWER, PAUSE}),
         NONE(() -> new AutoSegment[]{});
 
         private final Supplier<AutoSegment[]> allowedSegmentsSupplier;
@@ -72,6 +79,8 @@ public class ComplexAutoChooser {
     private final ZoneTransition transitionFactory;
     private final DriveToPOI POIFactory;
     private final NeutralZoneAutos neutralZoneFactory;
+
+    private double shootWaitTime;
 
     private AutoSegment[] selectedSegments;
     private SendableChooser<AutoSegment>[] segmentChoosers;
@@ -95,6 +104,15 @@ public class ComplexAutoChooser {
             selectedSegments[i] = UNUSED;
         }
         resolveSteps();
+
+        shootWaitTime = SmartDashboard.getNumber("Auto Chooser/Shoot Wait Time", defaultShootWaitTime);
+
+        SmartDashboard.putNumber("Auto Chooser/Shoot Wait Time", shootWaitTime);
+
+        NetworkTable table = NetworkTableInstance.getDefault().getTable("SmartDashboard/Auto Chooser");
+        table.addListener("Shoot Wait Time", EnumSet.of(NetworkTableEvent.Kind.kValueAll), (filler, key, event) -> {
+            shootWaitTime = event.valueData.value.getDouble();
+        });
     }
 
     /**
@@ -200,6 +218,9 @@ public class ComplexAutoChooser {
                     break;
                 case TOWER:
                     commands.add(POIFactory.generateCommand(DriveToPOI.POI.TOWER));
+                    break;
+                case PAUSE:
+                    commands.add(Commands.waitSeconds(shootWaitTime));
                     break;
                 case UNUSED:
                     System.out.println("Chat what are we doing?");
