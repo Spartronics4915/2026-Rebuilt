@@ -4,7 +4,6 @@ import static com.spartronics4915.frc2026.Constants.SuperstructureConstants.*;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.*;
 import static com.spartronics4915.frc2026.Constants.AutoAimConstants.*;
 
-import com.spartronics4915.frc2026.Constants.AutoAimConstants;
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.HoodSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem;
@@ -12,8 +11,8 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsyst
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem.ShooterClamp;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.util.control.AutoAim;
-import com.spartronics4915.frc2026.util.control.TurretController;
 import com.spartronics4915.frc2026.util.control.AutoAim.AutoAimResult;
+import com.spartronics4915.frc2026.util.control.TurretController;
 
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -38,20 +37,18 @@ import swervelib.simulation.ironmaple.simulation.seasonspecific.rebuilt2026.Rebu
 import swervelib.simulation.ironmaple.utils.FieldMirroringUtils;
 
 /**
- * Continuously calculates setpoints and applies them to the
- * hood and turret. Simulation projectile visualization is handled here as well.
+ * Continuously calculates setpoints and applies them to the hood and turret.
+ * Simulation projectile visualization is handled here as well.
  *
- * <p>Auto-aim can be toggled at any time, including while the robot is
- * disabled, via {@link #aimToggle()}. When disabled, the hood and turret retain
- * their last commanded setpoints; call {@link #reset()} to return them home.
+ * <p>Auto-aim can be toggled at any time, including while the robot is disabled,
+ * via {@link #aimToggle()}. When disabled, the hood and turret retain their last
+ * commanded setpoints.
  *
  * <p>The calculation pipeline each loop:
  * <ol>
- *   <li>Ask {@link AutoAim} for yaw, pitch, and time-of-flight given the
- *       current robot pose, velocity, and shooter speed.
- *   <li>Push yaw to the turret and pitch to the hood.
- *   <li>If running in simulation, spawn a {@link RebuiltFuelOnFly} projectile
- *       at a throttled rate for trajectory visualization in AdvantageScope.
+ *   <li>Ask {@link AutoAim} for yaw, pitch, and time-of-flight.
+ *   <li>Push yaw to the turret via {@link TurretController} and pitch to the hood.
+ *   <li>If in simulation, spawn a {@link RebuiltFuelOnFly} projectile for visualization.
  * </ol>
  */
 public class AutoAimController extends SubsystemBase {
@@ -74,35 +71,29 @@ public class AutoAimController extends SubsystemBase {
 
     private boolean isAimEnabled = false;
     private boolean isShootingEnabled = false;
-    private AutoAimResult lastResult;
-    private double lastSimShotTime;
+    private AutoAimResult lastResult = null;
+    private double lastSimShotTime = 0.0;
     private Translation3d targetOverride = null;
     private boolean shootOverride = false;
 
-    private final BooleanPublisher isShootingEnabledPublisher =
-        NetworkTableInstance.getDefault()
-            .getBooleanTopic("superstructure/AutoAim/ShootingEnabled")
-            .publish();
-
     private final BooleanPublisher isAimEnabledPublisher =
         NetworkTableInstance.getDefault()
-            .getBooleanTopic("superstructure/AutoAim/AimEnabled")
-            .publish();
-
-    private final StructArrayPublisher<Pose3d> successPublisher =
+            .getBooleanTopic("superstructure/AutoAim/AimEnabled").publish();
+    private final BooleanPublisher isShootingEnabledPublisher =
         NetworkTableInstance.getDefault()
-            .getStructArrayTopic("Flywheel/FuelProjectileSuccessfulShot", Pose3d.struct)
-            .publish();
-
-    private final StructArrayPublisher<Pose3d> failPublisher =
-        NetworkTableInstance.getDefault()
-            .getStructArrayTopic("Flywheel/FuelProjectileUnsuccessfulShot", Pose3d.struct)
-            .publish();
-
+            .getBooleanTopic("superstructure/AutoAim/ShootingEnabled").publish();
     private final BooleanPublisher hasValidResultPublisher =
         NetworkTableInstance.getDefault()
-            .getBooleanTopic("superstructure/AutoAim/HasValidResult")
-            .publish();
+            .getBooleanTopic("superstructure/AutoAim/HasValidResult").publish();
+    private final BooleanPublisher isIdealShotPublisher =
+        NetworkTableInstance.getDefault()
+            .getBooleanTopic("superstructure/AutoAim/IdealShotOnly").publish();
+    private final StructArrayPublisher<Pose3d> successPublisher =
+        NetworkTableInstance.getDefault()
+            .getStructArrayTopic("Flywheel/FuelProjectileSuccessfulShot", Pose3d.struct).publish();
+    private final StructArrayPublisher<Pose3d> failPublisher =
+        NetworkTableInstance.getDefault()
+            .getStructArrayTopic("Flywheel/FuelProjectileUnsuccessfulShot", Pose3d.struct).publish();
 
     public AutoAimController(
         HoodSubsystem hood,
@@ -116,10 +107,10 @@ public class AutoAimController extends SubsystemBase {
         this.shooter = shooter;
 
         this.turretController = new TurretController(
-            turret.getClamp().minAngle.getDegrees(), 
-            turret.getClamp().maxAngle.getDegrees(), 
-            3.0, 
-            1.0, 
+            turret.getClamp().minAngle.getDegrees(),
+            turret.getClamp().maxAngle.getDegrees(),
+            3.0,
+            1.0,
             Rotation2d.kCW_90deg
         );
 
@@ -128,17 +119,23 @@ public class AutoAimController extends SubsystemBase {
 
     @Override
     public void periodic() {
-        isShootingEnabledPublisher.accept(isShootingEnabled);
         isAimEnabledPublisher.accept(isAimEnabled);
-        hasValidResultPublisher.accept(hasValidResult());
+        isShootingEnabledPublisher.accept(isShootingEnabled);
 
         if (!isAimEnabled) {
             lastResult = null;
+            hasValidResultPublisher.accept(false);
+            isIdealShotPublisher.accept(false);
             return;
         }
 
         lastResult = computeAimResult();
-        if (lastResult == null) return;
+
+        boolean hasResult = lastResult != null && lastResult.ToF() != -1;
+        hasValidResultPublisher.accept(hasResult);
+        isIdealShotPublisher.accept(hasResult && lastResult.idealShot());
+
+        if (!hasResult) return;
 
         applyAimResult(lastResult);
 
@@ -154,7 +151,6 @@ public class AutoAimController extends SubsystemBase {
      */
     private AutoAimResult computeAimResult() {
         Translation3d target = (targetOverride != null) ? targetOverride : getDefaultTarget();
-
         return autoAim.calculateDynamicAim(
             swerve.getRelativePose(),
             swerve.getRelativeFieldVelocity(),
@@ -173,6 +169,7 @@ public class AutoAimController extends SubsystemBase {
         if (result.pitch() != null) {
             hood.setSetpoint(Rotation2d.kCCW_Pi_2.minus(result.pitch()));
         }
+
         if (result.yaw() != null) {
             turret.setSetpoint(
                 turretController.calculate(
@@ -183,11 +180,10 @@ public class AutoAimController extends SubsystemBase {
             );
         }
 
-        boolean shouldShoot = isShootingEnabled && shouldAutoShoot();
-        boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
-
-        if (shootOverride || (isUnrestricted && shouldShoot)) {
-            if (result.recommendedShotSpeed() != -1) {
+        if (!result.idealShot() && result.recommendedShotSpeed() != -1) {
+            boolean shouldShoot    = isShootingEnabled && shouldAutoShoot(result);
+            boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
+            if (shootOverride || (isUnrestricted && shouldShoot)) {
                 shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed()));
             }
         }
@@ -196,57 +192,47 @@ public class AutoAimController extends SubsystemBase {
     private boolean collidesWithHub(Rotation2d pitch, double shotSpeed) {
         Translation2d robotPos2d = swerve.getRelativePose().getTranslation()
             .plus(TURRET_TRANSLATION.rotateBy(swerve.getRelativePose().getRotation()));
-        
+
         Translation2d targetPos2d = new Translation2d(hubPose.getX(), hubPose.getY());
-        
+
         // Shooter height from ground
-        double shooterZ = Units.inchesToMeters(21.443748 + 2.955); // Flywheel top height + fuel radius
-        
+        double shooterZ = Units.inchesToMeters(21.443748 + 2.955);
+
         // Distance to target in XY plane
         double distToTarget = robotPos2d.getDistance(targetPos2d);
-        
+
         // Projectile horizontal velocity (v_xy) and vertical velocity (v_z)
         double vXY = shotSpeed * pitch.getCos();
         double vZ = shotSpeed * pitch.getSin();
-        
-        double sideLength = Units.inchesToMeters(47);
-        double halfSide = sideLength / 2.0;
+
+        double halfSide = Units.inchesToMeters(47) / 2.0;
 
         // Vector from robot to target
         Translation2d toTarget = targetPos2d.minus(robotPos2d);
-        
-        // Angle to target
         Rotation2d angleToTarget = toTarget.getAngle();
         double absCos = Math.abs(angleToTarget.getCos());
         double absSin = Math.abs(angleToTarget.getSin());
-        
+
         // Distance from center to the square boundary along the shot line
         // We are firing AT the center. The distance from center to edge is determined by
         // which wall we hit first (based on angle).
         // If |cos(theta)| > |sin(theta)|, we hit the vertical walls at x = +/- L/2
         // Else we hit horizontal walls at y = +/- L/2
-        
-        double distCenterToWall;
-        if (absCos > absSin) {
-            distCenterToWall = halfSide / absCos;
-        } else {
-            distCenterToWall = halfSide / absSin;
-        }
+        double distCenterToWall = (absCos > absSin) ? halfSide / absCos : halfSide / absSin;
 
         // Distance from robot to the collision wall
         double collisionDist = distToTarget - distCenterToWall;
-        
-        if (collisionDist <= 0) return true; 
+        if (collisionDist <= 0) return true;
 
         // Time to travel that horizontal distance
         double t = collisionDist / vXY;
 
         // Height at that time: z = z0 + vz*t - 0.5*g*t^2
-        double g = 9.81;
-        double zAtCollision = shooterZ + vZ * t - 0.5 * g * t * t;
+        double zAtCollision = shooterZ + vZ * t - 0.5 * 9.81 * t * t;
 
         // Check if z is less than hub height. 
-        // If it is lower than the rim height when crossing the rim boundary, it hits the side of the hub.
+        // If it is lower than the rim height when crossing the rim boundary,
+        // it hits the side of the hub.
         return zAtCollision < HUB_POSITION.getZ();
     }
 
@@ -277,9 +263,7 @@ public class AutoAimController extends SubsystemBase {
         );
 
         projectile
-            .withTargetPosition(() -> FieldMirroringUtils.toCurrentAllianceTranslation(
-                getDefaultTarget()
-            ))
+            .withTargetPosition(() -> FieldMirroringUtils.toCurrentAllianceTranslation(getDefaultTarget()))
             .withTargetTolerance(new Translation3d(0.67, 0.67, 0.3));
 
         projectile.withProjectileTrajectoryDisplayCallBack(
@@ -291,22 +275,19 @@ public class AutoAimController extends SubsystemBase {
         SimulatedArena.getInstance().addGamePieceProjectile(projectile);
     }
 
-    private boolean shouldAutoShoot() {
-        return (Robot.hubEnabled || (!Robot.hubEnabled && Robot.timeUntilSwitch < lastResult.ToF()))
+    private boolean shouldAutoShoot(AutoAimResult result) {
+        return (Robot.hubEnabled || Robot.timeUntilSwitch < result.ToF())
             && swerve.getRelativePose().getX() < hubPose.getX();
     }
 
     private Translation3d getDefaultTarget() {
         if (swerve.getRelativePose().getX() < hubPose.getX()) return HUB_POSITION;
-
-        if (swerve.getRelativePose().getY() < hubPose.getY()) {
-            return AutoAimConstants.rightPassTarget;
-        } else {
-            return AutoAimConstants.leftPassTarget;
-        }
+        return swerve.getRelativePose().getY() < hubPose.getY()
+            ? rightPassTarget
+            : leftPassTarget;
     }
 
-    /** @return The most recent aim solution, or {@code null} if auto-aim is off or unsolved */
+    /** @return The most recent aim result, or {@code null} if auto-aim is off or unsolved. */
     public AutoAimResult getLastResult() {
         return lastResult;
     }
@@ -316,51 +297,43 @@ public class AutoAimController extends SubsystemBase {
     }
 
     public boolean hasValidResult() {
-        if (lastResult == null) return false;
-        if (lastResult.idealShot()) return false;
-        return (lastResult.ToF() != -1) ? true : false;
+        return lastResult != null && lastResult.ToF() != -1;
     }
 
-    /**
-     * Flips the auto-aim enabled flag. Safe to call while the robot is disabled.
-     */
+    /** True when the shot is solvable AND the current flywheel speed is sufficient. */
+    public boolean isReadyToShoot() {
+        return hasValidResult() && !lastResult.idealShot();
+    }
+
+    /** Flips the auto-aim enabled flag. Safe to call while the robot is disabled. */
     public Command aimToggle() {
-        return Commands.runOnce(() -> isAimEnabled = !isAimEnabled).ignoringDisable(true);
+        return Commands.runOnce(() -> {
+            isAimEnabled = !isAimEnabled;
+            if (!isAimEnabled) lastResult = null;
+        }).ignoringDisable(true);
     }
 
-    /**
-     * Flips the auto-shooting enabled flag. Safe to call while the robot is disabled.
-     */
+    /** Flips the auto-shooting enabled flag. Safe to call while the robot is disabled. */
     public Command shootingToggle() {
         return Commands.runOnce(() -> isShootingEnabled = !isShootingEnabled).ignoringDisable(true);
     }
 
-    /**
-     * Disables auto-aim and returns the turret and hood to their home positions
-     */
+    /** Disables auto-aim and returns the turret and hood to their home positions. */
     public Command reset() {
         return Commands.parallel(
-            Commands.runOnce(() -> isAimEnabled = false),
+            Commands.runOnce(() -> { isAimEnabled = false; lastResult = null; }),
             turret.setSetpointCommand(Rotation2d.fromDegrees(0)),
             hood.setSetpointCommand(Rotation2d.fromDegrees(0))
         );
     }
 
-    /**
-     * Sets a target override for the duration of the command, and clears it when the command ends.
-     */
+    /** Sets a target override for the duration of the command, clearing it on end. */
     public Command overrideTargetCommand(Translation3d target) {
-        return Commands.startEnd(
-            () -> targetOverride = target,
-            () -> targetOverride = null
-        );
+        return Commands.startEnd(() -> targetOverride = target, () -> targetOverride = null);
     }
 
     public Command overrideShootCommand() {
-        return Commands.startEnd(
-            () -> shootOverride = true,
-            () -> shootOverride = false
-        );
+        return Commands.startEnd(() -> shootOverride = true, () -> shootOverride = false);
     }
 
     private double RPSToMPS(double rps) {
