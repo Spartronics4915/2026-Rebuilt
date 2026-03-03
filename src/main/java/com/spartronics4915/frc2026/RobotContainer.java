@@ -15,6 +15,7 @@ import com.spartronics4915.frc2026.Constants.VisionConstants;
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.hubPose;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.trenchTransform;
+import static com.spartronics4915.frc2026.Constants.*;
 import static com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem.isFieldRelative;
 import static com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem.teleopHeadingOffset;
 
@@ -38,10 +39,8 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsyst
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
-import com.spartronics4915.frc2026.util.control.AutoAim.AutoAimResult;
 
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -240,13 +239,13 @@ public class RobotContainer {
 
         operatorController.leftBumper().whileTrue(
             autoAimController.overrideTargetCommand(
-                new Translation3d(1.358, 6.9, 0)
+                AutoAimConstants.leftPassTarget
             )
         );
 
         operatorController.rightBumper().whileTrue(
             autoAimController.overrideTargetCommand(
-                new Translation3d(1.358, 0.9, 0)
+                AutoAimConstants.rightPassTarget
             )
         );
 

@@ -4,6 +4,7 @@ import static com.spartronics4915.frc2026.Constants.SuperstructureConstants.*;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.*;
 import static com.spartronics4915.frc2026.Constants.AutoAimConstants.*;
 
+import com.spartronics4915.frc2026.Constants.AutoAimConstants;
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.HoodSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem;
@@ -141,7 +142,7 @@ public class AutoAimController extends SubsystemBase {
      * @return A result, or {@code null} if the solver could not find a solution.
      */
     private AutoAimResult computeAimResult() {
-        Translation3d target = (targetOverride != null) ? targetOverride : HUB_POSITION;
+        Translation3d target = (targetOverride != null) ? targetOverride : getDefaultTarget();
 
         return autoAim.calculateDynamicAim(
             swerve.getRelativePose(),
@@ -264,7 +265,7 @@ public class AutoAimController extends SubsystemBase {
 
         projectile
             .withTargetPosition(() -> FieldMirroringUtils.toCurrentAllianceTranslation(
-                HUB_POSITION
+                getDefaultTarget()
             ))
             .withTargetTolerance(new Translation3d(0.67, 0.67, 0.3));
 
@@ -278,8 +279,18 @@ public class AutoAimController extends SubsystemBase {
     }
 
     private boolean shouldAutoShoot() {
-        return (Robot.hubEnabled || (!Robot.hubEnabled && Robot.timeUntilSwitch < lastResult.ToF())) 
+        return (Robot.hubEnabled || (!Robot.hubEnabled && Robot.timeUntilSwitch < lastResult.ToF()))
             && swerve.getRelativePose().getX() < hubPose.getX();
+    }
+
+    private Translation3d getDefaultTarget() {
+        if (swerve.getRelativePose().getX() < hubPose.getX()) return HUB_POSITION;
+
+        if (swerve.getRelativePose().getY() < hubPose.getY()) {
+            return AutoAimConstants.rightPassTarget;
+        } else {
+            return AutoAimConstants.leftPassTarget;
+        }
     }
 
     /** @return The most recent aim solution, or {@code null} if auto-aim is off or unsolved */

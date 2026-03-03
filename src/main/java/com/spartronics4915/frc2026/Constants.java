@@ -373,6 +373,14 @@ public final class Constants {
         public static final double HUB_HEIGHT = Units.inchesToMeters(72);
         public static final Translation3d HUB_POSITION = new Translation3d(hubPose.getX(), hubPose.getY(), HUB_HEIGHT);
         public static final double MAX_SHOOTER_RPS = 100;
+
+        public static final double alliancePassOffset = 3.14;
+
+        public static final Translation2d leftPassTarget2d = new Translation2d(2, hubPose.getY() + alliancePassOffset);
+        public static final Translation2d rightPassTarget2d = new Translation2d(2, hubPose.getY() - alliancePassOffset);
+
+        public static final Translation3d leftPassTarget = new Translation3d(leftPassTarget2d.getX(), leftPassTarget2d.getY(), 0);
+        public static final Translation3d rightPassTarget = new Translation3d(rightPassTarget2d.getX(), rightPassTarget2d.getY(), 0);
     }
 
     //#endregion
