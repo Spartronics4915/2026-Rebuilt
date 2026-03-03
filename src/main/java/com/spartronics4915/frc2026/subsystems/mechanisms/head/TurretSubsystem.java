@@ -124,6 +124,10 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
         double position = encoder.getAbsolutePosition().getValue().in(Rotations) * ENCODER_MECHANISM_RATIO;
         return Rotation2d.fromRotations(position);
     }
+
+    public TurretClamp getClamp() {
+        return currentClamp;
+    }
     
     public void setSetpoint(Rotation2d setpoint){
         currentSetpoint = setpoint;
@@ -167,8 +171,8 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
         RESTRICTED(Rotation2d.fromDegrees(-300), Rotation2d.fromDegrees(35)),
         UNRESTRICTED(Rotation2d.fromDegrees(-Double.MAX_VALUE), Rotation2d.fromDegrees(Double.MAX_VALUE));
 
-        Rotation2d minAngle;
-        Rotation2d maxAngle;
+        public Rotation2d minAngle;
+        public Rotation2d maxAngle;
 
         private TurretClamp(Rotation2d minAngle, Rotation2d maxAngle) {
             this.minAngle = minAngle;

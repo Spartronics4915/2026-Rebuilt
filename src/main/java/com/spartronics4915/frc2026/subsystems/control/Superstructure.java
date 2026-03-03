@@ -7,9 +7,7 @@ import static edu.wpi.first.units.Units.Meters;
 
 import com.spartronics4915.frc2026.commands.SuperstructureCommands;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands.PipelineState;
-import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
-import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 import com.spartronics4915.frc2026.util.control.FieldRegion;
 import com.spartronics4915.frc2026.util.control.FieldZoneMap;
 

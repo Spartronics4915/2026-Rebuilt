@@ -12,6 +12,7 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsyst
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem.ShooterClamp;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.util.control.AutoAim;
+import com.spartronics4915.frc2026.util.control.TurretController;
 import com.spartronics4915.frc2026.util.control.AutoAim.AutoAimResult;
 
 import edu.wpi.first.math.geometry.Pose3d;
@@ -69,6 +70,8 @@ public class AutoAimController extends SubsystemBase {
         RPSToMPS(MAX_SHOOTER_RPS)
     );
 
+    private final TurretController turretController;
+
     private boolean isAimEnabled = false;
     private boolean isShootingEnabled = false;
     private AutoAimResult lastResult;
@@ -111,6 +114,14 @@ public class AutoAimController extends SubsystemBase {
         this.turret = turret;
         this.swerve = swerve;
         this.shooter = shooter;
+
+        this.turretController = new TurretController(
+            turret.getClamp().minAngle.getDegrees(), 
+            turret.getClamp().maxAngle.getDegrees(), 
+            5.0, 
+            1.0, 
+            Rotation2d.fromDegrees(90)
+        );
 
         autoAim.setCollisionMap(this::collidesWithHub);
     }
@@ -164,9 +175,11 @@ public class AutoAimController extends SubsystemBase {
         }
         if (result.yaw() != null) {
             turret.setSetpoint(
-                result.yaw()
-                    .minus(swerve.getRelativePose().getRotation())
-                    .minus(Rotation2d.kCW_90deg)
+                turretController.calculate(
+                    result.yaw(),
+                    swerve.getRelativePose().getRotation(),
+                    turret.getPosition()
+                )
             );
         }
 
