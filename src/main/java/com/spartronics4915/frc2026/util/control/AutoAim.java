@@ -95,7 +95,7 @@ public class AutoAim {
                 return result;
             }
             Translation3d displacement = new Translation3d(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, 0).times(result.ToF());
-            if (displacement.minus(prevDisplacement).getNorm() < convergenceThreshold) {
+            if (i > 0 && displacement.minus(prevDisplacement).getNorm() < convergenceThreshold) {
                 return result;
             }
             prevDisplacement = displacement;
