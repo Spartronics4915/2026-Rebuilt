@@ -13,7 +13,7 @@ import com.pathplanner.lib.path.GoalEndState;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.path.RotationTarget;
 import com.pathplanner.lib.path.Waypoint;
-import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants;
+
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 
 import edu.wpi.first.math.geometry.Pose2d;

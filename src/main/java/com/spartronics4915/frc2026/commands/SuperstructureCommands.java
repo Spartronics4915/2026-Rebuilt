@@ -11,8 +11,6 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.head.*;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.HoodSubsystem.HoodClamp;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem.TurretClamp;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.*;
-import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.FeederSubsystem.FeederState;
-import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem.IndexerState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem.ShooterClamp;
 
 import edu.wpi.first.math.geometry.Rotation2d;
