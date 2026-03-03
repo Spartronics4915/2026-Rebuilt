@@ -118,9 +118,9 @@ public class AutoAimController extends SubsystemBase {
         this.turretController = new TurretController(
             turret.getClamp().minAngle.getDegrees(), 
             turret.getClamp().maxAngle.getDegrees(), 
-            5.0, 
+            3.0, 
             1.0, 
-            Rotation2d.fromDegrees(90)
+            Rotation2d.kCW_90deg
         );
 
         autoAim.setCollisionMap(this::collidesWithHub);
