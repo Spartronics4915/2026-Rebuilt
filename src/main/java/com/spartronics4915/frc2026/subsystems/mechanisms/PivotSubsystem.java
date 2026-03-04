@@ -143,8 +143,8 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
  
     public enum PivotState {
         READY(Rotation2d.fromDegrees(0)),
-        SAFE(Rotation2d.fromDegrees(80)),
-        STOW(Rotation2d.fromDegrees(120));
+        SAFE(Rotation2d.fromDegrees(70)),
+        STOW(Rotation2d.fromDegrees(105));
 
         Rotation2d angle;
 

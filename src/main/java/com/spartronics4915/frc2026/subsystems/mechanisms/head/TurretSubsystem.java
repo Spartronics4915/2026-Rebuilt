@@ -168,7 +168,7 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
     //#endregion
 
     public enum TurretClamp {
-        RESTRICTED(Rotation2d.fromDegrees(-300), Rotation2d.fromDegrees(35)),
+        RESTRICTED(Rotation2d.fromDegrees(-275), Rotation2d.fromDegrees(95)),
         UNRESTRICTED(Rotation2d.fromDegrees(-Double.MAX_VALUE), Rotation2d.fromDegrees(Double.MAX_VALUE));
 
         public Rotation2d minAngle;

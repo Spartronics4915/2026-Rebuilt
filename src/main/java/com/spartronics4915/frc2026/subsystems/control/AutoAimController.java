@@ -110,7 +110,7 @@ public class AutoAimController extends SubsystemBase {
             turret.getClamp().minAngle.getDegrees(),
             turret.getClamp().maxAngle.getDegrees(),
             3.0,
-            1.0,
+            0.05,
             Rotation2d.kCW_90deg
         );
 
@@ -181,7 +181,7 @@ public class AutoAimController extends SubsystemBase {
         }
 
         if (!result.idealShot() && result.recommendedShotSpeed() != -1) {
-            boolean shouldShoot    = isShootingEnabled && shouldAutoShoot(result);
+            boolean shouldShoot = isShootingEnabled && shouldAutoShoot(result);
             boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
             if (shootOverride || (isUnrestricted && shouldShoot)) {
                 shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed()));
