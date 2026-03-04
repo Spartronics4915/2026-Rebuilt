@@ -234,7 +234,7 @@ public class RobotContainer {
         );
 
         operatorController.rightTrigger().whileTrue(
-            autoAimController.shootingToggle()
+            autoAimController.overrideShootCommand()
         );
 
         operatorController.leftBumper().whileTrue(
