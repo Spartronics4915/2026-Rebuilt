@@ -10,48 +10,35 @@ import edu.wpi.first.math.numbers.N3;
 
 /**
  * Computes pose estimation standard deviations for a single camera.
- *
- * <p>Distance and area inputs are smoothed via an exponential moving average
- * to reduce frame-to-frame jitter. Tag count is also smoothed as a {@code double}
- * so re-acquisition doesn't cause an abrupt step change in the uncertainty model —
- * for example, jumping from 1.0 to 2.0 tags instantly. The smoothed value feeds
- * {@link #calculateTagCountFactor}, where fractional counts (e.g. 1.6 tags) produce
- * a sensible interpolated confidence.
- *
- * <p>Motion punishment can be disabled via the constructor flag. When disabled,
- * {@link #calculateMotionFactor} is skipped and its contribution is treated as 1.0,
- * which is useful during static tuning or when odometry already accounts for motion.
  */
 public class StdDevCalculator {
 
     /**
-     * Whether to apply the motion blur punishment factor.
-     * When {@code false}, robot velocity has no effect on std devs.
+     * Whether to apply the motion blur punishment factor,
+     * when {@code false}, robot velocity has no effect on std devs
      */
     private final boolean enableMotionPunishment;
+
+    /** EMA smoothing factor for this camera instance. */
+    private final double alpha;
 
     private double smoothedDistance;
     private double smoothedArea;
 
     /**
      * Smoothed tag count stored as a {@code double} rather than {@code int}.
-     * This intentional — an EMA of integer counts produces fractional values
+     * This intentional, as an EMA of integer counts produces fractional values
      * that give a smoother response to tag acquisition/loss than snapping
-     * between whole numbers.
+     * between whole numbers
      */
     private double smoothedTagCount;
 
     private int previousNumTags;
     private boolean initialized;
 
-    /**
-     * Constructs a calculator with explicit motion punishment control.
-     *
-     * @param enableMotionPunishment {@code true} to scale std devs up when the robot
-     *                               is moving fast; {@code false} to ignore velocity
-     */
-    public StdDevCalculator(boolean enableMotionPunishment) {
+    public StdDevCalculator(boolean enableMotionPunishment, double alpha) {
         this.enableMotionPunishment = enableMotionPunishment;
+        this.alpha = Math.max(0.0, Math.min(1.0, alpha));
         this.smoothedDistance = 2.0;
         this.smoothedArea = 0.1;
         this.smoothedTagCount = 1;
@@ -64,18 +51,14 @@ public class StdDevCalculator {
      * Higher values indicate lower confidence. The result is used to weight this measurement
      * against odometry in the pose estimator.
      *
-     * <p>Distance and area inputs are smoothed via an exponential moving average to reduce
-     * frame-to-frame jitter. On first call or tag re-acquisition, values snap immediately
-     * rather than bleeding in from defaults.
-     *
      * @param avgDistance Average distance to visible tags in meters
-     * @param avgAmbiguity Average pose ambiguity [0.0, 0.25], lower is better
-     * @param avgArea Average tag area as fraction of frame [0.0, 1.0], higher is better
-     * @param xAnisotropy Horizontal view angle uncertainty multiplier [1.0, 10.0]
-     * @param yAnisotropy Vertical view angle uncertainty multiplier [1.0, 10.0]
+     * @param avgAmbiguity Average pose ambiguity, lower is better
+     * @param avgArea Average tag area as fraction of frame, higher is better
+     * @param xAnisotropy Horizontal view angle uncertainty multiplier
+     * @param yAnisotropy Vertical view angle uncertainty multiplier
      * @param chassisSpeeds Current robot velocity
      * @param latencyMs Pipeline latency in milliseconds
-     * @param numTags Number of visible AprilTags; must be >= 1
+     * @param numTags Number of visible AprilTags, must be >= 1
      * @return 3x1 vector of [xStdDev, yStdDev, thetaStdDev] in meters and radians
      */
     public Matrix<N3, N1> calculate(
@@ -97,9 +80,9 @@ public class StdDevCalculator {
             smoothedTagCount = numTags;
             initialized = true;
         } else {
-            smoothedDistance = smoothingAlpha * avgDistance + (1.0 - smoothingAlpha) * smoothedDistance;
-            smoothedArea = smoothingAlpha * avgArea + (1.0 - smoothingAlpha) * smoothedArea;
-            smoothedTagCount = smoothingAlpha * numTags + (1.0 - smoothingAlpha) * smoothedTagCount;
+            smoothedDistance = alpha * avgDistance + (1.0 - alpha) * smoothedDistance;
+            smoothedArea = alpha * avgArea + (1.0 - alpha) * smoothedArea;
+            smoothedTagCount = alpha * numTags + (1.0 - alpha) * smoothedTagCount;
         }
         previousNumTags = numTags;
 
@@ -146,6 +129,15 @@ public class StdDevCalculator {
         return VecBuilder.fill(xyStdDev, xyStdDev, thetaStdDev);
     }
 
+    /**
+     * Resets EMA state so the next {@link #calculate} call will snap to the incoming
+     * values as if it were the first call. Useful when a camera reconnects mid-match.
+     */
+    public void reset() {
+        initialized = false;
+        previousNumTags = 0;
+    }
+
     private static double calculateDistanceFactor(double distance) {
         double normalized = Math.max(distance, 0.1) / 2.0;
         double factor = normalized * normalized;
@@ -186,4 +178,5 @@ public class StdDevCalculator {
     private static double calculateTagCountFactor(double smoothedTagCount) {
         return (1.0 / Math.log(smoothedTagCount + 0.5)) * 1.4;
     }
+    
 }
