@@ -40,7 +40,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  * pose estimator.
  *
  * <p>Each camera runs its own {@link Notifier} thread via
- * {@link ProcessorInterface}, producing results asynchronously, including
+ * {@link ProcessorInterface}, producing results asynchronously — including
  * their own standard deviations computed by a per-camera {@link StdDevCalculator}.
  * Every robot loop iteration, {@link #periodic()} drains those queues,
  * filters bad measurements, fuses across cameras via {@link PoseFusionEngine},
@@ -64,8 +64,8 @@ public class VisionSubsystem extends SubsystemBase {
     private final SwerveSubsystem swerve;
 
     // Pre-allocated scratch lists, cleared and reused every loop to avoid
-    // creating new ArrayList instances on every periodic() call.
-    private final List<ResultInterface> recentResults = new ArrayList<>(32);
+    // creating new ArrayList instances on every periodic() call
+    private final List<ResultInterface> recentResults = new ArrayList<>(16);
     private final List<ApriltagResult> recentApriltagResults = new ArrayList<>(16);
 
     // True if the most recent periodic loop produced a valid pose
@@ -162,73 +162,17 @@ public class VisionSubsystem extends SubsystemBase {
     public void periodic() {
         performanceTracker.startTiming("periodic_total");
         try {
-            // Drain each camera's result queue Camera threads write asynchronously via Notifier, 
-            // so drainResultQueue() is a destructive thread-safe read
-            recentResults.clear();
-            for (ProcessorInterface entry : cameras.values()) {
-                entry.drainResultQueue(recentResults);
-            }
-
-            // Filter, cast to ApriltagResult, and check for null std devs
-            recentApriltagResults.clear();
-            for (ResultInterface result : recentResults) {
-                if (result instanceof ApriltagResult ar
-                        && ar.getStdDevs() != null
-                        && aprilTagFilter.test(ar)) {
-                    recentApriltagResults.add(ar);
-                }
-            }
+            collectResults();
+            filterAndCollectApriltags();
 
             // Fuse poses from multiple cameras
             if (!recentApriltagResults.isEmpty()) {
-                Optional<ApriltagResult> fusedResultOpt = PoseFusionEngine.fusePoses(recentApriltagResults, config);
-                if (fusedResultOpt.isPresent()) {
-                    ApriltagResult fusedResult = fusedResultOpt.get();
-                    
-                    // Only submit the pose if the robot is flat, tilt causes
-                    // the 2D projection from 3D tag poses to be inaccurate.
-                    if (swerve != null && swerve.isFlatDebounced()) {
-                        poseConsumer.accept(
-                            fusedResult.getPose(),
-                            fusedResult.getTimestampSeconds(),
-                            fusedResult.getStdDevs()
-                        );
-                    }
-                    
-                    hasValidPose = true;
-                
-                    //#region Logging :)
-
-                    posePublisher.set(fusedResult.getPose());
-                    usedPosePublisher.set(swerve.getPastVisionPose(fusedResult.getTimestampSeconds()));
-                
-                    rightCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.RIGHT_CAMERA_TRANSFORM));
-                    leftCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.LEFT_CAMERA_TRANSFORM));
-                    backCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.BACK_CAMERA_TRANSFORM));
-                
-                    transStdDevPublisher.set(fusedResult.getStdDevs().get(0, 0));
-                    rotStdDevPublisher.set(fusedResult.getStdDevs().get(2, 0));
-                
-                    avgDistancePublisher.set(fusedResult.getAverageDistanceToTargets());
-                    avgAmbiguityPublisher.set(fusedResult.getAmbiguity());
-                    avgAreaPublisher.set(fusedResult.getAverageArea());
-                    xAnisotropyPublisher.set(fusedResult.getXAnisotropy());
-                    yAnisotropyPublisher.set(fusedResult.getYAnisotropy());
-                    latencyPublisher.set(fusedResult.getLatencyMs());
-                    targetCountPublisher.set(fusedResult.getTargets().size());
-
-                    trackedApriltagsPublisher.accept(getTargetPoses(fusedResult.getTargets()));
-
-                    //#endregion
-                } else {
-                    // Results exist but fusion produced no usable estimate
-                    hasValidPose = false;
-                }
+                processApriltags();
             } else {
                 // No results passed filtering this loop
                 hasValidPose = false;
             }
-            
+
             // Feed the ground-truth robot pose back into the sim so virtual cameras
             // produce detections matching the robot's actual position
             if (isSimulation) {
@@ -238,6 +182,95 @@ public class VisionSubsystem extends SubsystemBase {
             performanceTracker.stopTiming();
             performanceTracker.publishMetrics();
         }
+    }
+
+    /**
+     * Drains each camera's result queue into recentResults
+     */
+    private void collectResults() {
+        recentResults.clear();
+        for (ProcessorInterface entry : cameras.values()) {
+            entry.drainResultQueue(recentResults);
+        }
+    }
+
+    /**
+     * Removes results that fail quality thresholds, then narrows to ApriltagResult
+     */
+    private void filterAndCollectApriltags() {
+        recentApriltagResults.clear();
+        for (ResultInterface result : recentResults) {
+            // Drop any results where std devs are missing (shouldn't happen)
+            if (result instanceof ApriltagResult ar
+                    && ar.getStdDevs() != null
+                    && aprilTagFilter.test(ar)) {
+                recentApriltagResults.add(ar);
+            }
+        }
+    }
+
+    /**
+     * Fuses recentApriltagResults, submits the result to the drivetrain pose estimator,
+     * and publishes all diagnostics to NetworkTables.
+     */
+    private void processApriltags() {
+        Optional<ApriltagResult> fusedResultOpt = PoseFusionEngine.fusePoses(recentApriltagResults, config);
+        if (fusedResultOpt.isEmpty()) {
+            // Results exist but fusion produced no usable estimate
+            hasValidPose = false;
+            return;
+        }
+
+        ApriltagResult fusedResult = fusedResultOpt.get();
+
+        // Only submit the pose if the robot is flat — tilt causes
+        // the 2D projection from 3D tag poses to be inaccurate.
+        if (swerve != null && swerve.isFlatDebounced()) {
+            poseConsumer.accept(
+                fusedResult.getPose(),
+                fusedResult.getTimestampSeconds(),
+                fusedResult.getStdDevs()
+            );
+        }
+
+        hasValidPose = true;
+
+        //#region Logging :)
+
+        publishPoseDiagnostics(fusedResult);
+        publishCameraPoses();
+
+        //#endregion
+    }
+
+    /**
+     * Publishes all pose-quality and fusion diagnostics to NetworkTables.
+     */
+    private void publishPoseDiagnostics(ApriltagResult fusedResult) {
+        posePublisher.set(fusedResult.getPose());
+        usedPosePublisher.set(swerve.getPastVisionPose(fusedResult.getTimestampSeconds()));
+
+        transStdDevPublisher.set(fusedResult.getStdDevs().get(0, 0));
+        rotStdDevPublisher.set(fusedResult.getStdDevs().get(2, 0));
+
+        avgDistancePublisher.set(fusedResult.getAverageDistanceToTargets());
+        avgAmbiguityPublisher.set(fusedResult.getAmbiguity());
+        avgAreaPublisher.set(fusedResult.getAverageArea());
+        xAnisotropyPublisher.set(fusedResult.getXAnisotropy());
+        yAnisotropyPublisher.set(fusedResult.getYAnisotropy());
+        latencyPublisher.set(fusedResult.getLatencyMs());
+        targetCountPublisher.set(fusedResult.getTargets().size());
+
+        trackedApriltagsPublisher.accept(getTargetPoses(fusedResult.getTargets()));
+    }
+
+    /**
+     * Publishes the current 3-D world position of each physical camera.
+     */
+    private void publishCameraPoses() {
+        rightCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.RIGHT_CAMERA_TRANSFORM));
+        leftCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.LEFT_CAMERA_TRANSFORM));
+        backCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.BACK_CAMERA_TRANSFORM));
     }
 
     /**
