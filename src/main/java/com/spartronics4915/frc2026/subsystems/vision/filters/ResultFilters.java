@@ -1,7 +1,11 @@
 package com.spartronics4915.frc2026.subsystems.vision.filters;
 
+import java.util.function.Supplier;
+
 import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
 import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
+
+import edu.wpi.first.math.geometry.Pose2d;
 
 public class ResultFilters {
 
@@ -95,6 +99,28 @@ public class ResultFilters {
         public boolean test(ResultInterface result) {
             return result.getXAnisotropy() <= maxAnisotropy 
                 && result.getYAnisotropy() <= maxAnisotropy;
+        }
+    }
+
+    /**
+     * A filter that rejects any vision result whose estimated pose is farther than
+     * {@code maxDeviationMeters} from the current odometry pose
+     */
+    public static class OdometryOutlierFilter implements FilterInterface {
+        private final Supplier<Pose2d> odometrySupplier;
+        private final double maxDeviationMeters;
+
+        public OdometryOutlierFilter(Supplier<Pose2d> odometrySupplier, double maxDeviationMeters) {
+            this.odometrySupplier = odometrySupplier;
+            this.maxDeviationMeters = maxDeviationMeters;
+        }
+
+        @Override
+        public boolean test(ResultInterface result) {
+            Pose2d reference = odometrySupplier.get();
+            if (reference == null) return true;
+            double dist = result.getPose().getTranslation().getDistance(reference.getTranslation());
+            return dist <= maxDeviationMeters;
         }
     }
 

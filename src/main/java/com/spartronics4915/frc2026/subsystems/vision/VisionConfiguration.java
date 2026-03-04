@@ -17,6 +17,7 @@ public class VisionConfiguration {
     public final double fusionTimestampThreshold;
     public final int minCamerasForFusion;
     public final double fusionOutlierThresholdSigma;
+    public final double maxOdometryDeviationMeters;
 
     public VisionConfiguration() {
         this(
@@ -34,7 +35,8 @@ public class VisionConfiguration {
             true,
             0.05,
             2,   
-            3.0
+            3.0,
+            1
         );
     }
 
@@ -53,7 +55,8 @@ public class VisionConfiguration {
         boolean enablePoseFusion,
         double fusionTimestampThreshold,
         int minCamerasForFusion,
-        double fusionOutlierThresholdSigma
+        double fusionOutlierThresholdSigma,
+        double maxOdometryDeviationMeters
     ) {
         this.maxLatencyMs = maxLatencyMs;
         this.maxSingleTagDistanceMeters = maxSingleTagDistanceMeters;
@@ -70,6 +73,7 @@ public class VisionConfiguration {
         this.fusionTimestampThreshold = fusionTimestampThreshold;
         this.minCamerasForFusion = minCamerasForFusion;
         this.fusionOutlierThresholdSigma = fusionOutlierThresholdSigma;
+        this.maxOdometryDeviationMeters = maxOdometryDeviationMeters;
     }
 
 }

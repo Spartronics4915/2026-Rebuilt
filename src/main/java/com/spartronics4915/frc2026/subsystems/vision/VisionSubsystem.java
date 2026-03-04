@@ -13,10 +13,10 @@ import com.spartronics4915.frc2026.Constants.VisionConstants;
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
+import com.spartronics4915.frc2026.subsystems.vision.filters.FilterInterface;
 import com.spartronics4915.frc2026.subsystems.vision.filters.PipelineFilter;
 import com.spartronics4915.frc2026.subsystems.vision.filters.ResultFilters;
 import com.spartronics4915.frc2026.subsystems.vision.processing.PoseFusionEngine;
-import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
 import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
 import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
 import com.spartronics4915.frc2026.util.general.PerformanceTracker;
@@ -64,10 +64,8 @@ public class VisionSubsystem extends SubsystemBase {
     private final PerformanceTracker performanceTracker;
     private final SwerveSubsystem swerve;
 
-    // Pre-allocated scratch lists, cleared and reused every loop to avoid
-    // creating new ArrayList instances on every periodic() call
-    private final List<ResultInterface> recentResults = new ArrayList<>(16);
-    private final List<ApriltagResult> recentApriltagResults = new ArrayList<>(16);
+    private final List<ResultInterface> combinedResults = new ArrayList<>(16);
+    private final List<ApriltagResult> combinedApriltagResults = new ArrayList<>(16);
 
     // True if the most recent periodic loop produced a valid pose
     private boolean hasValidPose;
@@ -125,14 +123,23 @@ public class VisionSubsystem extends SubsystemBase {
 
         // Build the filter pipeline in order of cheapest to most expensive filter,
         // so bad results are rejected early before more processing
-        this.aprilTagFilter = new PipelineFilter(List.of(
-            new ResultFilters.LatencyFilter(config.maxLatencyMs),
-            new ResultFilters.AmbiguityFilter(config.maxAmbiguityScore),
-            new ResultFilters.DistanceFilter(config.maxSingleTagDistanceMeters, config.maxMultiTagDistanceMeters),
-            new ResultFilters.AnisotropyFilter(config.maxAnisotropy),
-            new ResultFilters.AreaFilter(config.minArea, config.maxArea)
-        ));
+        List<FilterInterface> filters = new ArrayList<>();
+        filters.add(new ResultFilters.LatencyFilter(config.maxLatencyMs));
+        filters.add(new ResultFilters.AmbiguityFilter(config.maxAmbiguityScore));
+        filters.add(new ResultFilters.DistanceFilter(config.maxSingleTagDistanceMeters, config.maxMultiTagDistanceMeters));
+        filters.add(new ResultFilters.AnisotropyFilter(config.maxAnisotropy));
+        filters.add(new ResultFilters.AreaFilter(config.minArea, config.maxArea));
 
+        // OdometryOutlierFilter runs last — it requires an external supplier call
+        // and is only added when a threshold is actually configured.
+        if (config.maxOdometryDeviationMeters < Double.MAX_VALUE) {
+            filters.add(new ResultFilters.OdometryOutlierFilter(
+                swerveSubsystem::getPose,
+                config.maxOdometryDeviationMeters
+            ));
+        }
+
+        this.aprilTagFilter = new PipelineFilter(filters);
         this.performanceTracker = new PerformanceTracker(config.maxPeriodicTimeMs);
 
         isSimulation = Robot.isSimulation();
@@ -167,7 +174,7 @@ public class VisionSubsystem extends SubsystemBase {
             filterAndCollectApriltags();
 
             // Fuse poses from multiple cameras
-            if (!recentApriltagResults.isEmpty()) {
+            if (!combinedApriltagResults.isEmpty()) {
                 processApriltags();
             } else {
                 // No results passed filtering this loop
@@ -186,12 +193,12 @@ public class VisionSubsystem extends SubsystemBase {
     }
 
     /**
-     * Drains each camera's result queue into recentResults
+     * Drains each camera's result queue
      */
     private void collectResults() {
-        recentResults.clear();
+        combinedResults.clear();
         for (ProcessorInterface entry : cameras.values()) {
-            entry.drainResultQueue(recentResults);
+            entry.drainResultQueue(combinedResults);
         }
     }
 
@@ -199,23 +206,23 @@ public class VisionSubsystem extends SubsystemBase {
      * Removes results that fail quality thresholds, then narrows to ApriltagResult
      */
     private void filterAndCollectApriltags() {
-        recentApriltagResults.clear();
-        for (ResultInterface result : recentResults) {
-            // Drop any results where std devs are missing (shouldn't happen)
+        combinedApriltagResults.clear();
+        for (ResultInterface result : combinedResults) {
+            // Drop any results where std devs are missing (shouldn't happen=)
             if (result instanceof ApriltagResult ar
                     && ar.getStdDevs() != null
                     && aprilTagFilter.test(ar)) {
-                recentApriltagResults.add(ar);
+                combinedApriltagResults.add(ar);
             }
         }
     }
 
     /**
-     * Fuses recentApriltagResults, submits the result to the drivetrain pose estimator,
+     * Fuses results, then submits the result to the drivetrain pose estimator,
      * and publishes all diagnostics to NetworkTables.
      */
     private void processApriltags() {
-        Optional<ApriltagResult> fusedResultOpt = PoseFusionEngine.fusePoses(recentApriltagResults, config);
+        Optional<ApriltagResult> fusedResultOpt = PoseFusionEngine.fusePoses(combinedApriltagResults, config);
         if (fusedResultOpt.isEmpty()) {
             // Results exist but fusion produced no usable estimate
             hasValidPose = false;
@@ -224,7 +231,7 @@ public class VisionSubsystem extends SubsystemBase {
 
         ApriltagResult fusedResult = fusedResultOpt.get();
 
-        // Only submit the pose if the robot is flat — tilt causes
+        // Only submit the pose if the robot is flat, tilt causes
         // the 2D projection from 3D tag poses to be inaccurate.
         if (swerve != null && swerve.isFlatDebounced()) {
             poseConsumer.accept(
@@ -245,7 +252,7 @@ public class VisionSubsystem extends SubsystemBase {
     }
 
     /**
-     * Publishes all pose-quality and fusion diagnostics to NetworkTables.
+     * Publishes all pose quality and fusion diagnostics to NetworkTables.
      */
     private void publishPoseDiagnostics(ApriltagResult fusedResult) {
         posePublisher.set(fusedResult.getPose());
