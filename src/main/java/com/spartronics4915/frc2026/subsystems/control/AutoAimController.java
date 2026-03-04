@@ -276,8 +276,8 @@ public class AutoAimController extends SubsystemBase {
     }
 
     private boolean shouldAutoShoot(AutoAimResult result) {
-        return (Robot.hubEnabled || Robot.timeUntilSwitch < result.ToF());
-            //&& swerve.getRelativePose().getX() < hubPose.getX();
+        return (Robot.hubEnabled || Robot.timeUntilSwitch < result.ToF())
+            && swerve.getRelativePose().getX() < hubPose.getX();
     }
 
     private Translation3d getDefaultTarget() {
