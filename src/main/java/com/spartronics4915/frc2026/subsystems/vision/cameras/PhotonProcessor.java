@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import org.photonvision.EstimatedRobotPose;
@@ -53,6 +54,12 @@ public class PhotonProcessor implements ProcessorInterface {
     private final PhotonCameraSim cameraSim;
 
     private final ConcurrentLinkedQueue<ResultInterface> resultQueue;
+
+    /**
+     * Tracks the logical queue size independently of the queue itself
+     */
+    private final AtomicInteger queueSize;
+
     private final int maxQueueSize;
     private final Notifier processingNotifier;
     private final double processingFrequency;
@@ -90,6 +97,7 @@ public class PhotonProcessor implements ProcessorInterface {
         this.cameraSim = new PhotonCameraSim(photonCamera, simProperties);
 
         this.resultQueue = new ConcurrentLinkedQueue<>();
+        this.queueSize = new AtomicInteger(0);
         this.maxQueueSize = 4;
 
         this.processingNotifier = new Notifier(this::process);
@@ -113,6 +121,7 @@ public class PhotonProcessor implements ProcessorInterface {
         isRunning = false;
         processingNotifier.stop();
         resultQueue.clear();
+        queueSize.set(0);
     }
 
     @Override
@@ -124,10 +133,13 @@ public class PhotonProcessor implements ProcessorInterface {
         for (PhotonPipelineResult rawResult : rawResults) {
             Optional<ApriltagResult> apriltagResult = processApriltagResult(rawResult);
             if (apriltagResult.isPresent()) {
-                while (resultQueue.size() >= maxQueueSize) {
-                    resultQueue.poll();
+                while (queueSize.get() >= maxQueueSize) {
+                    if (resultQueue.poll() != null) {
+                        queueSize.decrementAndGet();
+                    }
                 }
                 resultQueue.add(apriltagResult.get());
+                queueSize.incrementAndGet();
             }
         }
     }
@@ -200,7 +212,6 @@ public class PhotonProcessor implements ProcessorInterface {
 
     /**
      * Calculates the average distance to a list of photon vision targets.
-     * Uses a plain loop instead of a stream to avoid iterator allocation on the hot path.
      */
     private double calculateAverageDistance(List<PhotonTrackedTarget> targets) {
         if (targets.isEmpty()) return 0.0;
@@ -213,7 +224,6 @@ public class PhotonProcessor implements ProcessorInterface {
 
     /**
      * Calculates the average ambiguity from a list of photon vision targets.
-     * Uses a plain loop instead of a stream to avoid iterator allocation on the hot path.
      * For multi-tag results, returns the minimum non-negative ambiguity scaled by tag count.
      */
     private static double calculateAmbiguity(List<PhotonTrackedTarget> targets) {
@@ -231,7 +241,6 @@ public class PhotonProcessor implements ProcessorInterface {
 
     /**
      * Calculates the average area (size in frame) of a list of photon vision targets.
-     * Uses a plain loop instead of a stream to avoid iterator allocation on the hot path.
      */
     private static double calculateAverageArea(List<PhotonTrackedTarget> targets) {
         if (targets.isEmpty()) return 0.0;
@@ -245,7 +254,6 @@ public class PhotonProcessor implements ProcessorInterface {
     /**
      * Calculates the average x anisotropy (yaw-based uncertainty)
      * from a list of photon vision targets.
-     * Uses a plain loop instead of a stream to avoid iterator allocation on the hot path.
      */
     private static double calculateXAnisotropy(List<PhotonTrackedTarget> targets) {
         if (targets.isEmpty()) return 1.0;
@@ -260,7 +268,6 @@ public class PhotonProcessor implements ProcessorInterface {
     /**
      * Calculates the average y anisotropy (pitch-based uncertainty)
      * from a list of photon vision targets.
-     * Uses a plain loop instead of a stream to avoid iterator allocation on the hot path.
      */
     private static double calculateYAnisotropy(List<PhotonTrackedTarget> targets) {
         if (targets.isEmpty()) return 1.0;
@@ -322,6 +329,7 @@ public class PhotonProcessor implements ProcessorInterface {
         ResultInterface result;
         while ((result = resultQueue.poll()) != null) {
             destination.add(result);
+            queueSize.decrementAndGet();
         }
     }
 
