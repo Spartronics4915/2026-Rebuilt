@@ -22,6 +22,7 @@ import edu.wpi.first.math.numbers.N3;
 public class PoseFusionEngine {
 
     public static Optional<ApriltagResult> fusePoses(List<ApriltagResult> apriltagResults, VisionConfiguration config) {
+
         if (apriltagResults.size() == 1) {
             return Optional.of(apriltagResults.get(0));
         }
@@ -162,7 +163,7 @@ public class PoseFusionEngine {
         double weightedSin = 0;
         double weightedCos = 0;
 
-        double sumTimestamp = 0;
+        double latestTimestamp = Double.NEGATIVE_INFINITY;
         double sumLatency = 0;
         double sumDistance = 0;
         double sumAmbiguity = 0;
@@ -200,7 +201,10 @@ public class PoseFusionEngine {
             weightedSin += Math.sin(theta) * wT;
             weightedCos += Math.cos(theta) * wT;
 
-            sumTimestamp += result.getTimestampSeconds();
+            if (result.getTimestampSeconds() > latestTimestamp) {
+                latestTimestamp = result.getTimestampSeconds();
+            }
+
             sumLatency += result.getLatencyMs();
             sumDistance += result.getAverageDistanceToTargets();
             sumAmbiguity += result.getAmbiguity();
@@ -254,7 +258,7 @@ public class PoseFusionEngine {
         return Optional.of(
             new ApriltagResult(
                 nameBuilder.toString(),
-                sumTimestamp * invN,
+                latestTimestamp,       // most recent timestamp, not averaged
                 sumLatency * invN,
                 fusedPose,
                 fusedStdDevs,
