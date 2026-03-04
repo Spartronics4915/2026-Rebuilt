@@ -14,7 +14,6 @@ import com.spartronics4915.frc2026.util.control.FieldZoneMap;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -31,14 +30,6 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  * Set to {@code false} to restore full autonomous zone behavior.
  */
 public class Superstructure extends SubsystemBase {
-
-    /**
-     * When true, zone triggers and automatic pipeline management are disabled.
-     * The robot will still track and publish the current zone to NetworkTables,
-     * but no SuperstructureCommands will be scheduled automatically.
-     * Set to false to restore full autonomous zone behavior.
-     */
-    private static boolean testingMode = true;
     
     public enum Zone {
         ALLIANCE_ZONE,
@@ -72,8 +63,6 @@ public class Superstructure extends SubsystemBase {
         this.zoneMap = buildZoneMap();
         
         configureZoneTriggers();
-
-        SmartDashboard.putData("Toggle Testing", toggleTestingMode());
     }
 
     private FieldZoneMap<Zone> buildZoneMap() {
@@ -127,10 +116,10 @@ public class Superstructure extends SubsystemBase {
     }
 
     private void configureZoneTriggers() {
-        Trigger inAllianceZone = new Trigger(() -> !testingMode && currentZone == Zone.ALLIANCE_ZONE);
-        Trigger inTrench = new Trigger(() -> !testingMode && currentZone == Zone.TRENCH);
-        Trigger inNeutralZone = new Trigger(() -> !testingMode && currentZone == Zone.NEUTRAL_ZONE);
-        Trigger inCruiseZones = new Trigger(() -> !testingMode && (currentZone == Zone.BUMP || currentZone == Zone.OPPONENT_ZONE));
+        Trigger inAllianceZone = new Trigger(() -> currentZone == Zone.ALLIANCE_ZONE);
+        Trigger inTrench = new Trigger(() -> currentZone == Zone.TRENCH);
+        Trigger inNeutralZone = new Trigger(() -> currentZone == Zone.NEUTRAL_ZONE);
+        Trigger inCruiseZones = new Trigger(() -> (currentZone == Zone.BUMP || currentZone == Zone.OPPONENT_ZONE));
 
         inAllianceZone.onTrue(commands.shooting().withName("Auto: Shooting Zone"));
         inTrench.onTrue(commands.trenchTraversal().withName("Auto: Trench Traversal"));
@@ -153,9 +142,5 @@ public class Superstructure extends SubsystemBase {
                 default: return commands.idle();
             }
         }, java.util.Set.of()).withName("Restore Zone State");
-    }
-
-    public Command toggleTestingMode() {
-        return Commands.runOnce(() -> testingMode = !testingMode).ignoringDisable(true);
     }
 }

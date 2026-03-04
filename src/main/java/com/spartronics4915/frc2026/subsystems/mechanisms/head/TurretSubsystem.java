@@ -125,6 +125,10 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
         return Rotation2d.fromRotations(position);
     }
 
+    public Rotation2d getCurrentSetpoint() {
+        return currentSetpoint;
+    }
+
     public TurretClamp getClamp() {
         return currentClamp;
     }

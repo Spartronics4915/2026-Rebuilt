@@ -144,6 +144,9 @@ public class AutoAimController extends SubsystemBase {
         }
     }
 
+    //#endregion
+    //#region Auto-Aim 
+
     /**
      * Asks the {@link AutoAim} solver for the current result
      *
@@ -275,6 +278,9 @@ public class AutoAimController extends SubsystemBase {
         SimulatedArena.getInstance().addGamePieceProjectile(projectile);
     }
 
+    //#endregion
+    //#region Misc
+
     private boolean shouldAutoShoot(AutoAimResult result) {
         return (Robot.hubEnabled || Robot.timeUntilSwitch < result.ToF())
             && swerve.getRelativePose().getX() < hubPose.getX();
@@ -292,6 +298,9 @@ public class AutoAimController extends SubsystemBase {
         return lastResult;
     }
 
+    //#endregion
+    //#region Checks
+
     public boolean isAimEnabled() {
         return isAimEnabled;
     }
@@ -302,8 +311,24 @@ public class AutoAimController extends SubsystemBase {
 
     /** True when the shot is solvable AND the current flywheel speed is sufficient. */
     public boolean isReadyToShoot() {
-        return hasValidResult() && !lastResult.idealShot();
+        return hasValidResult() && !lastResult.idealShot() 
+            && (isTurretReady() && isHoodReady());
     }
+
+    public boolean isTurretReady() {
+        return Math.abs(
+            turret.getPosition().minus(turret.getCurrentSetpoint()).getDegrees()
+        ) >= 0.5;
+    }
+
+    public boolean isHoodReady() {
+        return Math.abs(
+            hood.getPosition().minus(hood.getCurrentSetpoint()).getDegrees()
+        ) >= 0.5;
+    }
+
+    //#endregion
+    //#region Commands
 
     /** Flips the auto-aim enabled flag. Safe to call while the robot is disabled. */
     public Command aimToggle() {
@@ -335,6 +360,9 @@ public class AutoAimController extends SubsystemBase {
     public Command overrideShootCommand() {
         return Commands.startEnd(() -> shootOverride = true, () -> shootOverride = false);
     }
+
+    //#endregion
+    //#region Conversions
 
     private double RPSToMPS(double rps) {
         return InchesPerSecond.of(rps * Math.PI * 1.92).in(MetersPerSecond) * (1 - percentLoss);

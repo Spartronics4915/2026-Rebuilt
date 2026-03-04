@@ -116,6 +116,10 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
         return Rotation2d.fromRotations(position);
     }
 
+    public Rotation2d getCurrentSetpoint() {
+        return currentSetpoint;
+    }
+
     public void setSetpoint(Rotation2d setpoint){
         currentSetpoint = setpoint;
     }
