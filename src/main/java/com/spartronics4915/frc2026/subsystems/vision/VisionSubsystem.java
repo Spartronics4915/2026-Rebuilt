@@ -34,21 +34,6 @@ import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-/**
- * Manages all vision cameras, processes AprilTag detections, fuses pose
- * estimates across cameras, and submits measurements to the drivetrain
- * pose estimator.
- *
- * <p>Each camera runs its own {@link Notifier} thread via
- * {@link ProcessorInterface}, producing results asynchronously — including
- * their own standard deviations computed by a per-camera {@link StdDevCalculator}.
- * Every robot loop iteration, {@link #periodic()} drains those queues,
- * filters bad measurements, fuses across cameras via {@link PoseFusionEngine},
- * and forwards the final estimate to the drivetrain via {@link VisionPoseConsumer}.
- *
- * <p>In simulation, a {@link VisionSystemSim} mirrors the real camera
- * pipeline using the robot's ground-truth pose.
- */
 public class VisionSubsystem extends SubsystemBase {
 
     private final Map<String, ProcessorInterface> cameras;
@@ -63,26 +48,20 @@ public class VisionSubsystem extends SubsystemBase {
     private final PerformanceTracker performanceTracker;
     private final SwerveSubsystem swerve;
 
-    // True if the most recent periodic loop produced a valid pose
     private boolean hasValidPose;
 
-    // Cached NetworkTable reference to avoid repeated map lookups each loop
     private static final NetworkTable visionTable = NetworkTableInstance.getDefault().getTable("vision");
 
-    // -- Vision Poses --
     private final StructPublisher<Pose2d> posePublisher = visionTable.getStructTopic("Vision Pose", Pose2d.struct).publish();
     private final StructPublisher<Pose2d> usedPosePublisher = visionTable.getStructTopic("Used Vision Pose", Pose2d.struct).publish();
 
-    // -- Camera Visualization --
     private final StructPublisher<Pose3d> rightCameraPosePublisher = visionTable.getStructTopic("Right Camera Pose", Pose3d.struct).publish();
     private final StructPublisher<Pose3d> leftCameraPosePublisher = visionTable.getStructTopic("Left Camera Pose", Pose3d.struct).publish();
     private final StructPublisher<Pose3d> backCameraPosePublisher = visionTable.getStructTopic("Back Camera Pose", Pose3d.struct).publish();
 
-    // -- Standard Deviations --
     private final DoublePublisher transStdDevPublisher = visionTable.getDoubleTopic("XY Std Devs").publish();
     private final DoublePublisher rotStdDevPublisher = visionTable.getDoubleTopic("Theta Std Devs").publish();
 
-    // -- Result Info --
     private final DoublePublisher avgDistancePublisher = visionTable.getDoubleTopic("Avg Distance").publish();
     private final DoublePublisher avgAmbiguityPublisher = visionTable.getDoubleTopic("Avg Ambiguity").publish();
     private final DoublePublisher avgAreaPublisher = visionTable.getDoubleTopic("Avg Area").publish();
@@ -91,18 +70,8 @@ public class VisionSubsystem extends SubsystemBase {
     private final DoublePublisher latencyPublisher = visionTable.getDoubleTopic("Latency").publish();
     private final DoublePublisher targetCountPublisher = visionTable.getDoubleTopic("Target Count").publish();
 
-    // -- Tags Used --
     private final StructArrayPublisher<Pose3d> trackedApriltagsPublisher = visionTable.getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
     
-    /**
-     * Constructs the VisionSubsystem and starts all camera processing threads.
-     *
-     * @param cameras map of camera name to {@link ProcessorInterface}, one entry per physical camera
-     * @param fieldLayout AprilTag field layout used for pose estimation
-     * @param configuration tuning parameters for filtering, fusion, and std devs
-     * @param poseConsumer callback that forwards accepted pose estimates to the drivetrain's pose estimator
-     * @param swerveSubsystem drivetrain reference used for robot velocity and tilt debouncing
-     */
     public VisionSubsystem(
         Map<String, ProcessorInterface> cameras,
         AprilTagFieldLayout fieldLayout,
@@ -117,8 +86,6 @@ public class VisionSubsystem extends SubsystemBase {
         this.swerve = swerveSubsystem;
         this.hasValidPose = false;
 
-        // Build the filter pipeline in order of cheapest to most expensive filter,
-        // so bad results are rejected early before more processing
         this.aprilTagFilter = new PipelineFilter(List.of(
             new ResultFilters.LatencyFilter(config.maxLatencyMs),
             new ResultFilters.AmbiguityFilter(config.maxAmbiguityScore),
@@ -133,11 +100,9 @@ public class VisionSubsystem extends SubsystemBase {
         
         if (isSimulation) {
             visionSystemSim.addAprilTags(fieldLayout);
-            // Disable version check so sim cameras don't fail on version mismatch
             PhotonCamera.setVersionCheckEnabled(false);
         }
 
-        // Wire each camera's velocity supplier and start its processing thread
         for (ProcessorInterface camera : cameras.values()) {
             camera.setSpeedSupplier(swerveSubsystem::getFieldVelocity);
             camera.start();
@@ -145,45 +110,29 @@ public class VisionSubsystem extends SubsystemBase {
         }
     }
     
-    /**
-     * Collects queued camera results, filters bad measurements, fuses across
-     * cameras, and forwards the result to the drivetrain pose estimator.
-     *
-     * <p>Std devs are already populated by each camera's own
-     * {@link StdDevCalculator} before results enter this queue,
-     * so no std dev computation happens here.
-     */
     @Override
     public void periodic() {
         performanceTracker.startTiming("periodic_total");
+        try {
+            List<ResultInterface> allResults = new ArrayList<>();
+            for (ProcessorInterface entry : cameras.values()) {
+                allResults.addAll(entry.getResultQueue());
+            }
 
-        // Drain each camera's result queue. Camera threads write asynchronously
-        // via Notifier, so getResultQueue() is a destructive thread-safe read.
-        List<ResultInterface> allResults = new ArrayList<>();
-        for (ProcessorInterface entry : cameras.values()) {
-            allResults.addAll(entry.getResultQueue());
-        }
-        
-        // Remove results that fail quality thresholds, then narrow to ApriltagResult
-        List<ApriltagResult> apriltagResults = aprilTagFilter.filter(allResults).stream()
-            .filter(ApriltagResult.class::isInstance)
-            .map(ApriltagResult.class::cast)
-            .toList();
+            List<ApriltagResult> apriltagResults = aprilTagFilter.filter(allResults).stream()
+                .filter(ApriltagResult.class::isInstance)
+                .map(ApriltagResult.class::cast)
+                .toList();
 
-        // Drop any results where std devs are missing (shouldn't happen, but guard anyway)
-        apriltagResults = apriltagResults.stream()
-            .filter(result -> result.getStdDevs() != null)
-            .toList();
+            apriltagResults = apriltagResults.stream()
+                .filter(result -> result.getStdDevs() != null)
+                .toList();
 
-        // Fuse poses from multiple cameras
-        if (!apriltagResults.isEmpty()) {
-            try {
+            if (!apriltagResults.isEmpty()) {
                 Optional<ApriltagResult> fusedResultOpt = PoseFusionEngine.fusePoses(apriltagResults, config);
                 if (fusedResultOpt.isPresent()) {
                     ApriltagResult fusedResult = fusedResultOpt.get();
                     
-                    // Only submit the pose if the robot is flat — tilt causes
-                    // the 2D projection from 3D tag poses to be inaccurate.
                     if (swerve != null && swerve.isFlatDebounced()) {
                         poseConsumer.accept(
                             fusedResult.getPose(),
@@ -193,19 +142,17 @@ public class VisionSubsystem extends SubsystemBase {
                     }
                     
                     hasValidPose = true;
-                
-                    //#region Logging :)
 
                     posePublisher.set(fusedResult.getPose());
                     usedPosePublisher.set(swerve.getPastVisionPose(fusedResult.getTimestampSeconds()));
-                
+
                     rightCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.RIGHT_CAMERA_TRANSFORM));
                     leftCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.LEFT_CAMERA_TRANSFORM));
                     backCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.BACK_CAMERA_TRANSFORM));
-                
+
                     transStdDevPublisher.set(fusedResult.getStdDevs().get(0, 0));
                     rotStdDevPublisher.set(fusedResult.getStdDevs().get(2, 0));
-                
+
                     avgDistancePublisher.set(fusedResult.getAverageDistanceToTargets());
                     avgAmbiguityPublisher.set(fusedResult.getAmbiguity());
                     avgAreaPublisher.set(fusedResult.getAverageArea());
@@ -215,36 +162,23 @@ public class VisionSubsystem extends SubsystemBase {
                     targetCountPublisher.set(fusedResult.getTargets().size());
 
                     trackedApriltagsPublisher.accept(getTargetPoses(fusedResult.getTargets()));
-
-                    //#endregion
                 } else {
-                    // Results exist but fusion produced no usable estimate
                     hasValidPose = false;
                 }
-            } finally {
-                performanceTracker.stopTiming();
+            } else {
+                hasValidPose = false;
             }
-        } else {
-            // No results passed filtering this loop
-            hasValidPose = false;
-        }
-        
-        // Feed the ground-truth robot pose back into the sim so virtual cameras
-        // produce detections matching the robot's actual position
-        if (isSimulation) {
-            visionSystemSim.update(swerve.getRobotPose());
-        }
 
-        performanceTracker.stopTiming();
-        performanceTracker.publishMetrics();
+            if (isSimulation) {
+                visionSystemSim.update(swerve.getRobotPose());
+            }
+        } finally {
+            // Always stop timing exactly once — even if an exception is thrown above.
+            performanceTracker.stopTiming();
+            performanceTracker.publishMetrics();
+        }
     }
 
-    /**
-     * Returns a list of pose3ds from a list of {@link PhotonTrackedTarget}
-     * 
-     * @param targets a list of {@link PhotonTrackedTarget}
-     * @return a list of all the pose3ds of the list of tags
-     */
     public static Pose3d[] getTargetPoses(List<PhotonTrackedTarget> targets) {
         return targets.stream()
             .map(target -> VisionConstants.LAYOUT.getTagPose(target.fiducialId))
@@ -253,20 +187,10 @@ public class VisionSubsystem extends SubsystemBase {
             .toArray(Pose3d[]::new);
     }
 
-    /**
-     * Returns whether the most recent periodic loop produced a valid fused pose
-     *
-     * @return true if a valid pose was accepted this loop
-     */
     public boolean hasValidPose() {
         return hasValidPose;
     }
 
-    /**
-     * Callback for submitting a vision pose estimate to the drivetrain's pose estimator.
-     * Accepts the estimated pose, the timestamp when the image was captured, and the
-     * measurement standard deviations representing confidence.
-     */
     @FunctionalInterface
     public interface VisionPoseConsumer {
         void accept(
