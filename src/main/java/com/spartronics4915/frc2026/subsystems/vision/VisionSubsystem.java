@@ -121,25 +121,7 @@ public class VisionSubsystem extends SubsystemBase {
         this.swerve = swerveSubsystem;
         this.hasValidPose = false;
 
-        // Build the filter pipeline in order of cheapest to most expensive filter,
-        // so bad results are rejected early before more processing
-        List<FilterInterface> filters = new ArrayList<>();
-        filters.add(new ResultFilters.LatencyFilter(config.maxLatencyMs));
-        filters.add(new ResultFilters.AmbiguityFilter(config.maxAmbiguityScore));
-        filters.add(new ResultFilters.DistanceFilter(config.maxSingleTagDistanceMeters, config.maxMultiTagDistanceMeters));
-        filters.add(new ResultFilters.AnisotropyFilter(config.maxAnisotropy));
-        filters.add(new ResultFilters.AreaFilter(config.minArea, config.maxArea));
-
-        // OdometryOutlierFilter runs last — it requires an external supplier call
-        // and is only added when a threshold is actually configured.
-        if (config.maxOdometryDeviationMeters < Double.MAX_VALUE) {
-            filters.add(new ResultFilters.OdometryOutlierFilter(
-                swerveSubsystem::getPose,
-                config.maxOdometryDeviationMeters
-            ));
-        }
-
-        this.aprilTagFilter = new PipelineFilter(filters);
+        this.aprilTagFilter = new PipelineFilter(buildFilterList(configuration, swerveSubsystem));
         this.performanceTracker = new PerformanceTracker(config.maxPeriodicTimeMs);
 
         isSimulation = Robot.isSimulation();
@@ -157,14 +139,39 @@ public class VisionSubsystem extends SubsystemBase {
             if (isSimulation) visionSystemSim.addCamera(camera.getCameraSim(), camera.getCameraTransform());
         }
     }
-    
+
+    /**
+     * Builds the ordered filter list from the given configuration.
+     * Filters are ordered cheapest-first so expensive checks only run on
+     * results that have already passed the early gates.
+     */
+    private static List<FilterInterface> buildFilterList(
+        VisionConfiguration config,
+        SwerveSubsystem swerve
+    ) {
+        // Build the filter pipeline in order of cheapest to most expensive filter,
+        // so bad results are rejected early before more processing
+        List<FilterInterface> filters = new ArrayList<>();
+            filters.add(new ResultFilters.LatencyFilter(config.maxLatencyMs));
+            filters.add(new ResultFilters.AmbiguityFilter(config.maxAmbiguityScore));
+            filters.add(new ResultFilters.DistanceFilter(config.maxSingleTagDistanceMeters, config.maxMultiTagDistanceMeters));
+            filters.add(new ResultFilters.AnisotropyFilter(config.maxAnisotropy));
+            filters.add(new ResultFilters.AreaFilter(config.minArea, config.maxArea));
+
+        // OdometryOutlierFilter runs last, it requires an external supplier call :)
+        if (config.maxOdometryDeviationMeters < Double.MAX_VALUE) {
+            filters.add(new ResultFilters.OdometryOutlierFilter(
+                swerve::getPose,
+                config.maxOdometryDeviationMeters
+            ));
+        }
+
+        return filters;
+    }
+
     /**
      * Collects queued camera results, filters bad measurements, fuses across
-     * cameras, and forwards the result to the drivetrain pose estimator.
-     *
-     * <p>Std devs are already populated by each camera's own
-     * {@link StdDevCalculator} before results enter this queue,
-     * so no std dev computation happens here.
+     * cameras, and forwards the result to the drivetrain pose estimator
      */
     @Override
     public void periodic() {
@@ -181,7 +188,7 @@ public class VisionSubsystem extends SubsystemBase {
                 hasValidPose = false;
             }
 
-            // Feed the ground-truth robot pose back into the sim so virtual cameras
+            // Feed the ground truth robot pose back into the sim so virtual cameras
             // produce detections matching the robot's actual position
             if (isSimulation) {
                 visionSystemSim.update(swerve.getRobotPose());
@@ -208,7 +215,7 @@ public class VisionSubsystem extends SubsystemBase {
     private void filterAndCollectApriltags() {
         combinedApriltagResults.clear();
         for (ResultInterface result : combinedResults) {
-            // Drop any results where std devs are missing (shouldn't happen=)
+            // Drop any results where std devs are missing (shouldn't happen)
             if (result instanceof ApriltagResult ar
                     && ar.getStdDevs() != null
                     && aprilTagFilter.test(ar)) {
@@ -218,8 +225,8 @@ public class VisionSubsystem extends SubsystemBase {
     }
 
     /**
-     * Fuses results, then submits the result to the drivetrain pose estimator,
-     * and publishes all diagnostics to NetworkTables.
+     * Fuses scratchApriltags, submits the result to the drivetrain pose estimator,
+     * and publishes all diagnostics to NetworkTables
      */
     private void processApriltags() {
         Optional<ApriltagResult> fusedResultOpt = PoseFusionEngine.fusePoses(combinedApriltagResults, config);
@@ -273,7 +280,7 @@ public class VisionSubsystem extends SubsystemBase {
     }
 
     /**
-     * Publishes the current 3-D world position of each physical camera.
+     * Publishes the current 3D world position of each physical camera.
      */
     private void publishCameraPoses() {
         rightCameraPosePublisher.accept(new Pose3d(swerve.getRobotPose()).plus(VisionConstants.CameraConstants.RIGHT_CAMERA_TRANSFORM));
