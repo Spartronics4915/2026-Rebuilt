@@ -180,7 +180,7 @@ public class AutoAimController extends SubsystemBase {
             );
         }
 
-        if (!result.idealShot() && result.recommendedShotSpeed() != -1) {
+        if (result.recommendedShotSpeed() != -1) {
             boolean shouldShoot = isShootingEnabled && shouldAutoShoot(result);
             boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
             if (shootOverride || (isUnrestricted && shouldShoot)) {
