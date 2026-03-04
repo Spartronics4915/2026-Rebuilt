@@ -19,18 +19,8 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 
-/**
- * Fuses pose estimates from multiple cameras into a single, more accurate measurement.
- */
 public class PoseFusionEngine {
 
-    /**
-     * Fuse multiple AprilTag results into a single, more accurate pose estimate.
-     *
-     * @param apriltagResults List of results from different cameras
-     * @param config Vision configuration with fusion settings
-     * @return Fused result, best single result, or empty if no valid measurements
-     */
     public static Optional<ApriltagResult> fusePoses(List<ApriltagResult> apriltagResults, VisionConfiguration config) {
 
         if (apriltagResults.size() == 1) {
@@ -56,15 +46,8 @@ public class PoseFusionEngine {
     }
 
     /**
-     * Finds the largest group of results that fall within the timestamp threshold,
-     * without building all groups first.
-     *
-     * On a size tie, the more recent group is preferred so we always work with
-     * the freshest available data.
-     *
-     * @param results All results to group
-     * @param timestampThreshold Maximum time difference (seconds) to be in same group
-     * @return The largest group of results sharing a close timestamp
+     * Finds the largest group of results within the timestamp threshold.
+     * On a size tie, the more recent group is preferred.
      */
     private static List<ApriltagResult> getLargestTimestampGroup(
         List<ApriltagResult> results,
@@ -83,6 +66,8 @@ public class PoseFusionEngine {
                 if (groupStart < 0) groupStart = ts;
                 currentGroup.add(result);
             } else {
+                // Use >= so that a later group of equal size replaces an earlier one,
+                // ensuring we always work with the freshest data on a tie
                 if (currentGroup.size() >= bestGroup.size()) {
                     bestGroup = new ArrayList<>(currentGroup);
                 }
@@ -92,6 +77,7 @@ public class PoseFusionEngine {
             }
         }
 
+        // Use >= here for the same reason as above
         if (currentGroup.size() >= bestGroup.size()) {
             bestGroup = currentGroup;
         }
@@ -99,14 +85,6 @@ public class PoseFusionEngine {
         return bestGroup;
     }
 
-    /**
-     * Reject outlier measurements that significantly disagree with the group.
-     * Uses a diagonal approximation of Mahalanobis distance to account for uncertainty.
-     *
-     * @param results Results to filter
-     * @param thresholdSigma How many standard deviations away to reject (typically 2-3)
-     * @return Filtered results with outliers removed
-     */
     private static List<ApriltagResult> rejectOutliers(
         List<ApriltagResult> results,
         double thresholdSigma
@@ -134,13 +112,6 @@ public class PoseFusionEngine {
         return filtered.isEmpty() ? results : filtered;
     }
 
-    /**
-     * Calculates the unweighted mean of a list of poses. Rotation is averaged
-     * using the circular mean to avoid wrap-around errors near ±π.
-     *
-     * @param results The poses to average — must not be empty
-     * @return The mean pose
-     */
     private static Pose2d calculateMeanPose(List<ApriltagResult> results) {
         double sumX = 0;
         double sumY = 0;
@@ -161,17 +132,6 @@ public class PoseFusionEngine {
         return new Pose2d(sumX / num, sumY / num, new Rotation2d(meanTheta));
     }
 
-    /**
-     * Calculates the normalized distance between two poses, where each axis is
-     * scaled by its corresponding standard deviation. This is a diagonal approximation
-     * of true Mahalanobis distance — it does not account for cross-axis correlations,
-     * but is sufficient for independent x/y/theta estimates.
-     *
-     * @param pose1 The pose to measure from
-     * @param pose2 The reference pose (typically the group mean)
-     * @param stdDevs Standard deviations for pose1's [x, y, theta] axes
-     * @return Distance in units of standard deviations, or {@link Double#MAX_VALUE} if stdDevs is null
-     */
     private static double calculateNormalizedDistance(
         Pose2d pose1,
         Pose2d pose2,
@@ -194,13 +154,6 @@ public class PoseFusionEngine {
         return Math.sqrt(distX * distX + distY * distY + distTheta * distTheta);
     }
 
-    /**
-     * Fuse multiple measurements using inverse variance weighting.
-     * All aggregation is performed in a single loop to avoid multiple passes.
-     *
-     * @param results Filtered results to fuse
-     * @return Single fused result
-     */
     private static Optional<ApriltagResult> performWeightedFusion(List<ApriltagResult> results) {
         double totalWeightX = 0;
         double totalWeightY = 0;
@@ -210,9 +163,6 @@ public class PoseFusionEngine {
         double weightedSin = 0;
         double weightedCos = 0;
 
-        // Track the most recent timestamp instead of averaging.
-        // The pose estimator uses this for latency compensation, using the
-        // most recent timestamp minimizes the effective age of the fused estimate.
         double latestTimestamp = Double.NEGATIVE_INFINITY;
         double sumLatency = 0;
         double sumDistance = 0;
@@ -286,8 +236,6 @@ public class PoseFusionEngine {
             Math.sqrt(1.0 / totalWeightTheta)
         );
 
-        // Deduplicate targets by fiducial ID using a boolean array instead of a HashMap.
-        // This avoids a per-call HashMap allocation. IDs outside [1, MAX_TAG_ID) are skipped.
         List<PhotonTrackedTarget> allTargets = new ArrayList<>();
         for (ApriltagResult r : validResults) {
             outer:
@@ -300,7 +248,6 @@ public class PoseFusionEngine {
                 }
         }
 
-        // Build the fused camera name
         StringBuilder nameBuilder = new StringBuilder("fused[");
         for (int i = 0; i < validResults.size(); i++) {
             if (i > 0) nameBuilder.append(',');
@@ -326,15 +273,6 @@ public class PoseFusionEngine {
         );
     }
 
-    /**
-     * Select the single best result based on total normalized uncertainty.
-     * Each axis is divided by its base std dev before summing so that
-     * translational (meters) and rotational (radians) uncertainty are
-     * comparable rather than added as raw mixed units.
-     *
-     * @param results Results to choose from
-     * @return Result with lowest total normalized uncertainty
-     */
     private static Optional<ApriltagResult> selectBestResult(List<ApriltagResult> results) {
         ApriltagResult best = null;
         double bestScore = Double.MAX_VALUE;
@@ -346,7 +284,6 @@ public class PoseFusionEngine {
             double normalizedXY = std.get(0, 0) / StdDevConstants.baseXYStdDev;
             double normalizedTheta = std.get(2, 0) / StdDevConstants.baseThetaStdDev;
 
-            // Weight XY twice since it has two independent axes
             double score = (2.0 * normalizedXY) + normalizedTheta;
 
             if (score < bestScore) {
@@ -357,4 +294,5 @@ public class PoseFusionEngine {
 
         return Optional.ofNullable(best);
     }
+
 }
