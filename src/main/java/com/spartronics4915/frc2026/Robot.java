@@ -4,6 +4,10 @@
 
 package com.spartronics4915.frc2026;
 
+import com.ctre.phoenix.led.CANdle.LEDStripType;
+import com.ctre.phoenix6.CANBus;
+import com.ctre.phoenix6.hardware.CANdle;
+
 import edu.wpi.first.net.WebServer;
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.DoublePublisher;

@@ -22,16 +22,17 @@ public class BlingSubsystem extends SubsystemBase {
     private static final RGBWColor green = new RGBWColor(0, 255, 0, 0);
     private static final RGBWColor red = new RGBWColor(255, 255, 0, 0);
     private static final RGBWColor blue = new RGBWColor(0, 0, 255, 0);
+    private static final RGBWColor purple = new RGBWColor(86, 26, 143, 0); //og = 186 112 255
     private static final RGBWColor white = new RGBWColor(Color.kWhite).scaleBrightness(0.5);
     private static final RGBWColor violet = RGBWColor.fromHSV(Degrees.of(270), 0.9, 0.8);
 
-    private static final int slot0StartIdx = 8;
-    private static final int slot0EndIdx = 37;
+    private static final int slot0StartIdx = 0;
+    private static final int slot0EndIdx = 40;
 
-    private static final int slot1StartIdx =38;
+    private static final int slot1StartIdx = 41;
     private static final int slot1EndIdx = 67;
 
-    private final CANdle candle = new CANdle(1, CANBus.roboRIO());
+    private final CANdle candle = new CANdle(0, CANBus.roboRIO());
 
     private enum AnimationType {
         None,
@@ -55,8 +56,8 @@ public class BlingSubsystem extends SubsystemBase {
     public BlingSubsystem() {
         var cfg = new CANdleConfiguration();
 
-        cfg.LED.StripType = StripTypeValue.GRB;
-        cfg.LED.BrightnessScalar = 0.5;
+        cfg.LED.StripType = StripTypeValue.RGB;
+        cfg.LED.BrightnessScalar = 1;
 
         cfg.CANdleFeatures.StatusLedWhenActive = StatusLedWhenActiveValue.Disabled;
 
@@ -76,6 +77,10 @@ public class BlingSubsystem extends SubsystemBase {
         anim0Chooser.addOption("Twinkle", AnimationType.Twinkle);
         anim0Chooser.addOption("Twinkle Off", AnimationType.TwinkleOff);
         anim0Chooser.addOption("Fire", AnimationType.Fire);
+        anim0Chooser.addOption("Larson", AnimationType.Larson);
+        anim0Chooser.addOption("RgbFade", AnimationType.RgbFade);
+        anim0Chooser.addOption("SingleFade", AnimationType.SingleFade);
+        anim0Chooser.addOption("Strobe", AnimationType.Strobe);
 
         anim1Chooser.setDefaultOption("Larson", AnimationType.Larson);
         anim1Chooser.setDefaultOption("RGB Fade", AnimationType.RgbFade);
@@ -98,7 +103,7 @@ public class BlingSubsystem extends SubsystemBase {
                 case ColorFlow:
                     candle.setControl(
                         new ColorFlowAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
-                            .withColor(violet)
+                            .withColor(purple)
                     );
                     break;
                 case Rainbow:
@@ -111,9 +116,40 @@ public class BlingSubsystem extends SubsystemBase {
                         new TwinkleAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
                     );
                     break;
+                case TwinkleOff:
+                    candle.setControl(
+                        new TwinkleOffAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
+                    );
+                    break;
                 case Fire:
                     candle.setControl(
                         new FireAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
+                            .withDirection(AnimationDirectionValue.Backward)
+                            .withCooling(0.4)
+                            .withSparking(0.5)
+                    );
+                    break;
+                case Larson:
+                    candle.setControl(
+                        new LarsonAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
+                        .withColor(green)
+                    );
+                    break;
+                case RgbFade:
+                    candle.setControl(
+                        new RgbFadeAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
+                    );
+                    break;
+                case SingleFade:
+                    candle.setControl(
+                        new SingleFadeAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
+                            .withColor(green)
+                    );
+                    break;
+                case Strobe:
+                    candle.setControl(
+                        new StrobeAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
+                            .withColor(green)
                     );
                     break;
             }
