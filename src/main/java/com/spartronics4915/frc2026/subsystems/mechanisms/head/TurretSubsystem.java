@@ -73,7 +73,7 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
             cancoderConfigurator.MagnetSensor.MagnetOffset = MAGNET_OFFSET;
             encoder.getConfigurator().apply(cancoderConfigurator);
         
-        currentClamp = TurretClamp.RESTRICTED;
+        currentClamp = TurretClamp.UNRESTRICTED;
             minAngle = currentClamp.minAngle;
             maxAngle = currentClamp.maxAngle;
 
@@ -172,8 +172,8 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
     //#endregion
 
     public enum TurretClamp {
-        RESTRICTED(Rotation2d.fromDegrees(-275), Rotation2d.fromDegrees(95)),
-        UNRESTRICTED(Rotation2d.fromDegrees(-Double.MAX_VALUE), Rotation2d.fromDegrees(Double.MAX_VALUE));
+        RESTRICTED(Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
+        UNRESTRICTED(Rotation2d.fromDegrees(-255), Rotation2d.fromDegrees(45));
 
         public Rotation2d minAngle;
         public Rotation2d maxAngle;

@@ -133,7 +133,7 @@ public class AutoAimController extends SubsystemBase {
 
         boolean hasResult = lastResult != null && lastResult.ToF() != -1;
         hasValidResultPublisher.accept(hasResult);
-    requiresIdealSpeedPublisher.accept(hasResult && lastResult.requiresIdealSpeed());
+        requiresIdealSpeedPublisher.accept(hasResult && lastResult.requiresIdealSpeed());
 
         if (!hasResult) return;
 
