@@ -3,6 +3,7 @@ package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
@@ -78,9 +79,12 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
                 -maxRPS, 
                 maxRPS
             );
-
-        velocityVoltage.withEnableFOC(ENABLE_FOC).Velocity = currentSetpoint;
-        leadMotor.setControl(velocityVoltage);
+        if (currentSetpoint != 0) {
+            velocityVoltage.withEnableFOC(ENABLE_FOC).Velocity = currentSetpoint;
+            leadMotor.setControl(velocityVoltage);
+        } else {
+            leadMotor.setControl(new VoltageOut(0.0));
+        }
 
         appliedOutPublisher.accept(leadMotor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPS());
