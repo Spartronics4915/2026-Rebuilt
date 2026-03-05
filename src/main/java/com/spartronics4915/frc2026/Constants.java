@@ -336,6 +336,7 @@ public final class Constants {
             );
         }
 
+        public static final int MAX_TAG_ID = 32;
         public static final double MIN_COSINE_VALUE = 0.01;
 
     }

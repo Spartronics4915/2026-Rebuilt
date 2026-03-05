@@ -109,8 +109,8 @@ public class AutoAimController extends SubsystemBase {
         this.turretController = new TurretController(
             turret.getClamp().minAngle.getDegrees(),
             turret.getClamp().maxAngle.getDegrees(),
-            3.0,
-            0.05,
+            2.0,
+            0.005,
             Rotation2d.kCW_90deg
         );
 
@@ -188,6 +188,8 @@ public class AutoAimController extends SubsystemBase {
             boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
             if (shootOverride || (isUnrestricted && shouldShoot)) {
                 shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed()));
+            } else {
+                shooter.setSetpoint(0);
             }
         }
     }
@@ -311,20 +313,20 @@ public class AutoAimController extends SubsystemBase {
 
     /** True when the shot is solvable AND the current flywheel speed is sufficient. */
     public boolean isReadyToShoot() {
-        return hasValidResult() && !lastResult.idealShot() 
-            && (isTurretReady() && isHoodReady());
+        return hasValidResult() && !lastResult.idealShot();
+            //&& (isTurretReady() && isHoodReady());
     }
 
     public boolean isTurretReady() {
         return Math.abs(
             turret.getPosition().minus(turret.getCurrentSetpoint()).getDegrees()
-        ) >= 0.5;
+        ) <= 0.5;
     }
 
     public boolean isHoodReady() {
         return Math.abs(
             hood.getPosition().minus(hood.getCurrentSetpoint()).getDegrees()
-        ) >= 0.5;
+        ) <= 0.5;
     }
 
     //#endregion
@@ -345,11 +347,10 @@ public class AutoAimController extends SubsystemBase {
 
     /** Disables auto-aim and returns the turret and hood to their home positions. */
     public Command reset() {
-        return Commands.parallel(
-            Commands.runOnce(() -> { isAimEnabled = false; lastResult = null; }),
-            turret.setSetpointCommand(Rotation2d.fromDegrees(0)),
-            hood.setSetpointCommand(Rotation2d.fromDegrees(0))
-        );
+        return Commands.runOnce(() -> { 
+            isAimEnabled = false; 
+            lastResult = null; 
+        });
     }
 
     /** Sets a target override for the duration of the command, clearing it on end. */

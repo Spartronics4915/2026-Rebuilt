@@ -23,6 +23,7 @@ import java.util.Set;
 
 import com.spartronics4915.frc2026.commands.DriveCommand;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands;
+import com.spartronics4915.frc2026.commands.SuperstructureCommands.PipelineState;
 import com.spartronics4915.frc2026.subsystems.control.AutoAimController;
 import com.spartronics4915.frc2026.subsystems.control.Superstructure;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
@@ -112,6 +113,8 @@ public class RobotContainer {
         SmartDashboard.putData("Auto-Aim Toggle", autoAimController.aimToggle());
         SmartDashboard.putData("Auto-Shoot Toggle", autoAimController.shootingToggle());
         SmartDashboard.putData("Reset Dynamics", superstructureCommands.resetDynamics());
+        SmartDashboard.putData("Pipeline On", superstructureCommands.setPipelineState(PipelineState.ON));
+        SmartDashboard.putData("Pipeline Off", superstructureCommands.setPipelineState(PipelineState.OFF));
     }
 
     /**

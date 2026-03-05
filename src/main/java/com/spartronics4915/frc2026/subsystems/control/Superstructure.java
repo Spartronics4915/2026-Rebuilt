@@ -5,6 +5,8 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstant
 
 import static edu.wpi.first.units.Units.Meters;
 
+import java.util.Set;
+
 import com.spartronics4915.frc2026.commands.SuperstructureCommands;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands.PipelineState;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
@@ -59,7 +61,6 @@ public class Superstructure extends SubsystemBase {
         this.swerve = swerve;
         this.controller = controller;
         this.commands = commands;
-
         this.zoneMap = buildZoneMap();
         
         configureZoneTriggers();
@@ -103,11 +104,11 @@ public class Superstructure extends SubsystemBase {
 
         Zone newZone = zoneMap.evaluate(turretTranslation);
 
-        if (controller.isReadyToShoot()) {
-            CommandScheduler.getInstance().schedule(commands.setPipelineState(PipelineState.ON));
-        } else {
-            CommandScheduler.getInstance().schedule(commands.setPipelineState(PipelineState.OFF));
-        }
+        //if (controller.isReadyToShoot()) {
+        //    CommandScheduler.getInstance().schedule(commands.setPipelineState(PipelineState.ON));
+        //} else {
+        //    CommandScheduler.getInstance().schedule(commands.setPipelineState(PipelineState.OFF));
+        //}
         
         if (newZone != currentZone) {
             currentZone = newZone;
@@ -141,6 +142,6 @@ public class Superstructure extends SubsystemBase {
                 case OPPONENT_ZONE: return commands.cruise();
                 default: return commands.idle();
             }
-        }, java.util.Set.of()).withName("Restore Zone State");
+        }, Set.of()).withName("Restore Zone State");
     }
 }

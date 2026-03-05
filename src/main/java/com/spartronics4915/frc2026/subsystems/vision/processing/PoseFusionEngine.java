@@ -354,7 +354,6 @@ public class PoseFusionEngine {
                 best = r;
             }
         }
-
         return Optional.ofNullable(best);
     }
 }

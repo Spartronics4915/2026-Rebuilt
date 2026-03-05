@@ -66,7 +66,7 @@ public class PhotonProcessor implements ProcessorInterface {
 
     private volatile boolean isRunning;
 
-    private Supplier<ChassisSpeeds> robotVelocitySupplier;
+    private volatile Supplier<ChassisSpeeds> robotVelocitySupplier;
 
     /**
      * Constructs a photon processor with a set of parameters

@@ -96,7 +96,11 @@ public class SuperstructureCommands {
     }
 
     public Command resetDynamics() {
-        return aimController.reset();
+        return Commands.parallel(
+            aimController.reset(),
+            turret.setSetpointCommand(Rotation2d.fromDegrees(0)),
+            hood.setSetpointCommand(Rotation2d.fromDegrees(0))
+        );
     }
 
     public Command togglePipelineState() {

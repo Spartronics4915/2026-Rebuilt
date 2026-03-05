@@ -67,8 +67,7 @@ public class VisionSubsystem extends SubsystemBase {
     private final List<ResultInterface> combinedResults = new ArrayList<>(16);
     private final List<ApriltagResult> combinedApriltagResults = new ArrayList<>(16);
 
-    // True if the most recent periodic loop produced a valid pose
-    private boolean hasValidPose;
+    private volatile boolean hasValidPose;
 
     // Cached NetworkTable reference to avoid repeated map lookups each loop
     private static final NetworkTable visionTable = NetworkTableInstance.getDefault().getTable("vision");

@@ -175,8 +175,12 @@ public class StdDevCalculator {
         return Math.min(factor, 2.0);
     }
 
+    /**
+     * Scales std devs down as more tags become visible
+     */
     private static double calculateTagCountFactor(double smoothedTagCount) {
-        return (1.0 / Math.log(smoothedTagCount + 0.5)) * 1.4;
+        double clamped = Math.max(smoothedTagCount, 1.0);
+        return (1.0 / Math.log(clamped + 1.0)) * 1.4;
     }
     
 }

@@ -36,7 +36,7 @@ public class VisionConfiguration {
             0.05,
             2,   
             3.0,
-            1
+            100
         );
     }
 
