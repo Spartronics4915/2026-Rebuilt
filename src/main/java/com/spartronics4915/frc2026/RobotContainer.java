@@ -364,9 +364,7 @@ public class RobotContainer {
         );
 
         debugController.back().onTrue(
-            Commands.runOnce(() -> {
-                superstructureCommands.resetDynamics();
-            })
+            superstructureCommands.resetDynamics()
         );
 
         debugController.start().onTrue(
