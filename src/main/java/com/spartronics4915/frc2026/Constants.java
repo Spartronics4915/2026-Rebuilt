@@ -11,6 +11,7 @@ import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.InchesPerSecond;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Meter;
+import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Millimeters;
 import static edu.wpi.first.units.Units.Pounds;
@@ -374,6 +375,9 @@ public final class Constants {
         public static final double HUB_HEIGHT = Units.inchesToMeters(72);
         public static final Translation3d HUB_POSITION = new Translation3d(hubPose.getX(), hubPose.getY(), HUB_HEIGHT);
         public static final double MAX_SHOOTER_RPS = 100;
+
+        public static final Distance HUB_SHOT_PADDING = Meters.of(0.5);
+        public static final Distance HUB_IDEAL_SHOT_PADDING = Meters.of(1);
 
         public static final double alliancePassOffset = 3.14;
 

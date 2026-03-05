@@ -24,8 +24,8 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.InchesPerSecond;
+import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 
 import edu.wpi.first.wpilibj.Timer;
@@ -238,7 +238,7 @@ public class AutoAimController extends SubsystemBase {
         // Check if z is less than hub height. 
         // If it is lower than the rim height when crossing the rim boundary,
         // it hits the side of the hub.
-        return zAtCollision < HUB_POSITION.getZ() + (usePadding ? Units.inchesToMeters(2.0) : 0.0);
+        return zAtCollision < HUB_POSITION.getZ() + (usePadding ? HUB_IDEAL_SHOT_PADDING.in(Meters) : HUB_SHOT_PADDING.in(Meters));
     }
 
     /**
@@ -262,7 +262,7 @@ public class AutoAimController extends SubsystemBase {
             TURRET_TRANSLATION.rotateBy(swerve.getRobotPose().getRotation()),
             swerve.getFieldVelocity(),
             yaw,
-            Inches.of(21.443748 + 2.955),
+            Meters.of(TURRET_TRANSLATION_3D.getZ()),
             MetersPerSecond.of(RPSToMPS(shooter.getCurrentSetpoint())),
             Degrees.of(result.pitch().getDegrees())
         );
