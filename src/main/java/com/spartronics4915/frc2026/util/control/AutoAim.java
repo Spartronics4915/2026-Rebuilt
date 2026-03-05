@@ -42,11 +42,18 @@ public class AutoAim {
     }
 
     /**
-     * Output of auto-aim calculation, containing the yaw and pitch angles to aim at, as well as the time of flight for a projectile to
-     * reach the target. Contains a recommended shot speed for the projectile for more consistent shots given current conditions.
-     * The IdealShot flag being true indicates that the shot is impossible given current flywheel speeds, but yaw and pitch for the ideal flywheel speed is returned.
+     * Output of the auto-aim calculation.
+     *
+     * <ul>
+     *   <li>{@code yaw} — the horizontal angle to aim at ({@link Rotation2d}).</li>
+     *   <li>{@code pitch} — the vertical angle to aim at ({@link Rotation2d}); may be {@code null} when unsolvable.</li>
+     *   <li>{@code ToF} — time of flight in seconds, or {@code -1} when the solver signals the shot cannot land.</li>
+     *   <li>{@code recommendedShotSpeed} — a recommended projectile speed in meters per second, or {@code -1} when not applicable.</li>
+     *   <li>{@code requiresIdealSpeed} — {@code true} when the shot is impossible at the provided flywheel speed (i.e. the returned
+     *       {@code yaw}/{@code pitch} require a higher/ideal speed); {@code false} when the shot is achievable with the supplied speed.</li>
+     * </ul>
      */
-    public record AutoAimResult(Rotation2d yaw, Rotation2d pitch, double ToF, double recommendedShotSpeed, boolean idealShot) {}
+    public record AutoAimResult(Rotation2d yaw, Rotation2d pitch, double ToF, double recommendedShotSpeed, boolean requiresIdealSpeed) {}
 
     /**
      * Sets the collision map for the auto-aim system. Supplier should return true if the shot collides with an obstacle, and false if the shot does not.

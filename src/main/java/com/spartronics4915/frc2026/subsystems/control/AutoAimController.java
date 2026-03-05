@@ -85,9 +85,9 @@ public class AutoAimController extends SubsystemBase {
     private final BooleanPublisher hasValidResultPublisher =
         NetworkTableInstance.getDefault()
             .getBooleanTopic("superstructure/AutoAim/HasValidResult").publish();
-    private final BooleanPublisher isIdealShotPublisher =
+    private final BooleanPublisher requiresIdealSpeedPublisher =
         NetworkTableInstance.getDefault()
-            .getBooleanTopic("superstructure/AutoAim/IdealShotOnly").publish();
+            .getBooleanTopic("superstructure/AutoAim/RequiresIdealSpeed").publish();
     private final StructArrayPublisher<Pose3d> successPublisher =
         NetworkTableInstance.getDefault()
             .getStructArrayTopic("Flywheel/FuelProjectileSuccessfulShot", Pose3d.struct).publish();
@@ -125,7 +125,7 @@ public class AutoAimController extends SubsystemBase {
         if (!isAimEnabled) {
             lastResult = null;
             hasValidResultPublisher.accept(false);
-            isIdealShotPublisher.accept(false);
+            requiresIdealSpeedPublisher.accept(false);
             return;
         }
 
@@ -133,7 +133,7 @@ public class AutoAimController extends SubsystemBase {
 
         boolean hasResult = lastResult != null && lastResult.ToF() != -1;
         hasValidResultPublisher.accept(hasResult);
-        isIdealShotPublisher.accept(hasResult && lastResult.idealShot());
+    requiresIdealSpeedPublisher.accept(hasResult && lastResult.requiresIdealSpeed());
 
         if (!hasResult) return;
 
@@ -313,8 +313,8 @@ public class AutoAimController extends SubsystemBase {
 
     /** True when the shot is solvable AND the current flywheel speed is sufficient. */
     public boolean isReadyToShoot() {
-        return hasValidResult() && !lastResult.idealShot();
-            //&& (isTurretReady() && isHoodReady());
+        return hasValidResult() && !lastResult.requiresIdealSpeed();
+            // && (isTurretReady() && isHoodReady());
     }
 
     public boolean isTurretReady() {
