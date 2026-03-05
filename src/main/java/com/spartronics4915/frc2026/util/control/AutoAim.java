@@ -230,7 +230,7 @@ public class AutoAim {
         // Select the best solution (usually lowest angle)
         Rotation2d selectedPitch = validSolutions.get(0);
         for (Rotation2d pitch : validSolutions) {
-            if (Math.abs(pitch.getRadians()) < Math.abs(selectedPitch.getRadians())) {
+            if (Math.abs(pitch.getRadians()) > Math.abs(selectedPitch.getRadians())) {
                 selectedPitch = pitch;
             }
         }

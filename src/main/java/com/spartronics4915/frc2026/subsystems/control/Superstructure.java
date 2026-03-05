@@ -104,11 +104,11 @@ public class Superstructure extends SubsystemBase {
 
         Zone newZone = zoneMap.evaluate(turretTranslation);
 
-        if (controller.isReadyToShoot()) {
-            CommandScheduler.getInstance().schedule(commands.setPipelineState(PipelineState.ON));
-        } else {
-            CommandScheduler.getInstance().schedule(commands.setPipelineState(PipelineState.OFF));
-        }
+        // if (controller.isReadyToShoot()) {
+        //     CommandScheduler.getInstance().schedule(commands.setPipelineState(PipelineState.ON));
+        // } else {
+        //     CommandScheduler.getInstance().schedule(commands.setPipelineState(PipelineState.OFF));
+        // }
         
         if (newZone != currentZone) {
             currentZone = newZone;
