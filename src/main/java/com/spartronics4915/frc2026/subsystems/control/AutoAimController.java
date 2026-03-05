@@ -194,7 +194,7 @@ public class AutoAimController extends SubsystemBase {
         }
     }
 
-    private boolean collidesWithHub(Rotation2d pitch, double shotSpeed) {
+    private boolean collidesWithHub(Rotation2d pitch, double shotSpeed, boolean usePadding) {
         Translation2d robotPos2d = swerve.getRelativePose().getTranslation()
             .plus(TURRET_TRANSLATION.rotateBy(swerve.getRelativePose().getRotation()));
 
@@ -238,7 +238,7 @@ public class AutoAimController extends SubsystemBase {
         // Check if z is less than hub height. 
         // If it is lower than the rim height when crossing the rim boundary,
         // it hits the side of the hub.
-        return zAtCollision < HUB_POSITION.getZ();
+        return zAtCollision < HUB_POSITION.getZ() + (usePadding ? Units.inchesToMeters(2.0) : 0.0);
     }
 
     /**

@@ -1,7 +1,6 @@
 package com.spartronics4915.frc2026.util.control;
 
 import java.util.ArrayList;
-import java.util.function.BiPredicate;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -17,7 +16,11 @@ public class AutoAim {
     private final Rotation2d minAngle;
     private final Rotation2d maxAngle;
     private final double maxSpeed;
-    private BiPredicate<Rotation2d, Double> collisionMap;
+    // BiPredicate parameters:
+    //  - Rotation2d: ground-relative pitch of the projectile
+    //  - Double: ground-relative projectile speed (m/s)
+    //  - Boolean: true when an "extra padding" margin should be applied (e.g. ideal-velocity calc)
+    private TriPredicate<Rotation2d, Double, Boolean> collisionMap;
 
     private final double g = 9.81;
 
@@ -56,11 +59,21 @@ public class AutoAim {
     public record AutoAimResult(Rotation2d yaw, Rotation2d pitch, double ToF, double recommendedShotSpeed, boolean requiresIdealSpeed) {}
 
     /**
+     * Simple three-argument functional interface used so the collision map can receive
+     * an additional boolean flag indicating whether extra padding/margin should be
+     * applied (for example, when testing candidate shots for ideal velocity).
+     */
+    @FunctionalInterface
+    public interface TriPredicate<T, U, V> {
+        boolean test(T t, U u, V v);
+    }
+
+    /**
      * Sets the collision map for the auto-aim system. Supplier should return true if the shot collides with an obstacle, and false if the shot does not.
      * 
-     * @param collisionMap A BiPredicate that provides the collision map, or null for no collision map.
+     * @param collisionMap A predicate that provides the collision map, or null for no collision map.
      */
-    public void setCollisionMap(BiPredicate<Rotation2d, Double> collisionMap) {
+    public void setCollisionMap(TriPredicate<Rotation2d, Double, Boolean> collisionMap) {
         this.collisionMap = collisionMap;
     }
 
@@ -171,7 +184,7 @@ public class AutoAim {
             }
             
             // Check collision map if it exists and if it collides
-            if (collisionMap != null && collisionCheck(pitch, yaw, projectileSpeed, robotSpeeds)) {
+            if (collisionMap != null && collisionCheck(pitch, yaw, projectileSpeed, robotSpeeds, false)) {
                 continue;
             }
 
@@ -197,7 +210,8 @@ public class AutoAim {
             double v = Math.sqrt(vSquared);
 
             if (v > maxSpeed) continue;
-            if (collisionCheck(angle, yaw, v, robotSpeeds)) continue;
+            // When searching for an ideal velocity, use padding in the collision map.
+            if (collisionMap != null && collisionCheck(angle, yaw, v, robotSpeeds, true)) continue;
 
             recommendedSpeed = v;
             recommendedPitch = angle;
@@ -256,7 +270,7 @@ public class AutoAim {
         return value * value;
     }
 
-    private boolean collisionCheck(Rotation2d pitch, Rotation2d yaw, double projectileSpeed, ChassisSpeeds robotSpeeds) {
+    private boolean collisionCheck(Rotation2d pitch, Rotation2d yaw, double projectileSpeed, ChassisSpeeds robotSpeeds, boolean usePadding) {
         double v_launch_xy = projectileSpeed * pitch.getCos();
         double v_launch_z = projectileSpeed * pitch.getSin();
         
@@ -270,6 +284,6 @@ public class AutoAim {
         double ground_pitch = Math.atan2(v_ground_z, Math.hypot(v_ground_x, v_ground_y));
         double ground_speed = Math.sqrt(squared(v_ground_x) + squared(v_ground_y) + squared(v_ground_z));
 
-        return collisionMap.test(new Rotation2d(ground_pitch), ground_speed);
+        return collisionMap.test(new Rotation2d(ground_pitch), ground_speed, usePadding);
     }
 }
