@@ -169,11 +169,18 @@ public class SuperstructureCommands {
     }
 
     /** Specifically for the Trench zone to ensure the hood is clamped */
-    public Command trenchTraversal() {
+    public Command trench() {
         return Commands.sequence(
-            hood.setClampCommand(HoodClamp.RESTRICTED),
-            hood.setSetpointCommand(Rotation2d.fromDegrees(0)),
-            traversal()
+            Commands.parallel(
+                hood.setClampCommand(HoodClamp.RESTRICTED),
+                shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
+                conditionalPivotReady(),
+                climber.setStateCommand(ClimberState.DOWN)),
+            Commands.waitUntil(this::isPivotSafe),
+            Commands.parallel(
+                turret.setClampCommand(TurretClamp.UNRESTRICTED),
+                conditionalIntakeOn()
+            )
         );
     }
 
@@ -181,8 +188,7 @@ public class SuperstructureCommands {
         return Commands.sequence(
             Commands.parallel(
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
-                shooter.setClampCommand(ShooterClamp.RESTRICTED),
-                pivot.setStateCommand(PivotSubsystem.PivotState.SAFE),
+                shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
                 climber.setStateCommand(ClimberState.DOWN)),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(

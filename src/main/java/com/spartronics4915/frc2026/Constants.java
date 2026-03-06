@@ -357,7 +357,7 @@ public final class Constants {
         public static final Distance bumpLength = Inches.of(48.93);
         public static final Distance trenchLength = Inches.of(30);
 
-        public static final double percentLoss = 0.04; // Percent loss on shooter to ball transfer
+        public static final double percentLoss = 0.053; // Percent loss on shooter to ball transfer
     }
 
     //#endregion
@@ -376,8 +376,8 @@ public final class Constants {
         public static final Translation3d HUB_POSITION = new Translation3d(hubPose.getX(), hubPose.getY(), HUB_HEIGHT);
         public static final double MAX_SHOOTER_RPS = 100;
 
-        public static final Distance HUB_SHOT_PADDING = Meters.of(0.5);
-        public static final Distance HUB_IDEAL_SHOT_PADDING = Meters.of(1);
+        public static final Distance HUB_SHOT_PADDING = Meters.of(0.1);
+        public static final Distance HUB_IDEAL_SHOT_PADDING = Meters.of(0.5);
 
         public static final double alliancePassOffset = 3.14;
 
@@ -397,7 +397,7 @@ public final class Constants {
         public static final int FOLLOWER_MOTOR_ID = 23;
 
         public static final double P = 0.6;
-        public static final double I = 0;
+        public static final double I = 0.0;
         public static final double D = 0.002;
         public static final double V = 0.123;
 
@@ -482,8 +482,8 @@ public final class Constants {
         public static final double I = 0.0;
         public static final double D = 0.2;
 
-        public static final double MAX_VELOCITY = 5;
-        public static final double MAX_ACCELERATION = 5;
+        public static final double MAX_VELOCITY = 7;
+        public static final double MAX_ACCELERATION = 7;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
@@ -568,7 +568,7 @@ public final class Constants {
         
         public static final int MOTOR_ID = 17;
 
-        public static final double P = 0.3;
+        public static final double P = 0.5;
         public static final double I = 0;
         public static final double D = 0.0003;
         public static final double V = 0.462;

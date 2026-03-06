@@ -109,8 +109,8 @@ public class AutoAimController extends SubsystemBase {
         this.turretController = new TurretController(
             turret.getClamp().minAngle.getDegrees(),
             turret.getClamp().maxAngle.getDegrees(),
-            2.0,
-            0.005,
+            3.0,
+            0.0,
             Rotation2d.kCW_90deg
         );
 
@@ -313,20 +313,20 @@ public class AutoAimController extends SubsystemBase {
 
     /** True when the shot is solvable AND the current flywheel speed is sufficient. */
     public boolean isReadyToShoot() {
-        return hasValidResult() && !lastResult.requiresIdealSpeed();
-            // && (isTurretReady() && isHoodReady());
+        return hasValidResult() && !lastResult.requiresIdealSpeed()
+            && (isTurretReady() /*&& isHoodReady()*/);
     }
 
     public boolean isTurretReady() {
         return Math.abs(
             turret.getPosition().minus(turret.getCurrentSetpoint()).getDegrees()
-        ) <= 0.5;
+        ) <= 1;
     }
 
     public boolean isHoodReady() {
         return Math.abs(
             hood.getPosition().minus(hood.getCurrentSetpoint()).getDegrees()
-        ) <= 0.5;
+        ) <= 4;
     }
 
     //#endregion
