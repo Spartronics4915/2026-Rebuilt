@@ -156,7 +156,7 @@ public class SuperstructureCommands {
     public Command traversal() {
         return Commands.sequence(
             Commands.parallel(
-                shooter.setClampCommand(ShooterClamp.RESTRICTED),
+                shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
                 conditionalPivotReady(),
                 climber.setStateCommand(ClimberState.DOWN)),
             Commands.waitUntil(this::isPivotSafe),
