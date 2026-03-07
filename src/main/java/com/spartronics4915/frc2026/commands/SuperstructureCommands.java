@@ -2,6 +2,7 @@ package com.spartronics4915.frc2026.commands;
 
 import static com.spartronics4915.frc2026.Constants.SuperstructureConstants.*;
 
+import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.subsystems.control.AutoAimController;
 import com.spartronics4915.frc2026.subsystems.mechanisms.*;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem.ClimberState;
@@ -312,7 +313,7 @@ public class SuperstructureCommands {
     }
 
     private boolean isPivotSafe() {
-        return pivot.getPosition().getDegrees() <= PIVOT_SAFE_THRESHOLD.getDegrees();
+        return (Robot.isReal() ? pivot.getPosition() : pivot.getSetpoint()).getDegrees() <= PIVOT_SAFE_THRESHOLD.getDegrees();
     }
 
     private boolean isTurretSafe() {

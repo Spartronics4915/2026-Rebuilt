@@ -111,6 +111,10 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
         currentSetpoint = setpoint;
     }
 
+    public Rotation2d getSetpoint() {
+        return currentSetpoint;
+    }
+
     public void setState(PivotState state){
         currentSetpoint = state.angle;
     }
