@@ -183,16 +183,12 @@ public class AutoAimController extends SubsystemBase {
             );
         }
 
-        // TODO: Make this better
+        boolean hasValidSpeed = result.recommendedShotSpeed() != -1;
+        boolean shouldShoot = isShootingEnabled && shouldAutoShoot(result);
+        boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
 
-        if (result.recommendedShotSpeed() != -1) {
-            boolean shouldShoot = isShootingEnabled && shouldAutoShoot(result);
-            boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
-            if (shootOverride || (isUnrestricted && shouldShoot)) {
-                shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed()));
-            } else {
-                shooter.setSetpoint(0);
-            }
+        if (hasValidSpeed && (shootOverride || (isUnrestricted && shouldShoot))) {
+            shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed()));
         } else {
             shooter.setSetpoint(0);
         }
