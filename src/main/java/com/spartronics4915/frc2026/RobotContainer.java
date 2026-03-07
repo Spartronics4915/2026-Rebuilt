@@ -208,25 +208,25 @@ public class RobotContainer {
 
         operatorController.povUp().whileTrue(
             Commands.run(() -> {
-                hoodSubsystem.setSetpoint(hoodSubsystem.getCurrentSetpoint().plus(Rotation2d.fromDegrees(0.02)));
+                hoodSubsystem.setSetpoint(hoodSubsystem.getCurrentSetpoint().plus(Rotation2d.fromDegrees(0.2)));
             })
         );
 
         operatorController.povLeft().whileTrue(
             Commands.run(() -> {
-                turretSubsystem.setSetpoint(turretSubsystem.getCurrentSetpoint().plus(Rotation2d.fromDegrees(0.5)));
+                turretSubsystem.setSetpoint(turretSubsystem.getCurrentSetpoint().plus(Rotation2d.fromDegrees(5)));
             })
         );
 
         operatorController.povRight().whileTrue(
             Commands.run(() -> {
-                turretSubsystem.setSetpoint(turretSubsystem.getCurrentSetpoint().minus(Rotation2d.fromDegrees(0.5)));
+                turretSubsystem.setSetpoint(turretSubsystem.getCurrentSetpoint().minus(Rotation2d.fromDegrees(5)));
             })
         );
 
         operatorController.povDown().whileTrue(
             Commands.run(() -> {
-                hoodSubsystem.setSetpoint(hoodSubsystem.getCurrentSetpoint().minus(Rotation2d.fromDegrees(0.02)));
+                hoodSubsystem.setSetpoint(hoodSubsystem.getCurrentSetpoint().minus(Rotation2d.fromDegrees(0.2)));
             })
         );
 
