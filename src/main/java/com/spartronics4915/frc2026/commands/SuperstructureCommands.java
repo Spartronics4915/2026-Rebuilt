@@ -50,8 +50,6 @@ public class SuperstructureCommands {
 
     private PipelineState currentPipelineState;
 
-    // TODO: Make it so it constantly auto-aims not auto-shoot yet
-
     public SuperstructureCommands(
         HoodSubsystem hood, 
         TurretSubsystem turret, 
@@ -85,7 +83,7 @@ public class SuperstructureCommands {
             );
         }
         return Commands.sequence(
-            Commands.waitUntil(() -> isShooterReady()),
+            Commands.waitUntil(this::isShooterReady),
             Commands.parallel(
                 indexer.setStateCommand(state.indexerState),
                 feeder.setStateCommand(state.feederState)
@@ -114,20 +112,16 @@ public class SuperstructureCommands {
     }
 
     public Command intakeOn() {
-        return Commands.sequence(
-            Commands.parallel(
-                pivot.setStateCommand(PivotState.READY),
-                intake.setStateCommand(IntakeState.INTAKE)
-            )
+        return Commands.parallel(
+            pivot.setStateCommand(PivotState.READY),
+            intake.setStateCommand(IntakeState.INTAKE)
         );
     }
 
     public Command intakeOff() {
-        return Commands.sequence(
-            Commands.parallel(
-                pivot.setStateCommand(PivotState.SAFE),
-                intake.setStateCommand(IntakeState.OFF)
-            )
+        return Commands.parallel(
+            pivot.setStateCommand(PivotState.SAFE),
+            intake.setStateCommand(IntakeState.OFF)
         );
     }
 
@@ -152,23 +146,37 @@ public class SuperstructureCommands {
         );
     }
 
-    private Command conditionalAutoShootAimOn() {
+    /** Turns auto-aim ON only during autonomous; no-ops in teleop. Aim is always on in auto. */
+    private Command conditionalAutoAimOn() {
         return Commands.either(
-            Commands.parallel(
-                aimController.setAimState(true),
-                aimController.setShootingState(true)
-            ),
+            aimController.setAimState(true),
             Commands.none(),
             DriverStation::isAutonomous
         );
     }
 
-    private Command conditionalAutoShootAimOff() {
+    /** Turns auto-aim OFF only during autonomous; no-ops in teleop. Aim is always on in auto. */
+    private Command conditionalAutoAimOff() {
         return Commands.either(
-            Commands.parallel(
-                aimController.setAimState(false),
-                aimController.setShootingState(false)
-            ),
+            aimController.setAimState(false),
+            Commands.none(),
+            DriverStation::isAutonomous
+        );
+    }
+
+    /** Turns auto-shoot ON only during autonomous; no-ops in teleop. */
+    private Command conditionalAutoShootOn() {
+        return Commands.either(
+            aimController.setShootingState(true),
+            Commands.none(),
+            DriverStation::isAutonomous
+        );
+    }
+
+    /** Turns auto-shoot OFF only during autonomous; no-ops in teleop. Aim remains ON. */
+    private Command conditionalAutoShootOff() {
+        return Commands.either(
+            aimController.setShootingState(false),
             Commands.none(),
             DriverStation::isAutonomous
         );
@@ -182,7 +190,8 @@ public class SuperstructureCommands {
     public Command traversal() {
         return Commands.sequence(
             Commands.parallel(
-                conditionalAutoShootAimOff(),
+                conditionalAutoAimOn(),
+                conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
                 conditionalPivotReady(),
@@ -199,7 +208,8 @@ public class SuperstructureCommands {
     public Command trench() {
         return Commands.sequence(
             Commands.parallel(
-                conditionalAutoShootAimOff(),
+                conditionalAutoAimOn(),
+                conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.RESTRICTED),
                 shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
                 conditionalPivotReady(),
@@ -215,7 +225,8 @@ public class SuperstructureCommands {
     public Command cruise() {
         return Commands.sequence(
             Commands.parallel(
-                conditionalAutoShootAimOff(),
+                conditionalAutoAimOn(),
+                conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
                 climber.setStateCommand(ClimberState.DOWN)),
@@ -237,7 +248,8 @@ public class SuperstructureCommands {
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
                 turret.setClampCommand(TurretClamp.UNRESTRICTED),
-                conditionalAutoShootAimOn(),
+                conditionalAutoAimOn(),
+                conditionalAutoShootOn(),
                 conditionalIntakeOn()
             )
         );
@@ -251,7 +263,8 @@ public class SuperstructureCommands {
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 turret.setClampCommand(TurretClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
-                conditionalAutoShootAimOn(),
+                conditionalAutoAimOn(),
+                conditionalAutoShootOn(),
                 intake.setStateCommand(IntakeSubsystem.IntakeState.OFF)
             )
         );
@@ -260,7 +273,8 @@ public class SuperstructureCommands {
     public Command idle() {
         return Commands.sequence(
             Commands.parallel(
-                conditionalAutoShootAimOff(),
+                conditionalAutoAimOn(),
+                conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.RESTRICTED),
                 pivot.setStateCommand(PivotSubsystem.PivotState.READY),
@@ -275,7 +289,8 @@ public class SuperstructureCommands {
 
     public Command stowed() {
         return Commands.sequence(
-            conditionalAutoShootAimOff(),
+            conditionalAutoAimOff(),
+            conditionalAutoShootOff(),
             turret.setClampCommand(TurretClamp.RESTRICTED),
             Commands.waitUntil(this::isTurretSafe),
             pivot.setStateCommand(PivotSubsystem.PivotState.STOW),
@@ -290,8 +305,6 @@ public class SuperstructureCommands {
 
     //#endregion
     //#region Guards
-
-    // --- Guard Conditions ---
 
     public boolean isShooterReady() {
         return shooter.getCurrentRPS() >= shooter.getCurrentSetpoint() 
