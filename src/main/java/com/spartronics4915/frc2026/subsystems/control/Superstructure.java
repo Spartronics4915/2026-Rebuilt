@@ -50,6 +50,7 @@ public class Superstructure extends SubsystemBase {
     // Rate-limit for pipeline state switching: allow an immediate change, then
     // prevent any further changes for this many seconds after a change occurs.
     private static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
+    private static final double INTAKE_JOSTLE_FREQUENCY = 1.0; // Hz
     private boolean debouncedPipelineOn = false;
     private double lastPipelineChangeTime = Double.NEGATIVE_INFINITY;
 
@@ -67,6 +68,16 @@ public class Superstructure extends SubsystemBase {
         this.lastPipelineChangeTime = Double.NEGATIVE_INFINITY;
 
         configureZoneTriggers();
+
+        new Trigger(() -> debouncedPipelineOn)
+            .onTrue(Commands.sequence(
+                commands.conditionalPivotSafe(),
+                Commands.waitSeconds(1 / INTAKE_JOSTLE_FREQUENCY),
+                commands.conditionalPivotReady(),
+                Commands.waitSeconds(1 / INTAKE_JOSTLE_FREQUENCY)
+
+            ))
+            .onFalse(commands.conditionalPivotReady());
     }
 
     private boolean inTrenchColumn(Translation2d pos) {

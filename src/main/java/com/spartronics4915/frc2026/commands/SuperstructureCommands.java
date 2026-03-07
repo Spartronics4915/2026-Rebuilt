@@ -130,9 +130,17 @@ public class SuperstructureCommands {
     //#region Conditionals
 
     /** Moves the pivot to READY only during autonomous; no-ops in teleop. */
-    private Command conditionalPivotReady() {
+    public Command conditionalPivotReady() {
         return Commands.either(
             pivot.setStateCommand(PivotSubsystem.PivotState.READY),
+            Commands.none(),
+            DriverStation::isAutonomous
+        );
+    }
+
+    public Command conditionalPivotSafe() {
+        return Commands.either(
+            pivot.setStateCommand(PivotSubsystem.PivotState.SAFE),
             Commands.none(),
             DriverStation::isAutonomous
         );
@@ -185,8 +193,6 @@ public class SuperstructureCommands {
 
     //#endregion
     //#region State Commands
-
-    // TODO: Add intake jossel
 
     public Command traversal() {
         return Commands.sequence(
