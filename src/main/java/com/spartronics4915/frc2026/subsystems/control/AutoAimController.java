@@ -250,34 +250,34 @@ public class AutoAimController extends SubsystemBase {
         if (result.ToF() == -1) return;
         if ((Timer.getFPGATimestamp() - lastSimShotTime) < SIM_SHOT_INTERVAL_SECONDS) return;
 
-        lastSimShotTime = Timer.getFPGATimestamp();
+        // lastSimShotTime = Timer.getFPGATimestamp();
 
-        Rotation2d yaw = result.yaw();
-        if (swerve.shouldFlip()) {
-            yaw = FieldMirroringUtils.toCurrentAllianceRotation(yaw);
-        }
+        // Rotation2d yaw = result.yaw();
+        // if (swerve.shouldFlip()) {
+        //     yaw = FieldMirroringUtils.toCurrentAllianceRotation(yaw);
+        // }
 
-        RebuiltFuelOnFly projectile = new RebuiltFuelOnFly(
-            swerve.getRobotPose().getTranslation(),
-            TURRET_TRANSLATION.rotateBy(swerve.getRobotPose().getRotation()),
-            swerve.getFieldVelocity(),
-            yaw,
-            Meters.of(TURRET_TRANSLATION_3D.getZ()),
-            MetersPerSecond.of(RPSToMPS(shooter.getCurrentSetpoint())),
-            Degrees.of(result.pitch().getDegrees())
-        );
+        // RebuiltFuelOnFly projectile = new RebuiltFuelOnFly(
+        //     swerve.getRobotPose().getTranslation(),
+        //     TURRET_TRANSLATION.rotateBy(swerve.getRobotPose().getRotation()),
+        //     swerve.getFieldVelocity(),
+        //     yaw,
+        //     Meters.of(TURRET_TRANSLATION_3D.getZ()),
+        //     MetersPerSecond.of(RPSToMPS(shooter.getCurrentSetpoint())),
+        //     Degrees.of(result.pitch().getDegrees())
+        // );
 
-        projectile
-            .withTargetPosition(() -> FieldMirroringUtils.toCurrentAllianceTranslation(getDefaultTarget()))
-            .withTargetTolerance(new Translation3d(0.67, 0.67, 0.3));
+        // projectile
+        //     .withTargetPosition(() -> FieldMirroringUtils.toCurrentAllianceTranslation(getDefaultTarget()))
+        //     .withTargetTolerance(new Translation3d(0.67, 0.67, 0.3));
 
-        projectile.withProjectileTrajectoryDisplayCallBack(
-            poses -> { successPublisher.set(poses.toArray(Pose3d[]::new)); failPublisher.set(new Pose3d[0]); },
-            poses -> { failPublisher.set(poses.toArray(Pose3d[]::new)); successPublisher.set(new Pose3d[0]); }
-        );
-        projectile.disableBecomesGamePieceOnFieldAfterTouchGround();
+        // projectile.withProjectileTrajectoryDisplayCallBack(
+        //     poses -> { successPublisher.set(poses.toArray(Pose3d[]::new)); failPublisher.set(new Pose3d[0]); },
+        //     poses -> { failPublisher.set(poses.toArray(Pose3d[]::new)); successPublisher.set(new Pose3d[0]); }
+        // );
+        // projectile.disableBecomesGamePieceOnFieldAfterTouchGround();
 
-        SimulatedArena.getInstance().addGamePieceProjectile(projectile);
+        // SimulatedArena.getInstance().addGamePieceProjectile(projectile);
     }
 
     //#endregion
