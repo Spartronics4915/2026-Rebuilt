@@ -15,6 +15,7 @@ import com.spartronics4915.frc2026.util.control.FieldZoneMap;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -46,11 +47,11 @@ public class Superstructure extends SubsystemBase {
     private final StringPublisher zonePublisher = 
         NetworkTableInstance.getDefault().getStringTopic("superstructure/Current Zone").publish();
 
-    // Debounce for pipeline state switching: require the controller's "ready to shoot"
-    // signal to be stable for this many seconds before actually scheduling the change.
-    private static final double PIPELINE_DEBOUNCE_SEC = 0.2;
+    // Rate-limit for pipeline state switching: allow an immediate change, then
+    // prevent any further changes for this many seconds after a change occurs.
+    private static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
     private boolean debouncedPipelineOn = false;
-    private final Trigger pipelineTrigger;
+    private double lastPipelineChangeTime = Double.NEGATIVE_INFINITY;
 
     public Superstructure(
         SwerveSubsystem swerve, 
@@ -61,9 +62,9 @@ public class Superstructure extends SubsystemBase {
         this.controller = controller;
         this.commands = commands;
         this.zoneMap = buildZoneMap();
-        // Create a debounced Trigger from the controller's ready-to-shoot signal.
-        this.pipelineTrigger = new Trigger(this.controller::isReadyToShoot).debounce(PIPELINE_DEBOUNCE_SEC);
-        this.debouncedPipelineOn = this.pipelineTrigger.getAsBoolean();
+        // Seed the applied pipeline state from the controller's current value.
+        this.debouncedPipelineOn = this.controller.isReadyToShoot();
+        this.lastPipelineChangeTime = Double.NEGATIVE_INFINITY;
 
         configureZoneTriggers();
     }
@@ -108,13 +109,19 @@ public class Superstructure extends SubsystemBase {
 
         Zone newZone = zoneMap.evaluate(turretTranslation);
 
-        // Use a debounced Trigger and read its current debounced boolean value.
-        boolean debounced = pipelineTrigger.getAsBoolean();
-        if (debounced != debouncedPipelineOn) {
-            debouncedPipelineOn = debounced;
-            CommandScheduler.getInstance().schedule(
-                commands.setPipelineState(debouncedPipelineOn ? PipelineState.ON : PipelineState.OFF)
-            );
+        // Rate-limit: allow an immediate change, then block further changes for
+        // PIPELINE_RATE_LIMIT_SEC seconds after a change.
+        boolean wantOn = controller.isReadyToShoot();
+        double now = Timer.getFPGATimestamp();
+        if (wantOn != debouncedPipelineOn) {
+            if (now - lastPipelineChangeTime >= PIPELINE_RATE_LIMIT_SEC) {
+                debouncedPipelineOn = wantOn;
+                lastPipelineChangeTime = now;
+                CommandScheduler.getInstance().schedule(
+                    commands.setPipelineState(debouncedPipelineOn ? PipelineState.ON : PipelineState.OFF)
+                );
+            }
+            // else: change requested but we're still rate-limited, so ignore it
         }
         
         if (newZone != currentZone) {
