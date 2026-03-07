@@ -188,9 +188,9 @@ public class AutoAimController extends SubsystemBase {
             boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
             if (shootOverride || (isUnrestricted && shouldShoot)) {
                 shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed()));
-            } else {
-                shooter.setSetpoint(0);
             }
+        } else {
+            shooter.setSetpoint(0);
         }
     }
 
