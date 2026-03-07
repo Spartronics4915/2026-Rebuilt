@@ -183,11 +183,15 @@ public class AutoAimController extends SubsystemBase {
             );
         }
 
+        // TODO: Make this better
+
         if (result.recommendedShotSpeed() != -1) {
             boolean shouldShoot = isShootingEnabled && shouldAutoShoot(result);
             boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
             if (shootOverride || (isUnrestricted && shouldShoot)) {
                 shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed()));
+            } else {
+                shooter.setSetpoint(0);
             }
         } else {
             shooter.setSetpoint(0);
@@ -320,7 +324,7 @@ public class AutoAimController extends SubsystemBase {
     public boolean isTurretReady() {
         return Math.abs(
             turret.getPosition().minus(turret.getCurrentSetpoint()).getDegrees()
-        ) <= 1;
+        ) <= 7.5;
     }
 
     public boolean isHoodReady() {
@@ -331,6 +335,17 @@ public class AutoAimController extends SubsystemBase {
 
     //#endregion
     //#region Commands
+    public Command setAimState(boolean wantAim) {
+        return Commands.runOnce(() -> {
+            isAimEnabled = wantAim;
+        }).ignoringDisable(true);
+    }
+
+    public Command setShootingState(boolean wantShoot) {
+        return Commands.runOnce(() -> {
+            isShootingEnabled = wantShoot;
+        }).ignoringDisable(true);
+    }
 
     /** Flips the auto-aim enabled flag. Safe to call while the robot is disabled. */
     public Command aimToggle() {

@@ -108,9 +108,9 @@ public class DriveToPOI {
                                         )
                                     ),
                                     Seconds.of(10.0)
-                                )
+                                ),
                                 // Pull climber back down to move robot up
-                                // climber.setStateCommand(ClimberState.DOWN)
+                                climber.setStateCommand(ClimberState.DOWN)
                             )
                         // )
                     ).finallyDo(

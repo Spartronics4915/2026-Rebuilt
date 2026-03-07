@@ -25,7 +25,7 @@ public class VisionConfiguration {
             5.0, 
             7.0,
             0.6,
-            1.2,
+            1.5,
             0.05,
             0.70,
             20.0, 

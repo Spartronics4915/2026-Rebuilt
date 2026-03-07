@@ -104,9 +104,7 @@ public class StdDevCalculator {
             Math.pow(distanceFactor, distanceWeight) *
             Math.pow(ambiguityFactor, ambiguityWeight) *
             Math.pow(areaFactor, areaWeight) *
-            Math.pow(anisotropyFactor, anisotropyWeight) *
             Math.pow(motionFactor, motionWeight) *
-            Math.pow(latencyFactor, latencyWeight) *
             tagCountFactor;
 
         /*
@@ -118,9 +116,7 @@ public class StdDevCalculator {
             Math.pow(distanceFactor, distanceWeight * 0.7) *
             Math.pow(ambiguityFactor, ambiguityWeight) *
             Math.pow(areaFactor, areaWeight * 0.5) *
-            Math.pow(anisotropyFactor, anisotropyWeight * 1.3) *
             Math.pow(motionFactor, motionWeight * 1.5) *
-            Math.pow(latencyFactor, latencyWeight) *
             tagCountFactor;
 
         double xyStdDev = baseXYStdDev * xyMultiplier;

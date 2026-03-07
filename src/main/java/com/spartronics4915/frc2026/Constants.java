@@ -102,9 +102,8 @@ public final class Constants {
         //#region Autos
 
         public static final class AutoConstants {
-            public static final PIDConstants translationPID = new PIDConstants(7.5,0,0);
-            public static final PIDConstants rotationPID = new PIDConstants(5.0,0,0);
-
+            public static final PIDConstants translationPID = new PIDConstants(9,0,0.01);
+            public static final PIDConstants rotationPID = new PIDConstants(6.0,0,0.01);
             public static final PPHolonomicDriveController driveController = new PPHolonomicDriveController(
                 AutoConstants.translationPID, 
                 AutoConstants.rotationPID
@@ -164,8 +163,8 @@ public final class Constants {
             );
 
             public static final PathConstraints bumpPathConstraints = new PathConstraints(
-                0.5,
-                0.5,
+                1.5,
+                1.5,
                 1/4 * Math.PI,
                 1/2 * Math.PI
             );
@@ -252,14 +251,14 @@ public final class Constants {
             }
 
         public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.05;  // 0.5 — trust vision closer to odometry levels
+            public static final double baseXYStdDev = 0.3;  // 0.5 — trust vision closer to odometry levels
             public static final double baseThetaStdDev = 0.2;  // 0.5 — heading from vision is still less reliable
-            public static final double distanceWeight = 1.0;  // 1.0 — less aggressive distance penalty
+            public static final double distanceWeight = 0.9;  // 1.0 — less aggressive distance penalty
             public static final double ambiguityWeight = 0.7;  // 0.8
             public static final double areaWeight = 0.8;  // 0.6
-            public static final double anisotropyWeight = 1.0;  // 0.6
+            public static final double anisotropyWeight = 0.9;  // 0.6
             public static final double motionWeight = 0.3;  // 0.4
-            public static final double latencyWeight = 1.0;  // 0.4
+            public static final double latencyWeight = 2;  // 0.4
 
             /**
              * Smoothing factor for the exponential moving average applied to distance and area.
@@ -315,7 +314,7 @@ public final class Constants {
                     "evan", 
                     LAYOUT,
                     LEFT_CAMERA_TRANSFORM, 
-                    new StdDevCalculator(false, 0.3),
+                    new StdDevCalculator(false, 0.05),
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
                 ),
@@ -323,7 +322,7 @@ public final class Constants {
                     "daniil", 
                     LAYOUT,
                     RIGHT_CAMERA_TRANSFORM,
-                    new StdDevCalculator(false, 0.3),
+                    new StdDevCalculator(false, 0.8),
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
                 ),
@@ -331,14 +330,14 @@ public final class Constants {
                     "val", 
                     LAYOUT,
                     BACK_CAMERA_TRANSFORM,
-                    new StdDevCalculator(false, 0.3),
+                    new StdDevCalculator(false, 0.8),
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
                 )
             );
         }
 
-        public static final int MAX_TAG_ID = 32;
+        public static final int MAX_TAG_ID = 34;
         public static final double MIN_COSINE_VALUE = 0.01;
 
     }
@@ -358,7 +357,8 @@ public final class Constants {
         public static final Distance bumpLength = Inches.of(48.93);
         public static final Distance trenchLength = Inches.of(30);
 
-        public static final double percentLoss = 0.053; // Percent loss on shooter to ball transfer
+        public static final double percentLoss = 0.051; // Percent loss on shooter to ball transfer
+
     }
 
     //#endregion

@@ -174,7 +174,6 @@ public class VisionSubsystem extends SubsystemBase {
      */
     @Override
     public void periodic() {
-        performanceTracker.startTiming("periodic_total");
         try {
             collectResults();
             filterAndCollectApriltags();
@@ -193,8 +192,7 @@ public class VisionSubsystem extends SubsystemBase {
                 visionSystemSim.update(swerve.getRobotPose());
             }
         } finally {
-            performanceTracker.stopTiming();
-            performanceTracker.publishMetrics();
+            
         }
     }
 
