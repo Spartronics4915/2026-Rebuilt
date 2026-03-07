@@ -15,7 +15,6 @@ import com.spartronics4915.frc2026.util.control.FieldZoneMap;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -50,9 +49,8 @@ public class Superstructure extends SubsystemBase {
     // Debounce for pipeline state switching: require the controller's "ready to shoot"
     // signal to be stable for this many seconds before actually scheduling the change.
     private static final double PIPELINE_DEBOUNCE_SEC = 0.2;
-    private boolean desiredPipelineOn = false;
-    private double desiredPipelineChangedTime = 0.0;
     private boolean debouncedPipelineOn = false;
+    private final Trigger pipelineTrigger;
 
     public Superstructure(
         SwerveSubsystem swerve, 
@@ -63,10 +61,9 @@ public class Superstructure extends SubsystemBase {
         this.controller = controller;
         this.commands = commands;
         this.zoneMap = buildZoneMap();
-        
-        this.desiredPipelineOn = controller.isReadyToShoot();
-        this.desiredPipelineChangedTime = Timer.getFPGATimestamp();
-        this.debouncedPipelineOn = this.desiredPipelineOn;
+        // Create a debounced Trigger from the controller's ready-to-shoot signal.
+        this.pipelineTrigger = new Trigger(this.controller::isReadyToShoot).debounce(PIPELINE_DEBOUNCE_SEC);
+        this.debouncedPipelineOn = this.pipelineTrigger.getAsBoolean();
 
         configureZoneTriggers();
     }
@@ -111,15 +108,10 @@ public class Superstructure extends SubsystemBase {
 
         Zone newZone = zoneMap.evaluate(turretTranslation);
 
-        boolean wantOn = controller.isReadyToShoot();
-        double now = Timer.getFPGATimestamp();
-        if (wantOn != desiredPipelineOn) {
-            desiredPipelineOn = wantOn;
-            desiredPipelineChangedTime = now;
-        }
-
-        if (now - desiredPipelineChangedTime >= PIPELINE_DEBOUNCE_SEC && debouncedPipelineOn != desiredPipelineOn) {
-            debouncedPipelineOn = desiredPipelineOn;
+        // Use a debounced Trigger and read its current debounced boolean value.
+        boolean debounced = pipelineTrigger.getAsBoolean();
+        if (debounced != debouncedPipelineOn) {
+            debouncedPipelineOn = debounced;
             CommandScheduler.getInstance().schedule(
                 commands.setPipelineState(debouncedPipelineOn ? PipelineState.ON : PipelineState.OFF)
             );
