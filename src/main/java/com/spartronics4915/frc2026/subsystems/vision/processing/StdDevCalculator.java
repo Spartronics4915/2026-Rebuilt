@@ -86,13 +86,11 @@ public class StdDevCalculator {
         }
         previousNumTags = numTags;
 
-        double latencySeconds = latencyMs / 1000.0;
+        //double latencySeconds = latencyMs / 1000.0;
 
         double distanceFactor = calculateDistanceFactor(smoothedDistance);
         double ambiguityFactor = (smoothedTagCount > 1) ? 1.0 : calculateAmbiguityFactor(avgAmbiguity);
         double areaFactor = calculateAreaFactor(smoothedArea);
-        double anisotropyFactor = calculateAnisotropyFactor(xAnisotropy, yAnisotropy);
-        double latencyFactor = calculateLatencyFactor(latencySeconds);
         double tagCountFactor = calculateTagCountFactor(smoothedTagCount);
 
         // Motion factor is 1.0 (no effect) when motion punishment is disabled

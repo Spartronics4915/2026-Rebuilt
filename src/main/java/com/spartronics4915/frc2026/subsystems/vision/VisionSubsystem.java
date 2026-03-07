@@ -61,7 +61,6 @@ public class VisionSubsystem extends SubsystemBase {
     private final PipelineFilter aprilTagFilter;
     private final VisionPoseConsumer poseConsumer;
     
-    private final PerformanceTracker performanceTracker;
     private final SwerveSubsystem swerve;
 
     private final List<ResultInterface> combinedResults = new ArrayList<>(16);
@@ -121,7 +120,6 @@ public class VisionSubsystem extends SubsystemBase {
         this.hasValidPose = false;
 
         this.aprilTagFilter = new PipelineFilter(buildFilterList(configuration, swerveSubsystem));
-        this.performanceTracker = new PerformanceTracker(config.maxPeriodicTimeMs);
 
         isSimulation = Robot.isSimulation();
         
