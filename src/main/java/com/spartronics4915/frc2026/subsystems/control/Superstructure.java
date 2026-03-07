@@ -10,7 +10,6 @@ import java.util.Set;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands.PipelineState;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
-import com.spartronics4915.frc2026.util.control.FieldRegion;
 import com.spartronics4915.frc2026.util.control.FieldZoneMap;
 
 import edu.wpi.first.math.geometry.Translation2d;
@@ -26,11 +25,6 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 /**
  * Tracks the robot's position on the field and automatically schedules 
  * SuperstructureCommands based on the current zone using Triggers.
- *
- * <p>Set {@link #testingMode} to {@code true} to disable all automatic zone
- * triggers and pipeline management. Zone tracking and NetworkTables publishing
- * will continue to run regardless, so field position can still be observed.
- * Set to {@code false} to restore full autonomous zone behavior.
  */
 public class Superstructure extends SubsystemBase {
     
@@ -44,7 +38,6 @@ public class Superstructure extends SubsystemBase {
     }
 
     private final SwerveSubsystem swerve;
-
     private final AutoAimController controller;
     private final SuperstructureCommands commands;
 
@@ -71,7 +64,6 @@ public class Superstructure extends SubsystemBase {
         this.commands = commands;
         this.zoneMap = buildZoneMap();
         
-        // initialize debounce state based on current controller state
         this.desiredPipelineOn = controller.isReadyToShoot();
         this.desiredPipelineChangedTime = Timer.getFPGATimestamp();
         this.debouncedPipelineOn = this.desiredPipelineOn;
@@ -79,30 +71,32 @@ public class Superstructure extends SubsystemBase {
         configureZoneTriggers();
     }
 
+    private boolean inTrenchColumn(Translation2d pos) {
+        return Math.abs(pos.minus(hubPose).getY()) > bumpTrenchDivTransform.getY();
+    }
+
+    private Translation2d nearestHub(Translation2d pos) {
+        boolean closerToBlueHub = pos.minus(centerPose).getX() < 0;
+        return closerToBlueHub ? hubPose : centerPose.minus(hubPose).times(2).plus(hubPose);
+    }
+
+    private double hubDeltaX(Translation2d pos) {
+        return pos.minus(nearestHub(pos)).getX();
+    }
+
     private FieldZoneMap<Zone> buildZoneMap() {
         FieldZoneMap<Zone> map = new FieldZoneMap<>(Zone.OPPONENT_ZONE);
 
-        FieldRegion isNearHub = (pos) -> {
-            boolean inTrenchColumn = Math.abs(pos.minus(hubPose).getY()) > bumpTrenchDivTransform.getY();
-            boolean closerToBlueHub = pos.minus(centerPose).getX() < 0;
-            Translation2d nearestHub = closerToBlueHub ? hubPose : centerPose.minus(hubPose).times(2).plus(hubPose);
-            
-            double hubDeltaX = pos.minus(nearestHub).getX();
-            double halfLength = (inTrenchColumn ? trenchLength : bumpLength).in(Meters) / 2.0;
-            return Math.abs(hubDeltaX) < halfLength;
-        };
+        map.addZone(Zone.TRENCH, pos ->
+            inTrenchColumn(pos) && Math.abs(hubDeltaX(pos)) < trenchLength.in(Meters) / 2.0);
 
-        map.addZone(Zone.TRENCH, pos -> isNearHub.contains(pos) && 
-            Math.abs(pos.minus(hubPose).getY()) > bumpTrenchDivTransform.getY());
-
-        map.addZone(Zone.BUMP, pos -> isNearHub.contains(pos) && 
-            Math.abs(pos.minus(hubPose).getY()) <= bumpTrenchDivTransform.getY());
+        map.addZone(Zone.BUMP, pos ->
+            !inTrenchColumn(pos) && Math.abs(hubDeltaX(pos)) < bumpLength.in(Meters) / 2.0);
 
         map.addZone(Zone.NEUTRAL_ZONE, pos -> {
+            double dx = hubDeltaX(pos);
             boolean closerToBlueHub = pos.minus(centerPose).getX() < 0;
-            Translation2d nearestHub = closerToBlueHub ? hubPose : centerPose.minus(hubPose).times(2).plus(hubPose);
-            double hubDeltaX = pos.minus(nearestHub).getX();
-            return closerToBlueHub ? hubDeltaX > 0 : hubDeltaX < 0; 
+            return closerToBlueHub ? dx > 0 : dx < 0;
         });
 
         map.addZone(Zone.ALLIANCE_ZONE, pos -> pos.minus(centerPose).getX() < 0);
@@ -117,23 +111,18 @@ public class Superstructure extends SubsystemBase {
 
         Zone newZone = zoneMap.evaluate(turretTranslation);
 
-        // Debounce pipeline state changes so brief flutters don't toggle the pipeline
         boolean wantOn = controller.isReadyToShoot();
         double now = Timer.getFPGATimestamp();
         if (wantOn != desiredPipelineOn) {
-            // requested state changed; record when
             desiredPipelineOn = wantOn;
             desiredPipelineChangedTime = now;
         }
 
-        // If requested state has been stable for the debounce interval, apply it
         if (now - desiredPipelineChangedTime >= PIPELINE_DEBOUNCE_SEC && debouncedPipelineOn != desiredPipelineOn) {
             debouncedPipelineOn = desiredPipelineOn;
-            if (debouncedPipelineOn) {
-                CommandScheduler.getInstance().schedule(commands.setPipelineState(PipelineState.ON));
-            } else {
-                CommandScheduler.getInstance().schedule(commands.setPipelineState(PipelineState.OFF));
-            }
+            CommandScheduler.getInstance().schedule(
+                commands.setPipelineState(debouncedPipelineOn ? PipelineState.ON : PipelineState.OFF)
+            );
         }
         
         if (newZone != currentZone) {
@@ -143,17 +132,16 @@ public class Superstructure extends SubsystemBase {
     }
 
     private void configureZoneTriggers() {
-        Trigger inAllianceZone = new Trigger(() -> currentZone == Zone.ALLIANCE_ZONE);
-        Trigger inTrench = new Trigger(() -> currentZone == Zone.TRENCH);
-        Trigger inNeutralZone = new Trigger(() -> currentZone == Zone.NEUTRAL_ZONE);
-        Trigger inCruiseZones = new Trigger(() -> (currentZone == Zone.BUMP || currentZone == Zone.OPPONENT_ZONE));
-
-        inAllianceZone.onTrue(commands.shooting().withName("Auto: Shooting Zone"));
-        inTrench.onTrue(commands.trench().withName("Auto: Trench Traversal"));
-        inNeutralZone.onTrue(commands.traversal().withName("Auto: Neutral Traversal"));
-        inCruiseZones.onTrue(commands.cruise().withName("Auto: Cruise Zone"));
+        new Trigger(() -> currentZone == Zone.ALLIANCE_ZONE)
+            .onTrue(commands.shooting().withName("Auto: Shooting Zone"));
+        new Trigger(() -> currentZone == Zone.TRENCH)
+            .onTrue(commands.trench().withName("Auto: Trench Traversal"));
+        new Trigger(() -> currentZone == Zone.NEUTRAL_ZONE)
+            .onTrue(commands.traversal().withName("Auto: Neutral Traversal"));
+        new Trigger(() -> currentZone == Zone.BUMP || currentZone == Zone.OPPONENT_ZONE)
+            .onTrue(commands.cruise().withName("Auto: Cruise Zone"));
     }
-
+    
     /**
      * Called when a manual driver override is released to snap the robot back 
      * to whatever state it should be in based on its field position.
@@ -162,11 +150,11 @@ public class Superstructure extends SubsystemBase {
         return Commands.defer(() -> {
             switch (currentZone) {
                 case ALLIANCE_ZONE: return commands.shooting();
-                case TRENCH: return commands.trench();
-                case NEUTRAL_ZONE: return commands.traversal();
+                case TRENCH:        return commands.trench();
+                case NEUTRAL_ZONE:  return commands.traversal();
                 case BUMP:          
                 case OPPONENT_ZONE: return commands.cruise();
-                default: return commands.idle();
+                default:            return commands.idle();
             }
         }, Set.of()).withName("Restore Zone State");
     }
