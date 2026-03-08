@@ -435,7 +435,7 @@ public final class Constants {
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
         public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
-            .withNeutralMode(NeutralModeValue.Brake);
+            .withNeutralMode(NeutralModeValue.Coast);
 
         public static final boolean ENABLE_FOC = false;
     }
@@ -567,7 +567,7 @@ public final class Constants {
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
         public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
-            .withNeutralMode(NeutralModeValue.Brake);
+            .withNeutralMode(NeutralModeValue.Coast);
 
         public static final boolean ENABLE_FOC = false;
     }
@@ -609,7 +609,7 @@ public final class Constants {
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
         public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
-            .withNeutralMode(NeutralModeValue.Brake)
+            .withNeutralMode(NeutralModeValue.Coast)
             .withInverted(InvertedValue.Clockwise_Positive);
         
         public static final boolean ENABLE_FOC = false;
@@ -698,7 +698,7 @@ public final class Constants {
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
         public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
-            .withNeutralMode(NeutralModeValue.Brake);
+            .withNeutralMode(NeutralModeValue.Coast);
 
         public static final boolean ENABLE_FOC = false;
     }
