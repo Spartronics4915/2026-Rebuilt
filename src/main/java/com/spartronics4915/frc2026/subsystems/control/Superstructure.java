@@ -12,13 +12,12 @@ import com.spartronics4915.frc2026.commands.SuperstructureCommands.PipelineState
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.util.control.FieldZoneMap;
 
+import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -48,13 +47,6 @@ public class Superstructure extends SubsystemBase {
     private final StringPublisher zonePublisher = 
         NetworkTableInstance.getDefault().getStringTopic("superstructure/Current Zone").publish();
 
-    // Rate-limit for pipeline state switching: allow an immediate change, then
-    // prevent any further changes for this many seconds after a change occurs.
-    private static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
-    private static final double INTAKE_JOSTLE_FREQUENCY = 1.0; // Hz
-    private boolean debouncedPipelineOn = false;
-    private double lastPipelineChangeTime = Double.NEGATIVE_INFINITY;
-
     public Superstructure(
         SwerveSubsystem swerve, 
         AutoAimController controller,
@@ -64,11 +56,15 @@ public class Superstructure extends SubsystemBase {
         this.controller = controller;
         this.commands = commands;
         this.zoneMap = buildZoneMap();
-        // Seed the applied pipeline state from the controller's current value.
-        this.debouncedPipelineOn = this.controller.isReadyToShoot();
-        this.lastPipelineChangeTime = Double.NEGATIVE_INFINITY;
 
         configureZoneTriggers();
+
+        // Debounce both edges so the pipeline doesn't toggle rapidly if
+        // isReadyToShoot flickers around the threshold.
+        new Trigger(controller::isReadyToShoot)
+            .debounce(PIPELINE_RATE_LIMIT_SEC, DebounceType.kFalling)
+            .onTrue(commands.setPipelineState(PipelineState.ON))
+            .onFalse(commands.setPipelineState(PipelineState.OFF));
     }
 
     private boolean inTrenchColumn(Translation2d pos) {
@@ -120,21 +116,6 @@ public class Superstructure extends SubsystemBase {
 
         Zone newZone = zoneMap.evaluate(turretTranslation);
 
-        // Rate-limit: allow an immediate change, then block further changes for
-        // PIPELINE_RATE_LIMIT_SEC seconds after a change.
-        boolean wantOn = controller.isReadyToShoot();
-        double now = Timer.getFPGATimestamp();
-        if (wantOn != debouncedPipelineOn) {
-            if (now - lastPipelineChangeTime >= PIPELINE_RATE_LIMIT_SEC) {
-                debouncedPipelineOn = wantOn;
-                lastPipelineChangeTime = now;
-                CommandScheduler.getInstance().schedule(
-                    commands.setPipelineState(debouncedPipelineOn ? PipelineState.ON : PipelineState.OFF)
-                );
-            }
-            // else: change requested but we're still rate-limited, so ignore it
-        }
-        
         if (newZone != currentZone) {
             currentZone = newZone;
             zonePublisher.accept(currentZone.name());
