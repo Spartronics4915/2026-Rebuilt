@@ -384,7 +384,9 @@ public final class Constants {
          * uses a slightly lower center point for a more forgiving hit window.
          */
         public static final double HUB_HEIGHT = Units.inchesToMeters(72);
+        public static final double FUNNEL_HEIGHT = Units.inchesToMeters(22.25);
         public static final Translation3d HUB_POSITION = new Translation3d(hubPose.getX(), hubPose.getY(), HUB_HEIGHT);
+        public static final Translation3d BOTTOM_FUNNEL_POSITION = new Translation3d(hubPose.getX(), hubPose.getY(), HUB_HEIGHT - FUNNEL_HEIGHT);
         public static final double MAX_SHOOTER_RPS = 100;
 
         public static final Distance HUB_SHOT_PADDING = Meters.of(0.1);

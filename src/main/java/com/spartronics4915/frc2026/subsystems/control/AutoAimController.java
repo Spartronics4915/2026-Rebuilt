@@ -289,7 +289,7 @@ public class AutoAimController extends SubsystemBase {
     }
 
     private Translation3d getDefaultTarget() {
-        if (swerve.getRelativePose().getX() < hubPose.getX()) return HUB_POSITION;
+        if (swerve.getRelativePose().getX() < hubPose.getX()) return BOTTOM_FUNNEL_POSITION;
         return swerve.getRelativePose().getY() < hubPose.getY()
             ? rightPassTarget
             : leftPassTarget;
