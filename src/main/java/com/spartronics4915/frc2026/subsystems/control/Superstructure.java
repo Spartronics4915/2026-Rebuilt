@@ -13,6 +13,7 @@ import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.util.control.FieldZoneMap;
 
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.wpilibj.Timer;
@@ -68,16 +69,6 @@ public class Superstructure extends SubsystemBase {
         this.lastPipelineChangeTime = Double.NEGATIVE_INFINITY;
 
         configureZoneTriggers();
-
-        //new Trigger(() -> debouncedPipelineOn)
-        //    .onTrue(Commands.sequence(
-        //        commands.conditionalPivotSafe(),
-        //        Commands.waitSeconds(1 / INTAKE_JOSTLE_FREQUENCY),
-        //        commands.conditionalPivotReady(),
-        //        Commands.waitSeconds(1 / INTAKE_JOSTLE_FREQUENCY)
-//
-        //    ))
-        //    .onFalse(commands.conditionalPivotReady());
     }
 
     private boolean inTrenchColumn(Translation2d pos) {
@@ -96,8 +87,17 @@ public class Superstructure extends SubsystemBase {
     private FieldZoneMap<Zone> buildZoneMap() {
         FieldZoneMap<Zone> map = new FieldZoneMap<>(Zone.OPPONENT_ZONE);
 
-        map.addZone(Zone.TRENCH, pos ->
-            inTrenchColumn(pos) && Math.abs(hubDeltaX(pos)) < trenchLength.in(Meters) / 2.0);
+        // Checks both the current position and a velocity-projected position so the
+        // hood lowers before the robot physically enters the trench. All other zones
+        // are position only.
+        map.addZone(Zone.TRENCH, pos -> {
+            ChassisSpeeds vel = swerve.getFieldRelativeVelocity();
+            Translation2d projected = pos.plus(
+                new Translation2d(vel.vxMetersPerSecond, vel.vyMetersPerSecond)
+                    .times(TRENCH_LOOKAHEAD_SEC));
+            return inTrenchColumn(pos) && Math.abs(hubDeltaX(pos)) < trenchLength.in(Meters) / 2.0
+                || inTrenchColumn(projected) && Math.abs(hubDeltaX(projected)) < trenchLength.in(Meters) / 2.0;
+        });
 
         map.addZone(Zone.BUMP, pos ->
             !inTrenchColumn(pos) && Math.abs(hubDeltaX(pos)) < bumpLength.in(Meters) / 2.0);

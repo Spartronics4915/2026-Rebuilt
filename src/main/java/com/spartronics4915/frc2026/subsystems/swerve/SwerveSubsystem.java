@@ -113,7 +113,7 @@ public class SwerveSubsystem extends SubsystemBase {
         }
     }
 
-    public ChassisSpeeds getRelativeFieldVelocity() {
+    public ChassisSpeeds getFieldRelativeVelocity() {
         ChassisSpeeds fieldVelocity = getFieldVelocity();
         if (shouldFlip()) {
             return FlippingUtil.flipFieldSpeeds(fieldVelocity);

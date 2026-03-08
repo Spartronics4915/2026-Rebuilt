@@ -357,6 +357,14 @@ public final class Constants {
         public static final Distance bumpLength = Inches.of(48.93);
         public static final Distance trenchLength = Inches.of(50);
 
+        /**
+         * How far ahead (in seconds) to project the robot's position when determining
+         * whether to lower the hood for the trench. At higher speeds the projected
+         * position will reach the trench boundary sooner, triggering the hood retract
+         * earlier so it isn't clipped.
+         */
+        public static final double TRENCH_LOOKAHEAD_SEC = 0.5;
+
         public static final double percentLoss = 0.051; // Percent loss on shooter to ball transfer
 
     }

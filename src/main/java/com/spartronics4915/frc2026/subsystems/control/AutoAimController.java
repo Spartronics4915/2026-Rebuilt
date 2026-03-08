@@ -156,7 +156,7 @@ public class AutoAimController extends SubsystemBase {
         Translation3d target = (targetOverride != null) ? targetOverride : getDefaultTarget();
         return autoAim.calculateDynamicAim(
             swerve.getRelativePose(),
-            swerve.getRelativeFieldVelocity(),
+            swerve.getFieldRelativeVelocity(),
             target,
             RPSToMPS(Robot.isSimulation() ? shooter.getCurrentSetpoint() : shooter.getCurrentRPS())
         );
@@ -177,7 +177,7 @@ public class AutoAimController extends SubsystemBase {
         } else {
             shooter.setSetpoint(0);
         }
-        
+
         if (!isAimEnabled) return;
         if (result.pitch() != null) {
             hood.setSetpoint(Rotation2d.kCCW_Pi_2.minus(result.pitch()));
