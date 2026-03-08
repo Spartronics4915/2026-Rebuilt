@@ -150,11 +150,12 @@ public class DriveToPOI {
                                     outpostPose.plus(
                                         new Translation2d(robotWidth.in(Meters) / 2.0, 0)
                                     ),
-                                    swerve.shouldFlip() ? Rotation2d.fromDegrees(90) : Rotation2d.fromDegrees(180)
+                                    Rotation2d.fromDegrees(90)
                                 )
                             ),
                             Seconds.of(2.0)
                         ),
+                        Commands.runOnce(() -> swerve.lockModules()),
                         Commands.waitSeconds(outpostWaitTime)
                     );
                 }

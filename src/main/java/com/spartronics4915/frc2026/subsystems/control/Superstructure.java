@@ -69,15 +69,15 @@ public class Superstructure extends SubsystemBase {
 
         configureZoneTriggers();
 
-        new Trigger(() -> debouncedPipelineOn)
-            .onTrue(Commands.sequence(
-                commands.conditionalPivotSafe(),
-                Commands.waitSeconds(1 / INTAKE_JOSTLE_FREQUENCY),
-                commands.conditionalPivotReady(),
-                Commands.waitSeconds(1 / INTAKE_JOSTLE_FREQUENCY)
-
-            ))
-            .onFalse(commands.conditionalPivotReady());
+        //new Trigger(() -> debouncedPipelineOn)
+        //    .onTrue(Commands.sequence(
+        //        commands.conditionalPivotSafe(),
+        //        Commands.waitSeconds(1 / INTAKE_JOSTLE_FREQUENCY),
+        //        commands.conditionalPivotReady(),
+        //        Commands.waitSeconds(1 / INTAKE_JOSTLE_FREQUENCY)
+//
+        //    ))
+        //    .onFalse(commands.conditionalPivotReady());
     }
 
     private boolean inTrenchColumn(Translation2d pos) {
@@ -160,11 +160,11 @@ public class Superstructure extends SubsystemBase {
         return Commands.defer(() -> {
             switch (currentZone) {
                 case ALLIANCE_ZONE: return commands.shooting();
-                case TRENCH:        return commands.trench();
-                case NEUTRAL_ZONE:  return commands.traversal();
+                case TRENCH: return commands.trench();
+                case NEUTRAL_ZONE: return commands.traversal();
                 case BUMP:          
                 case OPPONENT_ZONE: return commands.cruise();
-                default:            return commands.idle();
+                default: return commands.idle();
             }
         }, Set.of()).withName("Restore Zone State");
     }

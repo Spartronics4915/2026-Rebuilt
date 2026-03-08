@@ -29,6 +29,7 @@ import com.spartronics4915.frc2026.subsystems.control.Superstructure;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem.ClimberState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem.IntakeState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.HoodSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem;
@@ -134,11 +135,15 @@ public class RobotContainer {
         ChassisSpeeds driverNudgeRight = new ChassisSpeeds(0, -0.25, 0);
         ChassisSpeeds driverNudgeDown = new ChassisSpeeds(-0.25, 0, 0);
 
-        driverController.povUp().whileTrue(
-            Commands.run(() -> {
-                swerveSubsystem.drive(driverNudgeUp);
-            })
+        driverController.povUp().onTrue(
+            climberSubsystem.setStateCommand(ClimberState.JORBIT)
         );
+
+        //driverController.povUp().whileTrue(
+        //    Commands.run(() -> {
+        //        swerveSubsystem.drive(driverNudgeUp);
+        //    })
+        //);
 
         driverController.povLeft().whileTrue(
             Commands.run(() -> {
@@ -152,11 +157,15 @@ public class RobotContainer {
             })
         );
 
-        driverController.povDown().whileTrue(
-            Commands.run(() -> {
-                swerveSubsystem.drive(driverNudgeDown);
-            })
+        driverController.povDown().onTrue(
+            climberSubsystem.setStateCommand(ClimberState.DOWN)
         );
+
+        //driverController.povDown().whileTrue(
+        //    Commands.run(() -> {
+        //        swerveSubsystem.drive(driverNudgeDown);
+        //    })
+        //);
 
         driverController.leftBumper().onTrue(
             Commands.runOnce(() -> {
@@ -208,25 +217,25 @@ public class RobotContainer {
 
         operatorController.povUp().whileTrue(
             Commands.run(() -> {
-                hoodSubsystem.setSetpoint(hoodSubsystem.getCurrentSetpoint().plus(Rotation2d.fromDegrees(0.2)));
+                hoodSubsystem.setSetpoint(hoodSubsystem.getCurrentSetpoint().plus(Rotation2d.fromDegrees(0.4)));
             })
         );
 
         operatorController.povLeft().whileTrue(
             Commands.run(() -> {
-                turretSubsystem.setSetpoint(turretSubsystem.getCurrentSetpoint().plus(Rotation2d.fromDegrees(5)));
+                turretSubsystem.setSetpoint(turretSubsystem.getCurrentSetpoint().plus(Rotation2d.fromDegrees(0.5)));
             })
         );
 
         operatorController.povRight().whileTrue(
             Commands.run(() -> {
-                turretSubsystem.setSetpoint(turretSubsystem.getCurrentSetpoint().minus(Rotation2d.fromDegrees(5)));
+                turretSubsystem.setSetpoint(turretSubsystem.getCurrentSetpoint().minus(Rotation2d.fromDegrees(0.5)));
             })
         );
 
         operatorController.povDown().whileTrue(
             Commands.run(() -> {
-                hoodSubsystem.setSetpoint(hoodSubsystem.getCurrentSetpoint().minus(Rotation2d.fromDegrees(0.2)));
+                hoodSubsystem.setSetpoint(hoodSubsystem.getCurrentSetpoint().minus(Rotation2d.fromDegrees(0.4)));
             })
         );
 

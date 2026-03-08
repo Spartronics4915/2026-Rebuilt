@@ -98,11 +98,11 @@ public class PhotonProcessor implements ProcessorInterface {
 
         this.resultQueue = new ConcurrentLinkedQueue<>();
         this.queueSize = new AtomicInteger(0);
-        this.maxQueueSize = 4;
+        this.maxQueueSize = 5;
 
         this.processingNotifier = new Notifier(this::process);
-        this.processingFrequency = 50.0;
-        this.processingNotifier.setName("Spectrum-" + cameraName);
+        this.processingFrequency = 65.0;
+        this.processingNotifier.setName("Photon-" + cameraName);
         this.isRunning = false;
 
         this.robotVelocitySupplier = chassisSpeedsSupplier;

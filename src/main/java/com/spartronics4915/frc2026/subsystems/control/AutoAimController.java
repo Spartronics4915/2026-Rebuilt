@@ -168,6 +168,16 @@ public class AutoAimController extends SubsystemBase {
      * uses to signal that the shot cannot land.
      */
     private void applyAimResult(AutoAimResult result) {
+        boolean hasValidSpeed = result.recommendedShotSpeed() != -1;
+        boolean shouldShoot = isShootingEnabled && shouldAutoShoot(result);
+        boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
+
+        if (hasValidSpeed && (shootOverride || (isUnrestricted && shouldShoot))) {
+            shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed()));
+        } else {
+            shooter.setSetpoint(0);
+        }
+        
         if (!isAimEnabled) return;
         if (result.pitch() != null) {
             hood.setSetpoint(Rotation2d.kCCW_Pi_2.minus(result.pitch()));
@@ -181,16 +191,6 @@ public class AutoAimController extends SubsystemBase {
                     turret.getPosition()
                 )
             );
-        }
-
-        boolean hasValidSpeed = result.recommendedShotSpeed() != -1;
-        boolean shouldShoot = isShootingEnabled && shouldAutoShoot(result);
-        boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
-
-        if (hasValidSpeed && (shootOverride || (isUnrestricted && shouldShoot))) {
-            shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed()));
-        } else {
-            shooter.setSetpoint(0);
         }
     }
 
@@ -320,7 +320,7 @@ public class AutoAimController extends SubsystemBase {
     public boolean isTurretReady() {
         return Math.abs(
             turret.getPosition().minus(turret.getCurrentSetpoint()).getDegrees()
-        ) <= 7.5;
+        ) <= 15.0;
     }
 
     public boolean isHoodReady() {

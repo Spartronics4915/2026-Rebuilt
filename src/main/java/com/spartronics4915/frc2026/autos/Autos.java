@@ -63,6 +63,18 @@ public final class Autos {
         waypoints.add(0, pose);
     }
 
+    public static void removePastPoses(SwerveSubsystem swerve, List<Pose2d> waypoints, boolean toNeutralZone) {
+        double y = swerve.getPose().getY();
+
+        for (int i = waypoints.size() - 1; i >= 0; i--) {
+            Pose2d p = waypoints.get(i);
+
+            if ((p.getY() > y) ^ toNeutralZone) {
+                waypoints.remove(i);
+            }
+        }
+    }
+
     public static Command generatePathFromWaypoint(SwerveSubsystem swerve, Translation2d translation, Rotation2d endingHeading, Rotation2d endingVelocityHeading) {
         return generatePathFromWaypoint(swerve, translation, endingHeading, endingVelocityHeading, AutoConstants.defaultPathConstraints);
     }

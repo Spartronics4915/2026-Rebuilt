@@ -240,7 +240,7 @@ public class SuperstructureCommands {
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
                 turret.setClampCommand(TurretClamp.UNRESTRICTED),
-                intake.setStateCommand(IntakeSubsystem.IntakeState.OFF)
+                conditionalIntakeOn()
             )
         );
     }

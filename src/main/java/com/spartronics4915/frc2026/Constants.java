@@ -149,37 +149,37 @@ public final class Constants {
             public static final Distance bumperThickness = Millimeters.of(72.7);
 
             public static final PathConstraints defaultPathConstraints = new PathConstraints(
+                2.0,
                 3.0,
-                5.0,
-                1/2 * Math.PI,
-                1 * Math.PI
+                1 * Math.PI,
+                2 * Math.PI
             );
 
             public static final PathConstraints trenchPathConstraints = new PathConstraints(
                 2.0,
                 2.0,
-                1/4 * Math.PI,
+                1/2 * Math.PI,
                 1 * Math.PI
             );
 
             public static final PathConstraints bumpPathConstraints = new PathConstraints(
-                1.5,
-                1.5,
-                1/4 * Math.PI,
-                1/2 * Math.PI
+                2.5,
+                2.5,
+                2 * Math.PI,
+                1 * Math.PI
             );
 
             public static final PathConstraints intakePathConstraints = new PathConstraints(
                 2.0,
                 5.0,
-                1/2 * Math.PI,
+                2 * Math.PI,
                 1 * Math.PI
             );
 
             public static final PathConstraints climbPathConstraints = new PathConstraints(
                 1.5,
                 2.0,
-                1/2 * Math.PI,
+                1 * Math.PI,
                 1 * Math.PI
             );
 
@@ -239,7 +239,7 @@ public final class Constants {
     //#region Vision
 
     public static final class VisionConstants {
-        public static final AprilTagFieldLayout LAYOUT = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+        public static final AprilTagFieldLayout LAYOUT = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
         
         public static final SimCameraProperties SIM_CAMERA_PROPERTIES = new SimCameraProperties();
             static {
@@ -251,21 +251,21 @@ public final class Constants {
             }
 
         public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.3;  // 0.5 — trust vision closer to odometry levels
+            public static final double baseXYStdDev = 0.22;  // 0.5 — trust vision closer to odometry levels
             public static final double baseThetaStdDev = 0.2;  // 0.5 — heading from vision is still less reliable
             public static final double distanceWeight = 0.9;  // 1.0 — less aggressive distance penalty
-            public static final double ambiguityWeight = 0.7;  // 0.8
-            public static final double areaWeight = 0.8;  // 0.6
-            public static final double anisotropyWeight = 0.9;  // 0.6
+            public static final double ambiguityWeight = 0.9;  // 0.8
+            public static final double areaWeight = 0.9;  // 0.6
+            //public static final double anisotropyWeight = 0.9;  // 0.6
             public static final double motionWeight = 0.3;  // 0.4
-            public static final double latencyWeight = 2;  // 0.4
+            //public static final double latencyWeight = 2;  // 0.4
 
             /**
              * Smoothing factor for the exponential moving average applied to distance and area.
              * Range [0.0, 1.0] — lower values smooth more but react slower to real changes.
              * At 20fps: 0.05 - 1s lag, 0.15 - 0.3s lag, 0.30 - 0.15s lag.
              */
-            public static final double smoothingAlpha = 0.8;
+            public static final double smoothingAlpha = 0.6;
         }
 
         public static final class CameraConstants {
@@ -314,7 +314,7 @@ public final class Constants {
                     "evan", 
                     LAYOUT,
                     LEFT_CAMERA_TRANSFORM, 
-                    new StdDevCalculator(false, 0.05),
+                    new StdDevCalculator(false, 1.2),
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
                 ),
@@ -322,7 +322,7 @@ public final class Constants {
                     "daniil", 
                     LAYOUT,
                     RIGHT_CAMERA_TRANSFORM,
-                    new StdDevCalculator(false, 0.8),
+                    new StdDevCalculator(false, 1.2),
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
                 ),
@@ -330,7 +330,7 @@ public final class Constants {
                     "val", 
                     LAYOUT,
                     BACK_CAMERA_TRANSFORM,
-                    new StdDevCalculator(false, 0.8),
+                    new StdDevCalculator(false, 1.2),
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
                 )
@@ -355,7 +355,7 @@ public final class Constants {
         public static final Rotation2d TURRET_MAX_SAFE_THRESHOLD = Rotation2d.fromDegrees(10);
 
         public static final Distance bumpLength = Inches.of(48.93);
-        public static final Distance trenchLength = Inches.of(45);
+        public static final Distance trenchLength = Inches.of(50);
 
         public static final double percentLoss = 0.051; // Percent loss on shooter to ball transfer
 
@@ -397,16 +397,16 @@ public final class Constants {
         public static final int LEAD_MOTOR_ID = 22;
         public static final int FOLLOWER_MOTOR_ID = 23;
 
-        public static final double P = 0.6;
+        public static final double P = 0.65;
         public static final double I = 0.0;
         public static final double D = 0.002;
         public static final double V = 0.123;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 60;
-        public static final double LOWER_LIMIT = 40;
+        public static final double CURRENT_LIMIT = 80;
+        public static final double LOWER_LIMIT = 60;
 
-        public static final double LOWER_TIME = 1;
+        public static final double LOWER_TIME = 5;
         public static final double MOTOR_MECHANISM_RATIO = 0.9375;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
@@ -535,10 +535,10 @@ public final class Constants {
         public static final double MAX_RPS = 100;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 60;
-        public static final double LOWER_LIMIT = 40;
+        public static final double CURRENT_LIMIT = 45;
+        public static final double LOWER_LIMIT = 20;
 
-        public static final double LOWER_TIME = 1;
+        public static final double LOWER_TIME = 2;
         public static final double MOTOR_MECHANISM_RATIO = 20/9;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
@@ -577,8 +577,8 @@ public final class Constants {
         public static final double MAX_RPS = 100;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 60;
-        public static final double LOWER_LIMIT = 40;
+        public static final double CURRENT_LIMIT = 40;
+        public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 4;
@@ -714,7 +714,7 @@ public final class Constants {
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 20;
 
-        public static final double MIN_HEIGHT = 0.0;
+        public static final double MIN_HEIGHT = -3.5;
         public static final double MAX_HEIGHT = 3.5;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
