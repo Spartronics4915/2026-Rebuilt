@@ -22,11 +22,13 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
+import edu.wpi.first.units.measure.AngularVelocity;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.InchesPerSecond;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -64,7 +66,8 @@ public class AutoAimController extends SubsystemBase {
         TURRET_TRANSLATION_3D,
         Rotation2d.fromDegrees(50),
         Rotation2d.fromDegrees(90),
-        RPSToMPS(MAX_SHOOTER_RPS)
+        RPSToMPS(MAX_SHOOTER_RPS),
+        0.02
     );
 
     private final TurretController turretController;
@@ -181,16 +184,24 @@ public class AutoAimController extends SubsystemBase {
 
         if (!isAimEnabled) return;
         if (result.pitch() != null) {
-            hood.setSetpoint(Rotation2d.kCCW_Pi_2.minus(result.pitch()));
+            hood.setComplexSetpoint(
+                Rotation2d.kCCW_Pi_2.minus(result.pitch()), 
+                result.pitchOmega() != null ? 
+                    result.pitchOmega() : 
+                    RotationsPerSecond.of(0)
+            );
         }
 
         if (result.yaw() != null) {
-            turret.setSetpoint(
+            turret.setComplexSetpoint(
                 turretController.calculate(
                     result.yaw(),
                     swerve.getRelativePose().getRotation(),
                     turret.getPosition()
-                )
+                ),
+                result.yawOmega() != null ? 
+                    result.yawOmega() : 
+                    RotationsPerSecond.of(0)
             );
         }
     }

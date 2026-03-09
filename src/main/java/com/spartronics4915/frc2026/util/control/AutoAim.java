@@ -1,5 +1,7 @@
 package com.spartronics4915.frc2026.util.control;
 
+import static edu.wpi.first.units.Units.DegreesPerSecond;
+
 import java.util.ArrayList;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -7,6 +9,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.units.measure.AngularVelocity;
 
 public class AutoAim {
     
@@ -16,6 +19,7 @@ public class AutoAim {
     private final Rotation2d minAngle;
     private final Rotation2d maxAngle;
     private final double maxSpeed;
+    private final double lookaheadTime;
     private double processingCompensation;
     // BiPredicate parameters:
     //  - Rotation2d: ground-relative pitch of the projectile
@@ -35,14 +39,16 @@ public class AutoAim {
      * @param minAngle The minimum angle for auto-aim.
      * @param maxAngle The maximum angle for auto-aim.
      * @param maxSpeed The maximum speed for auto-aim.
+     * @param lookaheadTime Amount of time auto-aim looks ahead to calculate omega for pitch and yaw.
      */
-    public AutoAim(int maxIterations, double convergenceThreshold, Translation3d turretTransform, Rotation2d minAngle, Rotation2d maxAngle, double maxSpeed) {
+    public AutoAim(int maxIterations, double convergenceThreshold, Translation3d turretTransform, Rotation2d minAngle, Rotation2d maxAngle, double maxSpeed, double lookaheadTime) {
         this.maxIterations = maxIterations;
         this.convergenceThreshold = convergenceThreshold;
         this.turretTransform = turretTransform;
         this.minAngle = minAngle;
         this.maxAngle = maxAngle;
         this.maxSpeed = maxSpeed;
+        this.lookaheadTime = lookaheadTime;
     }
 
     /**
@@ -50,14 +56,29 @@ public class AutoAim {
      *
      * <ul>
      *   <li>{@code yaw} — the horizontal angle to aim at ({@link Rotation2d}).</li>
+     *   <li>{@code yawOmega} — the angular velocity of the yaw ({@link AngularVelocity}).</li>
      *   <li>{@code pitch} — the vertical angle to aim at ({@link Rotation2d}); may be {@code null} when unsolvable.</li>
+     *   <li>{@code pitchOmega} — the angular velocity of the pitch ({@link AngularVelocity}).</li>
      *   <li>{@code ToF} — time of flight in seconds, or {@code -1} when the solver signals the shot cannot land.</li>
      *   <li>{@code recommendedShotSpeed} — a recommended projectile speed in meters per second, or {@code -1} when not applicable.</li>
      *   <li>{@code requiresIdealSpeed} — {@code true} when the shot is impossible at the provided flywheel speed (i.e. the returned
      *       {@code yaw}/{@code pitch} require a higher/ideal speed); {@code false} when the shot is achievable with the supplied speed.</li>
      * </ul>
      */
-    public record AutoAimResult(Rotation2d yaw, Rotation2d pitch, double ToF, double recommendedShotSpeed, boolean requiresIdealSpeed) {}
+    public record AutoAimResult(Rotation2d yaw, AngularVelocity yawOmega, Rotation2d pitch, AngularVelocity pitchOmega, double ToF, double recommendedShotSpeed, boolean requiresIdealSpeed) {
+        
+        public AutoAimResult(Rotation2d yaw, Rotation2d pitch, double ToF, double recommendedShotSpeed, boolean requiresIdealSpeed) {
+            this(yaw, DegreesPerSecond.of(0), pitch, DegreesPerSecond.of(0), ToF, recommendedShotSpeed, requiresIdealSpeed);
+        }
+
+        public AutoAimResult withYawOmega(AngularVelocity newYawOmega) {
+            return new AutoAimResult(yaw, newYawOmega, pitch, pitchOmega, ToF, recommendedShotSpeed, requiresIdealSpeed);
+        }
+
+        public AutoAimResult withPitchOmega(AngularVelocity newPitchOmega) {
+            return new AutoAimResult(yaw, yawOmega, pitch, newPitchOmega, ToF, recommendedShotSpeed, requiresIdealSpeed);
+        }
+    }
 
     /**
      * Simple three-argument functional interface used so the collision map can receive
@@ -126,10 +147,37 @@ public class AutoAim {
             }
             Translation3d displacement = new Translation3d(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, 0).times(result.ToF() + processingCompensation);
             if (i > 0 && displacement.minus(prevDisplacement).getNorm() < convergenceThreshold) {
-                return result;
+                break;
             }
             prevDisplacement = displacement;
         }
+
+        AutoAimResult lookaheadResult = calculateStaticAim(
+            robotPose,
+            targetTranslation.minus(
+                new Translation3d(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, 0)
+                    .times(result.ToF() + processingCompensation + lookaheadTime)
+            ),
+            projectileSpeed,
+            speeds
+        );
+
+        if (lookaheadResult != null) {
+            result = result.withYawOmega(
+                DegreesPerSecond.of(
+                    lookaheadResult.yaw().minus(result.yaw()).getDegrees() / lookaheadTime
+                )
+            );
+
+            if (lookaheadResult.pitch() != null && result.pitch() != null) {
+                result = result.withPitchOmega(
+                    DegreesPerSecond.of(
+                        lookaheadResult.pitch().minus(result.pitch()).getDegrees() / lookaheadTime
+                    )
+                );
+            }
+        }
+
         return result;
     }
 

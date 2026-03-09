@@ -1,6 +1,7 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms.head;
 
 import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
@@ -15,6 +16,7 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -37,9 +39,8 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
     
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
-    private Rotation2d currentSetpoint = Rotation2d.fromDegrees(0);
     private State currentState = new State();
-    private final State targetState = new State();
+    private State targetState = new State();
 
     private static final PositionVoltage positionVoltage = new PositionVoltage(0.0);
 
@@ -75,7 +76,7 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         motor.addProfile(trapezoidProfile);
-        motor.addSetpoint(() -> currentSetpoint.getDegrees(), (setpoint) -> setSetpoint(Rotation2d.fromDegrees(setpoint)));
+        motor.addSetpoint(() -> targetState.position, (setpoint) -> setSetpoint(Rotation2d.fromDegrees(setpoint)));
 
         SmartDashboard.putData("Hood Up", setSetpointCommand(Rotation2d.fromDegrees(19)));
         SmartDashboard.putData("Hood Down", setSetpointCommand(Rotation2d.fromDegrees(0)));
@@ -86,21 +87,26 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
 
     @Override
     public void periodic(){
-        currentSetpoint = Rotation2d.fromRotations(
-            MathUtil.clamp(
-                currentSetpoint.getRotations(), 
-                minAngle.getRotations(), 
-                maxAngle.getRotations()
-            )
+        targetState.position = MathUtil.clamp(
+            targetState.position, 
+            minAngle.getRotations(), 
+            maxAngle.getRotations()
         );
 
-        targetState.position = currentSetpoint.getRotations();
-        targetState.velocity = 0.0;
         currentState = trapezoidProfile.calculate(
             dtCalc.update(), 
             currentState, 
             targetState
         );
+
+        if (currentState.position < minAngle.getRotations() || currentState.position > maxAngle.getRotations()) {
+            currentState.position = MathUtil.clamp(
+                currentState.position, 
+                minAngle.getRotations(), 
+                maxAngle.getRotations()
+            );
+            currentState.velocity = 0.0;
+        }
         
         positionVoltage.withEnableFOC(ENABLE_FOC).Position = currentState.position;
         motor.setControl(positionVoltage);
@@ -108,7 +114,7 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         positionPublisher.accept(getPosition());
         desiredStatePublisher.accept(Rotation2d.fromRotations(currentState.position));
-        setpointPublisher.accept(currentSetpoint);
+        setpointPublisher.accept(Rotation2d.fromRotations(targetState.position));
     }
 
     public Rotation2d getPosition() {
@@ -117,11 +123,17 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
     }
 
     public Rotation2d getCurrentSetpoint() {
-        return currentSetpoint;
+        return Rotation2d.fromRotations(targetState.position);
     }
 
     public void setSetpoint(Rotation2d setpoint){
-        currentSetpoint = setpoint;
+        targetState.position = setpoint.getRotations();
+        targetState.velocity = 0.0;
+    }
+
+    public void setComplexSetpoint(Rotation2d setPoint, AngularVelocity velocity){
+        targetState.position = setPoint.getRotations();
+        targetState.velocity = velocity.in(RotationsPerSecond);
     }
 
     public void setClamp(HoodClamp clamp){
@@ -140,7 +152,7 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
     }
 
     public void resetMechanism(Rotation2d angle){
-        currentSetpoint = angle;
+        setSetpoint(angle);
         currentState = new State(angle.getRotations(), 0.0);
     }
 
