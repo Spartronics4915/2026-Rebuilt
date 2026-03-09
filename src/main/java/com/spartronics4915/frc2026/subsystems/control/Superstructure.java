@@ -143,9 +143,13 @@ public class Superstructure extends SubsystemBase {
         // In auto, jostle the pivot while the pipeline is active
         pipelineOn
             .and(DriverStation::isAutonomous)
-            .debounce(1, DebounceType.kBoth)
-            .onTrue(commands.conditionalPivotReady())
-            .onFalse(commands.conditionalPivotSafe());
+            .onTrue(Commands.sequence(
+                commands.conditionalPivotSafe(),
+                Commands.waitSeconds(0.5 / PIVOT_JOSTLE_FREQUENCY),
+                commands.conditionalPivotReady(),
+                Commands.waitSeconds(0.5 / PIVOT_JOSTLE_FREQUENCY)
+            ).repeatedly())
+            .onFalse(commands.conditionalPivotReady());
     }
 
     // Public API -----------------------------------------------------

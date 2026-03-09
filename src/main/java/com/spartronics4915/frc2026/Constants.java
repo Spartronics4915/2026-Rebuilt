@@ -366,6 +366,7 @@ public final class Constants {
         public static final double TRENCH_LOOKAHEAD_SEC = 0.5;
 
         public static final double PIPELINE_RATE_LIMIT_SEC = 0.5;
+        public static final double PIVOT_JOSTLE_FREQUENCY = 2.0; // Hz
 
         public static final double percentLoss = 0.051; // Percent loss on shooter to ball transfer
 
