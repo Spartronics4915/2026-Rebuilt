@@ -115,6 +115,7 @@ public class AutoAimController extends SubsystemBase {
         );
 
         autoAim.setCollisionMap(this::collidesWithHub);
+        autoAim.setProcessingCompensation(0.05);
     }
 
     @Override

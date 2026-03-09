@@ -16,6 +16,7 @@ public class AutoAim {
     private final Rotation2d minAngle;
     private final Rotation2d maxAngle;
     private final double maxSpeed;
+    private double processingCompensation;
     // BiPredicate parameters:
     //  - Rotation2d: ground-relative pitch of the projectile
     //  - Double: ground-relative projectile speed (m/s)
@@ -82,6 +83,15 @@ public class AutoAim {
     }
 
     /**
+     * Sets the processing compensation for the auto-aim system. This value is used to account for latency in the system such as vision.
+     * 
+     * @param processingCompensation The compensation (in seconds) for processing latency.
+     */
+    public void setProcessingCompensation(double processingCompensation) {
+        this.processingCompensation = processingCompensation;
+    }
+
+    /**
      * Resolves the aim for a moving target / robot, taking into account the robot's current pose, field-relative speeds, target translation, and projectile shooting speed.
      * 
      * @param robotPose The current pose of the robot.
@@ -114,7 +124,7 @@ public class AutoAim {
             if (result == null || result.ToF() == -1) {
                 return result;
             }
-            Translation3d displacement = new Translation3d(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, 0).times(result.ToF());
+            Translation3d displacement = new Translation3d(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, 0).times(result.ToF() + processingCompensation);
             if (i > 0 && displacement.minus(prevDisplacement).getNorm() < convergenceThreshold) {
                 return result;
             }
