@@ -2,7 +2,6 @@ package com.spartronics4915.frc2026.subsystems.control;
 
 import static com.spartronics4915.frc2026.Constants.SuperstructureConstants.*;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.*;
-
 import static edu.wpi.first.units.Units.Meters;
 
 import java.util.Set;
@@ -17,17 +16,18 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 /**
- * Tracks the robot's position on the field and automatically schedules 
- * SuperstructureCommands based on the current zone using Triggers.
+ * Tracks the robot's position on the field and automatically schedules
+ * SuperstructureCommands based on the current zone using Triggers
  */
 public class Superstructure extends SubsystemBase {
-    
+
     public enum Zone {
         ALLIANCE_ZONE,
         TRENCH,
@@ -44,11 +44,11 @@ public class Superstructure extends SubsystemBase {
     private final FieldZoneMap<Zone> zoneMap;
     private Zone currentZone = Zone.UNKNOWN;
 
-    private final StringPublisher zonePublisher = 
+    private final StringPublisher zonePublisher =
         NetworkTableInstance.getDefault().getStringTopic("superstructure/Current Zone").publish();
 
     public Superstructure(
-        SwerveSubsystem swerve, 
+        SwerveSubsystem swerve,
         AutoAimController controller,
         SuperstructureCommands commands
     ) {
@@ -57,15 +57,10 @@ public class Superstructure extends SubsystemBase {
         this.commands = commands;
         this.zoneMap = buildZoneMap();
 
-        configureZoneTriggers();
-
-        // Debounce both edges so the pipeline doesn't toggle rapidly if
-        // isReadyToShoot flickers around the threshold.
-        new Trigger(controller::isReadyToShoot)
-            .debounce(PIPELINE_RATE_LIMIT_SEC, DebounceType.kFalling)
-            .onTrue(commands.setPipelineState(PipelineState.ON))
-            .onFalse(commands.setPipelineState(PipelineState.OFF));
+        configureTriggers();
     }
+
+    // Zone map -----------------------------------------------------
 
     private boolean inTrenchColumn(Translation2d pos) {
         return Math.abs(pos.minus(hubPose).getY()) > bumpTrenchDivTransform.getY();
@@ -83,9 +78,8 @@ public class Superstructure extends SubsystemBase {
     private FieldZoneMap<Zone> buildZoneMap() {
         FieldZoneMap<Zone> map = new FieldZoneMap<>(Zone.OPPONENT_ZONE);
 
-        // Checks both the current position and a velocity-projected position so the
-        // hood lowers before the robot physically enters the trench. All other zones
-        // are position only.
+        // Checks both the current position and a velocity projected position so the
+        // hood lowers before the robot physically enters the trench
         map.addZone(Zone.TRENCH, pos -> {
             ChassisSpeeds vel = swerve.getFieldRelativeVelocity();
             Translation2d projected = pos.plus(
@@ -109,6 +103,8 @@ public class Superstructure extends SubsystemBase {
         return map;
     }
 
+    // Periodic -----------------------------------------------------
+
     @Override
     public void periodic() {
         Translation2d turretTranslation = swerve.getRelativePose().getTranslation()
@@ -122,7 +118,10 @@ public class Superstructure extends SubsystemBase {
         }
     }
 
-    private void configureZoneTriggers() {
+    // Triggers -----------------------------------------------------
+
+    private void configureTriggers() {
+        // Zone triggers
         new Trigger(() -> currentZone == Zone.ALLIANCE_ZONE)
             .onTrue(commands.shooting().withName("Auto: Shooting Zone"));
         new Trigger(() -> currentZone == Zone.TRENCH)
@@ -131,21 +130,39 @@ public class Superstructure extends SubsystemBase {
             .onTrue(commands.traversal().withName("Auto: Neutral Traversal"));
         new Trigger(() -> currentZone == Zone.BUMP || currentZone == Zone.OPPONENT_ZONE)
             .onTrue(commands.cruise().withName("Auto: Cruise Zone"));
+
+        // Pipeline triggers, falling edge debounced so the pipeline turns on instantly
+        // but won't turn off until isReadyToShoot has been false for the full duration.
+        Trigger pipelineOn = new Trigger(controller::isReadyToShoot)
+            .debounce(PIPELINE_RATE_LIMIT_SEC, DebounceType.kFalling);
+
+        pipelineOn
+            .onTrue(commands.setPipelineState(PipelineState.ON))
+            .onFalse(commands.setPipelineState(PipelineState.OFF));
+
+        // In auto, jostle the pivot while the pipeline is active
+        pipelineOn
+            .and(DriverStation::isAutonomous)
+            .debounce(1, DebounceType.kBoth)
+            .onTrue(commands.conditionalPivotReady())
+            .onFalse(commands.conditionalPivotSafe());
     }
-    
+
+    // Public API -----------------------------------------------------
+
     /**
-     * Called when a manual driver override is released to snap the robot back 
+     * Called when a manual driver override is released to snap the robot back
      * to whatever state it should be in based on its field position.
      */
     public Command getReturnToZoneCommand() {
         return Commands.defer(() -> {
             switch (currentZone) {
                 case ALLIANCE_ZONE: return commands.shooting();
-                case TRENCH: return commands.trench();
-                case NEUTRAL_ZONE: return commands.traversal();
-                case BUMP:          
+                case TRENCH:        return commands.trench();
+                case NEUTRAL_ZONE:  return commands.traversal();
+                case BUMP:
                 case OPPONENT_ZONE: return commands.cruise();
-                default: return commands.idle();
+                default:            return commands.idle();
             }
         }, Set.of()).withName("Restore Zone State");
     }
