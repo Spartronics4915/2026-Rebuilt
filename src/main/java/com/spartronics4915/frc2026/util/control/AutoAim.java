@@ -165,7 +165,8 @@ public class AutoAim {
         if (lookaheadResult != null) {
             result = result.withYawOmega(
                 DegreesPerSecond.of(
-                    lookaheadResult.yaw().minus(result.yaw()).getDegrees() / lookaheadTime
+                    (lookaheadResult.yaw().minus(result.yaw()).getDegrees() / lookaheadTime) 
+                    - Math.toDegrees(fieldSpeeds.omegaRadiansPerSecond)
                 )
             );
 
