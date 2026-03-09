@@ -409,9 +409,9 @@ public final class Constants {
         public static final int LEAD_MOTOR_ID = 22;
         public static final int FOLLOWER_MOTOR_ID = 23;
 
-        public static final double P = 0.65;
+        public static final double P = 0.4;
         public static final double I = 0.0;
-        public static final double D = 0.002;
+        public static final double D = 0.0;
         public static final double V = 0.123;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
@@ -449,12 +449,12 @@ public final class Constants {
 
         public static final int MOTOR_ID = 21;
 
-        public static final double P = 250.0;
+        public static final double P = 275.0;
         public static final double I = 0.0;
-        public static final double D = 0.1;
+        public static final double D = 0.2;
 
-        public static final double MAX_VELOCITY = 10;
-        public static final double MAX_ACCELERATION = 10;
+        public static final double MAX_VELOCITY = 20;
+        public static final double MAX_ACCELERATION = 20;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
@@ -540,8 +540,8 @@ public final class Constants {
         public static final int MOTOR_ID = 18;
 
         public static final double P = 0.3;
-        public static final double I = 0;
-        public static final double D = 0.0003;
+        public static final double I = 0.0;
+        public static final double D = 0.0;
         public static final double V = 0.24;
 
         public static final double MAX_RPS = 100;
@@ -582,8 +582,8 @@ public final class Constants {
         public static final int MOTOR_ID = 17;
 
         public static final double P = 0.5;
-        public static final double I = 0;
-        public static final double D = 0.0003;
+        public static final double I = 0.0;
+        public static final double D = 0.0;
         public static final double V = 0.462;
 
         public static final double MAX_RPS = 100;
@@ -629,8 +629,8 @@ public final class Constants {
         public static final double I = 0.0;
         public static final double D = 0.0;
 
-        public static final double MAX_VELOCITY = 7.5;
-        public static final double MAX_ACCELERATION = 7.5;
+        public static final double MAX_VELOCITY = 10.0;
+        public static final double MAX_ACCELERATION = 10.0;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
@@ -638,7 +638,7 @@ public final class Constants {
 
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 1.0 / ((12.0/38.0) * (18.0/38.0) * (11.0/84.0));
-        public static final double ENCODER_MECHANISM_RATIO = 11.0/84.0;
+        public static final double ENCODER_MECHANISM_RATIO = 11.0 / 84.0;
         public static final double MAGNET_OFFSET = -0.393;
 
         public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.Clockwise_Positive;

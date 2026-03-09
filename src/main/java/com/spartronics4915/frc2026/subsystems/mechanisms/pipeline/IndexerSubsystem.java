@@ -97,8 +97,8 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
     }
 
     public enum IndexerState {
-        FORWARD(11.0),
-        REVERSE(-11.0),
+        FORWARD(12.0),
+        REVERSE(-12.0),
         OFF(0.0);
 
         public double rps;
