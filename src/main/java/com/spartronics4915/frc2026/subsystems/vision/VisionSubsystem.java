@@ -19,7 +19,6 @@ import com.spartronics4915.frc2026.subsystems.vision.filters.ResultFilters;
 import com.spartronics4915.frc2026.subsystems.vision.processing.PoseFusionEngine;
 import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
 import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
-import com.spartronics4915.frc2026.util.general.PerformanceTracker;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.Matrix;
@@ -88,8 +87,6 @@ public class VisionSubsystem extends SubsystemBase {
     private final DoublePublisher avgDistancePublisher = visionTable.getDoubleTopic("Avg Distance").publish();
     private final DoublePublisher avgAmbiguityPublisher = visionTable.getDoubleTopic("Avg Ambiguity").publish();
     private final DoublePublisher avgAreaPublisher = visionTable.getDoubleTopic("Avg Area").publish();
-    private final DoublePublisher xAnisotropyPublisher = visionTable.getDoubleTopic("X Anisotropy").publish();
-    private final DoublePublisher yAnisotropyPublisher = visionTable.getDoubleTopic("Y Anisotropy").publish();
     private final DoublePublisher latencyPublisher = visionTable.getDoubleTopic("Latency").publish();
     private final DoublePublisher targetCountPublisher = visionTable.getDoubleTopic("Target Count").publish();
 
@@ -266,8 +263,6 @@ public class VisionSubsystem extends SubsystemBase {
         avgDistancePublisher.set(fusedResult.getAverageDistanceToTargets());
         avgAmbiguityPublisher.set(fusedResult.getAmbiguity());
         avgAreaPublisher.set(fusedResult.getAverageArea());
-        xAnisotropyPublisher.set(fusedResult.getXAnisotropy());
-        yAnisotropyPublisher.set(fusedResult.getYAnisotropy());
         latencyPublisher.set(fusedResult.getLatencyMs());
         targetCountPublisher.set(fusedResult.getTargets().size());
 
