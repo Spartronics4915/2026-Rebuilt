@@ -4,20 +4,8 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
 
 /**
- * Converts a field-relative yaw from a  into an optimal
- * robot-relative turret setpoint, handling:
- * <ul>
- *   <li>Physical hard limits</li>
- *   <li>Path selection (shortest vs. flipped) with bidirectional hysteresis
- *       to prevent chattering at the crossover boundary</li>
- *   <li>Dead band to suppress micro-corrections from sensor noise</li>
- *   <li>Turret mounting offset baked in so callers don't manage it</li>
- * </ul>
- *
- * <p>Intended usage in {@code AutoAimController}:
- * <pre>
- *   turret.setSetpoint(rotationController.calculate(result.yaw(), swerve.getRelativePose().getRotation(), turret.getPosition()));
- * </pre>
+ * Converts a field-relative yaw into an optimal robot-relative turret setpoint.
+ * Handles physical limits, path selection hysteresis, and sensor deadbands.
  */
 public class TurretController {
 
@@ -27,47 +15,55 @@ public class TurretController {
     private final double deadband;
     private final Rotation2d mountingOffset;
 
-    private double lastSetpointDeg = 0.0;
+    private double lastSetpointDeg;
     private boolean onFlippedPath = false;
 
     /**
-     * @param minLimit Physical lower bound of the turret
-     * @param maxLimit Physical upper bound of the turret
-     * @param hysteresis Margin required to switch rotation paths
-     *                   The current path is kept unless the other path beats it
-     *                   by this amount, in either direction
-     * @param deadBand Minimum change needed to update the setpoint
-     *                 suppresses micro-corrections from sensor noise
-     * @param mountingOffset Fixed rotational offset between the turret's zero and the
-     *                       robot's forward direction
+     * @param minLimit Physical lower bound (degrees)
+     * @param maxLimit Physical upper bound (degrees)
+     * @param flipDeadband Degrees required to switch rotation paths to prevent chatter
+     * @param deadband Minimum change (degrees) needed to update the setpoint
+     * @param mountingOffset Rotational offset between turret zero and robot forward
      */
     public TurretController(
         double minLimit,
         double maxLimit,
-        double hysteresis,
-        double deadBand,
+        double flipDeadband,
+        double deadband,
         Rotation2d mountingOffset
     ) {
         this.minLimit = minLimit;
         this.maxLimit = maxLimit;
-        this.flipDeadband = hysteresis;
-        this.deadband = deadBand;
+        this.flipDeadband = flipDeadband;
+        this.deadband = deadband;
         this.mountingOffset = mountingOffset;
     }
 
     /**
-     * Computes the optimal turret setpoint for this tick.
+     * Resets the internal state of the controller
+     */
+    public void reset(Rotation2d currentPosition) {
+        this.lastSetpointDeg = currentPosition.getDegrees();
+        this.onFlippedPath = false;
+    }
+
+    /**
+     * Computes the optimal turret setpoint.
      *
-     * @param fieldYaw Field-relative yaw from {@link AutoAim.AutoAimResult#yaw()}
-     * @param robotHeading Current robot heading from the swerve odometry
-     * @param currentPosition Current turret position as reported by the turret encoder
-     * @return Optimal turret setpoint — pass directly to {@code turret.setSetpoint()}
+     * @param fieldYaw Target heading in field coordinates
+     * @param robotHeading Current robot heading from odometry
+     * @param currentPosition Current turret encoder position
+     * @return Optimal turret setpoint
      */
     public Rotation2d calculate(Rotation2d fieldYaw, Rotation2d robotHeading, Rotation2d currentPosition) {
+        // Calculate the ideal target relative to the robot chassis
         double targetDeg = fieldYaw.minus(robotHeading).minus(mountingOffset).getDegrees();
 
-        double delta = Math.IEEEremainder(targetDeg - currentPosition.getDegrees(), 360.0);
-        double shortest = currentPosition.getDegrees() + delta;
+        // Generate the two possible rotation paths
+        double currentDeg = currentPosition.getDegrees();
+        double delta = Math.IEEEremainder(targetDeg - currentDeg, 360.0);
+        
+        double shortest = currentDeg + delta;
         double flipped = shortest - Math.signum(delta) * 360.0;
 
         boolean shortestSafe = isWithinLimits(shortest);
@@ -75,21 +71,39 @@ public class TurretController {
 
         double candidate;
 
-        if (!shortestSafe && !flippedSafe) {
-            onFlippedPath = false;
-            candidate = MathUtil.clamp(shortest, minLimit, maxLimit);
-        } else if (shortestSafe && flippedSafe) {
-            double shortestDist = Math.abs(shortest - lastSetpointDeg);
-            double flippedDist  = Math.abs(flipped  - lastSetpointDeg);
-            onFlippedPath = onFlippedPath
-                ? shortestDist + flipDeadband >= flippedDist
-                : flippedDist + flipDeadband < shortestDist;
+        // Path Selection Logic
+        if (shortestSafe && flippedSafe) {
+            // Both paths are physically possible; use hysteresis to decide
+            double distToShortest = Math.abs(shortest - lastSetpointDeg);
+            double distToFlipped = Math.abs(flipped - lastSetpointDeg);
+
+            if (onFlippedPath) {
+                // Stay flipped unless the shortest path is significantly better
+                if (distToShortest < distToFlipped - flipDeadband) {
+                    onFlippedPath = false;
+                }
+            } else {
+                // Stay on shortest unless flipped path is significantly better
+                if (distToFlipped < distToShortest - flipDeadband) {
+                    onFlippedPath = true;
+                }
+            }
             candidate = onFlippedPath ? flipped : shortest;
+
+        } else if (shortestSafe) {
+            onFlippedPath = false;
+            candidate = shortest;
+        } else if (flippedSafe) {
+            onFlippedPath = true;
+            candidate = flipped;
         } else {
-            onFlippedPath = flippedSafe;
-            candidate = flippedSafe ? flipped : shortest;
+            // Neither path is safe (target is in the dead zone of the turret)
+            // Pick the one closest to the current position and clamp to limits
+            onFlippedPath = Math.abs(flipped - currentDeg) < Math.abs(shortest - currentDeg);
+            candidate = MathUtil.clamp(onFlippedPath ? flipped : shortest, minLimit, maxLimit);
         }
 
+        // Apply Deadband to suppress micro-corrections
         if (Math.abs(candidate - lastSetpointDeg) < deadband) {
             return Rotation2d.fromDegrees(lastSetpointDeg);
         }
@@ -98,17 +112,14 @@ public class TurretController {
         return Rotation2d.fromDegrees(candidate);
     }
 
-    /** @return The last setpoint commanded by {@link #calculate}, in degrees. */
     public double getLastSetpoint() {
         return lastSetpointDeg;
     }
 
-    /** @return Whether the controller is currently routing via the flipped path. */
     public boolean isOnFlippedPath() {
         return onFlippedPath;
     }
 
-    /** @return Whether the turret is currently within its limits. */
     private boolean isWithinLimits(double angle) {
         return angle >= minLimit && angle <= maxLimit;
     }

@@ -119,6 +119,8 @@ public class AutoAimController extends SubsystemBase {
             0.0,
             Rotation2d.kCW_90deg
         );
+
+        turretController.reset(turret.getPosition());
     }
 
     @Override
