@@ -256,10 +256,14 @@ public class AutoAim {
 
             // If we are aiming lower than the target, no velocity can get us there (ignoring lift)
             if (distAboveHub <= 0) continue;
+
+            // v^2 = g * x^2 / (2 * cos^2(theta) * distAboveHub)
             double vSquared = (g * squared(horizontalDistance)) / (2 * squared(angle.getCos()) * distAboveHub);
             double v = Math.sqrt(vSquared);
 
             if (v > maxSpeed) continue;
+
+            // When searching for an ideal velocity, use padding in the collision map.
             if (idealVelocityCollisionMap != null && collisionCheck(idealVelocityCollisionMap, angle, yaw, v, robotSpeeds)) continue;
 
             recommendedSpeed = v;
