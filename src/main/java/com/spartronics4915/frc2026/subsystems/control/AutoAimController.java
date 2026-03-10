@@ -62,12 +62,15 @@ public class AutoAimController extends SubsystemBase {
 
     private final AutoAim autoAim = new AutoAim(
         30,
+        100,
         0.01,
         TURRET_TRANSLATION_3D,
         Rotation2d.fromDegrees(50),
         Rotation2d.fromDegrees(90),
         RPSToMPS(MAX_SHOOTER_RPS),
-        0.02
+        0.02,
+        this::collidesWithHub,
+        this::collidesWithHubWithPadding
     );
 
     private final TurretController turretController;
@@ -116,9 +119,6 @@ public class AutoAimController extends SubsystemBase {
             0.0,
             Rotation2d.kCW_90deg
         );
-
-        autoAim.setCollisionMap(this::collidesWithHub);
-        autoAim.setProcessingCompensation(0.07);
     }
 
     @Override
@@ -158,11 +158,19 @@ public class AutoAimController extends SubsystemBase {
      */
     private AutoAimResult computeAimResult() {
         Translation3d target = (targetOverride != null) ? targetOverride : getDefaultTarget();
+        
+        if (target.equals(BOTTOM_FUNNEL_POSITION)) {
+            autoAim.setCollisionMap(this::collidesWithHub, this::collidesWithHubWithPadding);
+        } else {
+            autoAim.setCollisionMap(null, null);
+        }
+
         return autoAim.calculateDynamicAim(
             swerve.getRelativePose(),
             swerve.getFieldRelativeVelocity(),
             target,
-            RPSToMPS(Robot.isSimulation() ? shooter.getCurrentSetpoint() : shooter.getCurrentRPS())
+            RPSToMPS(Robot.isSimulation() ? shooter.getCurrentSetpoint() : shooter.getCurrentRPS()),
+            0.07 // Dynamic processing compensation can be supplied here
         );
     }
 
@@ -207,7 +215,15 @@ public class AutoAimController extends SubsystemBase {
         }
     }
 
-    private boolean collidesWithHub(Rotation2d pitch, double shotSpeed, boolean usePadding) {
+    private boolean collidesWithHub(Rotation2d pitch, double shotSpeed) {
+        return checkHubCollision(pitch, shotSpeed, false);
+    }
+
+    private boolean collidesWithHubWithPadding(Rotation2d pitch, double shotSpeed) {
+        return checkHubCollision(pitch, shotSpeed, true);
+    }
+
+    private boolean checkHubCollision(Rotation2d pitch, double shotSpeed, boolean usePadding) {
         Translation2d robotPos2d = swerve.getRelativePose().getTranslation()
             .plus(TURRET_TRANSLATION.rotateBy(swerve.getRelativePose().getRotation()));
 

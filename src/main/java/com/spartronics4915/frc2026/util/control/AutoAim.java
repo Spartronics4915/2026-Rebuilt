@@ -14,41 +14,59 @@ import edu.wpi.first.units.measure.AngularVelocity;
 public class AutoAim {
     
     private final int maxIterations;
-    private double convergenceThreshold;
+    private final int angleSearchSteps;
+    private final double convergenceThreshold;
     private final Translation3d turretTransform;
     private final Rotation2d minAngle;
     private final Rotation2d maxAngle;
     private final double maxSpeed;
     private final double lookaheadTime;
-    private double processingCompensation;
-    // BiPredicate parameters:
-    //  - Rotation2d: ground-relative pitch of the projectile
-    //  - Double: ground-relative projectile speed (m/s)
-    //  - Boolean: true when an "extra padding" margin should be applied (e.g. ideal-velocity calc)
-    private TriPredicate<Rotation2d, Double, Boolean> collisionMap;
+    
+    public interface CollisionMap {
+        boolean test(Rotation2d groundPitch, double groundSpeed);
+    }
+    
+    private CollisionMap collisionMap;
+    private CollisionMap idealVelocityCollisionMap;
 
     private final double g = 9.81;
 
     /**
      * Constructor for AutoAim
      * 
-     * @param maxIterations The max number of iterations used to calculate moving auto-aim and collision avoidance. Should be set high enough to
-     *                      allow convergence, but low enough to prevent long runtimes in edge cases.
+     * @param maxIterations The max number of iterations used to calculate moving auto-aim and collision avoidance.
+     * @param angleSearchSteps The number of steps to use when searching for the ideal velocity angle.
      * @param convergenceThreshold The threshold for convergence in meters for the auto-aim calculation.
-     * @param turretTransform The transform from the robot's center to the turret's center, in the robot's coordinate frame.
+     * @param turretTransform The transform from the robot's center to the turret's center.
      * @param minAngle The minimum angle for auto-aim.
      * @param maxAngle The maximum angle for auto-aim.
      * @param maxSpeed The maximum speed for auto-aim.
      * @param lookaheadTime Amount of time auto-aim looks ahead to calculate omega for pitch and yaw.
+     * @param collisionMap A predicate that provides the collision map, or null for no collision map.
+     * @param idealVelocityCollisionMap A predicate that provides the collision map with extra padding.
      */
-    public AutoAim(int maxIterations, double convergenceThreshold, Translation3d turretTransform, Rotation2d minAngle, Rotation2d maxAngle, double maxSpeed, double lookaheadTime) {
+    public AutoAim(int maxIterations, int angleSearchSteps, double convergenceThreshold, Translation3d turretTransform, Rotation2d minAngle, Rotation2d maxAngle, double maxSpeed, double lookaheadTime, CollisionMap collisionMap, CollisionMap idealVelocityCollisionMap) {
         this.maxIterations = maxIterations;
+        this.angleSearchSteps = angleSearchSteps;
         this.convergenceThreshold = convergenceThreshold;
         this.turretTransform = turretTransform;
         this.minAngle = minAngle;
         this.maxAngle = maxAngle;
         this.maxSpeed = maxSpeed;
         this.lookaheadTime = lookaheadTime;
+        this.collisionMap = collisionMap;
+        this.idealVelocityCollisionMap = idealVelocityCollisionMap;
+    }
+
+    /**
+     * Dynamically update the collision maps.
+     * 
+     * @param collisionMap A predicate that provides the new collision map, or null for no collision map.
+     * @param idealVelocityCollisionMap A predicate that provides the new ideal velocity collision map.
+     */
+    public void setCollisionMap(CollisionMap collisionMap, CollisionMap idealVelocityCollisionMap) {
+        this.collisionMap = collisionMap;
+        this.idealVelocityCollisionMap = idealVelocityCollisionMap;
     }
 
     /**
@@ -67,8 +85,8 @@ public class AutoAim {
      */
     public record AutoAimResult(Rotation2d yaw, AngularVelocity yawOmega, Rotation2d pitch, AngularVelocity pitchOmega, double ToF, double recommendedShotSpeed, boolean requiresIdealSpeed) {
         
-        public AutoAimResult(Rotation2d yaw, Rotation2d pitch, double ToF, double recommendedShotSpeed, boolean requiresIdealSpeed) {
-            this(yaw, DegreesPerSecond.of(0), pitch, DegreesPerSecond.of(0), ToF, recommendedShotSpeed, requiresIdealSpeed);
+        public static AutoAimResult withoutOmega(Rotation2d yaw, Rotation2d pitch, double ToF, double recommendedShotSpeed, boolean requiresIdealSpeed) {
+            return new AutoAimResult(yaw, DegreesPerSecond.of(0), pitch, DegreesPerSecond.of(0), ToF, recommendedShotSpeed, requiresIdealSpeed);
         }
 
         public AutoAimResult withYawOmega(AngularVelocity newYawOmega) {
@@ -80,37 +98,6 @@ public class AutoAim {
         }
     }
 
-    /**
-     * Simple three-argument functional interface used so the collision map can receive
-     * an additional boolean flag indicating whether extra padding/margin should be
-     * applied (for example, when testing candidate shots for ideal velocity).
-     */
-    @FunctionalInterface
-    public interface TriPredicate<T, U, V> {
-        boolean test(T t, U u, V v);
-    }
-
-    /**
-     * Sets the collision map for the auto-aim system. Supplier should return true if the shot collides with an obstacle, and false if the shot does not.
-     * 
-     * @param collisionMap A predicate that provides the collision map, or null for no collision map.
-     */
-    public void setCollisionMap(TriPredicate<Rotation2d, Double, Boolean> collisionMap) {
-        this.collisionMap = collisionMap;
-    }
-
-    public void setConvergenceThreshold(double convergenceThreshold) {
-        this.convergenceThreshold = convergenceThreshold;
-    }
-
-    /**
-     * Sets the processing compensation for the auto-aim system. This value is used to account for latency in the system such as vision.
-     * 
-     * @param processingCompensation The compensation (in seconds) for processing latency.
-     */
-    public void setProcessingCompensation(double processingCompensation) {
-        this.processingCompensation = processingCompensation;
-    }
 
     /**
      * Resolves the aim for a moving target / robot, taking into account the robot's current pose, field-relative speeds, target translation, and projectile shooting speed.
@@ -119,9 +106,10 @@ public class AutoAim {
      * @param fieldSpeeds The current field-relative speeds of the robot.
      * @param targetTranslation The translation of the target relative to the field.
      * @param projectileSpeed The shooting speed of the projectile.
+     * @param processingCompensation The compensation (in seconds) for processing latency.
      * @return The result of the auto-aim calculation.
      */
-    public AutoAimResult calculateDynamicAim(Pose2d robotPose, ChassisSpeeds fieldSpeeds, Translation3d targetTranslation, double projectileSpeed) {
+    public AutoAimResult calculateDynamicAim(Pose2d robotPose, ChassisSpeeds fieldSpeeds, Translation3d targetTranslation, double projectileSpeed, double processingCompensation) {
         double turretVxRobot = -fieldSpeeds.omegaRadiansPerSecond * turretTransform.getY();
         double turretVyRobot = fieldSpeeds.omegaRadiansPerSecond * turretTransform.getX();
         
@@ -150,6 +138,10 @@ public class AutoAim {
                 break;
             }
             prevDisplacement = displacement;
+        }
+
+        if (result == null) {
+            return null;
         }
 
         AutoAimResult lookaheadResult = calculateStaticAim(
@@ -243,7 +235,7 @@ public class AutoAim {
             }
             
             // Check collision map if it exists and if it collides
-            if (collisionMap != null && collisionCheck(pitch, yaw, projectileSpeed, robotSpeeds, false)) {
+            if (collisionMap != null && collisionCheck(collisionMap, pitch, yaw, projectileSpeed, robotSpeeds)) {
                 continue;
             }
 
@@ -252,10 +244,11 @@ public class AutoAim {
 
         double recommendedSpeed = -1;
         Rotation2d recommendedPitch = null;
+        
         for (
             Rotation2d angle=minAngle; 
-            angle.minus(maxAngle).getDegrees() < 0; 
-            angle = angle.plus(maxAngle.minus(minAngle).div(maxIterations))
+            angle.getRadians() < maxAngle.getRadians(); 
+            angle = angle.plus(maxAngle.minus(minAngle).div(angleSearchSteps))
         ) {
             // Calculate height difference between straight-line path and target at distance x
             // dist = x * tan(theta) - (targetZ - turretZ)
@@ -263,27 +256,24 @@ public class AutoAim {
 
             // If we are aiming lower than the target, no velocity can get us there (ignoring lift)
             if (distAboveHub <= 0) continue;
-
-            // v^2 = g * x^2 / (2 * cos^2(theta) * distAboveHub)
             double vSquared = (g * squared(horizontalDistance)) / (2 * squared(angle.getCos()) * distAboveHub);
             double v = Math.sqrt(vSquared);
 
             if (v > maxSpeed) continue;
-            // When searching for an ideal velocity, use padding in the collision map.
-            if (collisionMap != null && collisionCheck(angle, yaw, v, robotSpeeds, true)) continue;
+            if (idealVelocityCollisionMap != null && collisionCheck(idealVelocityCollisionMap, angle, yaw, v, robotSpeeds)) continue;
 
             recommendedSpeed = v;
             recommendedPitch = angle;
             break;
         }
 
-        if (recommendedSpeed == -1) {
-            return new AutoAimResult(yaw, null, -1, -1, false);
+        if (recommendedSpeed == -1 || recommendedPitch == null) {
+            return AutoAimResult.withoutOmega(yaw, null, -1, -1, false);
         }
 
         if (validSolutions.isEmpty()) {
             double timeOfFlight = horizontalDistance / (recommendedSpeed * recommendedPitch.getCos());
-            return new AutoAimResult(yaw, recommendedPitch, timeOfFlight, recommendedSpeed, true);
+            return AutoAimResult.withoutOmega(yaw, recommendedPitch, timeOfFlight, recommendedSpeed, true);
         }
 
         // Select the best solution (usually lowest angle)
@@ -296,7 +286,7 @@ public class AutoAim {
 
         double timeOfFlight = horizontalDistance / (projectileSpeed * selectedPitch.getCos());
 
-        return new AutoAimResult(yaw, selectedPitch, timeOfFlight, recommendedSpeed, false);
+        return AutoAimResult.withoutOmega(yaw, selectedPitch, timeOfFlight, recommendedSpeed, false);
     }
 
     private double[] quadraticSolver(double a, double b, double c) {
@@ -329,7 +319,7 @@ public class AutoAim {
         return value * value;
     }
 
-    private boolean collisionCheck(Rotation2d pitch, Rotation2d yaw, double projectileSpeed, ChassisSpeeds robotSpeeds, boolean usePadding) {
+    private boolean collisionCheck(CollisionMap map, Rotation2d pitch, Rotation2d yaw, double projectileSpeed, ChassisSpeeds robotSpeeds) {
         double v_launch_xy = projectileSpeed * pitch.getCos();
         double v_launch_z = projectileSpeed * pitch.getSin();
         
@@ -343,6 +333,6 @@ public class AutoAim {
         double ground_pitch = Math.atan2(v_ground_z, Math.hypot(v_ground_x, v_ground_y));
         double ground_speed = Math.sqrt(squared(v_ground_x) + squared(v_ground_y) + squared(v_ground_z));
 
-        return collisionMap.test(new Rotation2d(ground_pitch), ground_speed, usePadding);
+        return map.test(new Rotation2d(ground_pitch), ground_speed);
     }
 }
