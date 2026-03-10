@@ -85,6 +85,8 @@ public class ZoneTransition {
             )
         ));
 
+        Autos.removePastPoses(swerve, poses, toNeutralZone);
+
         Autos.addStartingPoseToPath(swerve, poses);
 
         List<Waypoint> waypoints = PathPlannerPath.waypointsFromPoses(poses);
@@ -134,8 +136,7 @@ public class ZoneTransition {
             )
         ));
 
-        // TODO: Constraint stuff doesnt work
-        //Autos.removePastPoses(swerve, poses, toNeutralZone);
+        Autos.removePastPoses(swerve, poses, toNeutralZone);
 
         Autos.addStartingPoseToPath(swerve, poses);
 

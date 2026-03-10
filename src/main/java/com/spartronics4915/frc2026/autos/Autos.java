@@ -51,26 +51,30 @@ public final class Autos {
         );
     }
 
-    public static void addStartingPoseToPath(SwerveSubsystem swerve, List<Pose2d> waypoints) {
-        Pose2d pose = flipIfNeeded(
+    public static Pose2d getStartingPose(SwerveSubsystem swerve, List<Pose2d> waypoints) {
+        return flipIfNeeded(
             swerve,
             new Pose2d(
                 swerve.getPose().getTranslation(), 
                 getPathVelocityHeading(swerve, waypoints.get(0))
             )
         );
+    }
 
-        waypoints.add(0, pose);
+    public static void addStartingPoseToPath(SwerveSubsystem swerve, List<Pose2d> waypoints) {
+
+        waypoints.add(0, getStartingPose(swerve, waypoints));
     }
 
     public static void removePastPoses(SwerveSubsystem swerve, List<Pose2d> waypoints, boolean toNeutralZone) {
-        double y = swerve.getPose().getY();
+        double x = swerve.getRelativePose().getX();
 
         for (int i = waypoints.size() - 1; i >= 0; i--) {
             Pose2d p = waypoints.get(i);
 
-            if ((p.getY() > y) ^ toNeutralZone) {
+            if ((p.getX() > x) ^ toNeutralZone) {
                 waypoints.remove(i);
+                waypoints.add(i, getStartingPose(swerve, waypoints));
             }
         }
     }
