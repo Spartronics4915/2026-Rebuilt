@@ -184,6 +184,7 @@ public class AutoAimController extends SubsystemBase {
 
         if (!isAimEnabled) return;
         if (result.pitch() != null) {
+            // This might be a little iffy because of flywheel losing speed
             hood.setComplexSetpoint(
                 Rotation2d.kCCW_Pi_2.minus(result.pitch()), 
                 result.pitchOmega() != null ? 
