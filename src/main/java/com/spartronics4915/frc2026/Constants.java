@@ -683,7 +683,7 @@ public final class Constants {
         public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 1;
-        public static final double MOTOR_MECHANISM_RATIO = 3;
+        public static final double MOTOR_MECHANISM_RATIO = 5;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
