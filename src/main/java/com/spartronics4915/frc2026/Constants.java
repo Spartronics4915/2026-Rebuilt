@@ -164,8 +164,8 @@ public final class Constants {
             );
 
             public static final PathConstraints bumpPathConstraints = new PathConstraints(
-                2.5,
-                2.5,
+                4,
+                4,
                 2 * Math.PI,
                 1 * Math.PI
             );

@@ -94,12 +94,13 @@ public class Superstructure extends SubsystemBase {
         map.addZone(Zone.BUMP, pos ->
             !inTrenchColumn(pos) && Math.abs(hubDeltaX(pos)) < bumpLength.in(Meters) / 2.0);
 
-        map.addZone(Zone.TOWER, FieldRegion.rectangle(
-            (towerPose.getX() / 2) + towerXTransform, 
-            (towerPose.getX() / 2) - towerXTransform, 
-            towerPose.getY() - towerYTransform, 
-            towerPose.getY() + towerYTransform
-        )
+        map.addZone(Zone.TOWER, 
+            FieldRegion.rectangle(
+                (towerPose.getX() / 2) - towerXTransform, 
+                (towerPose.getX() / 2) + towerXTransform, 
+                towerPose.getY() - towerYTransform, 
+                towerPose.getY() + towerYTransform
+            )
         );
 
         map.addZone(Zone.NEUTRAL_ZONE, pos -> {

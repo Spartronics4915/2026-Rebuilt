@@ -345,7 +345,7 @@ public class AutoAimController extends SubsystemBase {
     /** True when the shot is solvable AND the current flywheel speed is sufficient. */
     public boolean isReadyToShoot() {
         return hasValidResult() && !lastResult.requiresIdealSpeed()
-            && (isTurretReady() /*&& isHoodReady()*/);
+            && (isTurretReady() && isHoodReady());
     }
 
     public boolean isTurretReady() {
@@ -360,7 +360,7 @@ public class AutoAimController extends SubsystemBase {
     public boolean isHoodReady() {
         return Math.abs(
             hood.getPosition().minus(hood.getCurrentSetpoint()).getDegrees()
-        ) <= 4;
+        ) <= 3;
     }
 
     //#endregion
