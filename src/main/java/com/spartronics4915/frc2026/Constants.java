@@ -131,7 +131,6 @@ public final class Constants {
             public static final Translation2d hubPose = new Translation2d(4.625, 4.035);
             public static final Translation2d outpostPose = new Translation2d(0.0, 0.666);
             public static final Translation2d depotPose = new Translation2d(0.0, 5.964);
-            public static final Translation2d fuelZoneXAxisPose = new Translation2d(7.512, 4.035);
 
             public static final Translation2d towerTransform = new Translation2d(0.0, 0.49075);
             public static final Translation2d trenchTransform = new Translation2d(0, -3.4);
@@ -139,7 +138,7 @@ public final class Constants {
             public static final Translation2d bumpTrenchDivTransform = new Translation2d(0, 2.604);
             public static final Translation2d approachTransform = new Translation2d(-1.1, 0);
             public static final Translation2d exitTransform = new Translation2d(centerPose.getX() - hubPose.getX(), 0);
-            public static final Translation2d fuelIntakeTransform = new Translation2d(0, 2.308);
+            public static final Translation2d fuelIntakeTransform = new Translation2d(0, 1.5);
 
             public static final Distance robotLength = Millimeters.of(818.5);
             public static final Distance robotWidth = Millimeters.of(875.65);
