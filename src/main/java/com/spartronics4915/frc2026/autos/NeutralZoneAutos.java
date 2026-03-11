@@ -2,6 +2,7 @@ package com.spartronics4915.frc2026.autos;
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.*;
 import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.MetersPerSecond;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +20,7 @@ import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 
@@ -29,7 +31,7 @@ public class NeutralZoneAutos {
         this.swerve = swerve;
     }
 
-    public Command generateQuadrantCommand(boolean isRightSide) {
+    public Command generateQuadrantCommand(boolean isRightSide, boolean endWithSpeed) {
         return Commands.defer(() -> {
             double sideMultiplier = isRightSide ? -1 : 1;
             Rotation2d rotation = Rotation2d.fromDegrees(isRightSide ? 90 : -90);
@@ -59,7 +61,7 @@ public class NeutralZoneAutos {
                 List.of(),
                 defaultPathConstraints,
                 Autos.generateStartingState(swerve),
-                new GoalEndState(0.0, rotation),
+                new GoalEndState(endWithSpeed ? intakePathConstraints.maxVelocity() : MetersPerSecond.of(0), rotation),
                 false
             );
             
@@ -67,7 +69,7 @@ public class NeutralZoneAutos {
         }, Set.of(swerve));
     }
 
-    public Command generateHalfCommand(boolean isRightSide) {
+    public Command generateHalfCommand(boolean isRightSide, boolean endWithSpeed) {
         return Commands.defer(() -> {
             double sideMultiplier = isRightSide ? -1 : 1;
             Rotation2d rotation = Rotation2d.fromDegrees(isRightSide ? 90 : -90);
@@ -99,7 +101,7 @@ public class NeutralZoneAutos {
                 List.of(),
                 defaultPathConstraints,
                 Autos.generateStartingState(swerve),
-                new GoalEndState(intakePathConstraints.maxVelocity(), rotation),
+                new GoalEndState(endWithSpeed ? intakePathConstraints.maxVelocity() : MetersPerSecond.of(0), rotation),
                 false
             );
 

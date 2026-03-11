@@ -26,14 +26,19 @@ public class ComplexAutoChooser {
      * Each step contains the allowed step following it, which is used to determine which options to show in the UI after a step is selected.
      */
     public enum AutoSegment {
-        L_TRENCH_TO_NEUTRAL("LT -> N", WITHIN_NEUTRAL),
-        L_BUMP_TO_NEUTRAL("LB -> N", WITHIN_NEUTRAL),
-        R_TRENCH_TO_NEUTRAL("RT -> N", WITHIN_NEUTRAL),
-        R_BUMP_TO_NEUTRAL("RB -> N", WITHIN_NEUTRAL),
+        L_TRENCH_TO_NEUTRAL("LT -> N", READY_TO_INTAKE),
+        L_BUMP_TO_NEUTRAL("LB -> N", READY_TO_INTAKE),
+        R_TRENCH_TO_NEUTRAL("RT -> N", READY_TO_INTAKE),
+        R_BUMP_TO_NEUTRAL("RB -> N", READY_TO_INTAKE),
+
+        INTAKE_QUARTER("Intake Quarter", WITHIN_NEUTRAL),
+        INTAKE_HALF("Intake Half", WITHIN_NEUTRAL),
+
         L_TRENCH_TO_ALLIANCE("LT -> A", WITHIN_ALLIANCE),
         L_BUMP_TO_ALLIANCE("LB -> A", WITHIN_ALLIANCE),
         R_TRENCH_TO_ALLIANCE("RT -> A", WITHIN_ALLIANCE),
         R_BUMP_TO_ALLIANCE("RB -> A", WITHIN_ALLIANCE),
+
         DEPOT("-> D", WITHIN_ALLIANCE),
         OUTPOST("-> O", WITHIN_ALLIANCE),
         // TOWER("-> T", NONE),
@@ -57,6 +62,7 @@ public class ComplexAutoChooser {
      * Enum used to shorten (and remove enum loop) of the AutoSegment enum.
      */
     public enum AllowedTransitions {
+        READY_TO_INTAKE(() -> new AutoSegment[]{INTAKE_QUARTER, INTAKE_HALF}),
         WITHIN_NEUTRAL(() -> new AutoSegment[]{L_TRENCH_TO_ALLIANCE, L_BUMP_TO_ALLIANCE, R_TRENCH_TO_ALLIANCE, R_BUMP_TO_ALLIANCE}),
         WITHIN_ALLIANCE(() -> new AutoSegment[]{L_TRENCH_TO_NEUTRAL, L_BUMP_TO_NEUTRAL, R_TRENCH_TO_NEUTRAL, R_BUMP_TO_NEUTRAL, DEPOT, OUTPOST, PAUSE}),
         NONE(() -> new AutoSegment[]{});
@@ -155,11 +161,11 @@ public class ComplexAutoChooser {
         }
     }
 
-    private Command addNeutralZoneCommand(boolean inRight, boolean outRight) {
-        if (inRight == outRight) {
-            return neutralZoneFactory.generateQuadrantCommand(inRight);
+    private Command addNeutralZoneCommand(AutoSegment segment, boolean inRight, boolean outRight) {
+        if (segment == INTAKE_QUARTER) {
+            return neutralZoneFactory.generateQuadrantCommand(inRight, inRight ^ outRight);
         } else {
-            return neutralZoneFactory.generateHalfCommand(inRight);
+            return neutralZoneFactory.generateHalfCommand(inRight, inRight ^ outRight);
         }
     }
 
@@ -170,6 +176,7 @@ public class ComplexAutoChooser {
     public Command getAuto() {
         ArrayList<Command> commands = new ArrayList<>();
         boolean right = false;
+        AutoSegment prevSegment = UNUSED;
         for (int i = 0; i < selectedSegments.length; i++) {
             AutoSegment segment = selectedSegments[i];
 
@@ -194,22 +201,28 @@ public class ComplexAutoChooser {
                     right = true;
                     commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, true));
                     break;
+
+                case INTAKE_QUARTER:
+                case INTAKE_HALF:
+                    break;
+
                 case L_TRENCH_TO_ALLIANCE:
-                    commands.add(addNeutralZoneCommand(right, false));
+                    commands.add(addNeutralZoneCommand(prevSegment, right, false));
                     commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, false));
                     break;
                 case L_BUMP_TO_ALLIANCE:
-                    commands.add(addNeutralZoneCommand(right, false));
+                    commands.add(addNeutralZoneCommand(prevSegment, right, false));
                     commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP, false));
                     break;
                 case R_TRENCH_TO_ALLIANCE:
-                    commands.add(addNeutralZoneCommand(right, true));
+                    commands.add(addNeutralZoneCommand(prevSegment, right, true));
                     commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, false));
                     break;
                 case R_BUMP_TO_ALLIANCE:
-                    commands.add(addNeutralZoneCommand(right, true));
+                    commands.add(addNeutralZoneCommand(prevSegment, right, true));
                     commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, false));
                     break;
+
                 case DEPOT:
                     commands.add(POIFactory.generateCommand(DriveToPOI.POI.DEPOT));
                     break;
@@ -226,6 +239,8 @@ public class ComplexAutoChooser {
                     System.out.println("Chat what are we doing?");
                     break;
             }
+
+            prevSegment = segment;
         }
 
         Command[] commandsArray = new Command[commands.size()];
