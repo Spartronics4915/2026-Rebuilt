@@ -345,7 +345,7 @@ public class AutoAimController extends SubsystemBase {
     /** True when the shot is solvable AND the current flywheel speed is sufficient. */
     public boolean isReadyToShoot() {
         return hasValidResult() && !lastResult.requiresIdealSpeed()
-            && (isTurretReady() && isHoodReady()) && shooter.atGoal();
+            && (isTurretReady() && isHoodReady());
     }
 
     public boolean isTurretReady() {

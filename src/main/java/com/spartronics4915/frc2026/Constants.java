@@ -445,9 +445,6 @@ public final class Constants {
         // how long the speed must stay OUT of tolerance before switching back to duty-cycle.
         public static final double TORQUE_CURRENT_DEBOUNCE_SEC = 0.025;
 
-        // how long the speed must stay IN tolerance before atGoal() returns true.
-        public static final double AT_GOAL_DEBOUNCE_SEC = 0.1;
-
         // holding torque current applied in torque-current bang-bang mode when slightly below setpoint
         public static final double HOLDING_TORQUE_CURRENT_AMPS = 20.0;
 

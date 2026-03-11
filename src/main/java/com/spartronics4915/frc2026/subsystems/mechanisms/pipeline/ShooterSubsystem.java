@@ -37,14 +37,12 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     // --- Debouncers ---
     private final Debouncer torqueCurrentDebouncer = new Debouncer(TORQUE_CURRENT_DEBOUNCE_SEC, DebounceType.kFalling);
-    private final Debouncer atGoalDebouncer = new Debouncer(AT_GOAL_DEBOUNCE_SEC, DebounceType.kFalling);
 
     // --- State ---
     private double currentSetpoint = 0.0;
     private double maxRPS;
     private ShooterClamp RPSClamp;
     private boolean lastTorqueCurrentControl = false;
-    private boolean atGoal = false;
     private long launchCount = 0;
 
     // --- Telemetry ---
@@ -102,8 +100,6 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
             final boolean inTolerance = Math.abs(error) <= BANG_BANG_TOLERANCE_RPS;
             final boolean useTorqueCurrent = torqueCurrentDebouncer.calculate(inTolerance);
 
-            atGoal = atGoalDebouncer.calculate(inTolerance);
-
             if (!useTorqueCurrent && lastTorqueCurrentControl) launchCount++;
             lastTorqueCurrentControl = useTorqueCurrent;
 
@@ -131,7 +127,6 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
         } else {
             // if setpoint is zero, coast and clear goal state.
             leadMotor.setControl(voltageOut.withOutput(0.0));
-            atGoal = false;
             lastTorqueCurrentControl = false;
             modePublisher.accept(-1.0); // stopped
         }
@@ -155,10 +150,6 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     public ShooterClamp getShooterClamp() { 
         return RPSClamp; 
-    }
-
-    public boolean atGoal() { 
-        return atGoal; 
     }
 
     public long getLaunchCount() { 
