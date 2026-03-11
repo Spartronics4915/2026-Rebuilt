@@ -64,7 +64,7 @@ public class AutoAimController extends SubsystemBase {
         30,
         100,
         0.01,
-        TURRET_TRANSLATION_3D,
+        turretTranslation3D,
         Rotation2d.fromDegrees(50),
         Rotation2d.fromDegrees(90),
         RPSToMPS(MAX_SHOOTER_RPS),
@@ -227,7 +227,7 @@ public class AutoAimController extends SubsystemBase {
 
     private boolean checkHubCollision(Rotation2d pitch, double shotSpeed, boolean usePadding) {
         Translation2d robotPos2d = swerve.getRelativePose().getTranslation()
-            .plus(TURRET_TRANSLATION.rotateBy(swerve.getRelativePose().getRotation()));
+            .plus(turretTranslation2D.rotateBy(swerve.getRelativePose().getRotation()));
 
         Translation2d targetPos2d = new Translation2d(hubPose.getX(), hubPose.getY());
 

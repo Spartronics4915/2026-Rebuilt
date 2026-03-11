@@ -229,6 +229,24 @@ public class SuperstructureCommands {
         );
     }
 
+    /** Specifically for the Tower zone to ensure the shooter is clamped */
+    public Command tower() {
+        return Commands.sequence(
+            Commands.parallel(
+                conditionalAutoAimOn(),
+                conditionalAutoShootOff(),
+                hood.setClampCommand(HoodClamp.UNRESTRICTED),
+                shooter.setClampCommand(ShooterClamp.RESTRICTED),
+                conditionalPivotReady(),
+                climber.setStateCommand(ClimberState.DOWN)),
+            Commands.waitUntil(this::isPivotSafe),
+            Commands.parallel(
+                turret.setClampCommand(TurretClamp.UNRESTRICTED),
+                conditionalIntakeOn()
+            )
+        );
+    }
+
     public Command cruise() {
         return Commands.sequence(
             Commands.parallel(
@@ -319,13 +337,13 @@ public class SuperstructureCommands {
     }
 
     private boolean isPivotSafe() {
-        return (Robot.isReal() ? pivot.getPosition() : pivot.getSetpoint()).getDegrees() <= PIVOT_SAFE_THRESHOLD.getDegrees();
+        return (Robot.isReal() ? pivot.getPosition() : pivot.getSetpoint()).getDegrees() <= pivotSafeThreshold.getDegrees();
     }
 
     private boolean isTurretSafe() {
         double degrees = turret.getPosition().getDegrees();
-        return degrees >= TURRET_MIN_SAFE_THRESHOLD.getDegrees() 
-            && degrees <= TURRET_MAX_SAFE_THRESHOLD.getDegrees();
+        return degrees >= turretMinSafeThreshold.getDegrees() 
+            && degrees <= turretMaxSafeThreshold.getDegrees();
     }
 
     //#endregion

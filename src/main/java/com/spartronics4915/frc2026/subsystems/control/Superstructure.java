@@ -9,6 +9,7 @@ import java.util.Set;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands.PipelineState;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
+import com.spartronics4915.frc2026.util.control.FieldRegion;
 import com.spartronics4915.frc2026.util.control.FieldZoneMap;
 
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
@@ -32,6 +33,7 @@ public class Superstructure extends SubsystemBase {
         ALLIANCE_ZONE,
         TRENCH,
         BUMP,
+        TOWER,
         NEUTRAL_ZONE,
         OPPONENT_ZONE,
         UNKNOWN
@@ -92,6 +94,14 @@ public class Superstructure extends SubsystemBase {
         map.addZone(Zone.BUMP, pos ->
             !inTrenchColumn(pos) && Math.abs(hubDeltaX(pos)) < bumpLength.in(Meters) / 2.0);
 
+        map.addZone(Zone.TOWER, FieldRegion.rectangle(
+            (towerPose.getX() / 2) + towerXTransform, 
+            (towerPose.getX() / 2) - towerXTransform, 
+            towerPose.getY() - towerYTransform, 
+            towerPose.getY() + towerYTransform
+        )
+        );
+
         map.addZone(Zone.NEUTRAL_ZONE, pos -> {
             double dx = hubDeltaX(pos);
             boolean closerToBlueHub = pos.minus(centerPose).getX() < 0;
@@ -108,7 +118,7 @@ public class Superstructure extends SubsystemBase {
     @Override
     public void periodic() {
         Translation2d turretTranslation = swerve.getRelativePose().getTranslation()
-            .plus(TURRET_TRANSLATION.rotateBy(swerve.getPose().getRotation()));
+            .plus(turretTranslation2D.rotateBy(swerve.getPose().getRotation()));
 
         Zone newZone = zoneMap.evaluate(turretTranslation);
 

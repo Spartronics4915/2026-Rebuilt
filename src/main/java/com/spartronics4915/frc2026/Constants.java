@@ -102,6 +102,7 @@ public final class Constants {
         //#region Autos
 
         public static final class AutoConstants {
+            
             public static final PIDConstants translationPID = new PIDConstants(9,0,0.01);
             public static final PIDConstants rotationPID = new PIDConstants(6.0,0,0.01);
             public static final PPHolonomicDriveController driveController = new PPHolonomicDriveController(
@@ -347,15 +348,18 @@ public final class Constants {
 
     public static final class SuperstructureConstants {
         
-        public static final Translation2d TURRET_TRANSLATION = new Translation2d(-0.1185, -0.1568);
-        public static final Translation3d TURRET_TRANSLATION_3D = new Translation3d(TURRET_TRANSLATION.getX(), TURRET_TRANSLATION.getY(), Units.inchesToMeters(21.443748 + 2.955));
+        public static final Translation2d turretTranslation2D = new Translation2d(-0.1185, -0.1568);
+        public static final Translation3d turretTranslation3D = new Translation3d(turretTranslation2D.getX(), turretTranslation2D.getY(), Units.inchesToMeters(21.443748 + 2.955));
 
-        public static final Rotation2d PIVOT_SAFE_THRESHOLD = Rotation2d.fromDegrees(100);
-        public static final Rotation2d TURRET_MIN_SAFE_THRESHOLD = Rotation2d.fromDegrees(-10);
-        public static final Rotation2d TURRET_MAX_SAFE_THRESHOLD = Rotation2d.fromDegrees(10);
+        public static final Rotation2d pivotSafeThreshold = Rotation2d.fromDegrees(100);
+        public static final Rotation2d turretMinSafeThreshold = Rotation2d.fromDegrees(-10);
+        public static final Rotation2d turretMaxSafeThreshold = Rotation2d.fromDegrees(10);
 
         public static final Distance bumpLength = Inches.of(48.93);
         public static final Distance trenchLength = Inches.of(50);
+
+        public static final double towerXTransform = 0.5305;
+        public static final double towerYTransform = 0.49075;
 
         /**
          * How far ahead (in seconds) to project the robot's position when determining
