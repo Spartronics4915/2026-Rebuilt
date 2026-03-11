@@ -6,7 +6,6 @@ import org.photonvision.targeting.PhotonTrackedTarget;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 
@@ -19,12 +18,8 @@ public class ApriltagResult implements ResultInterface {
     private Matrix<N3, N1> stdDevs;
     private final List<PhotonTrackedTarget> targets;
     private final int targetCount;
-    private final double avgDistance;
     private final double avgAmbiguity;
     private final double avgArea;
-    private final double x_anisotropy;
-    private final double y_anisotropy;
-    private final ChassisSpeeds speeds;
 
     public ApriltagResult(
         String name,
@@ -33,12 +28,8 @@ public class ApriltagResult implements ResultInterface {
         Pose2d resultPose,
         Matrix<N3, N1> resultStdDevs,
         List<PhotonTrackedTarget> targets,
-        double averageDistance,
         double averageAmbiguity,
-        double averageArea,
-        double horizontalAnisotropy,
-        double verticalAnisotropy,
-        ChassisSpeeds newSpeeds
+        double averageArea
     ) {
         this.sourceName = name;
         this.timestampSeconds = timestamp;
@@ -47,12 +38,8 @@ public class ApriltagResult implements ResultInterface {
         this.stdDevs = resultStdDevs;
         this.targets = List.copyOf(targets);
         this.targetCount = targets.size();
-        this.avgDistance = averageDistance;
         this.avgAmbiguity = averageAmbiguity;
         this.avgArea = averageArea;
-        this.x_anisotropy = horizontalAnisotropy;
-        this.y_anisotropy = verticalAnisotropy;
-        this.speeds = newSpeeds;
     }
 
     //#region ------ Getters ------
@@ -114,14 +101,6 @@ public class ApriltagResult implements ResultInterface {
     }
 
     /**
-     * Gets the average distance to the targets
-     */
-    @Override
-    public double getAverageDistanceToTargets() {
-        return avgDistance;
-    }
-
-    /**
      * Gets the average ambiguity
      */
     @Override
@@ -135,30 +114,6 @@ public class ApriltagResult implements ResultInterface {
     @Override
     public double getAverageArea() {
         return avgArea;
-    }
-
-    /**
-     * Gets the horizontal anisotropy
-     */
-    @Override
-    public double getXAnisotropy() {
-        return x_anisotropy;
-    }
-
-    /**
-     * Gets the vertical anisotropy
-     */
-    @Override
-    public double getYAnisotropy() {
-        return y_anisotropy;
-    }
-
-    /**
-     * Gets the chassis speeds of the robot at the capture timestamp
-     */
-    @Override
-    public ChassisSpeeds getChassisSpeeds() {
-        return speeds;
     }
 
     //#endregion ------ Getters ------

@@ -253,12 +253,10 @@ public final class Constants {
         public static final class StdDevConstants {
             public static final double baseXYStdDev = 0.22;  // 0.5 — trust vision closer to odometry levels
             public static final double baseThetaStdDev = 0.2;  // 0.5 — heading from vision is still less reliable
-            public static final double distanceWeight = 0.9;  // 1.0 — less aggressive distance penalty
             public static final double ambiguityWeight = 0.9;  // 0.8
             public static final double areaWeight = 0.9;  // 0.6
-            //public static final double anisotropyWeight = 0.9;  // 0.6
             public static final double motionWeight = 0.3;  // 0.4
-            //public static final double latencyWeight = 2;  // 0.4
+            public static final double latencyWeight = 1;  // 0.4
 
             /**
              * Smoothing factor for the exponential moving average applied to distance and area.
@@ -314,7 +312,7 @@ public final class Constants {
                     "evan", 
                     LAYOUT,
                     LEFT_CAMERA_TRANSFORM, 
-                    new StdDevCalculator(false, 1.2),
+                    new StdDevCalculator(1.2),
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
                 ),
@@ -322,7 +320,7 @@ public final class Constants {
                     "daniil", 
                     LAYOUT,
                     RIGHT_CAMERA_TRANSFORM,
-                    new StdDevCalculator(false, 1.2),
+                    new StdDevCalculator(1.2),
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
                 ),
@@ -330,15 +328,12 @@ public final class Constants {
                     "val", 
                     LAYOUT,
                     BACK_CAMERA_TRANSFORM,
-                    new StdDevCalculator(false, 1.2),
+                    new StdDevCalculator(1.2),
                     SIM_CAMERA_PROPERTIES,
                     () -> new ChassisSpeeds()
                 )
             );
         }
-
-        public static final int MAX_TAG_ID = 34;
-        public static final double MIN_COSINE_VALUE = 0.01;
 
     }
 

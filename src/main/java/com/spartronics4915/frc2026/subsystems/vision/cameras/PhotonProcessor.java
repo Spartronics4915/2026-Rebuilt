@@ -18,7 +18,6 @@ import org.photonvision.targeting.PhotonTrackedTarget;
 import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
 import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
 import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
-import static com.spartronics4915.frc2026.Constants.VisionConstants.*;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.Matrix;
@@ -157,16 +156,8 @@ public class PhotonProcessor implements ProcessorInterface {
         List<PhotonTrackedTarget> targets = rawResult.getTargets();
         int targetCount = targets.size();
 
-        double avgDistance = calculateAverageDistance(targets);
         double avgAmbiguity = calculateAmbiguity(targets);
         double avgArea = calculateAverageArea(targets);
-        double xAnisotropy = calculateXAnisotropy(targets);
-        double yAnisotropy = calculateYAnisotropy(targets);
-
-        ChassisSpeeds robotVelocity = robotVelocitySupplier.get();
-        if (robotVelocity == null) {
-            robotVelocity = new ChassisSpeeds();
-        }
 
         Optional<EstimatedRobotPose> poseOptional = (targetCount > 1)
             ? poseEstimator.estimateCoprocMultiTagPose(rawResult)
@@ -180,12 +171,8 @@ public class PhotonProcessor implements ProcessorInterface {
         double latency = rawResult.metadata.getLatencyMillis();
 
         Matrix<N3, N1> stdDevs = stdDevCalculator.calculate(
-            avgDistance,
             avgAmbiguity,
             avgArea,
-            xAnisotropy,
-            yAnisotropy,
-            robotVelocity,
             latency,
             targetCount
         );
@@ -197,30 +184,14 @@ public class PhotonProcessor implements ProcessorInterface {
             resultantPose,
             stdDevs,
             targets,
-            avgDistance,
             avgAmbiguity,
-            avgArea,
-            xAnisotropy,
-            yAnisotropy,
-            robotVelocity
+            avgArea
         ));
     }
 
     //#endregion
 
     //#region Calculation
-
-    /**
-     * Calculates the average distance to a list of photon vision targets.
-     */
-    private double calculateAverageDistance(List<PhotonTrackedTarget> targets) {
-        if (targets.isEmpty()) return 0.0;
-        double sum = 0.0;
-        for (PhotonTrackedTarget target : targets) {
-            sum += target.getBestCameraToTarget().getTranslation().getNorm();
-        }
-        return sum / targets.size();
-    }
 
     /**
      * Calculates the average ambiguity from a list of photon vision targets.
@@ -249,34 +220,6 @@ public class PhotonProcessor implements ProcessorInterface {
             sum += target.getArea();
         }
         return sum / targets.size();
-    }
-
-    /**
-     * Calculates the average x anisotropy (yaw-based uncertainty)
-     * from a list of photon vision targets.
-     */
-    private static double calculateXAnisotropy(List<PhotonTrackedTarget> targets) {
-        if (targets.isEmpty()) return 1.0;
-        double sumAbsYaw = 0.0;
-        for (PhotonTrackedTarget target : targets) {
-            sumAbsYaw += Math.abs(target.getYaw());
-        }
-        double avgYawRad = Math.toRadians(sumAbsYaw / targets.size());
-        return 1.0 / Math.max(Math.cos(avgYawRad), MIN_COSINE_VALUE);
-    }
-
-    /**
-     * Calculates the average y anisotropy (pitch-based uncertainty)
-     * from a list of photon vision targets.
-     */
-    private static double calculateYAnisotropy(List<PhotonTrackedTarget> targets) {
-        if (targets.isEmpty()) return 1.0;
-        double sumAbsPitch = 0.0;
-        for (PhotonTrackedTarget target : targets) {
-            sumAbsPitch += Math.abs(target.getPitch());
-        }
-        double avgPitchRad = Math.toRadians(sumAbsPitch / targets.size());
-        return 1.0 / Math.max(Math.cos(avgPitchRad), MIN_COSINE_VALUE);
     }
 
     //#endregion

@@ -15,7 +15,6 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 
@@ -24,15 +23,18 @@ import edu.wpi.first.math.numbers.N3;
  */
 public class PoseFusionEngine {
 
+    private final List<ApriltagResult> sortedScratch = new ArrayList<>(8);
+    private final List<ApriltagResult> currentGroup = new ArrayList<>(8);
+    private final List<ApriltagResult> bestGroup = new ArrayList<>(8);
+    private final List<ApriltagResult> filteredScratch = new ArrayList<>(8);
+    private final List<ApriltagResult> validScratch = new ArrayList<>(8);
+    private final List<PhotonTrackedTarget> targetScratch = new ArrayList<>(16);
+    private final StringBuilder nameBuilder = new StringBuilder(64);
+
     /**
      * Fuse multiple AprilTag results into a single, more accurate pose estimate.
-     *
-     * @param apriltagResults List of results from different cameras
-     * @param config Vision configuration with fusion settings
-     * @return Fused result, best single result, or empty if no valid measurements
      */
-    public static Optional<ApriltagResult> fusePoses(List<ApriltagResult> apriltagResults, VisionConfiguration config) {
-
+    public Optional<ApriltagResult> fusePoses(List<ApriltagResult> apriltagResults, VisionConfiguration config) {
         if (apriltagResults.size() == 1) {
             return Optional.of(apriltagResults.get(0));
         }
@@ -41,50 +43,39 @@ public class PoseFusionEngine {
             return selectBestResult(apriltagResults);
         }
 
-        List<ApriltagResult> largestGroup = getLargestTimestampGroup(
-            apriltagResults,
-            config.fusionTimestampThreshold
-        );
+        getLargestTimestampGroup(apriltagResults, config.fusionTimestampThreshold);
+        rejectOutliers(bestGroup, config.fusionOutlierThresholdSigma);
 
-        List<ApriltagResult> filtered = rejectOutliers(largestGroup, config.fusionOutlierThresholdSigma);
-
-        if (filtered.size() < config.minCamerasForFusion) {
-            return selectBestResult(filtered);
+        if (filteredScratch.size() < config.minCamerasForFusion) {
+            return selectBestResult(filteredScratch);
         }
 
-        return performWeightedFusion(filtered);
+        return performWeightedFusion(filteredScratch);
     }
 
     /**
-     * Finds the largest group of results that fall within the timestamp threshold,
-     * without building all groups first.
-     *
-     * On a size tie, the more recent group is preferred so we always work with
-     * the freshest available data.
-     *
-     * @param results All results to group
-     * @param timestampThreshold Maximum time difference (seconds) to be in same group
-     * @return The largest group of results sharing a close timestamp
+     * Finds the largest group of results within the timestamp threshold
      */
-    private static List<ApriltagResult> getLargestTimestampGroup(
-        List<ApriltagResult> results,
-        double timestampThreshold
-    ) {
-        List<ApriltagResult> sorted = new ArrayList<>(results);
-        sorted.sort(Comparator.comparingDouble(ApriltagResult::getTimestampSeconds));
+    private void getLargestTimestampGroup(List<ApriltagResult> results, double timestampThreshold) {
+        sortedScratch.clear();
+        sortedScratch.addAll(results);
+        sortedScratch.sort(Comparator.comparingDouble(ApriltagResult::getTimestampSeconds));
 
-        List<ApriltagResult> bestGroup = List.of();
-        List<ApriltagResult> currentGroup = new ArrayList<>(sorted.size());
+        bestGroup.clear();
+        currentGroup.clear();
         double groupStart = -1;
 
-        for (ApriltagResult result : sorted) {
+        for (int i = 0; i < sortedScratch.size(); i++) {
+            ApriltagResult result = sortedScratch.get(i);
             double ts = result.getTimestampSeconds();
+
             if (groupStart < 0 || Math.abs(ts - groupStart) <= timestampThreshold) {
                 if (groupStart < 0) groupStart = ts;
                 currentGroup.add(result);
             } else {
                 if (currentGroup.size() >= bestGroup.size()) {
-                    bestGroup = new ArrayList<>(currentGroup);
+                    bestGroup.clear();
+                    bestGroup.addAll(currentGroup);
                 }
                 currentGroup.clear();
                 currentGroup.add(result);
@@ -93,95 +84,58 @@ public class PoseFusionEngine {
         }
 
         if (currentGroup.size() >= bestGroup.size()) {
-            bestGroup = currentGroup;
+            bestGroup.clear();
+            bestGroup.addAll(currentGroup);
         }
-
-        return bestGroup;
     }
 
     /**
-     * Reject outlier measurements that significantly disagree with the group.
-     * Uses a diagonal approximation of Mahalanobis distance to account for uncertainty.
-     *
-     * @param results Results to filter
-     * @param thresholdSigma How many standard deviations away to reject (typically 2-3)
-     * @return Filtered results with outliers removed
+     * Rejects outliers from the given results
      */
-    private static List<ApriltagResult> rejectOutliers(
-        List<ApriltagResult> results,
-        double thresholdSigma
-    ) {
+    private void rejectOutliers(List<ApriltagResult> results, double thresholdSigma) {
+        filteredScratch.clear();
+
         if (results.size() <= 2) {
-            return results;
+            filteredScratch.addAll(results);
+            return;
         }
 
         Pose2d meanPose = calculateMeanPose(results);
 
-        List<ApriltagResult> filtered = new ArrayList<>(results.size());
-
-        for (ApriltagResult result : results) {
-            double distance = calculateNormalizedDistance(
-                result.getPose(),
-                meanPose,
-                result.getStdDevs()
-            );
-
+        for (int i = 0; i < results.size(); i++) {
+            ApriltagResult result = results.get(i);
+            double distance = calculateNormalizedDistance(result.getPose(), meanPose, result.getStdDevs());
             if (distance < thresholdSigma) {
-                filtered.add(result);
+                filteredScratch.add(result);
             }
         }
 
-        return filtered.isEmpty() ? results : filtered;
+        if (filteredScratch.isEmpty()) {
+            filteredScratch.addAll(results);
+        }
     }
 
-    /**
-     * Calculates the unweighted mean of a list of poses. Rotation is averaged
-     * using the circular mean to avoid wrap-around errors near ±π.
-     *
-     * @param results The poses to average — must not be empty
-     * @return The mean pose
-     */
     private static Pose2d calculateMeanPose(List<ApriltagResult> results) {
-        double sumX = 0;
-        double sumY = 0;
-        double sumSin = 0;
-        double sumCos = 0;
+        double sumX = 0, sumY = 0, sumSin = 0, sumCos = 0;
 
-        for (ApriltagResult result : results) {
-            Pose2d pose = result.getPose();
+        for (int i = 0; i < results.size(); i++) {
+            Pose2d pose = results.get(i).getPose();
             sumX += pose.getX();
             sumY += pose.getY();
-            sumSin += Math.sin(pose.getRotation().getRadians());
-            sumCos += Math.cos(pose.getRotation().getRadians());
+            double rad = pose.getRotation().getRadians();
+            sumSin += Math.sin(rad);
+            sumCos += Math.cos(rad);
         }
 
-        int num = results.size();
-        double meanTheta = Math.atan2(sumSin / num, sumCos / num);
-
-        return new Pose2d(sumX / num, sumY / num, new Rotation2d(meanTheta));
+        double invN = 1.0 / results.size();
+        return new Pose2d(sumX * invN, sumY * invN, new Rotation2d(Math.atan2(sumSin * invN, sumCos * invN)));
     }
 
-    /**
-     * Calculates the normalized distance between two poses, where each axis is
-     * scaled by its corresponding standard deviation. This is a diagonal approximation
-     * of true Mahalanobis distance — it does not account for cross-axis correlations,
-     * but is sufficient for independent x/y/theta estimates.
-     *
-     * @param pose1 The pose to measure from
-     * @param pose2 The reference pose (typically the group mean)
-     * @param stdDevs Standard deviations for pose1's [x, y, theta] axes
-     * @return Distance in units of standard deviations, or {@link Double#MAX_VALUE} if stdDevs is null
-     */
-    private static double calculateNormalizedDistance(
-        Pose2d pose1,
-        Pose2d pose2,
-        Matrix<N3, N1> stdDevs
-    ) {
+    private static double calculateNormalizedDistance(Pose2d pose1, Pose2d pose2, Matrix<N3, N1> stdDevs) {
         if (stdDevs == null) return Double.MAX_VALUE;
 
         double dx = pose1.getX() - pose2.getX();
         double dy = pose1.getY() - pose2.getY();
-
         double dtheta = Math.IEEEremainder(
             pose1.getRotation().getRadians() - pose2.getRotation().getRadians(),
             2 * Math.PI
@@ -195,41 +149,33 @@ public class PoseFusionEngine {
     }
 
     /**
-     * Fuse multiple measurements using inverse variance weighting.
-     * All aggregation is performed in a single loop to avoid multiple passes.
-     *
-     * @param results Filtered results to fuse
-     * @return Single fused result
+     * Fuses measurements using inverse variance weighting
      */
-    private static Optional<ApriltagResult> performWeightedFusion(List<ApriltagResult> results) {
+    private Optional<ApriltagResult> performWeightedFusion(List<ApriltagResult> results) {
         double totalWeightX = 0;
         double totalWeightY = 0;
         double totalWeightTheta = 0;
+
         double weightedX = 0;
         double weightedY = 0;
+
         double weightedSin = 0;
         double weightedCos = 0;
 
-        // Track the most recent timestamp instead of averaging.
-        // The pose estimator uses this for latency compensation, using the
-        // most recent timestamp minimizes the effective age of the fused estimate.
         double latestTimestamp = Double.NEGATIVE_INFINITY;
+
         double sumLatency = 0;
-        double sumDistance = 0;
         double sumAmbiguity = 0;
         double sumArea = 0;
-        double sumXAnisotropy = 0;
-        double sumYAnisotropy = 0;
 
-        ChassisSpeeds chassisSpeeds = null;
+        validScratch.clear();
 
-        List<ApriltagResult> validResults = new ArrayList<>(results.size());
-
-        for (ApriltagResult result : results) {
+        for (int i = 0; i < results.size(); i++) {
+            ApriltagResult result = results.get(i);
             Matrix<N3, N1> stdDevs = result.getStdDevs();
             if (stdDevs == null) continue;
 
-            validResults.add(result);
+            validScratch.add(result);
 
             Pose2d pose = result.getPose();
             double sx = stdDevs.get(0, 0);
@@ -256,29 +202,19 @@ public class PoseFusionEngine {
             }
 
             sumLatency += result.getLatencyMs();
-            sumDistance += result.getAverageDistanceToTargets();
             sumAmbiguity += result.getAmbiguity();
             sumArea += result.getAverageArea();
-            sumXAnisotropy += result.getXAnisotropy();
-            sumYAnisotropy += result.getYAnisotropy();
-
-            if (chassisSpeeds == null) {
-                chassisSpeeds = result.getChassisSpeeds();
-            }
         }
 
-        if (validResults.isEmpty()) return selectBestResult(results);
+        if (validScratch.isEmpty()) return selectBestResult(results);
 
-        double invN = 1.0 / validResults.size();
+        double invN = 1.0 / validScratch.size();
 
-        double fusedY = weightedY / totalWeightY;
-        double fusedX = weightedX / totalWeightX;
-        double fusedTheta = Math.atan2(
-            weightedSin / totalWeightTheta,
-            weightedCos / totalWeightTheta
+        Pose2d fusedPose = new Pose2d(
+            weightedX / totalWeightX,
+            weightedY / totalWeightY,
+            new Rotation2d(Math.atan2(weightedSin / totalWeightTheta, weightedCos / totalWeightTheta))
         );
-
-        Pose2d fusedPose = new Pose2d(fusedX, fusedY, new Rotation2d(fusedTheta));
 
         Matrix<N3, N1> fusedStdDevs = VecBuilder.fill(
             Math.sqrt(1.0 / totalWeightX),
@@ -286,68 +222,54 @@ public class PoseFusionEngine {
             Math.sqrt(1.0 / totalWeightTheta)
         );
 
-        // Deduplicate targets by fiducial ID using a boolean array instead of a HashMap.
-        // This avoids a per-call HashMap allocation. IDs outside [1, MAX_TAG_ID) are skipped.
-        List<PhotonTrackedTarget> allTargets = new ArrayList<>();
-        for (ApriltagResult r : validResults) {
-            outer:
-                for (PhotonTrackedTarget t : r.getTargets()) {
-                    int id = t.getFiducialId();
-                    for (PhotonTrackedTarget existing : allTargets) {
-                        if (existing.getFiducialId() == id) continue outer;
-                    }
-                    allTargets.add(t);
+        // Deduplicate targets by fiducial ID using the pre-allocated scratch list.
+        // Inner linear scan is fine — target counts are always small (< 10).
+        targetScratch.clear();
+        outer:
+        for (int i = 0; i < validScratch.size(); i++) {
+            List<PhotonTrackedTarget> targets = validScratch.get(i).getTargets();
+            for (int j = 0; j < targets.size(); j++) {
+                PhotonTrackedTarget t = targets.get(j);
+                int id = t.getFiducialId();
+                for (int k = 0; k < targetScratch.size(); k++) {
+                    if (targetScratch.get(k).getFiducialId() == id) continue outer;
                 }
+                targetScratch.add(t);
+            }
         }
 
-        // Build the fused camera name
-        StringBuilder nameBuilder = new StringBuilder("fused[");
-        for (int i = 0; i < validResults.size(); i++) {
+        // Build fused camera name — reuse the pre-allocated StringBuilder
+        nameBuilder.setLength(0);
+        nameBuilder.append("fused[");
+        for (int i = 0; i < validScratch.size(); i++) {
             if (i > 0) nameBuilder.append(',');
-            nameBuilder.append(validResults.get(i).getSourceName());
+            nameBuilder.append(validScratch.get(i).getSourceName());
         }
         nameBuilder.append(']');
 
-        return Optional.of(
-            new ApriltagResult(
-                nameBuilder.toString(),
-                latestTimestamp,       // most recent timestamp, not averaged
-                sumLatency * invN,
-                fusedPose,
-                fusedStdDevs,
-                allTargets,
-                sumDistance * invN,
-                sumAmbiguity * invN,
-                sumArea * invN,
-                sumXAnisotropy * invN,
-                sumYAnisotropy * invN,
-                chassisSpeeds != null ? chassisSpeeds : new ChassisSpeeds()
-            )
-        );
+        return Optional.of(new ApriltagResult(
+            nameBuilder.toString(),
+            latestTimestamp,
+            sumLatency * invN,
+            fusedPose,
+            fusedStdDevs,
+            targetScratch,
+            sumAmbiguity * invN,
+            sumArea * invN
+        ));
     }
 
-    /**
-     * Select the single best result based on total normalized uncertainty.
-     * Each axis is divided by its base std dev before summing so that
-     * translational (meters) and rotational (radians) uncertainty are
-     * comparable rather than added as raw mixed units.
-     *
-     * @param results Results to choose from
-     * @return Result with lowest total normalized uncertainty
-     */
     private static Optional<ApriltagResult> selectBestResult(List<ApriltagResult> results) {
         ApriltagResult best = null;
         double bestScore = Double.MAX_VALUE;
 
-        for (ApriltagResult r : results) {
+        for (int i = 0; i < results.size(); i++) {
+            ApriltagResult r = results.get(i);
             Matrix<N3, N1> std = r.getStdDevs();
             if (std == null) continue;
 
-            double normalizedXY = std.get(0, 0) / StdDevConstants.baseXYStdDev;
-            double normalizedTheta = std.get(2, 0) / StdDevConstants.baseThetaStdDev;
-
-            // Weight XY twice since it has two independent axes
-            double score = (2.0 * normalizedXY) + normalizedTheta;
+            double score = (2.0 * std.get(0, 0) / StdDevConstants.baseXYStdDev)
+                + (std.get(2, 0) / StdDevConstants.baseThetaStdDev);
 
             if (score < bestScore) {
                 bestScore = score;
