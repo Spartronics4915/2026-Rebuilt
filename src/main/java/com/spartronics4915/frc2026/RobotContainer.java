@@ -240,7 +240,10 @@ public class RobotContainer {
         );
 
         operatorController.leftTrigger().onTrue(
-            superstructureCommands.intakeOn()
+            Commands.parallel(
+                superstructureCommands.intakeOn(),
+                superstructure.getReturnToZoneCommand()
+            )
         ).onFalse(
             superstructureCommands.intakeOff()
         );
