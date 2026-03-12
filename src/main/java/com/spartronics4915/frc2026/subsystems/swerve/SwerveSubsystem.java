@@ -51,7 +51,7 @@ public class SwerveSubsystem extends SubsystemBase {
     
     public final SwerveDrive swerveDrive;
     public static Pose2d pose;
-    public static Pose3d pose3d;
+    public static Pose3d pose3d = new Pose3d();
     public static double movementOverride = 0.0;
     public static boolean isFieldRelative = DEFAULT_IS_FIELD_RELATIVE;
     public static Rotation2d teleopHeadingOffset = Rotation2d.fromDegrees(0.0);
