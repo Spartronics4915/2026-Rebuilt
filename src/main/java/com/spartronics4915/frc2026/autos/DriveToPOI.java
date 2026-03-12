@@ -25,12 +25,12 @@ import edu.wpi.first.wpilibj2.command.Commands;
 
 public class DriveToPOI {
     private final SwerveSubsystem swerve;
-    // private final ClimberSubsystem climber;
+    private final ClimberSubsystem climber;
     private double outpostWaitTime;
     
-    public DriveToPOI(SwerveSubsystem swerveSubsystem) {
+    public DriveToPOI(SwerveSubsystem swerveSubsystem, ClimberSubsystem climberSubsystem) {
         this.swerve = swerveSubsystem;
-        // this.climber = climberSubsystem;
+        this.climber = climberSubsystem;
 
         outpostWaitTime = SmartDashboard.getNumber("Auto Chooser/Outpost Wait Time", defaultOutpostWaitTime);
 
@@ -57,69 +57,69 @@ public class DriveToPOI {
             }
 
             switch (poi) {
-                // case TOWER: {
-                //     boolean shouldFlip = swerve.getRelativePose().getY() < towerPose.getY();
+                case TOWER: {
+                    boolean shouldFlip = swerve.getRelativePose().getY() < towerPose.getY();
 
-                //     Translation2d climbPose = towerPose.plus(
-                //         towerTransform.plus(
-                //             new Translation2d(0, robotLength.in(Meters) / 2.0 - bumperThickness.in(Meters))
-                //         ).times(shouldFlip ? -1 : 1)
-                //     );
-                //     Translation2d climbApproachPose = climbPose.plus(
-                //         new Translation2d(0, towerPadding.in(Meters)).times(shouldFlip ? -1 : 1)
-                //     );
+                    Translation2d climbPose = towerPose.plus(
+                        towerTransform.plus(
+                            new Translation2d(0, robotLength.in(Meters) / 2.0 - bumperThickness.in(Meters))
+                        ).times(shouldFlip ? -1 : 1)
+                    );
+                    Translation2d climbApproachPose = climbPose.plus(
+                        new Translation2d(0, towerPadding.in(Meters)).times(shouldFlip ? -1 : 1)
+                    );
 
-                //     return Commands.sequence(
-                //         Commands.parallel(
-                //             climber.setStateCommand(ClimberState.JORBIT),
-                //             Autos.generatePathFromWaypoint(
-                //                 swerve,
-                //                 climbApproachPose, 
-                //                 shouldFlip ? Rotation2d.fromDegrees(270.0) : Rotation2d.fromDegrees(90.0),
-                //                 shouldFlip ? Rotation2d.fromDegrees(90.0) : Rotation2d.fromDegrees(270.0),
-                //                 AutoConstants.climbPathConstraints
-                //             )
-                //         ),
-                //         PositionPIDCommand.generateCommand(
-                //             swerve,
-                //             Autos.flipIfNeeded(
-                //                 swerve,
-                //                 new Pose2d(
-                //                     climbApproachPose,
-                //                     shouldFlip ? Rotation2d.fromDegrees(270.0) : Rotation2d.fromDegrees(90.0)
-                //                 )
-                //             ),
-                //             Seconds.of(2.0)
-                //         ),
-                //         // This makes all climb operations beyond uncancelable so that climb isn't stopped halfway through (Currently removed)
-                //         // new ScheduleCommand(
-                //             Commands.sequence(
-                //                 // Make sure / wait for climber to be fully extended,
-                //                 Commands.waitUntil(
-                //                     () -> Math.abs(climber.getCurrentSetpoint() - climber.getPosition()) <= 0.05
-                //                 ),
-                //                 PositionPIDCommand.generateCommand(
-                //                     swerve,
-                //                     Autos.flipIfNeeded(
-                //                         swerve,
-                //                         new Pose2d(
-                //                             climbPose,
-                //                             shouldFlip ? Rotation2d.fromDegrees(270.0) : Rotation2d.fromDegrees(90.0)
-                //                         )
-                //                     ),
-                //                     Seconds.of(10.0)
-                //                 ),
-                //                 // Pull climber back down to move robot up
-                //                 climber.setStateCommand(ClimberState.DOWN)
-                //             )
-                //         // )
-                //     ).finallyDo(
-                //         (interrupted) -> {
-                //             // Put climber back down only if interrupted since the command got canceled on the way there
-                //             climber.setStateCommand(ClimberState.JORBIT);
-                //         }
-                //     );
-                // }
+                    return Commands.sequence(
+                        Commands.parallel(
+                            climber.setStateCommand(ClimberState.JORBIT),
+                            Autos.generatePathFromWaypoint(
+                                swerve,
+                                climbApproachPose, 
+                                shouldFlip ? Rotation2d.fromDegrees(270.0) : Rotation2d.fromDegrees(90.0),
+                                shouldFlip ? Rotation2d.fromDegrees(90.0) : Rotation2d.fromDegrees(270.0),
+                                AutoConstants.climbPathConstraints
+                            )
+                        ),
+                        PositionPIDCommand.generateCommand(
+                            swerve,
+                            Autos.flipIfNeeded(
+                                swerve,
+                                new Pose2d(
+                                    climbApproachPose,
+                                    shouldFlip ? Rotation2d.fromDegrees(270.0) : Rotation2d.fromDegrees(90.0)
+                                )
+                            ),
+                            Seconds.of(2.0)
+                        ),
+                        // This makes all climb operations beyond uncancelable so that climb isn't stopped halfway through (Currently removed)
+                        // new ScheduleCommand(
+                            Commands.sequence(
+                                // Make sure / wait for climber to be fully extended,
+                                Commands.waitUntil(
+                                    () -> Math.abs(climber.getCurrentSetpoint() - climber.getPosition()) <= 0.05
+                                ),
+                                PositionPIDCommand.generateCommand(
+                                    swerve,
+                                    Autos.flipIfNeeded(
+                                        swerve,
+                                        new Pose2d(
+                                            climbPose,
+                                            shouldFlip ? Rotation2d.fromDegrees(270.0) : Rotation2d.fromDegrees(90.0)
+                                        )
+                                    ),
+                                    Seconds.of(10.0)
+                                ),
+                                // Pull climber back down to move robot up
+                                climber.setStateCommand(ClimberState.DOWN)
+                            )
+                        // )
+                    ).finallyDo(
+                        (interrupted) -> {
+                            // Put climber back down only if interrupted since the command got canceled on the way there
+                            climber.setStateCommand(ClimberState.JORBIT);
+                        }
+                    );
+                }
                 case DEPOT: {
                     return Autos.generatePathFromWaypoint(
                         swerve,
