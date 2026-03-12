@@ -516,7 +516,7 @@ public final class Constants {
         public static final int MOTOR_ID = 14;
         public static final int ENCODER_ID = 16;
 
-        public static final double P = 60;
+        public static final double P = 90;
         public static final double I = 0.0;
         public static final double D = 0.2;
 
@@ -530,11 +530,11 @@ public final class Constants {
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 50.625;
 
-        public static final double MAGNET_OFFSET = 0.069092;
+        public static final double MAGNET_OFFSET = 0.01416;
         public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.Clockwise_Positive;
 
         public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(-2);
-        public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(120);
+        public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(130);
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
@@ -650,12 +650,12 @@ public final class Constants {
         public static final int MOTOR_ID = 19;
         public static final int ENCODER_ID = 20;
 
-        public static final double P = 220;
+        public static final double P = 300;
         public static final double I = 0.0;
         public static final double D = 0.0;
 
-        public static final double MAX_VELOCITY = 10.0;
-        public static final double MAX_ACCELERATION = 15.0;
+        public static final double MAX_VELOCITY = 2.4;
+        public static final double MAX_ACCELERATION = 25.0;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;

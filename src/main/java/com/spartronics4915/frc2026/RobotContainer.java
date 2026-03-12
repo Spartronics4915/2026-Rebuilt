@@ -223,13 +223,13 @@ public class RobotContainer {
 
         operatorController.povLeft().whileTrue(
             Commands.run(() -> {
-                turretSubsystem.setSetpoint(turretSubsystem.getCurrentSetpoint().plus(Rotation2d.fromDegrees(0.5)));
+                turretSubsystem.setSetpoint(Rotation2d.fromDegrees(turretSubsystem.getCurrentSetpoint().getDegrees() + 0.5));
             })
         );
 
         operatorController.povRight().whileTrue(
             Commands.run(() -> {
-                turretSubsystem.setSetpoint(turretSubsystem.getCurrentSetpoint().minus(Rotation2d.fromDegrees(0.5)));
+                turretSubsystem.setSetpoint(Rotation2d.fromDegrees(turretSubsystem.getCurrentSetpoint().getDegrees() - 0.5));
             })
         );
 
