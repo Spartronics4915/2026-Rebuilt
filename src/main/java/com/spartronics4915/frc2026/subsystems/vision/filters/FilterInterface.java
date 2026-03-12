@@ -4,8 +4,6 @@ import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
 
 public interface FilterInterface {
 
-    // ------ Main Functionality ------
-
     boolean test(ResultInterface result);
 
     default FilterInterface and (FilterInterface other) {

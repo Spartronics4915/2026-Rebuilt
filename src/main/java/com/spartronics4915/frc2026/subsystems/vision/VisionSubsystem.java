@@ -6,12 +6,13 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.photonvision.PhotonCamera;
+import org.photonvision.simulation.PhotonCameraSim;
 import org.photonvision.simulation.VisionSystemSim;
-import org.photonvision.targeting.PhotonTrackedTarget;
 
 import com.spartronics4915.frc2026.Constants.VisionConstants;
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
+import com.spartronics4915.frc2026.subsystems.vision.cameras.LimelightProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
 import com.spartronics4915.frc2026.subsystems.vision.filters.FilterInterface;
 import com.spartronics4915.frc2026.subsystems.vision.filters.PipelineFilter;
@@ -19,6 +20,7 @@ import com.spartronics4915.frc2026.subsystems.vision.filters.ResultFilters;
 import com.spartronics4915.frc2026.subsystems.vision.processing.PoseFusionEngine;
 import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
 import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
+import com.spartronics4915.frc2026.subsystems.vision.results.TrackedTag;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.Matrix;
@@ -54,14 +56,16 @@ public class VisionSubsystem extends SubsystemBase {
 
     private volatile boolean hasValidPose;
 
-    private static final NetworkTable visionTable = NetworkTableInstance.getDefault().getTable("vision");
+    private static final NetworkTable visionTable =
+        NetworkTableInstance.getDefault().getTable("vision");
 
-    private final StructPublisher<Pose2d> posePublisher = visionTable.getStructTopic("Vision Pose",      Pose2d.struct).publish();
-    private final StructPublisher<Pose2d> usedPosePublisher = visionTable.getStructTopic("Used Vision Pose", Pose2d.struct).publish();
+    private final StructPublisher<Pose2d> posePublisher =
+        visionTable.getStructTopic("Vision Pose", Pose2d.struct).publish();
+    private final StructPublisher<Pose2d> usedPosePublisher =
+        visionTable.getStructTopic("Used Vision Pose", Pose2d.struct).publish();
 
     private final DoublePublisher transStdDevPublisher = visionTable.getDoubleTopic("XY Std Devs").publish();
     private final DoublePublisher rotStdDevPublisher = visionTable.getDoubleTopic("Theta Std Devs").publish();
-
     private final DoublePublisher avgAmbiguityPublisher = visionTable.getDoubleTopic("Avg Ambiguity").publish();
     private final DoublePublisher avgAreaPublisher = visionTable.getDoubleTopic("Avg Area").publish();
     private final DoublePublisher latencyPublisher = visionTable.getDoubleTopic("Latency").publish();
@@ -95,9 +99,18 @@ public class VisionSubsystem extends SubsystemBase {
         }
 
         for (ProcessorInterface camera : cameras.values()) {
-            camera.setSpeedSupplier(swerveSubsystem::getFieldVelocity);
+            if (camera instanceof LimelightProcessor ll) {
+                ll.setHeadingSupplier(() -> swerveSubsystem.getGyroRotation3d().toRotation2d());
+            }
+        
             camera.start();
-            if (isSimulation) visionSystemSim.addCamera(camera.getCameraSim(), camera.getCameraTransform());
+        
+            if (isSimulation) {
+                Optional<PhotonCameraSim> cameraSim = camera.getCameraSim();
+                cameraSim.ifPresent(sim ->
+                    visionSystemSim.addCamera(sim, camera.getCameraTransform())
+                );
+            }
         }
     }
 
@@ -108,7 +121,8 @@ public class VisionSubsystem extends SubsystemBase {
         filters.add(new ResultFilters.AreaFilter(config.minArea, config.maxArea));
 
         if (config.maxOdometryDeviationMeters < Double.MAX_VALUE) {
-            filters.add(new ResultFilters.OdometryOutlierFilter(swerve::getPose, config.maxOdometryDeviationMeters));
+            filters.add(new ResultFilters.OdometryOutlierFilter(
+                swerve::getPose, config.maxOdometryDeviationMeters));
         }
 
         return filters;
@@ -167,7 +181,6 @@ public class VisionSubsystem extends SubsystemBase {
         }
 
         hasValidPose = true;
-
         publishPoseDiagnostics(fusedResult);
     }
 
@@ -181,37 +194,31 @@ public class VisionSubsystem extends SubsystemBase {
         avgAmbiguityPublisher.set(fusedResult.getAmbiguity());
         avgAreaPublisher.set(fusedResult.getAverageArea());
         latencyPublisher.set(fusedResult.getLatencyMs());
-        targetCountPublisher.set(fusedResult.getTargets().size());
+        targetCountPublisher.set(fusedResult.getTargetCount());
 
-        trackedApriltagsPublisher.accept(getTargetPoses(fusedResult.getTargets()));
+        trackedApriltagsPublisher.accept(getTargetPoses(fusedResult.getTrackedTags()));
     }
 
     /**
-     * Builds a Pose3d array for the given targets using a plain loop instead of
-     * a stream pipeline, avoiding iterator and lambda allocation on the hot path.
-     * Reuses a pre-allocated scratch array sized to MAX_TAG_ID.
+     * Builds a {@link Pose3d} array for the given tags using the field layout.
      */
-    public Pose3d[] getTargetPoses(List<PhotonTrackedTarget> targets) {
+    public Pose3d[] getTargetPoses(List<TrackedTag> tags) {
         int count = 0;
-        for (int i = 0; i < targets.size(); i++) {
-            var tagPose = VisionConstants.LAYOUT.getTagPose(targets.get(i).fiducialId);
-            if (tagPose.isPresent()) {
-                tagPoseScratch[count++] = tagPose.get();
-            }
+        for (int i = 0; i < tags.size(); i++) {
+            var tagPose = VisionConstants.apriltagFieldLayout.getTagPose(tags.get(i).fiducialId);
+            if (tagPose.isPresent()) tagPoseScratch[count++] = tagPose.get();
         }
 
-        // Trim to actual count — only allocates when tag count changes
         Pose3d[] result = new Pose3d[count];
         System.arraycopy(tagPoseScratch, 0, result, 0, count);
         return result;
     }
 
-    public boolean hasValidPose() {
-        return hasValidPose;
-    }
+    public boolean hasValidPose() { return hasValidPose; }
 
     @FunctionalInterface
     public interface VisionPoseConsumer {
         void accept(Pose2d robotPose, double timestamp, Matrix<N3, N1> stdDevs);
     }
+
 }

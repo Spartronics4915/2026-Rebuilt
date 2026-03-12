@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.photonvision.simulation.SimCameraProperties;
 
+import com.spartronics4915.frc2026.subsystems.vision.cameras.LimelightProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.PhotonProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
 import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
@@ -39,7 +40,6 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.util.Units;
@@ -239,15 +239,15 @@ public final class Constants {
     //#region Vision
 
     public static final class VisionConstants {
-        public static final AprilTagFieldLayout LAYOUT = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
+        public static final AprilTagFieldLayout apriltagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
         
-        public static final SimCameraProperties SIM_CAMERA_PROPERTIES = new SimCameraProperties();
+        public static final SimCameraProperties simCameraProperties = new SimCameraProperties();
             static {
-                SIM_CAMERA_PROPERTIES.setCalibration(1600, 1200, Rotation2d.fromDegrees(97.65));
-                SIM_CAMERA_PROPERTIES.setCalibError(0.05, 0.005);
-                SIM_CAMERA_PROPERTIES.setFPS(50);
-                SIM_CAMERA_PROPERTIES.setAvgLatencyMs(20);
-                SIM_CAMERA_PROPERTIES.setLatencyStdDevMs(0);
+                simCameraProperties.setCalibration(1600, 1200, Rotation2d.fromDegrees(97.65));
+                simCameraProperties.setCalibError(0.05, 0.005);
+                simCameraProperties.setFPS(50);
+                simCameraProperties.setAvgLatencyMs(20);
+                simCameraProperties.setLatencyStdDevMs(0);
             }
 
         public static final class StdDevConstants {
@@ -268,20 +268,22 @@ public final class Constants {
 
         public static final class CameraConstants {
 
-            public static final Transform3d LEFT_CAMERA_TRANSFORM = new Transform3d(
+            /** Currently the transform of the evan camera */
+            public static final Transform3d frontTowerCamTransform = new Transform3d(
                 new Translation3d(
-                    -0.1272, 
-                    0.329413,
-                    0.4076
+                    -0.119170, 
+                    0.310900,
+                    -0.520276
                 ),
                 new Rotation3d(
                     Math.toRadians(0), 
-                    Math.toRadians(-26), 
-                    Math.toRadians(70)
+                    Math.toRadians(-30), 
+                    Math.toRadians(0)
                 )
             );
 
-            public static final Transform3d RIGHT_CAMERA_TRANSFORM =  new Transform3d(
+            /** Currently the transform of the daniil camera */
+            public static final Transform3d rioCamTransform =  new Transform3d(
                 new Translation3d(
                     -0.125205, 
                     -0.334776, 
@@ -294,11 +296,26 @@ public final class Constants {
                 )
             );
 
-            public static final Transform3d BACK_CAMERA_TRANSFORM =  new Transform3d(
+            /** Currently the transform of the val camera */
+            public static final Transform3d backTowerCamTransform =  new Transform3d(
                 new Translation3d(
-                    -0.3070, 
-                    0.1270, 
-                    0.276496
+                    -0.266691, 
+                    0.311499, 
+                    0.437110
+                ),
+                new Rotation3d(
+                    Math.toRadians(0), 
+                    Math.toRadians(-30), 
+                    Math.toRadians(215)
+                )
+            );
+
+            /** Currently the transform of the gollum camera */
+            public static final Transform3d swerveCamTransform =  new Transform3d(
+                new Translation3d(
+                    -0.2868215, 
+                    -0.1771345, 
+                    0.2412915
                 ),
                 new Rotation3d(
                     Math.toRadians(0), 
@@ -307,30 +324,35 @@ public final class Constants {
                 )
             );
 
+            //-----------------------------------------------------
+
             public static final Map<String, ProcessorInterface> cameras = Map.of(
                 "evan", new PhotonProcessor(
                     "evan", 
-                    LAYOUT,
-                    LEFT_CAMERA_TRANSFORM, 
-                    new StdDevCalculator(1.2),
-                    SIM_CAMERA_PROPERTIES,
-                    () -> new ChassisSpeeds()
+                    apriltagFieldLayout, 
+                    frontTowerCamTransform, 
+                    new StdDevCalculator(1.2), 
+                    simCameraProperties
                 ),
                 "daniil", new PhotonProcessor(
                     "daniil", 
-                    LAYOUT,
-                    RIGHT_CAMERA_TRANSFORM,
-                    new StdDevCalculator(1.2),
-                    SIM_CAMERA_PROPERTIES,
-                    () -> new ChassisSpeeds()
+                    apriltagFieldLayout, 
+                    rioCamTransform, 
+                    new StdDevCalculator(1.2), 
+                    simCameraProperties
                 ),
                 "val", new PhotonProcessor(
                     "val", 
-                    LAYOUT,
-                    BACK_CAMERA_TRANSFORM,
-                    new StdDevCalculator(1.2),
-                    SIM_CAMERA_PROPERTIES,
-                    () -> new ChassisSpeeds()
+                    apriltagFieldLayout, 
+                    backTowerCamTransform, 
+                    new StdDevCalculator(1.2), 
+                    simCameraProperties
+                ),
+                "gollum", new LimelightProcessor(
+                    "gollum", 
+                    swerveCamTransform, 
+                    new StdDevCalculator(1.2), 
+                    null // We add this later
                 )
             );
         }

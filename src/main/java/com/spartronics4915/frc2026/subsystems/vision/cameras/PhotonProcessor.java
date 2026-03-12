@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 
 import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
@@ -18,27 +17,31 @@ import org.photonvision.targeting.PhotonTrackedTarget;
 import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
 import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
 import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
+import com.spartronics4915.frc2026.subsystems.vision.results.TrackedTag;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Transform3d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Notifier;
 
 /**
- * A processor that utilizes photon vision's pre-existing camera class.
- * The processor keeps a linked queue containing its most recent results
- * which can be grabbed and used for further use.
+ * A processor backed by PhotonVision's camera and pose estimator.
  *
- * <p>Each instance owns a {@link StdDevCalculator} that maintains smoothed
- * distance and area state across frames. This means std devs are computed
- * here, camera-by-camera, rather than centrally in VisionSubsystem.
+ * <p>All PhotonVision-specific types ({@link PhotonCamera}, {@link PhotonPoseEstimator},
+ * {@link PhotonCameraSim}, {@link SimCameraProperties}) are private implementation
+ * details. They no longer appear in {@link ProcessorInterface}, which allows
+ * non-PhotonVision processors (e.g. {@code LimelightProcessor}) to implement the
+ * same interface without carrying PhotonVision as a dependency.
  *
- * <p>All per-frame calculation methods use plain loops rather than stream
- * pipelines to avoid iterator and lambda allocation on the hot Notifier path.
+ * <p>Simulation is exposed via the optional {@link #getCameraSim()} override.
+ * {@link com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem} checks
+ * {@code isPresent()} before wiring it into the sim.
+ *
+ * <p>All per-frame calculation methods use plain loops rather than stream pipelines
+ * to avoid iterator and lambda allocation on the hot Notifier path.
  */
 public class PhotonProcessor implements ProcessorInterface {
 
@@ -49,41 +52,27 @@ public class PhotonProcessor implements ProcessorInterface {
     private final PhotonPoseEstimator poseEstimator;
     private final StdDevCalculator stdDevCalculator;
 
-    private final SimCameraProperties simProperties;
     private final PhotonCameraSim cameraSim;
 
     private final ConcurrentLinkedQueue<ResultInterface> resultQueue;
-
-    /**
-     * Tracks the logical queue size independently of the queue itself
-     */
     private final AtomicInteger queueSize;
-
     private final int maxQueueSize;
+
     private final Notifier processingNotifier;
     private final double processingFrequency;
 
     private volatile boolean isRunning;
 
-    private volatile Supplier<ChassisSpeeds> robotVelocitySupplier;
+    // Reusable scratch list for converting PhotonTrackedTarget -> TrackedTag
+    // on the Notifier thread. Never shared across threads.
+    private final List<TrackedTag> tagScratch = new ArrayList<>(8);
 
-    /**
-     * Constructs a photon processor with a set of parameters
-     *
-     * @param name the name of the processor
-     * @param layout the apriltag field layout of the current field
-     * @param transform the transform from the center of the robot to the camera lens
-     * @param calculator per-camera std dev calculator; must not be shared between cameras
-     * @param properties the simulator properties for the camera
-     * @param chassisSpeedsSupplier the supplier for the robot's field-relative speeds
-     */
     public PhotonProcessor(
         String name,
         AprilTagFieldLayout layout,
         Transform3d transform,
         StdDevCalculator calculator,
-        SimCameraProperties properties,
-        Supplier<ChassisSpeeds> chassisSpeedsSupplier
+        SimCameraProperties properties
     ) {
         this.cameraName = name;
         this.photonCamera = new PhotonCamera(cameraName);
@@ -92,19 +81,16 @@ public class PhotonProcessor implements ProcessorInterface {
         this.poseEstimator = new PhotonPoseEstimator(fieldLayout, cameraTransform);
         this.stdDevCalculator = calculator;
 
-        this.simProperties = properties;
-        this.cameraSim = new PhotonCameraSim(photonCamera, simProperties);
+        this.cameraSim = new PhotonCameraSim(photonCamera, properties);
 
         this.resultQueue = new ConcurrentLinkedQueue<>();
         this.queueSize = new AtomicInteger(0);
         this.maxQueueSize = 5;
 
-        this.processingNotifier = new Notifier(this::process);
-        this.processingFrequency = 65.0;
+        this.processingNotifier  = new Notifier(this::process);
+        this.processingFrequency = 70.0;
         this.processingNotifier.setName("Photon-" + cameraName);
         this.isRunning = false;
-
-        this.robotVelocitySupplier = chassisSpeedsSupplier;
     }
 
     //#region Processing
@@ -133,9 +119,7 @@ public class PhotonProcessor implements ProcessorInterface {
             Optional<ApriltagResult> apriltagResult = processApriltagResult(rawResult);
             if (apriltagResult.isPresent()) {
                 while (queueSize.get() >= maxQueueSize) {
-                    if (resultQueue.poll() != null) {
-                        queueSize.decrementAndGet();
-                    }
+                    if (resultQueue.poll() != null) queueSize.decrementAndGet();
                 }
                 resultQueue.add(apriltagResult.get());
                 queueSize.incrementAndGet();
@@ -143,13 +127,6 @@ public class PhotonProcessor implements ProcessorInterface {
         }
     }
 
-    /**
-     * Processes a photon vision pipeline result into an {@link ApriltagResult},
-     * including std dev calculation via this camera's {@link StdDevCalculator}.
-     *
-     * @param rawResult a raw photon vision pipeline result given by the camera
-     * @return an optional of a fully populated {@link ApriltagResult}, including std devs
-     */
     private Optional<ApriltagResult> processApriltagResult(PhotonPipelineResult rawResult) {
         if (!rawResult.hasTargets()) return Optional.empty();
 
@@ -164,6 +141,7 @@ public class PhotonProcessor implements ProcessorInterface {
             : poseEstimator.estimateLowestAmbiguityPose(rawResult);
 
         if (poseOptional.isEmpty()) return Optional.empty();
+
         EstimatedRobotPose estimatedPose = poseOptional.get();
         Pose2d resultantPose = estimatedPose.estimatedPose.toPose2d();
 
@@ -171,20 +149,27 @@ public class PhotonProcessor implements ProcessorInterface {
         double latency = rawResult.metadata.getLatencyMillis();
 
         Matrix<N3, N1> stdDevs = stdDevCalculator.calculate(
-            avgAmbiguity,
-            avgArea,
-            latency,
+            avgAmbiguity, 
+            avgArea, 
+            latency, 
             targetCount
         );
 
+        // Convert PhotonTrackedTarget -> TrackedTag (camera-agnostic).
+        tagScratch.clear();
+        for (int i = 0; i < targets.size(); i++) {
+            PhotonTrackedTarget t = targets.get(i);
+            tagScratch.add(new TrackedTag(t.fiducialId, t.getArea(), t.getPoseAmbiguity()));
+        }
+
         return Optional.of(new ApriltagResult(
-            cameraName,
-            timestamp,
-            latency,
-            resultantPose,
+            cameraName, 
+            timestamp, 
+            latency, 
+            resultantPose, 
             stdDevs,
-            targets,
-            avgAmbiguity,
+            tagScratch, 
+            avgAmbiguity, 
             avgArea
         ));
     }
@@ -193,14 +178,8 @@ public class PhotonProcessor implements ProcessorInterface {
 
     //#region Calculation
 
-    /**
-     * Calculates the average ambiguity from a list of photon vision targets.
-     * For multi-tag results, returns the minimum non-negative ambiguity scaled by tag count.
-     */
     private static double calculateAmbiguity(List<PhotonTrackedTarget> targets) {
-        if (targets.size() == 1) {
-            return targets.get(0).getPoseAmbiguity();
-        }
+        if (targets.size() == 1) return targets.get(0).getPoseAmbiguity();
 
         double minAmbiguity = 0.15;
         for (PhotonTrackedTarget target : targets) {
@@ -210,63 +189,31 @@ public class PhotonProcessor implements ProcessorInterface {
         return minAmbiguity / Math.sqrt(targets.size());
     }
 
-    /**
-     * Calculates the average area (size in frame) of a list of photon vision targets.
-     */
     private static double calculateAverageArea(List<PhotonTrackedTarget> targets) {
         if (targets.isEmpty()) return 0.0;
         double sum = 0.0;
-        for (PhotonTrackedTarget target : targets) {
-            sum += target.getArea();
-        }
+        for (PhotonTrackedTarget target : targets) sum += target.getArea();
         return sum / targets.size();
     }
 
     //#endregion
 
-    //#region Getters
+    //#region ProcessorInterface
 
-    @Override
-    public String getCameraName() {
-        return cameraName;
+    @Override public String getCameraName() { 
+        return cameraName; 
     }
 
-    @Override
-    public PhotonCamera getPhotonCamera() {
-        return photonCamera;
-    }
-
-    @Override
-    public AprilTagFieldLayout getFieldlayout() {
-        return fieldLayout;
-    }
-
-    @Override
-    public Transform3d getCameraTransform() {
+    @Override public Transform3d getCameraTransform() { 
         return cameraTransform;
     }
 
+    /** Exposes the PhotonVision sim camera for {@code VisionSystemSim} wiring. */
     @Override
-    public PhotonPoseEstimator getPoseEstimator() {
-        return poseEstimator;
+    public Optional<PhotonCameraSim> getCameraSim() {
+        return Optional.of(cameraSim);
     }
 
-    @Override
-    public SimCameraProperties getSimProperties() {
-        return simProperties;
-    }
-
-    @Override
-    public PhotonCameraSim getCameraSim() {
-        return cameraSim;
-    }
-
-    /**
-     * Drains all pending results from the queue into the provided destination list.
-     * Prefer this over {@link #getResultQueue()} to avoid allocating a new list per call.
-     *
-     * @param destination the list to drain results into; existing contents are preserved
-     */
     @Override
     public void drainResultQueue(List<ResultInterface> destination) {
         ResultInterface result;
@@ -276,10 +223,6 @@ public class PhotonProcessor implements ProcessorInterface {
         }
     }
 
-    /**
-     * Convenience wrapper that drains the queue into a new list and returns it.
-     * Use {@link #drainResultQueue(List)} instead in performance-sensitive paths.
-     */
     @Override
     public List<ResultInterface> getResultQueue() {
         List<ResultInterface> results = new ArrayList<>();
@@ -287,34 +230,20 @@ public class PhotonProcessor implements ProcessorInterface {
         return results;
     }
 
-    @Override
-    public int getMaxQueueSize() {
-        return maxQueueSize;
+    @Override public int getMaxQueueSize() { 
+        return maxQueueSize; 
     }
 
-    @Override
-    public Notifier getNotifier() {
-        return processingNotifier;
+    @Override public Notifier getNotifier() { 
+        return processingNotifier; 
     }
 
-    @Override
-    public double getFrequency() {
-        return processingFrequency;
+    @Override public double getFrequency() { 
+        return processingFrequency; 
     }
-
-    @Override
-    public boolean isRunning() {
-        return isRunning;
+    @Override public boolean isRunning() { 
+        return isRunning; 
     }
-
-    @Override
-    public Supplier<ChassisSpeeds> getSpeedSupplier() {
-        return robotVelocitySupplier;
-    }
-
-    //#endregion
-
-    //#region Setters
 
     @Override
     public void setPipeline(int newPipelineIndex) {
@@ -324,11 +253,6 @@ public class PhotonProcessor implements ProcessorInterface {
     @Override
     public void setCameraTransform(Transform3d newCameraTransform) {
         poseEstimator.setRobotToCameraTransform(newCameraTransform);
-    }
-
-    @Override
-    public void setSpeedSupplier(Supplier<ChassisSpeeds> newSupplier) {
-        this.robotVelocitySupplier = newSupplier;
     }
 
     //#endregion

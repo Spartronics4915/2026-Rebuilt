@@ -8,13 +8,6 @@ import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
 /**
  * Applies a series of {@link FilterInterface} filters to a list of vision results,
  * returning only those that pass every filter in the pipeline.
- *
- * <p>Filters are applied in the order they were provided to the constructor.
- * For best performance, place cheapest filters first so expensive ones only
- * run on results that have already passed the early checks.
- *
- * <p>Uses a plain loop instead of a stream pipeline to avoid iterator and
- * collector allocation on the hot periodic path.
  */
 public class PipelineFilter {
 

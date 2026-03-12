@@ -72,7 +72,7 @@ public class RobotContainer {
     public final SwerveSubsystem swerveSubsystem = new SwerveSubsystem(SwerveConfigurations.COMP_CHASSIS);
     public final VisionSubsystem visionSubsystem = new VisionSubsystem(
         VisionConstants.CameraConstants.cameras, 
-        VisionConstants.LAYOUT, 
+        VisionConstants.apriltagFieldLayout, 
         new VisionConfiguration(), 
         swerveSubsystem::addVisionMeasurement, 
         swerveSubsystem

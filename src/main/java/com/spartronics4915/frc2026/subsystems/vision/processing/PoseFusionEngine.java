@@ -5,11 +5,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-import org.photonvision.targeting.PhotonTrackedTarget;
-
 import com.spartronics4915.frc2026.Constants.VisionConstants.StdDevConstants;
 import com.spartronics4915.frc2026.subsystems.vision.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
+import com.spartronics4915.frc2026.subsystems.vision.results.TrackedTag;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
@@ -28,12 +27,10 @@ public class PoseFusionEngine {
     private final List<ApriltagResult> bestGroup = new ArrayList<>(8);
     private final List<ApriltagResult> filteredScratch = new ArrayList<>(8);
     private final List<ApriltagResult> validScratch = new ArrayList<>(8);
-    private final List<PhotonTrackedTarget> targetScratch = new ArrayList<>(16);
+    private final List<TrackedTag> tagScratch = new ArrayList<>(16);
+
     private final StringBuilder nameBuilder = new StringBuilder(64);
 
-    /**
-     * Fuse multiple AprilTag results into a single, more accurate pose estimate.
-     */
     public Optional<ApriltagResult> fusePoses(List<ApriltagResult> apriltagResults, VisionConfiguration config) {
         if (apriltagResults.size() == 1) {
             return Optional.of(apriltagResults.get(0));
@@ -53,9 +50,6 @@ public class PoseFusionEngine {
         return performWeightedFusion(filteredScratch);
     }
 
-    /**
-     * Finds the largest group of results within the timestamp threshold
-     */
     private void getLargestTimestampGroup(List<ApriltagResult> results, double timestampThreshold) {
         sortedScratch.clear();
         sortedScratch.addAll(results);
@@ -89,9 +83,6 @@ public class PoseFusionEngine {
         }
     }
 
-    /**
-     * Rejects outliers from the given results
-     */
     private void rejectOutliers(List<ApriltagResult> results, double thresholdSigma) {
         filteredScratch.clear();
 
@@ -105,19 +96,18 @@ public class PoseFusionEngine {
         for (int i = 0; i < results.size(); i++) {
             ApriltagResult result = results.get(i);
             double distance = calculateNormalizedDistance(result.getPose(), meanPose, result.getStdDevs());
-            if (distance < thresholdSigma) {
-                filteredScratch.add(result);
-            }
+            if (distance < thresholdSigma) filteredScratch.add(result);
         }
 
-        if (filteredScratch.isEmpty()) {
-            filteredScratch.addAll(results);
-        }
+        if (filteredScratch.isEmpty()) filteredScratch.addAll(results);
     }
 
     private static Pose2d calculateMeanPose(List<ApriltagResult> results) {
-        double sumX = 0, sumY = 0, sumSin = 0, sumCos = 0;
-
+        double sumX = 0;
+        double sumY = 0;
+        double sumSin = 0;
+        double sumCos = 0;
+        
         for (int i = 0; i < results.size(); i++) {
             Pose2d pose = results.get(i).getPose();
             sumX += pose.getX();
@@ -128,7 +118,11 @@ public class PoseFusionEngine {
         }
 
         double invN = 1.0 / results.size();
-        return new Pose2d(sumX * invN, sumY * invN, new Rotation2d(Math.atan2(sumSin * invN, sumCos * invN)));
+        return new Pose2d(
+            sumX * invN, 
+            sumY * invN,
+            new Rotation2d(Math.atan2(sumSin * invN, sumCos * invN))
+        );
     }
 
     private static double calculateNormalizedDistance(Pose2d pose1, Pose2d pose2, Matrix<N3, N1> stdDevs) {
@@ -137,8 +131,8 @@ public class PoseFusionEngine {
         double dx = pose1.getX() - pose2.getX();
         double dy = pose1.getY() - pose2.getY();
         double dtheta = Math.IEEEremainder(
-            pose1.getRotation().getRadians() - pose2.getRotation().getRadians(),
-            2 * Math.PI
+            pose1.getRotation().getRadians() 
+            - pose2.getRotation().getRadians(), 2 * Math.PI
         );
 
         double distX = Math.abs(dx) / Math.max(stdDevs.get(0, 0), 0.001);
@@ -148,9 +142,6 @@ public class PoseFusionEngine {
         return Math.sqrt(distX * distX + distY * distY + distTheta * distTheta);
     }
 
-    /**
-     * Fuses measurements using inverse variance weighting
-     */
     private Optional<ApriltagResult> performWeightedFusion(List<ApriltagResult> results) {
         double totalWeightX = 0;
         double totalWeightY = 0;
@@ -158,7 +149,6 @@ public class PoseFusionEngine {
 
         double weightedX = 0;
         double weightedY = 0;
-
         double weightedSin = 0;
         double weightedCos = 0;
 
@@ -174,22 +164,13 @@ public class PoseFusionEngine {
             ApriltagResult result = results.get(i);
             Matrix<N3, N1> stdDevs = result.getStdDevs();
             if (stdDevs == null) continue;
-
             validScratch.add(result);
 
             Pose2d pose = result.getPose();
-            double sx = stdDevs.get(0, 0);
-            double sy = stdDevs.get(1, 0);
-            double st = stdDevs.get(2, 0);
+            double sx = stdDevs.get(0, 0), sy = stdDevs.get(1, 0), st = stdDevs.get(2, 0);
+            double wX = 1.0 / (sx * sx), wY = 1.0 / (sy * sy), wT = 1.0 / (st * st);
 
-            double wX = 1.0 / (sx * sx);
-            double wY = 1.0 / (sy * sy);
-            double wT = 1.0 / (st * st);
-
-            totalWeightX += wX;
-            totalWeightY += wY;
-            totalWeightTheta += wT;
-
+            totalWeightX += wX; totalWeightY += wY; totalWeightTheta += wT;
             weightedX += pose.getX() * wX;
             weightedY += pose.getY() * wY;
 
@@ -197,9 +178,8 @@ public class PoseFusionEngine {
             weightedSin += Math.sin(theta) * wT;
             weightedCos += Math.cos(theta) * wT;
 
-            if (result.getTimestampSeconds() > latestTimestamp) {
+            if (result.getTimestampSeconds() > latestTimestamp)
                 latestTimestamp = result.getTimestampSeconds();
-            }
 
             sumLatency += result.getLatencyMs();
             sumAmbiguity += result.getAmbiguity();
@@ -222,23 +202,19 @@ public class PoseFusionEngine {
             Math.sqrt(1.0 / totalWeightTheta)
         );
 
-        // Deduplicate targets by fiducial ID using the pre-allocated scratch list.
-        // Inner linear scan is fine — target counts are always small (< 10).
-        targetScratch.clear();
+        tagScratch.clear();
         outer:
         for (int i = 0; i < validScratch.size(); i++) {
-            List<PhotonTrackedTarget> targets = validScratch.get(i).getTargets();
-            for (int j = 0; j < targets.size(); j++) {
-                PhotonTrackedTarget t = targets.get(j);
-                int id = t.getFiducialId();
-                for (int k = 0; k < targetScratch.size(); k++) {
-                    if (targetScratch.get(k).getFiducialId() == id) continue outer;
+            List<TrackedTag> tags = validScratch.get(i).getTrackedTags();
+            for (int j = 0; j < tags.size(); j++) {
+                TrackedTag t = tags.get(j);
+                for (int k = 0; k < tagScratch.size(); k++) {
+                    if (tagScratch.get(k).fiducialId == t.fiducialId) continue outer;
                 }
-                targetScratch.add(t);
+                tagScratch.add(t);
             }
         }
 
-        // Build fused camera name — reuse the pre-allocated StringBuilder
         nameBuilder.setLength(0);
         nameBuilder.append("fused[");
         for (int i = 0; i < validScratch.size(); i++) {
@@ -248,34 +224,27 @@ public class PoseFusionEngine {
         nameBuilder.append(']');
 
         return Optional.of(new ApriltagResult(
-            nameBuilder.toString(),
-            latestTimestamp,
-            sumLatency * invN,
-            fusedPose,
-            fusedStdDevs,
-            targetScratch,
-            sumAmbiguity * invN,
-            sumArea * invN
+            nameBuilder.toString(), latestTimestamp,
+            sumLatency * invN, fusedPose, fusedStdDevs,
+            tagScratch, sumAmbiguity * invN, sumArea * invN
         ));
     }
 
     private static Optional<ApriltagResult> selectBestResult(List<ApriltagResult> results) {
         ApriltagResult best = null;
         double bestScore = Double.MAX_VALUE;
-
         for (int i = 0; i < results.size(); i++) {
-            ApriltagResult r = results.get(i);
-            Matrix<N3, N1> std = r.getStdDevs();
-            if (std == null) continue;
+            ApriltagResult result = results.get(i);
+            Matrix<N3, N1> dev = result.getStdDevs();
 
-            double score = (2.0 * std.get(0, 0) / StdDevConstants.baseXYStdDev)
-                + (std.get(2, 0) / StdDevConstants.baseThetaStdDev);
+            if (dev == null) continue;
 
-            if (score < bestScore) {
-                bestScore = score;
-                best = r;
-            }
+            double score = (2.0 * dev.get(0, 0) / StdDevConstants.baseXYStdDev)
+                + (dev.get(2, 0) / StdDevConstants.baseThetaStdDev);
+
+            if (score < bestScore) { bestScore = score; best = result; }
         }
         return Optional.ofNullable(best);
     }
+
 }

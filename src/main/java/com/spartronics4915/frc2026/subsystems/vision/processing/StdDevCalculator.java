@@ -56,6 +56,7 @@ public class StdDevCalculator {
             smoothedArea = alpha * avgArea + (1.0 - alpha) * smoothedArea;
             smoothedTagCount = alpha * numTags + (1.0 - alpha) * smoothedTagCount;
         }
+
         previousNumTags = numTags;
 
         double latencySeconds = latencyMs / 1000.0;
@@ -80,8 +81,8 @@ public class StdDevCalculator {
             tagCountFactor;
 
         return VecBuilder.fill(
-            baseXYStdDev    * xyMultiplier,
-            baseXYStdDev    * xyMultiplier,
+            baseXYStdDev * xyMultiplier,
+            baseXYStdDev * xyMultiplier,
             baseThetaStdDev * thetaMultiplier
         );
     }
