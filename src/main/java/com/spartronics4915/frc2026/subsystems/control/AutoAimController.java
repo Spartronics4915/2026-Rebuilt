@@ -76,7 +76,7 @@ public class AutoAimController extends SubsystemBase {
     private final TurretController turretController;
 
     private boolean isAimEnabled = false;
-    private boolean isShootingEnabled = false;
+    private boolean isAutoShootingEnabled = false;
     private AutoAimResult lastResult = null;
     private double lastSimShotTime = 0.0;
     private Translation3d targetOverride = null;
@@ -126,9 +126,9 @@ public class AutoAimController extends SubsystemBase {
     @Override
     public void periodic() {
         isAimEnabledPublisher.accept(isAimEnabled);
-        isShootingEnabledPublisher.accept(isShootingEnabled);
+        isShootingEnabledPublisher.accept(isAutoShootingEnabled);
 
-        if (!isAimEnabled) {
+        if (!isAimEnabled && !shootOverride) {
             lastResult = null;
             hasValidResultPublisher.accept(false);
             requiresIdealSpeedPublisher.accept(false);
@@ -183,7 +183,7 @@ public class AutoAimController extends SubsystemBase {
      */
     private void applyAimResult(AutoAimResult result) {
         boolean hasValidSpeed = result.recommendedShotSpeed() != -1;
-        boolean shouldShoot = isShootingEnabled && shouldAutoShoot(result);
+        boolean shouldShoot = isAutoShootingEnabled && shouldAutoShoot(result);
         boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
 
         if (hasValidSpeed && (shootOverride || (isUnrestricted && shouldShoot))) {
@@ -345,7 +345,7 @@ public class AutoAimController extends SubsystemBase {
     /** True when the shot is solvable AND the current flywheel speed is sufficient. */
     public boolean isReadyToShoot() {
         return hasValidResult() && !lastResult.requiresIdealSpeed()
-            && (isTurretReady() && isHoodReady());
+            && ((shootOverride && !isAimEnabled) || (isTurretReady() && isHoodReady()));
     }
 
     public boolean isTurretReady() {
@@ -373,7 +373,7 @@ public class AutoAimController extends SubsystemBase {
 
     public Command setShootingState(boolean wantShoot) {
         return Commands.runOnce(() -> {
-            isShootingEnabled = wantShoot;
+            isAutoShootingEnabled = wantShoot;
         }).ignoringDisable(true);
     }
 
@@ -381,13 +381,12 @@ public class AutoAimController extends SubsystemBase {
     public Command aimToggle() {
         return Commands.runOnce(() -> {
             isAimEnabled = !isAimEnabled;
-            if (!isAimEnabled) lastResult = null;
         }).ignoringDisable(true);
     }
 
     /** Flips the auto-shooting enabled flag. Safe to call while the robot is disabled. */
     public Command shootingToggle() {
-        return Commands.runOnce(() -> isShootingEnabled = !isShootingEnabled).ignoringDisable(true);
+        return Commands.runOnce(() -> isAutoShootingEnabled = !isAutoShootingEnabled).ignoringDisable(true);
     }
 
     /** Disables auto-aim and returns the turret and hood to their home positions. */
@@ -404,7 +403,13 @@ public class AutoAimController extends SubsystemBase {
     }
 
     public Command overrideShootCommand() {
-        return Commands.startEnd(() -> shootOverride = true, () -> shootOverride = false);
+        return Commands.startEnd(
+            () -> shootOverride = true,
+            () -> {
+                shootOverride = false;
+                shooter.setSetpoint(0);
+            }
+        );
     }
 
     //#endregion
