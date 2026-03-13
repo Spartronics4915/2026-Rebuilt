@@ -58,8 +58,6 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
         followerMotor.setControl(new Follower(LEAD_MOTOR_ID, MotorAlignmentValue.Aligned));
 
         setClamp(ShooterClamp.UNRESTRICTED);
-        
-        setSetpointCommand(0);
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         leadMotor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
