@@ -55,7 +55,7 @@ public class MotorHelpers {
                 this.setSetpoint = setSetpoint;
             }
 
-            public void applyPID() {
+            private void applyPID() {
                 super.getConfigurator().apply(
                     new SlotConfigs()
                     .withKP(p)
@@ -64,6 +64,14 @@ public class MotorHelpers {
                     .withKV(v)
                     .withKA(a)
                 );
+            }
+
+            private void applyProfileConstraints()
+            {
+                if (profile != null)
+                {
+                    profile.updateConstraints(new Constraints(maxVelocity, maxAcceleration));
+                }
             }
 
             @Override
@@ -91,8 +99,8 @@ public class MotorHelpers {
                     builder.addDoubleProperty("a", () -> a, (a) -> {this.a = a; applyPID();});
                     
                     if (profile != null) {
-                        builder.addDoubleProperty("Max Velocity", () -> maxVelocity, (maxVelocity) -> {profile.updateConstraints(new Constraints(maxVelocity, profile.constraints.maxAcceleration));});
-                        builder.addDoubleProperty("Max Acceleration", () -> maxAcceleration, (maxAcceleration) -> {profile.updateConstraints(new Constraints(profile.constraints.maxVelocity, maxAcceleration));});
+                        builder.addDoubleProperty("Max Velocity", () -> maxVelocity, (maxVelocity) -> { this.maxVelocity = maxVelocity; applyProfileConstraints(); });
+                        builder.addDoubleProperty("Max Acceleration", () -> maxAcceleration, (maxAcceleration) -> { this.maxAcceleration = maxAcceleration; applyProfileConstraints(); });
                         builder.addDoubleProperty("Trapezoid Position", () -> profile.lastState.position, null);
                         builder.addDoubleProperty("Trapezoid Velocity", () -> profile.lastState.velocity, null);
                     }
