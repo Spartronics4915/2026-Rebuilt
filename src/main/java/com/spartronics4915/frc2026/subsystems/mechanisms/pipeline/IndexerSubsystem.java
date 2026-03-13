@@ -2,7 +2,6 @@ package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
 
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.VelocityVoltage;
-import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.networktables.DoublePublisher;
@@ -20,7 +19,7 @@ import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonF
 
 public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterface {
     
-    private LoggedTalonFX motor;
+    private LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
 
     private double currentSetpoint;
 
@@ -33,9 +32,6 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
     //#region Main Functionality
 
     public IndexerSubsystem() {
-        motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
-        motor.setNeutralMode(NeutralModeValue.Brake);
-        
         TalonFXConfigurator configurator = motor.getConfigurator();
             configurator.apply(PID_CONFIG);
             configurator.apply(CURRENT_LIMITS_CONFIG);
