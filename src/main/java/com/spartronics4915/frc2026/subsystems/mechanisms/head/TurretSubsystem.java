@@ -4,12 +4,10 @@ import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
-import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
-import com.ctre.phoenix6.signals.InvertedValue;
-import com.ctre.phoenix6.signals.NeutralModeValue;
+
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
 import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
@@ -56,17 +54,13 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private final StructPublisher<Rotation2d> desiredStatePublisher = NetworkTableInstance.getDefault().getTable("turret").getStructTopic("desiredState", Rotation2d.struct).publish();
     private final StructPublisher<Rotation2d> setpointPublisher = NetworkTableInstance.getDefault().getTable("turret").getStructTopic("setpoint", Rotation2d.struct).publish();
     
-    public TurretSubsystem(){
+    public TurretSubsystem() {
+
         TalonFXConfigurator motorConfigurator = motor.getConfigurator();
             motorConfigurator.apply(PID_CONFIG);
             motorConfigurator.apply(CURRENT_LIMITS_CONFIG);
             motorConfigurator.apply(FEEDBACK_CONFIG);
-            motorConfigurator.apply(MOTOR_OUTPUT_CONFIG);
-
-        MotorOutputConfigs motorOutputConfigs = new MotorOutputConfigs();
-            motorOutputConfigs.Inverted = InvertedValue.CounterClockwise_Positive;
-            motorOutputConfigs.NeutralMode = NeutralModeValue.Brake;
-            motorConfigurator.apply(motorOutputConfigs);    
+            motorConfigurator.apply(MOTOR_OUTPUT_CONFIG); 
 
         CANcoderConfiguration cancoderConfigurator = new CANcoderConfiguration();
             cancoderConfigurator.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 0.5;

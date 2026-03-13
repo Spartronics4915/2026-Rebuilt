@@ -32,7 +32,7 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private double currentSetpoint;
     private State currentState = new State();
 
-    private static final PositionVoltage positionVoltage = new PositionVoltage(0.0);
+    private final PositionVoltage positionVoltage = new PositionVoltage(0.0);
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("climber").getDoubleTopic("applied out").publish();
     private final DoublePublisher positionPublisher = NetworkTableInstance.getDefault().getTable("climber").getDoubleTopic("position").publish();

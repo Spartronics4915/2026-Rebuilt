@@ -39,7 +39,7 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
     private State currentState = new State();
     private State targetState = new State();
 
-    private static final PositionVoltage positionVoltage = new PositionVoltage(0.0);
+    private final PositionVoltage positionVoltage = new PositionVoltage(0.0);
 
     private HoodClamp currentClamp;
     private Rotation2d minAngle;

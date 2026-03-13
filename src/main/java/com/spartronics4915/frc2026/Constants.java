@@ -679,6 +679,7 @@ public final class Constants {
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
         public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
+            .withInverted(InvertedValue.CounterClockwise_Positive)
             .withNeutralMode(NeutralModeValue.Brake);
         
         public static final boolean ENABLE_FOC = true;
