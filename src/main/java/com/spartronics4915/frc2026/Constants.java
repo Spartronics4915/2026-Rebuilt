@@ -151,41 +151,41 @@ public final class Constants {
             public static final PathConstraints defaultPathConstraints = new PathConstraints(
                 2.0,
                 3.0,
-                1 * Math.PI,
-                2 * Math.PI
+                1.0 * Math.PI,
+                2.0 * Math.PI
             );
 
             public static final PathConstraints trenchPathConstraints = new PathConstraints(
                 2.0,
                 2.0,
-                1/2 * Math.PI,
-                1 * Math.PI
+                1.0 / 2.0 * Math.PI,
+                1.0 * Math.PI
             );
 
             public static final PathConstraints bumpPathConstraints = new PathConstraints(
-                4,
-                4,
-                2 * Math.PI,
+                4.0,
+                4.0,
+                2.0 * Math.PI,
                 1 * Math.PI
             );
 
             public static final PathConstraints intakePathConstraints = new PathConstraints(
                 2.0,
                 5.0,
-                2 * Math.PI,
-                1 * Math.PI
+                2.0 * Math.PI,
+                1.0 * Math.PI
             );
 
             public static final PathConstraints climbPathConstraints = new PathConstraints(
                 1.5,
                 2.0,
-                1 * Math.PI,
-                1 * Math.PI
+                1.0 * Math.PI,
+                1.0 * Math.PI
             );
 
             public static final Rotation2d trenchApproachAngle = Rotation2d.fromDegrees(0.0);
             public static final Rotation2d bumpApproachAngle = Rotation2d.fromDegrees(45.0);
-            public static final Rotation2d startOfFuelAngle = Rotation2d.fromDegrees(299); //This guy might need to be changed
+            public static final Rotation2d startOfFuelAngle = Rotation2d.fromDegrees(299.0); //This guy might need to be changed
             public static final Rotation2d endOfQuadrantAngle = Rotation2d.fromDegrees(-90.0);
 
             public enum PathplannerConfigs {
@@ -208,7 +208,7 @@ public final class Constants {
                 )),
 
                 COMP_CHASSIS(new RobotConfig(
-                    Pounds.of(100),
+                    Pounds.of(140),
                     KilogramSquareMeters.of(2),
                     new ModuleConfig(
                         Inches.of(2.0),
