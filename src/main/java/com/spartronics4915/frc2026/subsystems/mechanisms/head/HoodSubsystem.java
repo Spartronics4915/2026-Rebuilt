@@ -9,7 +9,6 @@ import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.signals.InvertedValue;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
@@ -48,14 +47,10 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
     private Rotation2d minAngle;
     private Rotation2d maxAngle;
 
-    private Pose3d hoodPose = new Pose3d();
-
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("hood").getDoubleTopic("applied out").publish();
     private final StructPublisher<Rotation2d> positionPublisher = NetworkTableInstance.getDefault().getTable("hood").getStructTopic("position", Rotation2d.struct).publish();
     private final StructPublisher<Rotation2d> desiredStatePublisher = NetworkTableInstance.getDefault().getTable("hood").getStructTopic("desiredState", Rotation2d.struct).publish();
     private final StructPublisher<Rotation2d> setpointPublisher = NetworkTableInstance.getDefault().getTable("hood").getStructTopic("setpoint", Rotation2d.struct).publish();
-
-    private final StructPublisher<Pose3d> componentPosePublisher = NetworkTableInstance.getDefault().getTable("hood").getStructTopic("Hood Component", Pose3d.struct).publish();
     
     public HoodSubsystem() {
         TalonFXConfigurator motorConfig = motor.getConfigurator();

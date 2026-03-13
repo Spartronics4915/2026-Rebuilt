@@ -9,12 +9,10 @@ import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.LoggedTrapezoidPr
 import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -40,8 +38,6 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private final DoublePublisher positionPublisher = NetworkTableInstance.getDefault().getTable("climber").getDoubleTopic("position").publish();
     private final DoublePublisher desiredStatePublisher = NetworkTableInstance.getDefault().getTable("climber").getDoubleTopic("desiredState").publish();
     private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("climber").getDoubleTopic("setpoint").publish();
-
-    private final StructPublisher<Pose3d> componentPosePublisher = NetworkTableInstance.getDefault().getTable("climber").getStructTopic("Climber Component", Pose3d.struct).publish();
     
     public ClimberSubsystem() {
         TalonFXConfigurator motorConfig = motor.getConfigurator();

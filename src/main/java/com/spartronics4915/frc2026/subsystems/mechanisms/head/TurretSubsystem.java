@@ -9,6 +9,7 @@ import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
 import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
@@ -16,7 +17,6 @@ import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.LoggedTrapezoidPr
 import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
@@ -55,8 +55,6 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private final StructPublisher<Rotation2d> positionPublisher = NetworkTableInstance.getDefault().getTable("turret").getStructTopic("position", Rotation2d.struct).publish();
     private final StructPublisher<Rotation2d> desiredStatePublisher = NetworkTableInstance.getDefault().getTable("turret").getStructTopic("desiredState", Rotation2d.struct).publish();
     private final StructPublisher<Rotation2d> setpointPublisher = NetworkTableInstance.getDefault().getTable("turret").getStructTopic("setpoint", Rotation2d.struct).publish();
-
-    private final StructPublisher<Pose3d> componentPosePublisher = NetworkTableInstance.getDefault().getTable("turret").getStructTopic("Turret Component", Pose3d.struct).publish();
     
     public TurretSubsystem(){
         TalonFXConfigurator motorConfigurator = motor.getConfigurator();
@@ -67,7 +65,8 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         MotorOutputConfigs motorOutputConfigs = new MotorOutputConfigs();
             motorOutputConfigs.Inverted = InvertedValue.CounterClockwise_Positive;
-            motorConfigurator.apply(motorOutputConfigs);
+            motorOutputConfigs.NeutralMode = NeutralModeValue.Brake;
+            motorConfigurator.apply(motorOutputConfigs);    
 
         CANcoderConfiguration cancoderConfigurator = new CANcoderConfiguration();
             cancoderConfigurator.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 0.5;
