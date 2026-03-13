@@ -40,16 +40,14 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     //#region Main Functionality
 
     public ShooterSubsystem() {
-        leadMotor = new LoggedTalonFX(LEAD_MOTOR_ID, CAN_BUS);
-            leadMotor.setNeutralMode(NeutralModeValue.Brake);
-        
+        leadMotor = new LoggedTalonFX(LEAD_MOTOR_ID, CAN_BUS);   
         followerMotor = new LoggedTalonFX(FOLLOWER_MOTOR_ID, CAN_BUS);
-            followerMotor.setNeutralMode(NeutralModeValue.Brake);
         
         TalonFXConfigurator configurator = leadMotor.getConfigurator();
             configurator.apply(PID_CONFIG);
             configurator.apply(CURRENT_LIMITS_CONFIG);
             configurator.apply(FEEDBACK_CONFIG);
+            configurator.apply(MOTOR_OUTPUT_CONFIG);
             
         configurator = followerMotor.getConfigurator();
             configurator.apply(PID_CONFIG);
