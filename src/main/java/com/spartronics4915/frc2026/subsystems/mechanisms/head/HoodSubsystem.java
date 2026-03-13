@@ -3,10 +3,8 @@ package com.spartronics4915.frc2026.subsystems.mechanisms.head;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
-import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
-import com.ctre.phoenix6.signals.InvertedValue;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -58,10 +56,6 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
             motorConfig.apply(CURRENT_LIMITS_CONFIG);
             motorConfig.apply(FEEDBACK_CONFIG);
             motorConfig.apply(MOTOR_OUTPUT_CONFIG);
-
-        MotorOutputConfigs motorOutputConfigs = new MotorOutputConfigs();
-            motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
-            motorConfig.apply(motorOutputConfigs);
 
         currentClamp = HoodClamp.UNRESTRICTED;
             minAngle = currentClamp.minAngle;
