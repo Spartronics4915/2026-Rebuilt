@@ -45,7 +45,7 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private State targetState = new State();
     private State currentState = new State();
 
-    private static final PositionVoltage positionVoltage = new PositionVoltage(0.0);
+    private final PositionVoltage positionVoltage = new PositionVoltage(0.0);
     
     private TurretClamp currentClamp;
     private Rotation2d minAngle;
