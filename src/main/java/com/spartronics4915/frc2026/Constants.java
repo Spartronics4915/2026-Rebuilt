@@ -347,13 +347,13 @@ public final class Constants {
                     backTowerCamTransform, 
                     new StdDevCalculator(1.2), 
                     simCameraProperties
-                ),
-                "gollum", new LimelightProcessor(
-                    "gollum", 
-                    swerveCamTransform, 
-                    new StdDevCalculator(1.2), 
-                    null // We add this later
                 )
+                //"gollum", new LimelightProcessor(
+                //    "gollum", 
+                //    swerveCamTransform, 
+                //    new StdDevCalculator(1.2), 
+                //    null // We add this later
+                //)
             );
         }
 
@@ -430,12 +430,23 @@ public final class Constants {
         public static final int LEAD_MOTOR_ID = 22;
         public static final int FOLLOWER_MOTOR_ID = 23;
 
+        public static final double P = 0.4;
+        public static final double I = 0.0;
+        public static final double D = 0.0;
+        public static final double V = 0.123;
+
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 80;
         public static final double LOWER_LIMIT = 60;
 
         public static final double LOWER_TIME = 5;
         public static final double MOTOR_MECHANISM_RATIO = 0.9375;
+
+        public static final SlotConfigs PID_CONFIG = new SlotConfigs()
+            .withKP(P)
+            .withKI(I)
+            .withKD(D)
+            .withKV(V);
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
@@ -450,21 +461,6 @@ public final class Constants {
             .withNeutralMode(NeutralModeValue.Coast);
 
         public static final boolean ENABLE_FOC = false;
-
-        // how close before switching from duty-cycle to torque-current mode.
-        public static final double BANG_BANG_TOLERANCE_RPS = 3.0;
-
-        // how many RPS before the tolerance band to start tapering
-        // duty cycle output. At RAMP_DOWN_WINDOW_RPS away, output is 1.0 (full power).
-        // At the tolerance boundary, output tapers to 0
-        public static final double RAMP_DOWN_WINDOW_RPS = 10.0;
-
-        // how long the speed must stay OUT of tolerance before switching back to duty-cycle.
-        public static final double TORQUE_CURRENT_DEBOUNCE_SEC = 0.025;
-
-        // holding torque current applied in torque-current bang-bang mode when slightly below setpoint
-        public static final double HOLDING_TORQUE_CURRENT_AMPS = 20.0;
-
     }
 
     //#endregion
