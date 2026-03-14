@@ -2,6 +2,7 @@ package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
 
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.controls.VoltageOut;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.networktables.DoublePublisher;
@@ -56,8 +57,12 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
             MAX_RPS
         );
 
-        velocityVoltage.withEnableFOC(ENABLE_FOC).Velocity = currentSetpoint;
-        motor.setControl(velocityVoltage);
+        if (currentSetpoint != 0) {
+            velocityVoltage.withEnableFOC(ENABLE_FOC).Velocity = currentSetpoint;
+            motor.setControl(velocityVoltage);
+        } else {
+            motor.setControl(new VoltageOut(0.0));
+        }
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPM());

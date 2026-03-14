@@ -70,10 +70,11 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     @Override
     public void periodic() {
         currentSetpoint = MathUtil.clamp(
-                currentSetpoint, 
-                -maxRPS, 
-                maxRPS
-            );
+            currentSetpoint, 
+            -maxRPS, 
+            maxRPS
+        );
+        
         if (currentSetpoint != 0) {
             velocityVoltage.withEnableFOC(ENABLE_FOC).Velocity = currentSetpoint;
             leadMotor.setControl(velocityVoltage);
