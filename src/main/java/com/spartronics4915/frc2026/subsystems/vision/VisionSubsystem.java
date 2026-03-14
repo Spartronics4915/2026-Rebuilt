@@ -99,10 +99,6 @@ public class VisionSubsystem extends SubsystemBase {
         }
 
         for (ProcessorInterface camera : cameras.values()) {
-            if (camera instanceof LimelightProcessor ll) {
-                ll.setHeadingSupplier(() -> swerveSubsystem.getGyroRotation3d().toRotation2d());
-            }
-        
             camera.start();
         
             if (isSimulation) {
@@ -130,6 +126,15 @@ public class VisionSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
+        if (swerve != null) {
+            double headingDegrees = swerve.getGyroRotation3d().toRotation2d().getDegrees();
+            for (ProcessorInterface camera : cameras.values()) {
+                if (camera instanceof LimelightProcessor ll) {
+                    ll.updateHeading(headingDegrees);
+                }
+            }
+        }
+
         collectResults();
         filterAndCollectApriltags();
 

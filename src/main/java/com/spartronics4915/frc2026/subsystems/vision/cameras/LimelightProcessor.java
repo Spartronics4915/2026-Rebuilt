@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 
 import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
 import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
@@ -15,7 +14,6 @@ import com.spartronics4915.frc2026.util.vision.LimelightHelpers.PoseEstimate;
 import com.spartronics4915.frc2026.util.vision.LimelightHelpers.RawFiducial;
 
 import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
@@ -29,7 +27,8 @@ public class LimelightProcessor implements ProcessorInterface {
     private final String limelightName;
     private final Transform3d cameraTransform;
     private final StdDevCalculator stdDevCalculator;
-    private Supplier<Rotation2d> headingSupplier;
+
+    private volatile double cachedHeadingDegrees = 0.0;
 
     private final ConcurrentLinkedQueue<ResultInterface> resultQueue;
     private final AtomicInteger queueSize;
@@ -41,7 +40,7 @@ public class LimelightProcessor implements ProcessorInterface {
     private volatile boolean isRunning;
     private volatile boolean useMegaTag2;
 
-    // Reusable scratch list built on the Notifier thread — never shared.
+    // Reusable scratch list built on the Notifier thread
     private final List<TrackedTag> tagScratch = new ArrayList<>(8);
 
     /**
@@ -51,21 +50,16 @@ public class LimelightProcessor implements ProcessorInterface {
      *                        Also configure this in the Limelight web UI or via
      *                        {@link LimelightHelpers#setCameraPose_RobotSpace}.
      * @param calculator      Per-camera std-dev calculator; must not be shared.
-     * @param headingSupplier Supplies the robot's current yaw for MegaTag2.
-     *                        Typically {@code swerve::getHeading}. Pass {@code null}
-     *                        to force MegaTag1.
      */
     public LimelightProcessor(
         String limelightName,
         Transform3d cameraTransform,
-        StdDevCalculator calculator,
-        Supplier<Rotation2d> headingSupplier
+        StdDevCalculator calculator
     ) {
         this.limelightName = limelightName;
         this.cameraTransform = cameraTransform;
         this.stdDevCalculator = calculator;
-        this.headingSupplier = headingSupplier;
-        this.useMegaTag2 = (headingSupplier != null);
+        this.useMegaTag2 = true;
 
         this.resultQueue = new ConcurrentLinkedQueue<>();
         this.queueSize = new AtomicInteger(0);
@@ -94,19 +88,23 @@ public class LimelightProcessor implements ProcessorInterface {
     }
 
     /**
-     *   <li>Pushes robot orientation to the Limelight (required for MegaTag2).</li>
+     * Called periodically on the Notifier thread.
+     * <ul>
+     *   <li>Sends robot orientation to the Limelight (required for MegaTag2) using
+     *       the heading cached by the main thread via {@link #updateHeading(double)}.
+     *       This avoids calling into YAGSL from a background thread.</li>
      *   <li>Reads the latest pose estimate from NetworkTables.</li>
      *   <li>Converts it to an {@link ApriltagResult} and enqueues it.</li>
-     * </ol>
+     * </ul>
      */
     @Override
     public void process() {
         if (!isRunning) return;
 
-        if (useMegaTag2 && headingSupplier != null) {
-            double yawDegrees = headingSupplier.get().getDegrees();
-            // Only yaw is needed; rate, pitch, and roll can be left as 0.
-            LimelightHelpers.SetRobotOrientation_NoFlush(limelightName, yawDegrees, 0, 0, 0, 0, 0);
+        if (useMegaTag2) {
+            // cachedHeadingDegrees is written by the main thread and read here — volatile
+            // guarantees visibility without requiring a lock.
+            LimelightHelpers.SetRobotOrientation_NoFlush(limelightName, cachedHeadingDegrees, 0, 0, 0, 0, 0);
         }
 
         PoseEstimate estimate = useMegaTag2
@@ -121,6 +119,7 @@ public class LimelightProcessor implements ProcessorInterface {
         while (queueSize.get() >= maxQueueSize) {
             if (resultQueue.poll() != null) queueSize.decrementAndGet();
         }
+        
         resultQueue.add(result);
         queueSize.incrementAndGet();
     }
@@ -252,17 +251,17 @@ public class LimelightProcessor implements ProcessorInterface {
     //#region Limelight
 
     /**
-     * Injects the heading supplier for MegaTag2 after construction.
+     * Pushes the robot's current heading to this processor so MegaTag2 can use it.
+     *
+     * @param degrees Current robot yaw in degrees (WPILib convention, CCW positive).
      */
-    public void setHeadingSupplier(Supplier<Rotation2d> headingSupplier) {
-        this.headingSupplier = headingSupplier;
-        this.useMegaTag2 = true;
+    public void updateHeading(double degrees) {
+        this.cachedHeadingDegrees = degrees;
     }
 
     /**
      * Enables or disables MegaTag2 localization.
-     * MegaTag2 (gyro-constrained) is strongly preferred and is on by default when a
-     * heading supplier is provided. Disable only if your gyro is unreliable.
+     * MegaTag2 (gyro-constrained) is on by default. Disable only if the gyro is unreliable.
      */
     public void setUseMegaTag2(boolean useMegaTag2) { 
         this.useMegaTag2 = useMegaTag2; 
