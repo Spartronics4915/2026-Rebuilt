@@ -663,7 +663,7 @@ public final class Constants {
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 1.0 / ((12.0/38.0) * (18.0/38.0) * (11.0/84.0));
         public static final double ENCODER_MECHANISM_RATIO = 11.0 / 84.0;
-        public static final double MAGNET_OFFSET = 0.394287;
+        public static final double MAGNET_OFFSET = -0.393;
 
         public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.Clockwise_Positive;
 

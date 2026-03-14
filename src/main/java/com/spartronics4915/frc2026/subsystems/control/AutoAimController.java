@@ -117,7 +117,7 @@ public class AutoAimController extends SubsystemBase {
             turret.getClamp().maxAngle.getDegrees(),
             0.0,
             0.001,
-            Rotation2d.kCW_90deg.plus(Rotation2d.fromDegrees(180))
+            Rotation2d.kCW_90deg
         );
 
         turretController.reset(turret.getPosition());
