@@ -480,8 +480,8 @@ public final class Constants {
         public static final double MAX_ACCELERATION = 20;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 35;
-        public static final double LOWER_LIMIT = 15;
+        public static final double CURRENT_LIMIT = 40;
+        public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 85.3333333;
@@ -657,8 +657,8 @@ public final class Constants {
         public static final double MAX_ACCELERATION = 25.0;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 35;
-        public static final double LOWER_LIMIT = 15;
+        public static final double CURRENT_LIMIT = 40;
+        public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 1.0 / ((12.0/38.0) * (18.0/38.0) * (11.0/84.0));
