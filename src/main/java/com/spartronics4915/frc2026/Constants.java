@@ -76,7 +76,7 @@ public final class Constants {
     //#region Swerve
 
     public static final class SwerveConstants {
-        public static final double MAX_SPEED = 6;
+        public static final double MAX_SPEED = 7;
         public static final AngularVelocity MAX_ANGULAR_SPEED = RadiansPerSecond.of(8);
 
         public static final boolean DEFAULT_IS_FIELD_RELATIVE = true;
@@ -239,7 +239,7 @@ public final class Constants {
     //#region Vision
 
     public static final class VisionConstants {
-        public static final AprilTagFieldLayout apriltagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
+        public static final AprilTagFieldLayout apriltagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
         
         public static final SimCameraProperties simCameraProperties = new SimCameraProperties();
             static {
@@ -306,7 +306,7 @@ public final class Constants {
                 new Rotation3d(
                     Math.toRadians(0), 
                     Math.toRadians(-30), 
-                    Math.toRadians(215)
+                    Math.toRadians(180)
                 )
             );
 
@@ -480,8 +480,8 @@ public final class Constants {
         public static final double MAX_ACCELERATION = 20;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 40;
-        public static final double LOWER_LIMIT = 20;
+        public static final double CURRENT_LIMIT = 35;
+        public static final double LOWER_LIMIT = 15;
 
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 85.3333333;
@@ -519,12 +519,12 @@ public final class Constants {
         public static final double I = 0.0;
         public static final double D = 0.2;
 
-        public static final double MAX_VELOCITY = 7;
-        public static final double MAX_ACCELERATION = 7;
+        public static final double MAX_VELOCITY = 6;
+        public static final double MAX_ACCELERATION = 6;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 40;
-        public static final double LOWER_LIMIT = 20;
+        public static final double CURRENT_LIMIT = 35;
+        public static final double LOWER_LIMIT = 15;
 
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 50.625;
@@ -657,8 +657,8 @@ public final class Constants {
         public static final double MAX_ACCELERATION = 25.0;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 40;
-        public static final double LOWER_LIMIT = 20;
+        public static final double CURRENT_LIMIT = 35;
+        public static final double LOWER_LIMIT = 15;
 
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 1.0 / ((12.0/38.0) * (18.0/38.0) * (11.0/84.0));

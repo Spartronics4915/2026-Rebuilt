@@ -354,7 +354,7 @@ public class AutoAimController extends SubsystemBase {
                 turret.getPosition().getDegrees() 
                 - turretController.getLastSetpoint(), 360.0
             )
-        ) <= 5.0;
+        ) <= 4.0;
     }
 
     public boolean isHoodReady() {
