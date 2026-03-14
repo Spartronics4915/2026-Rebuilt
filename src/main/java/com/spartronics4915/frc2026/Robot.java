@@ -13,6 +13,7 @@ import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
+import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Filesystem;
@@ -56,6 +57,9 @@ public class Robot extends TimedRobot {
     public void robotInit() {
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
         CommandScheduler.getInstance().schedule(FollowPathCommand.warmupCommand());
+
+        DataLogManager.start();
+        DriverStation.startDataLog(DataLogManager.getLog(), true);
 
         NetworkTable metaData = NetworkTableInstance.getDefault().getTable("Metadata");
         metaData.getStringTopic("Git: SHA").publish().accept(BuildConstants.GIT_SHA);
