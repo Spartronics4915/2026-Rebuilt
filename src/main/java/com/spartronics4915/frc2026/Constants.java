@@ -301,7 +301,7 @@ public final class Constants {
                 new Translation3d(
                     -0.266691, 
                     0.311499, 
-                    0.437110
+                    0.437110 + 0.0127
                 ),
                 new Rotation3d(
                     Math.toRadians(0), 
