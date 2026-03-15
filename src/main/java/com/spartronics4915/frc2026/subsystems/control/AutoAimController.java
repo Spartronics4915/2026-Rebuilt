@@ -348,6 +348,8 @@ public class AutoAimController extends SubsystemBase {
             && ((shootOverride && !isAimEnabled) || (isTurretReady() && isHoodReady()));
     }
 
+    // TODO: This could not be working
+
     public boolean isTurretReady() {
         return Math.abs(
             Math.IEEEremainder( 

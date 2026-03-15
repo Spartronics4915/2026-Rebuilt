@@ -83,7 +83,7 @@ public final class Constants {
 
         public static final double STICK_DEADBAND = 0.05;
         public static final double TILT_THRESHOLD_DEGREES = 1.0;
-        public static final double TILT_DEBOUNCE = 0.3;
+        public static final double TILT_DEBOUNCE = 0.5;
 
         public static final Constraints trenchAlignConstraints = new Constraints(3, 3);
 
@@ -385,7 +385,7 @@ public final class Constants {
          */
         public static final double TRENCH_LOOKAHEAD_SEC = 0.5;
 
-        public static final double PIPELINE_RATE_LIMIT_SEC = 0.5;
+        public static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
         public static final double PIVOT_JOSTLE_FREQUENCY = 2.0; // Hz
 
         public static final double percentLoss = 0.06; // Percent loss on shooter to ball transfer
@@ -440,7 +440,7 @@ public final class Constants {
         public static final double CURRENT_LIMIT = 80;
         public static final double LOWER_LIMIT = 60;
 
-        public static final double LOWER_TIME = 5;
+        public static final double LOWER_TIME = 6;
         public static final double MOTOR_MECHANISM_RATIO = 0.9375;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
@@ -529,7 +529,7 @@ public final class Constants {
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 50.625;
 
-        public static final double MAGNET_OFFSET = 0.01416;
+        public static final double MAGNET_OFFSET = 0.453369;
         public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.Clockwise_Positive;
 
         public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(-2);
@@ -571,7 +571,7 @@ public final class Constants {
         public static final double MAX_RPS = 100;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 45;
+        public static final double CURRENT_LIMIT = 40;
         public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 2;
