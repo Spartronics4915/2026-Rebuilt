@@ -7,6 +7,7 @@ import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -16,6 +17,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import static com.spartronics4915.frc2026.Constants.ShooterConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
+import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
 import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
@@ -75,6 +77,10 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
             maxRPS
         );
         
+        if (currentSetpoint == 0 && !Robot.isPureTeleop) {
+            currentSetpoint = IDLE_SHOOTER_RPS;
+        }
+
         if (currentSetpoint != 0) {
             velocityVoltage.withEnableFOC(ENABLE_FOC).Velocity = currentSetpoint;
             leadMotor.setControl(velocityVoltage);
@@ -122,7 +128,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     public enum ShooterClamp{
         RESTRICTED(0),
-        UNRESTRICTED(100);
+        UNRESTRICTED(200);
 
         double maxRPS;
 

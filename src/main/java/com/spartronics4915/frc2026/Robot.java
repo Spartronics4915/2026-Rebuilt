@@ -38,10 +38,10 @@ public class Robot extends TimedRobot {
     private final BooleanPublisher currentAllianceSelectedPub = NetworkTableInstance.getDefault().getBooleanTopic("IO/Current Alliance Selected").publish();
     private final StructArrayPublisher<Pose3d> fuelPosesPub = NetworkTableInstance.getDefault().getStructArrayTopic("FieldSimulation/FuelPositions", Pose3d.struct).publish();
     public boolean currentAllianceSelected = false;
+    
     public static boolean hubEnabled;
     public static double timeUntilSwitch;
-
-    private boolean isPureTeleop = false;
+    public static boolean isPureTeleop = false;
 
     /**
      * This function is run when the robot is first started up and should be used for any
