@@ -434,7 +434,7 @@ public final class Constants {
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.123;
-        public static final double A = 5;
+        public static final double A = 6;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 80;
@@ -519,12 +519,12 @@ public final class Constants {
         public static final double I = 0.0;
         public static final double D = 0.2;
 
-        public static final double MAX_VELOCITY = 6;
-        public static final double MAX_ACCELERATION = 6;
+        public static final double MAX_VELOCITY = 7;
+        public static final double MAX_ACCELERATION = 7;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 35;
-        public static final double LOWER_LIMIT = 15;
+        public static final double CURRENT_LIMIT = 40;
+        public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 50.625;
