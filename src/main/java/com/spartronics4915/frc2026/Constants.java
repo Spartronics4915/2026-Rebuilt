@@ -251,12 +251,12 @@ public final class Constants {
             }
 
         public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.22;  // 0.5 — trust vision closer to odometry levels
-            public static final double baseThetaStdDev = 0.2;  // 0.5 — heading from vision is still less reliable
-            public static final double ambiguityWeight = 0.9;  // 0.8
+            public static final double baseXYStdDev = 0.18;  // 0.5 — trust vision closer to odometry levels
+            public static final double baseThetaStdDev = 0.24;  // 0.5 — heading from vision is still less reliable
+            public static final double ambiguityWeight = 1.0;  // 0.8
             public static final double areaWeight = 0.9;  // 0.6
             public static final double motionWeight = 0.3;  // 0.4
-            public static final double latencyWeight = 1;  // 0.4
+            public static final double latencyWeight = 1.0;  // 0.4
 
             /**
              * Smoothing factor for the exponential moving average applied to distance and area.
@@ -331,21 +331,21 @@ public final class Constants {
                     "evan", 
                     apriltagFieldLayout, 
                     frontTowerCamTransform, 
-                    new StdDevCalculator(1.2), 
+                    new StdDevCalculator(1.3), 
                     simCameraProperties
                 ),
                 "daniil", new PhotonProcessor(
                     "daniil", 
                     apriltagFieldLayout, 
                     rioCamTransform, 
-                    new StdDevCalculator(1.2), 
+                    new StdDevCalculator(1.3), 
                     simCameraProperties
                 ),
                 "val", new PhotonProcessor(
                     "val", 
                     apriltagFieldLayout, 
                     backTowerCamTransform, 
-                    new StdDevCalculator(1.2), 
+                    new StdDevCalculator(1.3), 
                     simCameraProperties
                 )
                 //"gollum", new LimelightProcessor(
@@ -431,7 +431,7 @@ public final class Constants {
         public static final int FOLLOWER_MOTOR_ID = 23;
 
         /** Idle revolutions-per-second to hold when robot is enabled but not actively shooting. */
-        public static final double IDLE_SHOOTER_RPS = 20.0;
+        public static final double IDLE_SHOOTER_RPS = 15.0;
 
         public static final double P = 0.4;
         public static final double I = 0.0;
@@ -532,7 +532,7 @@ public final class Constants {
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 50.625;
 
-        public static final double MAGNET_OFFSET = 0.453369;
+        public static final double MAGNET_OFFSET = -0.465332;
         public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.Clockwise_Positive;
 
         public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(-2);
@@ -710,7 +710,7 @@ public final class Constants {
         public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 1;
-        public static final double MOTOR_MECHANISM_RATIO = 5;
+        public static final double MOTOR_MECHANISM_RATIO = 4;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)

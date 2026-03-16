@@ -106,8 +106,8 @@ public class DriveToPOI {
                                             climbPose,
                                             shouldFlip ? Rotation2d.fromDegrees(270.0) : Rotation2d.fromDegrees(90.0)
                                         )
-                                    ),
-                                    Seconds.of(10.0)
+                                    ),  
+                                    Seconds.of(3.0)
                                 ),
                                 // Pull climber back down to move robot up
                                 climber.setStateCommand(ClimberState.DOWN)
@@ -116,7 +116,7 @@ public class DriveToPOI {
                     ).finallyDo(
                         (interrupted) -> {
                             // Put climber back down only if interrupted since the command got canceled on the way there
-                            climber.setStateCommand(ClimberState.JORBIT);
+                            climber.setStateCommand(ClimberState.DOWN);
                         }
                     );
                 }
