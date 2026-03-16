@@ -4,11 +4,16 @@
 
 package com.spartronics4915.frc2026;
 
+import com.pathplanner.lib.commands.FollowPathCommand;
+
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.net.WebServer;
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
+import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Filesystem;
@@ -16,6 +21,7 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import swervelib.simulation.ironmaple.simulation.SimulatedArena;
 
 /**
  * The methods in this class are called automatically corresponding to each mode, as described in
@@ -23,14 +29,19 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
  * this project, you must also update the Main.java file in the project.
  */
 public class Robot extends TimedRobot {
+
     private Command autonomousCommand;
 
     private final RobotContainer robotContainer;
     private final BooleanPublisher hubEnabledPub = NetworkTableInstance.getDefault().getBooleanTopic("IO/Hub Enabled").publish();
     private final DoublePublisher timeUntilSwitchPub = NetworkTableInstance.getDefault().getDoubleTopic("IO/Time Left Until Switch").publish();
-    private boolean currentAllianceSelected = false;
+    private final BooleanPublisher currentAllianceSelectedPub = NetworkTableInstance.getDefault().getBooleanTopic("IO/Current Alliance Selected").publish();
+    private final StructArrayPublisher<Pose3d> fuelPosesPub = NetworkTableInstance.getDefault().getStructArrayTopic("FieldSimulation/FuelPositions", Pose3d.struct).publish();
+    public boolean currentAllianceSelected = false;
+    
     public static boolean hubEnabled;
     public static double timeUntilSwitch;
+    public static boolean isPureTeleop = false;
 
     /**
      * This function is run when the robot is first started up and should be used for any
@@ -45,6 +56,10 @@ public class Robot extends TimedRobot {
     @Override
     public void robotInit() {
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
+        CommandScheduler.getInstance().schedule(FollowPathCommand.warmupCommand());
+
+        DataLogManager.start();
+        DriverStation.startDataLog(DataLogManager.getLog(), true);
 
         NetworkTable metaData = NetworkTableInstance.getDefault().getTable("Metadata");
         metaData.getStringTopic("Git: SHA").publish().accept(BuildConstants.GIT_SHA);
@@ -108,11 +123,26 @@ public class Robot extends TimedRobot {
         if (autonomousCommand != null) {
             autonomousCommand.cancel();
         }
+
+        // If match time is near zero (or negative), we are likely in pure Teleop mode (counting up)
+        // In practice mode or real matches, teleop starts with a high number (e.g. 135) and counts down.
+        isPureTeleop = DriverStation.getMatchTime() < 10.0;
     }
 
     /** This function is called periodically during operator control. */
     @Override
     public void teleopPeriodic() {
+
+        if (isPureTeleop) {
+            hubEnabled = true;
+            timeUntilSwitch = 999.0;
+            currentAllianceSelected = false;
+
+            hubEnabledPub.set(hubEnabled);
+            timeUntilSwitchPub.set(timeUntilSwitch);
+            currentAllianceSelectedPub.set(currentAllianceSelected);
+            return;
+        }
 
         // Hub enable/disable flashing logic
         String gameData = DriverStation.getGameSpecificMessage();
@@ -149,6 +179,14 @@ public class Robot extends TimedRobot {
 
             hubEnabledPub.set(hubEnabled);
             timeUntilSwitchPub.set(timeUntilSwitch);
+            currentAllianceSelectedPub.set(currentAllianceSelected);
+        } else {
+            hubEnabled = false;
+            timeUntilSwitch = 999.0;
+            currentAllianceSelected = false;
+            hubEnabledPub.set(false);
+            timeUntilSwitchPub.set(999.0);
+            currentAllianceSelectedPub.set(false);
         }
     }
 
@@ -168,5 +206,13 @@ public class Robot extends TimedRobot {
 
     /** This function is called periodically whilst in simulation. */
     @Override
-    public void simulationPeriodic() {}
+    public void simulationPeriodic() {
+        SimulatedArena.getInstance().simulationPeriodic();
+        Pose3d[] fuelPoses = SimulatedArena.getInstance()
+            .getGamePiecesArrayByType("Fuel");
+        fuelPosesPub.set(fuelPoses);
+        if (fuelPoses.length > 150) {
+            SimulatedArena.getInstance().clearGamePieces();
+        }
+    }
 }

@@ -1,0 +1,26 @@
+{
+    "angle": {
+        "type": "talonfx",
+        "id": 7,
+        "canbus": "Hydra"
+    },
+    "drive": {
+        "type": "talonfx",
+        "id": 8,
+        "canbus": "Hydra"
+    },
+    "encoder": {
+        "type": "cancoder",
+        "id": 9,
+        "canbus": "Hydra"
+    },
+    "inverted": {
+        "drive": false,
+        "angle": true
+    },
+    "absoluteEncoderOffset": 123.05,
+    "location": {
+        "front": -12.1640885,
+        "left": 9.585892
+    }
+}   
