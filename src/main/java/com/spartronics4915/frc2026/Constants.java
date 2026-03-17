@@ -1,8 +1,8 @@
+package com.spartronics4915.frc2026;
+
 // Copyright (c) FIRST and other WPILib contributors.
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
-
-package com.spartronics4915.frc2026;
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.hubPose;
 import static edu.wpi.first.units.Units.Amps;
@@ -16,16 +16,17 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Millimeters;
 import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Seconds;
 
 import java.util.Map;
 
 import org.photonvision.simulation.SimCameraProperties;
 
+import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.PathplannerConfigs;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.PhotonProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
 import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
-import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.PathplannerConfigs;
 import com.pathplanner.lib.config.ModuleConfig;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
@@ -34,27 +35,40 @@ import com.pathplanner.lib.path.PathConstraints;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.units.measure.Time;
 
 import com.ctre.phoenix6.CANBus;
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
+import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.SlotConfigs;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
+import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
+import com.ctre.phoenix6.swerve.SwerveModuleConstants;
+import com.ctre.phoenix6.swerve.SwerveModuleConstants.ClosedLoopOutputType;
+import com.ctre.phoenix6.swerve.SwerveModuleConstants.SteerFeedbackType;
+import com.ctre.phoenix6.swerve.SwerveModuleConstantsFactory;
 
 public final class Constants {
 
@@ -75,26 +89,85 @@ public final class Constants {
     //#region Swerve
 
     public static final class SwerveConstants {
-        public static final double MAX_SPEED = 7;
-        public static final AngularVelocity MAX_ANGULAR_SPEED = RadiansPerSecond.of(8);
 
-        public static final boolean DEFAULT_IS_FIELD_RELATIVE = true;
+        public static final double maxSpeed = 7;
+        public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(8);
 
-        public static final double STICK_DEADBAND = 0.05;
-        public static final double TILT_THRESHOLD_DEGREES = 3.0;
-        public static final double TILT_DEBOUNCE = 0.1;
+        public static final boolean defaultFieldRelative = true;
+
+        public static final double stickDeadband = 0.05;
+        public static final double tiltThresholdDegrees = 1.0;
+        public static final double tiltDebounce = 0.5;
 
         public static final Constraints trenchAlignConstraints = new Constraints(3, 3);
 
-        public enum SwerveConfigurations {
-            TEST_CHASSIS("test-chassis", PathplannerConfigs.TEST_CHASSIS),
-            COMP_CHASSIS("comp-chassis", PathplannerConfigs.COMP_CHASSIS);
+        public static final double odomUpdateFrequency = 250.0;
 
-            public String directory;
-            public PathplannerConfigs pathplannerConfig;
-            private SwerveConfigurations(String directory, PathplannerConfigs pathplannerConfig) {
-                this.directory = "swerve/" + directory;
+        public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.05, 0.05, 0.005);
+        public static final Matrix<N3, N1> slipStdDevs = VecBuilder.fill(2.0, 2.0, 0.5);
+
+        public static final double slipRecoverySeconds = 0.5;
+
+        public enum SwerveConfigurations {
+            // TODO: Run Tuner X swerve builder
+            COMP_CHASSIS(
+                new SwerveDrivetrainConstants()
+                    .withCANBusName("Hydra")
+                    .withPigeon2Id(13),
+                PathplannerConfigs.COMP_CHASSIS,
+                new SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>()
+                    .withDriveMotorGearRatio(6.03)
+                    .withSteerMotorGearRatio(26.09)
+                    .withWheelRadius(Inches.of(2.0))
+                    .withSpeedAt12Volts(MetersPerSecond.of(5.34)) // Kraken X60 free speed at 6.03:1 with 4" wheels
+                    .withSlipCurrent(Amps.of(60))
+                    .withSteerMotorGains(new Slot0Configs()
+                        .withKP(100).withKI(0).withKD(0.5)
+                        .withKS(0.1).withKV(1.91).withKA(0))
+                    .withDriveMotorGains(new Slot0Configs()
+                        .withKP(0.1).withKI(0).withKD(0)
+                        .withKS(0).withKV(0.124))
+                    .withSteerMotorClosedLoopOutput(ClosedLoopOutputType.Voltage)
+                    .withDriveMotorClosedLoopOutput(ClosedLoopOutputType.TorqueCurrentFOC)
+                    .withFeedbackSource(SteerFeedbackType.FusedCANcoder)
+                    .withSteerMotorInitialConfigs(new TalonFXConfiguration()
+                        .withCurrentLimits(new CurrentLimitsConfigs()
+                            .withStatorCurrentLimit(Amps.of(40))
+                            .withStatorCurrentLimitEnable(true)
+                        )
+                    ),
+                new int[]{1, 2, 3}, new int[]{4, 5, 6}, 
+                new int[]{7, 8, 9}, new int[]{10, 11, 12},
+                Rotations.of(291.01 / 360.0), Rotations.of(34.28 / 360.0),
+                Rotations.of(123.05 / 360.0), Rotations.of(304.37 / 360.0),
+                Inches.of(12.164), Inches.of(12.164), Inches.of(-12.164), Inches.of(-12.164),
+                Inches.of(9.586), Inches.of(-9.586), Inches.of(9.586), Inches.of(-9.586),
+                false, true
+            );
+
+            public final SwerveDrivetrainConstants drivetrainConstants;
+            public final PathplannerConfigs pathplannerConfig;
+            public final SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>[] modules;
+ 
+            @SuppressWarnings("unchecked")
+            private SwerveConfigurations(
+                SwerveDrivetrainConstants drivetrainConstants,
+                PathplannerConfigs pathplannerConfig,
+                SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration> factory,
+                int[] fl, int[] fr, int[] bl, int[] br,
+                Angle flOffset, Angle frOffset, Angle blOffset, Angle brOffset,
+                Distance flX, Distance frX, Distance blX, Distance brX,
+                Distance flY, Distance frY, Distance blY, Distance brY,
+                boolean invertLeft, boolean invertRight
+            ) {
+                this.drivetrainConstants = drivetrainConstants;
                 this.pathplannerConfig = pathplannerConfig;
+                this.modules = new SwerveModuleConstants[]{
+                    factory.createModuleConstants(fl[0],  fl[1],  fl[2],  flOffset, flX, flY, invertLeft,  true, false),
+                    factory.createModuleConstants(fr[0],  fr[1],  fr[2],  frOffset, frX, frY, invertRight, true, false),
+                    factory.createModuleConstants(bl[0],  bl[1],  bl[2],  blOffset, blX, blY, invertLeft,  true, false),
+                    factory.createModuleConstants(br[0],  br[1],  br[2],  brOffset, brX, brY, invertRight, true, false),
+                };
             }
         }
 
