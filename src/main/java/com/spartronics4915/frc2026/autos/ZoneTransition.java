@@ -105,11 +105,14 @@ public class ZoneTransition {
 
         return Commands.race(
             AutoBuilder.followPath(path),
-            Commands.waitUntil(() -> {
-                return swerve.getRelativePose().getMeasureX().in(Meters) > hubPose.getX() ^ !toNeutralZone 
-                    && swerve.isFlatDebounced()
-                    && vision.hasValidPose();
-            })
+            Commands.sequence(
+                Commands.waitUntil(() -> {
+                    return swerve.getRelativePose().getMeasureX().in(Meters) > hubPose.getX() ^ !toNeutralZone 
+                        && swerve.isFlatDebounced()
+                        && vision.hasValidPose();
+                }),
+                Commands.waitSeconds(bumpDriveContinueTime)
+            )
         );
     }
 

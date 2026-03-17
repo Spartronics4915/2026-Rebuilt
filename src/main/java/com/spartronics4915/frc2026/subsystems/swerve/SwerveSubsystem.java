@@ -19,6 +19,7 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstant
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -215,7 +216,7 @@ public class SwerveSubsystem extends SubsystemBase {
             && Math.abs(Rotation2d.fromRadians(getGyroRotation3d().getX()).getDegrees()) < TILT_THRESHOLD_DEGREES;
     }
 
-    Trigger flatTrigger = new Trigger(this::isFlat).debounce(TILT_DEBOUNCE);
+    Trigger flatTrigger = new Trigger(this::isFlat).debounce(TILT_DEBOUNCE, DebounceType.kRising);
 
     public boolean isFlatDebounced() {
         return flatTrigger.getAsBoolean();

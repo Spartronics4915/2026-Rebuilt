@@ -22,7 +22,6 @@ import java.util.Map;
 
 import org.photonvision.simulation.SimCameraProperties;
 
-import com.spartronics4915.frc2026.subsystems.vision.cameras.LimelightProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.PhotonProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
 import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
@@ -82,8 +81,8 @@ public final class Constants {
         public static final boolean DEFAULT_IS_FIELD_RELATIVE = true;
 
         public static final double STICK_DEADBAND = 0.05;
-        public static final double TILT_THRESHOLD_DEGREES = 1.0;
-        public static final double TILT_DEBOUNCE = 0.5;
+        public static final double TILT_THRESHOLD_DEGREES = 3.0;
+        public static final double TILT_DEBOUNCE = 0.1;
 
         public static final Constraints trenchAlignConstraints = new Constraints(3, 3);
 
@@ -120,6 +119,7 @@ public final class Constants {
 
             public static final double defaultOutpostWaitTime = 3.0;
             public static final double defaultShootWaitTime = 3.0;
+            public static final double bumpDriveContinueTime = 0.2;
 
             public static final Time endTriggerDebounce = Seconds.of(0.04);
             public static final Rotation2d rotationTolerance = Rotation2d.fromDegrees(3.0);
@@ -185,8 +185,6 @@ public final class Constants {
 
             public static final Rotation2d trenchApproachAngle = Rotation2d.fromDegrees(0.0);
             public static final Rotation2d bumpApproachAngle = Rotation2d.fromDegrees(45.0);
-            public static final Rotation2d startOfFuelAngle = Rotation2d.fromDegrees(299.0); //This guy might need to be changed
-            public static final Rotation2d endOfQuadrantAngle = Rotation2d.fromDegrees(-90.0);
 
             public enum PathplannerConfigs {
                 TEST_CHASSIS(new RobotConfig(
