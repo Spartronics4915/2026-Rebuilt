@@ -57,7 +57,7 @@ public class TurretController {
      */
     public Rotation2d calculate(Rotation2d fieldYaw, Rotation2d robotHeading, Rotation2d currentPosition) {
         // Calculate the ideal target relative to the robot chassis
-        double targetDeg = fieldYaw.getDegrees() - robotHeading.getDegrees() - mountingOffset.getDegrees();
+        double targetDeg = fieldYaw.minus(robotHeading).minus(mountingOffset).getDegrees();
 
         // Generate the two possible rotation paths
         double currentDeg = currentPosition.getDegrees();
