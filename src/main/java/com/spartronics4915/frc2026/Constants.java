@@ -18,6 +18,7 @@ import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Seconds;
+import static edu.wpi.first.units.Units.Volts;
 
 import java.util.Map;
 
@@ -130,6 +131,10 @@ public final class Constants {
                     .withSteerMotorClosedLoopOutput(ClosedLoopOutputType.Voltage)
                     .withDriveMotorClosedLoopOutput(ClosedLoopOutputType.TorqueCurrentFOC)
                     .withFeedbackSource(SteerFeedbackType.FusedCANcoder)
+                    .withSteerInertia(KilogramSquareMeters.of(0.01))
+                    .withDriveInertia(KilogramSquareMeters.of(0.01))
+                    .withSteerFrictionVoltage(Volts.of(0.2))
+                    .withDriveFrictionVoltage(Volts.of(0.2))
                     .withSteerMotorInitialConfigs(new TalonFXConfiguration()
                         .withCurrentLimits(new CurrentLimitsConfigs()
                             .withStatorCurrentLimit(Amps.of(40))
