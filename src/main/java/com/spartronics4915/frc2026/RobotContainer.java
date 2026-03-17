@@ -4,6 +4,7 @@
 
 package com.spartronics4915.frc2026;
 
+import com.spartronics4915.frc2026.Constants.AutoAimConstants;
 import com.spartronics4915.frc2026.Constants.OperatorConstants;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
 import com.spartronics4915.frc2026.autos.ComplexAutoChooser;
@@ -193,7 +194,7 @@ public class RobotContainer {
 
         driverController.a().onTrue(
             Commands.runOnce(() -> {
-                teleopHeadingOffset = swerveSubsystem.getPose().getRotation();
+                teleopHeadingOffset = swerveSubsystem.getRelativePose().getRotation();
             })
         );
 
@@ -364,7 +365,7 @@ public class RobotContainer {
 
         debugController.a().onTrue(
             Commands.runOnce(() -> {
-                teleopHeadingOffset = swerveSubsystem.getPose().getRotation();
+                teleopHeadingOffset = swerveSubsystem.getRelativePose().getRotation();
             })
         );
 

@@ -258,7 +258,14 @@ public class SwerveSubsystem extends SubsystemBase {
             double joyOmega = applyResponseCurve(MathUtil.applyDeadband(driverController.getRightX() * -1.0, STICK_DEADBAND)) * MAX_ANGULAR_SPEED.in(RadiansPerSecond);
 
             // Determine joystick components in field space
-            ChassisSpeeds fieldJoy = ChassisSpeeds.fromRobotRelativeSpeeds(joyVX, joyVY, 0, isFieldRelative.getAsBoolean() ? teleopHeadingOffset : currentPose.getRotation());
+            ChassisSpeeds fieldJoy = ChassisSpeeds.fromRobotRelativeSpeeds(
+                joyVX, 
+                joyVY, 
+                0, 
+                isFieldRelative.getAsBoolean() ? 
+                    teleopHeadingOffset.plus(swerve.shouldFlip() ? Rotation2d.kPi : Rotation2d.kZero) : 
+                    currentPose.getRotation()
+            );
             double fieldVX = fieldJoy.vxMetersPerSecond;
             double fieldVY = fieldJoy.vyMetersPerSecond;
 
