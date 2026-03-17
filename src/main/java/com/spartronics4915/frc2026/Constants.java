@@ -478,9 +478,7 @@ public final class Constants {
         public static final double P = 275.0;
         public static final double I = 0.0;
         public static final double D = 0.2;
-
-        public static final double MAX_VELOCITY = 20;
-        public static final double MAX_ACCELERATION = 20;
+        public static final double V = 0.5;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
@@ -492,7 +490,8 @@ public final class Constants {
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
             .withKI(I)
-            .withKD(D);
+            .withKD(D)
+            .withKV(V);
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
@@ -655,9 +654,7 @@ public final class Constants {
         public static final double P = 300;
         public static final double I = 0.0;
         public static final double D = 0.0;
-
-        public static final double MAX_VELOCITY = 2.4;
-        public static final double MAX_ACCELERATION = 25.0;
+        public static final double V = 0.5;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
@@ -673,7 +670,8 @@ public final class Constants {
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
             .withKI(I)
-            .withKD(D);
+            .withKD(D)
+            .withKV(V);
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
