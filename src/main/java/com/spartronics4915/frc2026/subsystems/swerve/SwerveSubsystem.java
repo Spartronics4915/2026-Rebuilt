@@ -147,7 +147,7 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public void addVisionMeasurement(Pose2d pose, double timestamp, Matrix<N3, N1> stdDevs) {
-        drivetrain.addVisionMeasurement(pose, Utils.fpgaToCurrentTime(timestamp), stdDevs);
+        drivetrain.addVisionMeasurement(pose, timestamp, stdDevs);
     }
 
     public void resetPose(Pose2d pose) {
