@@ -91,8 +91,8 @@ public final class Constants {
 
     public static final class SwerveConstants {
 
-        public static final double maxSpeed = 7;
-        public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(8);
+        public static final double maxSpeed = 5.34;
+        public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(6);
 
         public static final boolean defaultFieldRelative = true;
 
@@ -115,13 +115,51 @@ public final class Constants {
                 new SwerveDrivetrainConstants()
                     .withCANBusName("Hydra")
                     .withPigeon2Id(13),
-                PathplannerConfigs.COMP_CHASSIS,
+                AutoConstants.PathplannerConfigs.COMP_CHASSIS,
                 new SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>()
                     .withDriveMotorGearRatio(6.03)
                     .withSteerMotorGearRatio(26.09)
                     .withWheelRadius(Inches.of(2.0))
-                    .withSpeedAt12Volts(MetersPerSecond.of(5.34)) // Kraken X60 free speed at 6.03:1 with 4" wheels
+                    .withSpeedAt12Volts(MetersPerSecond.of(5.34))
                     .withSlipCurrent(Amps.of(60))
+                    .withSteerMotorGains(new Slot0Configs()
+                        .withKP(100).withKI(0).withKD(0.5)
+                        .withKS(0.1).withKV(1.91).withKA(0))
+                    .withDriveMotorGains(new Slot0Configs()
+                        .withKP(0.1).withKI(0).withKD(0)
+                        .withKS(0).withKV(0.124))
+                    .withSteerMotorClosedLoopOutput(ClosedLoopOutputType.Voltage)
+                    .withDriveMotorClosedLoopOutput(ClosedLoopOutputType.TorqueCurrentFOC)
+                    .withFeedbackSource(SteerFeedbackType.FusedCANcoder)
+                    .withSteerInertia(KilogramSquareMeters.of(0.3))
+                    .withDriveInertia(KilogramSquareMeters.of(0.3))
+                    .withSteerFrictionVoltage(Volts.of(0.2))
+                    .withDriveFrictionVoltage(Volts.of(0.2))
+                    .withSteerMotorInitialConfigs(new TalonFXConfiguration()
+                        .withCurrentLimits(new CurrentLimitsConfigs()
+                            .withStatorCurrentLimit(Amps.of(40))
+                            .withStatorCurrentLimitEnable(true)
+                        )
+                    ),
+                new int[]{1, 2, 3}, new int[]{4, 5, 6}, 
+                new int[]{7, 8, 9}, new int[]{10, 11, 12},
+                Rotations.of(291.01 / 360.0), Rotations.of(34.28 / 360.0),
+                Rotations.of(123.05 / 360.0), Rotations.of(304.37 / 360.0),
+                Inches.of(12.164), Inches.of(12.164), Inches.of(-12.164), Inches.of(-12.164),
+                Inches.of(9.586), Inches.of(-9.586), Inches.of(9.586), Inches.of(-9.586),
+                false, true
+            ),
+            TEST_CHASSIS(
+                new SwerveDrivetrainConstants()
+                    .withCANBusName("Hydra")
+                    .withPigeon2Id(13),
+                AutoConstants.PathplannerConfigs.TEST_CHASSIS,
+                new SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>()
+                    .withDriveMotorGearRatio(6.75)
+                    .withSteerMotorGearRatio(26.09)
+                    .withWheelRadius(Inches.of(2.0))
+                    .withSpeedAt12Volts(MetersPerSecond.of(5.4))
+                    .withSlipCurrent(Amps.of(40))
                     .withSteerMotorGains(new Slot0Configs()
                         .withKP(100).withKI(0).withKD(0.5)
                         .withKS(0.1).withKV(1.91).withKA(0))
@@ -145,8 +183,8 @@ public final class Constants {
                 new int[]{7, 8, 9}, new int[]{10, 11, 12},
                 Rotations.of(291.01 / 360.0), Rotations.of(34.28 / 360.0),
                 Rotations.of(123.05 / 360.0), Rotations.of(304.37 / 360.0),
-                Inches.of(12.164), Inches.of(12.164), Inches.of(-12.164), Inches.of(-12.164),
-                Inches.of(9.586), Inches.of(-9.586), Inches.of(9.586), Inches.of(-9.586),
+                Inches.of(12.634), Inches.of(12.634), Inches.of(-12.634), Inches.of(-12.634),
+                Inches.of(12.280), Inches.of(-12.280), Inches.of(12.280), Inches.of(-12.280),
                 false, true
             );
 
@@ -288,7 +326,7 @@ public final class Constants {
                     KilogramSquareMeters.of(2),
                     new ModuleConfig(
                         Inches.of(2.0),
-                        MetersPerSecond.of(24),
+                        MetersPerSecond.of(5.34),  // Issue #4: Fixed from 24 m/s (physically impossible) to 5.34 m/s
                         2.255,
                         DCMotor.getKrakenX60Foc(1),
                         6.03,
@@ -443,6 +481,7 @@ public final class Constants {
         public static final Translation2d turretTranslation2D = new Translation2d(-0.1185, -0.1568);
         public static final Translation3d turretTranslation3D = new Translation3d(turretTranslation2D.getX(), turretTranslation2D.getY(), Units.inchesToMeters(21.443748 + 2.955));
 
+        public static final double shooterReadyThresholdRPS = 5.0;
         public static final Rotation2d pivotSafeThreshold = Rotation2d.fromDegrees(100);
         public static final Rotation2d turretMinSafeThreshold = Rotation2d.fromDegrees(-10);
         public static final Rotation2d turretMaxSafeThreshold = Rotation2d.fromDegrees(10);
