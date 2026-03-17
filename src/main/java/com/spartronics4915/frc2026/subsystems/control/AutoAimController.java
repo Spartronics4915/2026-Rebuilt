@@ -22,9 +22,7 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
-import edu.wpi.first.units.measure.AngularVelocity;
 
-import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.InchesPerSecond;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
@@ -34,9 +32,6 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import swervelib.simulation.ironmaple.simulation.SimulatedArena;
-import swervelib.simulation.ironmaple.simulation.seasonspecific.rebuilt2026.RebuiltFuelOnFly;
-import swervelib.simulation.ironmaple.utils.FieldMirroringUtils;
 
 /**
  * Continuously calculates setpoints and applies them to the hood and turret.
@@ -193,7 +188,7 @@ public class AutoAimController extends SubsystemBase {
         }
 
         if (!isAimEnabled) return;
-        if (result.pitch() != null) {
+        if (result.pitch() != null && shooter.getCurrentSetpoint() != 0) {
             // This might be a little iffy because of flywheel losing speed
             hood.setComplexSetpoint(
                 Rotation2d.kCCW_Pi_2.minus(result.pitch()), 
@@ -201,6 +196,8 @@ public class AutoAimController extends SubsystemBase {
                     result.pitchOmega() : 
                     RotationsPerSecond.of(0)
             );
+        } else {
+            hood.setSetpoint(Rotation2d.kZero);
         }
 
         if (result.yaw() != null) {

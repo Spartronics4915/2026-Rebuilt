@@ -38,6 +38,8 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("rps").publish();
     private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("setpoint").publish();
 
+    private final VoltageOut stopRequest = new VoltageOut(0.0);
+
     //#region Main Functionality
 
     public ShooterSubsystem() {
@@ -76,21 +78,23 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
             -maxRPS, 
             maxRPS
         );
+
+        double workingSetpoint = currentSetpoint;
         
-        if (currentSetpoint == 0 && !Robot.isPureTeleop) {
-            currentSetpoint = IDLE_SHOOTER_RPS;
+        if (workingSetpoint == 0 && !Robot.isPureTeleop) {
+            workingSetpoint = IDLE_SHOOTER_RPS;
         }
 
-        if (currentSetpoint != 0) {
-            velocityVoltage.withEnableFOC(ENABLE_FOC).Velocity = currentSetpoint;
+        if (workingSetpoint != 0) {
+            velocityVoltage.withEnableFOC(ENABLE_FOC).Velocity = workingSetpoint;
             leadMotor.setControl(velocityVoltage);
         } else {
-            leadMotor.setControl(new VoltageOut(0.0));
+            leadMotor.setControl(stopRequest);
         }
 
         appliedOutPublisher.accept(leadMotor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPS());
-        setpointPublisher.accept(currentSetpoint);
+        setpointPublisher.accept(workingSetpoint);
     }
 
     public double getCurrentRPS() {
