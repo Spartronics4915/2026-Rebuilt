@@ -21,6 +21,11 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 
 import com.pathplanner.lib.trajectory.PathPlannerTrajectoryState;
 
+/**
+ * Default teleop drive command for swerve chassis.
+ * Owns all controller input processing, movement override logic, 
+ * and trajectory calculation.
+ */
 public class DriveCommand extends Command {
 
     private final SwerveSubsystem swerve;
@@ -29,7 +34,6 @@ public class DriveCommand extends Command {
 
     private static final double maxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond);
 
-    // Position steer type for sim — switch back to MotionMagicExpo on real hardware.
     private final SwerveRequest.FieldCentric fieldCentricRequest =
         new SwerveRequest.FieldCentric()
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
@@ -66,8 +70,8 @@ public class DriveCommand extends Command {
     public void execute() {
         XboxController hid = resolveController();
 
-        double vX = applyResponseCurve(MathUtil.applyDeadband(hid.getLeftY()  * -1.0, stickDeadband)) * maxSpeed;
-        double vY = applyResponseCurve(MathUtil.applyDeadband(hid.getLeftX()  * -1.0, stickDeadband)) * maxSpeed;
+        double vX = applyResponseCurve(MathUtil.applyDeadband(hid.getLeftY() * -1.0, stickDeadband)) * maxSpeed;
+        double vY = applyResponseCurve(MathUtil.applyDeadband(hid.getLeftX() * -1.0, stickDeadband)) * maxSpeed;
         double omega = applyResponseCurve(MathUtil.applyDeadband(hid.getRightX() * -1.0, stickDeadband)) * maxAngularRate;
 
         double override = swerve.getMovementOverride();
@@ -78,9 +82,8 @@ public class DriveCommand extends Command {
             yState.position = swerve.getPose().getY();
             yState.velocity = swerve.getFieldVelocity().vyMetersPerSecond;
         }
-
-        if (SwerveSubsystem.isFieldRelative) {
-            swerve.drivetrain.setOperatorPerspectiveForward(SwerveSubsystem.teleopHeadingOffset);
+        if (swerve.isFieldRelative) {
+            swerve.drivetrain.setOperatorPerspectiveForward(swerve.teleopHeadingOffset);
             swerve.drivetrain.setControl(
                 fieldCentricRequest
                     .withVelocityX(vX)
@@ -126,10 +129,14 @@ public class DriveCommand extends Command {
     }
 
     @Override
-    public boolean isFinished() { return false; }
+    public boolean isFinished() {
+        return false;
+    }
 
     @Override
-    public boolean runsWhenDisabled() { return false; }
+    public boolean runsWhenDisabled() {
+        return false;
+    }
 
     private XboxController resolveController() {
         if (testingController != null) {
@@ -142,5 +149,5 @@ public class DriveCommand extends Command {
     private static double applyResponseCurve(double x) {
         return Math.signum(x) * (x * x);
     }
-    
+
 }

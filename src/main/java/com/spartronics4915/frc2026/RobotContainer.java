@@ -15,9 +15,6 @@ import com.spartronics4915.frc2026.Constants.VisionConstants;
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.hubPose;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.trenchTransform;
-import static com.spartronics4915.frc2026.Constants.*;
-import static com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem.isFieldRelative;
-import static com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem.teleopHeadingOffset;
 
 import java.util.Set;
 
@@ -41,6 +38,7 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsyst
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
+import com.spartronics4915.frc2026.Constants.AutoAimConstants;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -54,7 +52,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  * This class is where the bulk of the robot should be declared. Since Command-based is a
  * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
  * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
- * subsystems, commands, and trigger mappings) should be declared here.
+ * subsystems, commands, and triggers) should be declared here.
  */
 public class RobotContainer {
 
@@ -193,13 +191,13 @@ public class RobotContainer {
 
         driverController.a().onTrue(
             Commands.runOnce(() -> {
-                teleopHeadingOffset = swerveSubsystem.getPose().getRotation();
+                swerveSubsystem.resetHeadingOffset();
             })
         );
 
         driverController.b().onTrue(
             Commands.runOnce(() -> {
-                isFieldRelative = !isFieldRelative;
+                swerveSubsystem.isFieldRelative = !swerveSubsystem.isFieldRelative;
             })
         );
 
@@ -361,16 +359,15 @@ public class RobotContainer {
             })
         );
 
-
         debugController.a().onTrue(
             Commands.runOnce(() -> {
-                teleopHeadingOffset = swerveSubsystem.getPose().getRotation();
+                swerveSubsystem.resetHeadingOffset();
             })
         );
 
         debugController.b().onTrue(
             Commands.runOnce(() -> {
-                isFieldRelative = !isFieldRelative;
+                swerveSubsystem.isFieldRelative = !swerveSubsystem.isFieldRelative;
             })
         );
 
@@ -402,4 +399,5 @@ public class RobotContainer {
     public Command getAutonomousCommand() {
         return Commands.defer(() -> autoChooser.getAuto(), Set.of(swerveSubsystem));
     }
+
 }
