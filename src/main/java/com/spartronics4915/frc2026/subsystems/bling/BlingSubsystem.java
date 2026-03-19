@@ -23,6 +23,7 @@ public class BlingSubsystem extends SubsystemBase {
     private static final RGBWColor red = new RGBWColor(255, 255, 0, 0);
     private static final RGBWColor blue = new RGBWColor(0, 0, 255, 0);
     private static final RGBWColor purple = new RGBWColor(86, 26, 143, 0); //og = 186 112 255
+    private static final RGBWColor yellow = new RGBWColor(246, 255, 0, 0);
     private static final RGBWColor white = new RGBWColor(Color.kWhite).scaleBrightness(0.5);
     private static final RGBWColor violet = RGBWColor.fromHSV(Degrees.of(270), 0.9, 0.8);
 
@@ -30,7 +31,7 @@ public class BlingSubsystem extends SubsystemBase {
     private static final int slot0EndIdx = 40;
 
     private static final int slot1StartIdx = 41;
-    private static final int slot1EndIdx = 67;
+    private static final int slot1EndIdx = 70;
 
     private final CANdle candle = new CANdle(0, CANBus.roboRIO());
 
@@ -67,10 +68,7 @@ public class BlingSubsystem extends SubsystemBase {
             candle.setControl(new EmptyAnimation(i));
         }
         
-        candle.setControl(new SolidColor(0, 1).withColor(green));
-        candle.setControl(new SolidColor(2, 3).withColor(white));
-        candle.setControl(new SolidColor(4, 5).withColor(blue));
-        candle.setControl(new SolidColor(6, 7).withColor(red));
+        candle.setControl(new SolidColor(0, 70).withColor(blue));
 
         anim0Chooser.setDefaultOption("Color Flow", AnimationType.ColorFlow);
         anim0Chooser.addOption("Rainbow", AnimationType.Rainbow);
@@ -83,13 +81,80 @@ public class BlingSubsystem extends SubsystemBase {
         anim0Chooser.addOption("Strobe", AnimationType.Strobe);
 
         anim1Chooser.setDefaultOption("Larson", AnimationType.Larson);
-        anim1Chooser.setDefaultOption("RGB Fade", AnimationType.RgbFade);
-        anim1Chooser.setDefaultOption("Single Fade", AnimationType.SingleFade);
-        anim1Chooser.setDefaultOption("Strobe", AnimationType.Strobe);
-        anim1Chooser.setDefaultOption("Fire", AnimationType.Fire);
+        anim1Chooser.addOption("RGB Fade", AnimationType.RgbFade);
+        anim1Chooser.addOption("Single Fade", AnimationType.SingleFade);
+        anim1Chooser.addOption("Strobe", AnimationType.Strobe);
+        anim1Chooser.addOption("Fire", AnimationType.Fire);
 
         SmartDashboard.putData("Animation 0", anim0Chooser);
         SmartDashboard.putData("Animation 1", anim1Chooser);
+    }
+
+    public void colorFlowAnimation() {
+        candle.setControl(
+            new ColorFlowAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
+                .withColor(yellow)
+        );
+    }
+
+    public void fireAnimation() {
+        candle.setControl(
+            new FireAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
+                //.withDirection(AnimationDirectionValue.Backward)
+                .withCooling(0.6)
+                .withSparking(0.4)
+        );
+    }
+
+    public void larsonAnimation() {
+        candle.setControl(
+            new LarsonAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
+            .withColor(yellow)
+        );
+    }
+
+    public void rainbowAnimation() {
+        candle.setControl(
+            new RainbowAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
+        );
+    }
+
+    public void rgbFadeAnimation() {
+        candle.setControl(
+            new RgbFadeAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
+        );
+    }
+
+    public void singleFadeAnimation() {
+        candle.setControl(
+            new SingleFadeAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
+                .withColor(yellow)
+        );
+    }
+
+    public void strobeAnimation() {
+        candle.setControl(
+            new StrobeAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
+                .withColor(yellow)
+        );
+    }
+
+    public void positiveAnimation() {
+        candle.setControl(new SolidColor(0, 70).withColor(green));
+    }
+
+    public void negativeAnimation() {
+        candle.setControl(new SolidColor(0, 70).withColor(red));
+    }
+
+    public void spartronicsAnimation() {
+        candle.setControl(new SolidColor(0, 9).withColor(blue));
+        candle.setControl(new SolidColor(10, 19).withColor(yellow));
+        candle.setControl(new SolidColor(20, 29).withColor(blue));
+        candle.setControl(new SolidColor(30, 39).withColor(yellow));
+        candle.setControl(new SolidColor(40, 49).withColor(blue));
+        candle.setControl(new SolidColor(50, 59).withColor(yellow));
+        candle.setControl(new SolidColor(60, 70).withColor(blue));
     }
 
     @Override
@@ -103,7 +168,8 @@ public class BlingSubsystem extends SubsystemBase {
                 case ColorFlow:
                     candle.setControl(
                         new ColorFlowAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
-                            .withColor(purple)
+                            .withColor(yellow)
+                            .withFrameRate(0.001)
                     );
                     break;
                 case Rainbow:
@@ -124,9 +190,9 @@ public class BlingSubsystem extends SubsystemBase {
                 case Fire:
                     candle.setControl(
                         new FireAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
-                            .withDirection(AnimationDirectionValue.Backward)
-                            .withCooling(0.4)
-                            .withSparking(0.5)
+                            //.withDirection(AnimationDirectionValue.Backward)
+                            .withCooling(0.6)
+                            .withSparking(0.4)
                     );
                     break;
                 case Larson:
@@ -195,33 +261,6 @@ public class BlingSubsystem extends SubsystemBase {
             }
         }
     }
-
-    //@Override
-    //public void autonomousInit() {}
-
-    //@Override
-    //public void autonomousPeriodic() {}
-
-    //@Override
-    //public void teleopInit() {}
-
-    //@Override
-    //public void teleopPeriodic() {}
-
-    //@Override
-    //public void disabledInit() {}
-
-    //@Override
-    //public void disabledPeriodic() {}
-
-    //@Override
-    //public void testInit() {}
-
-    //@Override
-    //public void testPeriodic() {}
-
-    //@Override
-    //public void simulationInit() {}
 
     @Override
     public void simulationPeriodic() {}
