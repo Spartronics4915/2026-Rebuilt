@@ -12,6 +12,7 @@ import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -36,6 +37,7 @@ public class Robot extends TimedRobot {
     private final BooleanPublisher hubEnabledPub = NetworkTableInstance.getDefault().getBooleanTopic("IO/Hub Enabled").publish();
     private final DoublePublisher timeUntilSwitchPub = NetworkTableInstance.getDefault().getDoubleTopic("IO/Time Left Until Switch").publish();
     private final BooleanPublisher currentAllianceSelectedPub = NetworkTableInstance.getDefault().getBooleanTopic("IO/Current Alliance Selected").publish();
+    private final StringPublisher shiftNamePub = NetworkTableInstance.getDefault().getStringTopic("IO/Shift Name").publish();
     private final StructArrayPublisher<Pose3d> fuelPosesPub = NetworkTableInstance.getDefault().getStructArrayTopic("FieldSimulation/FuelPositions", Pose3d.struct).publish();
     public boolean currentAllianceSelected = false;
     
@@ -103,8 +105,12 @@ public class Robot extends TimedRobot {
     @Override
     public void autonomousInit() {
         autonomousCommand = robotContainer.getAutonomousCommand();
-        hubEnabledPub.set(true);
+
+        shiftNamePub.set("Auto");
         hubEnabled = true;
+        hubEnabledPub.set(true);
+        timeUntilSwitch = 999.0;
+        timeUntilSwitchPub.set(timeUntilSwitch);
 
         // schedule the autonomous command (example)
         if (autonomousCommand != null) {
@@ -141,6 +147,7 @@ public class Robot extends TimedRobot {
             hubEnabledPub.set(hubEnabled);
             timeUntilSwitchPub.set(timeUntilSwitch);
             currentAllianceSelectedPub.set(currentAllianceSelected);
+            shiftNamePub.set("Pure Teleop");
             return;
         }
 
@@ -160,21 +167,27 @@ public class Robot extends TimedRobot {
             if (matchTime > 130.0) { // (2:20 - 2:10) Transition shift, both hubs are enabled
                 hubEnabled = true;
                 timeUntilSwitch = matchTime - 130.0 + (currentAllianceSelected ? 0 : 25.0);
+                shiftNamePub.set("Transition Shift");
             } else if (matchTime > 105) { // (2:10 - 1:45) Shift 1
                 hubEnabled = !currentAllianceSelected;
                 timeUntilSwitch = matchTime - 105.0;
+                shiftNamePub.set("Shift 1");
             } else if (matchTime > 80.0) {// (1:45 - 1:20) Shift 2
                 hubEnabled = currentAllianceSelected;
                 timeUntilSwitch = matchTime - 80.0;
+                shiftNamePub.set("Shift 2");
             } else if (matchTime > 55.0) { // (1:20 - 0:55) Shift 3
                 hubEnabled = !currentAllianceSelected;
                 timeUntilSwitch = matchTime - 55.0;
+                shiftNamePub.set("Shift 3");
             } else if (matchTime > 30.0) { // (0:55 - 0:30) Shift 4
                 hubEnabled = currentAllianceSelected;
                 timeUntilSwitch = matchTime - 30.0;
+                shiftNamePub.set("Shift 4");
             } else if (matchTime > 0.0) { // (0:30 - 0:00) Endgame, both hubs are enabled
                 hubEnabled = true;
                 timeUntilSwitch = matchTime;
+                shiftNamePub.set("Endgame");
             } 
 
             hubEnabledPub.set(hubEnabled);
@@ -187,6 +200,7 @@ public class Robot extends TimedRobot {
             hubEnabledPub.set(false);
             timeUntilSwitchPub.set(999.0);
             currentAllianceSelectedPub.set(false);
+            shiftNamePub.set("No Game Data");
         }
     }
 
