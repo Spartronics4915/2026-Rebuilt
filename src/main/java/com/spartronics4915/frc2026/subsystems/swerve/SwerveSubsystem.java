@@ -105,7 +105,7 @@ public class SwerveSubsystem extends SubsystemBase {
         posePublisher.set(pose);
         pose3d = new Pose3d(
             pose.getX(), pose.getY(), 0,
-            new Rotation3d(getPitch().getRadians(), getRoll().getRadians(),
+            new Rotation3d(getRoll().getRadians(), getPitch().getRadians(),
                 pose.getRotation().getRadians())
         );
         pose3dPublisher.set(pose3d);
@@ -207,7 +207,9 @@ public class SwerveSubsystem extends SubsystemBase {
     public boolean shouldFlip() {
         if (!hasCheckedAlliance) {
             cachedAlliance = DriverStation.getAlliance();
-            hasCheckedAlliance = true;
+            if (cachedAlliance.isPresent()) {
+                hasCheckedAlliance = true;
+            }
         }
         return cachedAlliance.isPresent() && cachedAlliance.get() == Alliance.Red;
     }
