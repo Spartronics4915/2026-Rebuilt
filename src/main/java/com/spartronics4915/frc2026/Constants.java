@@ -515,7 +515,7 @@ public final class Constants {
         public static final int MOTOR_ID = 14;
         public static final int ENCODER_ID = 16;
 
-        public static final double P = 90;
+        public static final double P = 100;
         public static final double I = 0.0;
         public static final double D = 0.2;
 
