@@ -19,6 +19,7 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstant
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -63,7 +64,8 @@ public class SwerveSubsystem extends SubsystemBase {
     public static boolean isRightAlliance;
 
     private TrapezoidProfile.State yState = new TrapezoidProfile.State();
-    private boolean wasOverriding = false;    
+    private boolean wasOverriding = false;
+    private boolean wasAligning = false;
     StructPublisher<Pose2d> posePublisher = NetworkTableInstance.getDefault().getStructTopic("Pose", Pose2d.struct).publish();
     StructPublisher<Pose3d> pose3dPublisher = NetworkTableInstance.getDefault().getStructTopic("Pose3d", Pose3d.struct).publish();
 
@@ -246,6 +248,13 @@ public class SwerveSubsystem extends SubsystemBase {
         PathPlannerTrajectoryState goalState = new PathPlannerTrajectoryState();
         TrapezoidProfile.State targetState = new TrapezoidProfile.State(0,0);
 
+        PIDController headingController = new PIDController(
+            AutoConstants.rotationPID.kP,
+            AutoConstants.rotationPID.kI, 
+            AutoConstants.rotationPID.kD
+        );
+        headingController.enableContinuousInput(-Math.PI, Math.PI);
+        
         return () -> {
             XboxController driverController = controllerSupplier.get();
 
@@ -269,6 +278,18 @@ public class SwerveSubsystem extends SubsystemBase {
             );
             double fieldVX = fieldJoy.vxMetersPerSecond;
             double fieldVY = fieldJoy.vyMetersPerSecond;
+
+            if (driverController.getRightTriggerAxis() > 0.5 && Math.hypot(fieldVX, fieldVY) > 0.1) {
+                if (!swerve.wasAligning) {
+                    headingController.reset();
+                    swerve.wasAligning = true;
+                }
+                Rotation2d motionAngle = new Rotation2d(fieldVX, fieldVY);
+                double currentAngle = currentPose.getRotation().getRadians();
+                joyOmega = headingController.calculate(currentAngle, motionAngle.getRadians());
+            } else {
+                swerve.wasAligning = false;
+            }
 
             double dt = dtCalc.update();
 
