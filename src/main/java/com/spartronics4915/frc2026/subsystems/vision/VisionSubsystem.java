@@ -177,13 +177,11 @@ public class VisionSubsystem extends SubsystemBase {
 
         ApriltagResult fusedResult = fusedResultOpt.get();
 
-        if (swerve != null && swerve.isFlatDebounced()) {
-            poseConsumer.accept(
-                fusedResult.getPose(),
-                fusedResult.getTimestampSeconds(),
-                fusedResult.getStdDevs()
-            );
-        }
+        poseConsumer.accept(
+            fusedResult.getPose(),
+            fusedResult.getTimestampSeconds(),
+            fusedResult.getStdDevs()
+        );
 
         hasValidPose = true;
         publishPoseDiagnostics(fusedResult);
