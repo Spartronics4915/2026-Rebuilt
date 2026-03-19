@@ -163,10 +163,10 @@ public final class Constants {
             );
 
             public static final PathConstraints bumpPathConstraints = new PathConstraints(
-                4.0,
-                4.0,
-                2.0 * Math.PI,
-                1 * Math.PI
+                2.0,
+                2.0,
+                1.0 * Math.PI,
+                2.0 * Math.PI
             );
 
             public static final PathConstraints intakePathConstraints = new PathConstraints(
