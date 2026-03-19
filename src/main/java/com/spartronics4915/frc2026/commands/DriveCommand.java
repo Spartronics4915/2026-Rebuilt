@@ -3,7 +3,6 @@ package com.spartronics4915.frc2026.commands;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.driveController;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
-import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
@@ -32,7 +31,7 @@ public class DriveCommand extends Command {
     private final CommandXboxController driverController;
     private final CommandXboxController testingController;
 
-    private static final double maxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond);
+    private static final double maxAngularRate = maxAngularSpeed.in(RadiansPerSecond);
 
     private final SwerveRequest.FieldCentric fieldCentricRequest =
         new SwerveRequest.FieldCentric()

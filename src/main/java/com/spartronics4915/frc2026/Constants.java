@@ -65,6 +65,7 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
+import com.ctre.phoenix6.signals.StaticFeedforwardSignValue;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants.ClosedLoopOutputType;
@@ -91,7 +92,7 @@ public final class Constants {
 
     public static final class SwerveConstants {
 
-        public static final double maxSpeed = 5.34;
+        public static final double maxSpeed = 5.12;
         public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(6);
 
         public static final boolean defaultFieldRelative = true;
@@ -110,64 +111,27 @@ public final class Constants {
         public static final double slipRecoverySeconds = 0.5;
 
         public enum SwerveConfigurations {
-            // TODO: Run Tuner X swerve builder
             COMP_CHASSIS(
                 new SwerveDrivetrainConstants()
                     .withCANBusName("Hydra")
                     .withPigeon2Id(13),
                 AutoConstants.PathplannerConfigs.COMP_CHASSIS,
                 new SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>()
-                    .withDriveMotorGearRatio(6.03)
-                    .withSteerMotorGearRatio(26.09)
+                    .withDriveMotorGearRatio(6.026785714285714)
+                    .withSteerMotorGearRatio(26.09090909090909)
+                    .withCouplingGearRatio(3.857142857142857)
                     .withWheelRadius(Inches.of(2.0))
-                    .withSpeedAt12Volts(MetersPerSecond.of(5.34))
-                    .withSlipCurrent(Amps.of(60))
+                    .withSpeedAt12Volts(MetersPerSecond.of(5.12))
+                    .withSlipCurrent(Amps.of(120))
                     .withSteerMotorGains(new Slot0Configs()
                         .withKP(100).withKI(0).withKD(0.5)
-                        .withKS(0.1).withKV(1.91).withKA(0))
+                        .withKS(0.1).withKV(2.49).withKA(0)
+                        .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseClosedLoopSign))
                     .withDriveMotorGains(new Slot0Configs()
                         .withKP(0.1).withKI(0).withKD(0)
                         .withKS(0).withKV(0.124))
                     .withSteerMotorClosedLoopOutput(ClosedLoopOutputType.Voltage)
-                    .withDriveMotorClosedLoopOutput(ClosedLoopOutputType.TorqueCurrentFOC)
-                    .withFeedbackSource(SteerFeedbackType.FusedCANcoder)
-                    .withSteerInertia(KilogramSquareMeters.of(0.3))
-                    .withDriveInertia(KilogramSquareMeters.of(0.3))
-                    .withSteerFrictionVoltage(Volts.of(0.2))
-                    .withDriveFrictionVoltage(Volts.of(0.2))
-                    .withSteerMotorInitialConfigs(new TalonFXConfiguration()
-                        .withCurrentLimits(new CurrentLimitsConfigs()
-                            .withStatorCurrentLimit(Amps.of(40))
-                            .withStatorCurrentLimitEnable(true)
-                        )
-                    ),
-                new int[]{1, 2, 3}, new int[]{4, 5, 6}, 
-                new int[]{7, 8, 9}, new int[]{10, 11, 12},
-                Rotations.of(291.01 / 360.0), Rotations.of(34.28 / 360.0),
-                Rotations.of(123.05 / 360.0), Rotations.of(304.37 / 360.0),
-                Inches.of(12.164), Inches.of(12.164), Inches.of(-12.164), Inches.of(-12.164),
-                Inches.of(9.586), Inches.of(-9.586), Inches.of(9.586), Inches.of(-9.586),
-                false, true
-            ),
-            TEST_CHASSIS(
-                new SwerveDrivetrainConstants()
-                    .withCANBusName("Hydra")
-                    .withPigeon2Id(13),
-                AutoConstants.PathplannerConfigs.TEST_CHASSIS,
-                new SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>()
-                    .withDriveMotorGearRatio(6.75)
-                    .withSteerMotorGearRatio(26.09)
-                    .withWheelRadius(Inches.of(2.0))
-                    .withSpeedAt12Volts(MetersPerSecond.of(5.4))
-                    .withSlipCurrent(Amps.of(40))
-                    .withSteerMotorGains(new Slot0Configs()
-                        .withKP(100).withKI(0).withKD(0.5)
-                        .withKS(0.1).withKV(1.91).withKA(0))
-                    .withDriveMotorGains(new Slot0Configs()
-                        .withKP(0.1).withKI(0).withKD(0)
-                        .withKS(0).withKV(0.124))
-                    .withSteerMotorClosedLoopOutput(ClosedLoopOutputType.Voltage)
-                    .withDriveMotorClosedLoopOutput(ClosedLoopOutputType.TorqueCurrentFOC)
+                    .withDriveMotorClosedLoopOutput(ClosedLoopOutputType.Voltage)
                     .withFeedbackSource(SteerFeedbackType.FusedCANcoder)
                     .withSteerInertia(KilogramSquareMeters.of(0.01))
                     .withDriveInertia(KilogramSquareMeters.of(0.01))
@@ -175,16 +139,16 @@ public final class Constants {
                     .withDriveFrictionVoltage(Volts.of(0.2))
                     .withSteerMotorInitialConfigs(new TalonFXConfiguration()
                         .withCurrentLimits(new CurrentLimitsConfigs()
-                            .withStatorCurrentLimit(Amps.of(40))
+                            .withStatorCurrentLimit(Amps.of(60))
                             .withStatorCurrentLimitEnable(true)
                         )
                     ),
                 new int[]{1, 2, 3}, new int[]{4, 5, 6}, 
                 new int[]{7, 8, 9}, new int[]{10, 11, 12},
-                Rotations.of(291.01 / 360.0), Rotations.of(34.28 / 360.0),
-                Rotations.of(123.05 / 360.0), Rotations.of(304.37 / 360.0),
-                Inches.of(12.634), Inches.of(12.634), Inches.of(-12.634), Inches.of(-12.634),
-                Inches.of(12.280), Inches.of(-12.280), Inches.of(12.280), Inches.of(-12.280),
+                Rotations.of(-0.30712890625), Rotations.of(-0.094970703125),
+                Rotations.of(0.156982421875), Rotations.of(0.15576171875),
+                Inches.of(9.585892), Inches.of(9.585892), Inches.of(-9.585892), Inches.of(-9.585892),
+                Inches.of(12.1640885), Inches.of(-12.1640885), Inches.of(12.1640885), Inches.of(-12.1640885),
                 false, true
             );
 
@@ -206,10 +170,10 @@ public final class Constants {
                 this.drivetrainConstants = drivetrainConstants;
                 this.pathplannerConfig = pathplannerConfig;
                 this.modules = new SwerveModuleConstants[]{
-                    factory.createModuleConstants(fl[0],  fl[1],  fl[2],  flOffset, flX, flY, invertLeft,  true, false),
-                    factory.createModuleConstants(fr[0],  fr[1],  fr[2],  frOffset, frX, frY, invertRight, true, false),
-                    factory.createModuleConstants(bl[0],  bl[1],  bl[2],  blOffset, blX, blY, invertLeft,  true, false),
-                    factory.createModuleConstants(br[0],  br[1],  br[2],  brOffset, brX, brY, invertRight, true, false),
+                    factory.createModuleConstants(fl[0],  fl[1],  fl[2],  flOffset, flX, flY, invertLeft,  false, false),
+                    factory.createModuleConstants(fr[0],  fr[1],  fr[2],  frOffset, frX, frY, invertRight, false, false),
+                    factory.createModuleConstants(bl[0],  bl[1],  bl[2],  blOffset, blX, blY, invertLeft,  false, false),
+                    factory.createModuleConstants(br[0],  br[1],  br[2],  brOffset, brX, brY, invertRight, false, false),
                 };
             }
         }
