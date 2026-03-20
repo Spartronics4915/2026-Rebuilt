@@ -4,6 +4,9 @@
 
 package com.spartronics4915.frc2026;
 
+import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
+
+import com.ctre.phoenix6.CANBus.CANBusStatus;
 import com.pathplanner.lib.commands.FollowPathCommand;
 
 import edu.wpi.first.math.geometry.Pose3d;
@@ -39,6 +42,8 @@ public class Robot extends TimedRobot {
     private final BooleanPublisher currentAllianceSelectedPub = NetworkTableInstance.getDefault().getBooleanTopic("IO/Current Alliance Selected").publish();
     private final StringPublisher shiftNamePub = NetworkTableInstance.getDefault().getStringTopic("IO/Shift Name").publish();
     private final StructArrayPublisher<Pose3d> fuelPosesPub = NetworkTableInstance.getDefault().getStructArrayTopic("FieldSimulation/FuelPositions", Pose3d.struct).publish();
+    private final BooleanPublisher isCanbusOK = NetworkTableInstance.getDefault().getBooleanTopic("Canbus OK").publish();
+    private final DoublePublisher canBusUtilizationPub = NetworkTableInstance.getDefault().getDoubleTopic("CAN Bus Utilization").publish();
     public boolean currentAllianceSelected = false;
     
     public static boolean hubEnabled;
@@ -92,6 +97,10 @@ public class Robot extends TimedRobot {
         CommandScheduler.getInstance().run();
 
         SmartDashboard.putNumber("Match Time", DriverStation.getMatchTime());
+        
+        CANBusStatus canStatus = CAN_BUS.getStatus();
+        isCanbusOK.set(canStatus.Status.isOK() && canStatus.BusUtilization > 0);
+        canBusUtilizationPub.set(canStatus.BusUtilization);
     }
 
     /** This function is called once each time the robot enters Disabled mode. */
