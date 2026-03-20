@@ -386,7 +386,7 @@ public final class Constants {
         public static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
         public static final double PIVOT_JOSTLE_FREQUENCY = 2.0; // Hz
 
-        public static final double percentLoss = 0.06; // Percent loss on shooter to ball transfer
+        public static final double percentLoss = 0.09; // Percent loss on shooter to ball transfer
 
     }
 
@@ -429,13 +429,13 @@ public final class Constants {
         public static final int FOLLOWER_MOTOR_ID = 23;
 
         /** Idle revolutions-per-second to hold when robot is enabled but not actively shooting. */
-        public static final double IDLE_SHOOTER_RPS = 15.0;
+        public static final double IDLE_SHOOTER_RPS = 20.0;
 
         public static final double P = 0.4;
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.123;
-        public static final double A = 6;
+        public static final double A = 8;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 80;
@@ -473,7 +473,7 @@ public final class Constants {
 
         public static final int MOTOR_ID = 21;
 
-        public static final double P = 275.0;
+        public static final double P = 280.0;
         public static final double I = 0.0;
         public static final double D = 0.2;
         public static final double V = 0.5;
@@ -515,12 +515,12 @@ public final class Constants {
         public static final int MOTOR_ID = 14;
         public static final int ENCODER_ID = 16;
 
-        public static final double P = 100;
+        public static final double P = 120;
         public static final double I = 0.0;
         public static final double D = 0.2;
 
-        public static final double MAX_VELOCITY = 7;
-        public static final double MAX_ACCELERATION = 7;
+        public static final double MAX_VELOCITY = 8;
+        public static final double MAX_ACCELERATION = 8;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
@@ -529,7 +529,7 @@ public final class Constants {
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 50.625;
 
-        public static final double MAGNET_OFFSET = -0.465332;
+        public static final double MAGNET_OFFSET = -0.413330;
         public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.Clockwise_Positive;
 
         public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(-2);
@@ -661,7 +661,7 @@ public final class Constants {
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 1.0 / ((12.0/38.0) * (18.0/38.0) * (11.0/84.0));
         public static final double ENCODER_MECHANISM_RATIO = 11.0 / 84.0;
-        public static final double MAGNET_OFFSET = 0.394287;
+        public static final double MAGNET_OFFSET = 0.424805;
 
         public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.Clockwise_Positive;
 
