@@ -19,7 +19,7 @@ public final class ModeSwitchHandler {
     public static void EnableModeSwitchHandler(ModeSwitchInterface... modeSwitches) {
 
         RobotModeTriggers.disabled().onTrue(Commands.runOnce(() -> {
-            for(var index : modeSwitches){
+            for(ModeSwitchInterface index : modeSwitches){
                 index.onDisable();
             }
         }).ignoringDisable(true));
@@ -29,7 +29,7 @@ public final class ModeSwitchHandler {
             .or(RobotModeTriggers.test())
             .onTrue(
                 Commands.runOnce(() -> {
-                    for(var index : modeSwitches){
+                    for(ModeSwitchInterface index : modeSwitches){
                         index.onModeSwitch();
                     }}
                 ).ignoringDisable(true)
