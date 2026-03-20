@@ -28,7 +28,6 @@ import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.Pathp
 import com.spartronics4915.frc2026.subsystems.vision.cameras.PhotonProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
 import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
-import com.pathplanner.lib.config.ModuleConfig;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
@@ -69,6 +68,8 @@ import com.ctre.phoenix6.signals.StaticFeedforwardSignValue;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants.ClosedLoopOutputType;
+import com.ctre.phoenix6.swerve.SwerveModuleConstants.DriveMotorArrangement;
+import com.ctre.phoenix6.swerve.SwerveModuleConstants.SteerMotorArrangement;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants.SteerFeedbackType;
 import com.ctre.phoenix6.swerve.SwerveModuleConstantsFactory;
 
@@ -109,6 +110,19 @@ public final class Constants {
         public static final Matrix<N3, N1> slipStdDevs = VecBuilder.fill(2.0, 2.0, 0.5);
 
         public static final double slipRecoverySeconds = 0.5;
+        public static final double slipThresholdRPS = 1.0;
+        public static final double minSpeedDetectMPS = 0.5;
+        public static final int slipDebounceCycles = 3;
+
+        public static final double headingLockKP = 7.0;
+        public static final double headingLockKD = 0.0;
+
+        public record ModuleConfig(
+            int steerMotorId, int driveMotorId, int encoderId,
+            Angle encoderOffset,
+            Distance xPos, Distance yPos,
+            boolean invertDrive
+        ) {}
 
         public enum SwerveConfigurations {
             COMP_CHASSIS(
@@ -116,7 +130,63 @@ public final class Constants {
                     .withCANBusName("Hydra")
                     .withPigeon2Id(13),
                 AutoConstants.PathplannerConfigs.COMP_CHASSIS,
-                new SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>()
+                compChassisFactory(),
+                // Front Left
+                new ModuleConfig(1, 2, 3,
+                    Rotations.of(-0.30712890625),
+                    Inches.of(9.585892), Inches.of(12.1640885),
+                    false),
+                // Front Right
+                new ModuleConfig(4, 5, 6,
+                    Rotations.of(-0.094970703125),
+                    Inches.of(9.585892), Inches.of(-12.1640885),
+                    true),
+                // Back Left
+                new ModuleConfig(7, 8, 9,
+                    Rotations.of(0.156982421875),
+                    Inches.of(-9.585892), Inches.of(12.1640885),
+                    false),
+                // Back Right
+                new ModuleConfig(10, 11, 12,
+                    Rotations.of(0.15576171875),
+                    Inches.of(-9.585892), Inches.of(-12.1640885),
+                    true)
+            );
+
+            public final SwerveDrivetrainConstants drivetrainConstants;
+            public final PathplannerConfigs pathplannerConfig;
+            public final SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>[] modules;
+
+            @SuppressWarnings("unchecked")
+            private SwerveConfigurations(
+                SwerveDrivetrainConstants drivetrainConstants,
+                PathplannerConfigs pathplannerConfig,
+                SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration> factory,
+                ModuleConfig fl, ModuleConfig fr, ModuleConfig bl, ModuleConfig br
+            ) {
+                this.drivetrainConstants = drivetrainConstants;
+                this.pathplannerConfig = pathplannerConfig;
+                this.modules = new SwerveModuleConstants[]{
+                    factory.createModuleConstants(
+                        fl.steerMotorId(), fl.driveMotorId(), fl.encoderId(),
+                        fl.encoderOffset(), fl.xPos(), fl.yPos(), fl.invertDrive(), false, false),
+                    factory.createModuleConstants(
+                        fr.steerMotorId(), fr.driveMotorId(), fr.encoderId(),
+                        fr.encoderOffset(), fr.xPos(), fr.yPos(), fr.invertDrive(), false, false),
+                    factory.createModuleConstants(
+                        bl.steerMotorId(), bl.driveMotorId(), bl.encoderId(),
+                        bl.encoderOffset(), bl.xPos(), bl.yPos(), bl.invertDrive(), false, false),
+                    factory.createModuleConstants(
+                        br.steerMotorId(), br.driveMotorId(), br.encoderId(),
+                        br.encoderOffset(), br.xPos(), br.yPos(), br.invertDrive(), false, false),
+                };
+            }
+
+            /** Shared module constants factory for the competition chassis. */
+            private static SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration> compChassisFactory() {
+                return new SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>()
+                    .withDriveMotorType(DriveMotorArrangement.TalonFX_Integrated)
+                    .withSteerMotorType(SteerMotorArrangement.TalonFX_Integrated)
                     .withDriveMotorGearRatio(6.026785714285714)
                     .withSteerMotorGearRatio(26.09090909090909)
                     .withCouplingGearRatio(3.857142857142857)
@@ -128,10 +198,10 @@ public final class Constants {
                         .withKS(0.1).withKV(2.49).withKA(0)
                         .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseClosedLoopSign))
                     .withDriveMotorGains(new Slot0Configs()
-                        .withKP(0.1).withKI(0).withKD(0)
-                        .withKS(0).withKV(0.124))
+                        .withKP(5).withKI(0).withKD(0)
+                        .withKS(1).withKV(0.12))
                     .withSteerMotorClosedLoopOutput(ClosedLoopOutputType.Voltage)
-                    .withDriveMotorClosedLoopOutput(ClosedLoopOutputType.Voltage)
+                    .withDriveMotorClosedLoopOutput(ClosedLoopOutputType.TorqueCurrentFOC)
                     .withFeedbackSource(SteerFeedbackType.FusedCANcoder)
                     .withSteerInertia(KilogramSquareMeters.of(0.01))
                     .withDriveInertia(KilogramSquareMeters.of(0.01))
@@ -142,39 +212,7 @@ public final class Constants {
                             .withStatorCurrentLimit(Amps.of(60))
                             .withStatorCurrentLimitEnable(true)
                         )
-                    ),
-                new int[]{1, 2, 3}, new int[]{4, 5, 6}, 
-                new int[]{7, 8, 9}, new int[]{10, 11, 12},
-                Rotations.of(-0.30712890625), Rotations.of(-0.094970703125),
-                Rotations.of(0.156982421875), Rotations.of(0.15576171875),
-                Inches.of(9.585892), Inches.of(9.585892), Inches.of(-9.585892), Inches.of(-9.585892),
-                Inches.of(12.1640885), Inches.of(-12.1640885), Inches.of(12.1640885), Inches.of(-12.1640885),
-                false, true
-            );
-
-            public final SwerveDrivetrainConstants drivetrainConstants;
-            public final PathplannerConfigs pathplannerConfig;
-            public final SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>[] modules;
- 
-            @SuppressWarnings("unchecked")
-            private SwerveConfigurations(
-                SwerveDrivetrainConstants drivetrainConstants,
-                PathplannerConfigs pathplannerConfig,
-                SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration> factory,
-                int[] fl, int[] fr, int[] bl, int[] br,
-                Angle flOffset, Angle frOffset, Angle blOffset, Angle brOffset,
-                Distance flX, Distance frX, Distance blX, Distance brX,
-                Distance flY, Distance frY, Distance blY, Distance brY,
-                boolean invertLeft, boolean invertRight
-            ) {
-                this.drivetrainConstants = drivetrainConstants;
-                this.pathplannerConfig = pathplannerConfig;
-                this.modules = new SwerveModuleConstants[]{
-                    factory.createModuleConstants(fl[0],  fl[1],  fl[2],  flOffset, flX, flY, invertLeft,  false, false),
-                    factory.createModuleConstants(fr[0],  fr[1],  fr[2],  frOffset, frX, frY, invertRight, false, false),
-                    factory.createModuleConstants(bl[0],  bl[1],  bl[2],  blOffset, blX, blY, invertLeft,  false, false),
-                    factory.createModuleConstants(br[0],  br[1],  br[2],  brOffset, brX, brY, invertRight, false, false),
-                };
+                    );
             }
         }
 
@@ -271,7 +309,7 @@ public final class Constants {
                 TEST_CHASSIS(new RobotConfig(
                     Pounds.of(15),
                     KilogramSquareMeters.of(3),
-                    new ModuleConfig(
+                    new com.pathplanner.lib.config.ModuleConfig(
                         Inches.of(2),
                         MetersPerSecond.of(5.4),
                         1.916,
@@ -289,19 +327,19 @@ public final class Constants {
                 COMP_CHASSIS(new RobotConfig(
                     Pounds.of(140),
                     KilogramSquareMeters.of(2),
-                    new ModuleConfig(
+                    new com.pathplanner.lib.config.ModuleConfig(
                         Inches.of(2.0),
-                        MetersPerSecond.of(5.34),  // Issue #4: Fixed from 24 m/s (physically impossible) to 5.34 m/s
+                        MetersPerSecond.of(5.12),
                         2.255,
                         DCMotor.getKrakenX60Foc(1),
-                        6.03,
-                        Amps.of(60),
+                        6.026785714285714,
+                        Amps.of(120),
                         1
                     ),
-                    new Translation2d(Inches.of(12.1640885).in(Meter), Inches.of(9.585892).in(Meter)), // Front left
-                    new Translation2d(Inches.of(12.1640885).in(Meter), Inches.of(-9.585892).in(Meter)), // Front right
-                    new Translation2d(Inches.of(-12.1640885).in(Meter), Inches.of(9.585892).in(Meter)), // Back left
-                    new Translation2d(Inches.of(-12.1640885).in(Meter), Inches.of(-9.585892).in(Meter))  // Back right
+                    new Translation2d(Inches.of(9.585892).in(Meter),  Inches.of(12.1640885).in(Meter)),  // Front left
+                    new Translation2d(Inches.of(9.585892).in(Meter),  Inches.of(-12.1640885).in(Meter)), // Front right
+                    new Translation2d(Inches.of(-9.585892).in(Meter), Inches.of(12.1640885).in(Meter)),  // Back left
+                    new Translation2d(Inches.of(-9.585892).in(Meter), Inches.of(-12.1640885).in(Meter))  // Back right
                 ));
 
                 public com.pathplanner.lib.config.RobotConfig config;

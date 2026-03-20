@@ -144,15 +144,11 @@ public class RobotContainer {
         //);
 
         driverController.povLeft().whileTrue(
-            Commands.run(() -> {
-                swerveSubsystem.drive(driverNudgeLeft);
-            })
+            Commands.run(() -> swerveSubsystem.drive(driverNudgeLeft), swerveSubsystem)
         );
 
         driverController.povRight().whileTrue(
-            Commands.run(() -> {
-                swerveSubsystem.drive(driverNudgeRight);
-            })
+            Commands.run(() -> swerveSubsystem.drive(driverNudgeRight), swerveSubsystem)
         );
 
         driverController.povDown().onTrue(
@@ -197,7 +193,7 @@ public class RobotContainer {
 
         driverController.b().onTrue(
             Commands.runOnce(() -> {
-                swerveSubsystem.isFieldRelative = !swerveSubsystem.isFieldRelative;
+                swerveSubsystem.toggleFieldRelative();
             })
         );
 
@@ -302,27 +298,19 @@ public class RobotContainer {
         // Driver nudge defs are in the driverController section
 
         debugController.povUp().whileTrue(
-            Commands.run(() -> {
-                swerveSubsystem.drive(driverNudgeUp);
-            })
+            Commands.run(() -> swerveSubsystem.drive(driverNudgeUp), swerveSubsystem)
         );
 
         debugController.povLeft().whileTrue(
-            Commands.run(() -> {
-                swerveSubsystem.drive(driverNudgeLeft);
-            })
+            Commands.run(() -> swerveSubsystem.drive(driverNudgeLeft), swerveSubsystem)
         );
 
         debugController.povRight().whileTrue(
-            Commands.run(() -> {
-                swerveSubsystem.drive(driverNudgeRight);
-            })
+            Commands.run(() -> swerveSubsystem.drive(driverNudgeRight), swerveSubsystem)
         );
 
         debugController.povDown().whileTrue(
-            Commands.run(() -> {
-                swerveSubsystem.drive(driverNudgeDown);
-            })
+            Commands.run(() -> swerveSubsystem.drive(driverNudgeDown), swerveSubsystem)
         );
 
         debugController.leftTrigger().onTrue(
@@ -367,7 +355,7 @@ public class RobotContainer {
 
         debugController.b().onTrue(
             Commands.runOnce(() -> {
-                swerveSubsystem.isFieldRelative = !swerveSubsystem.isFieldRelative;
+                swerveSubsystem.toggleFieldRelative();
             })
         );
 

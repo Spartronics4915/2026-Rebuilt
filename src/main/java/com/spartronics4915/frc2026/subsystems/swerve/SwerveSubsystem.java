@@ -4,12 +4,15 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.driveController;
 
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain.SwerveDriveState;
+import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
+import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -38,28 +41,53 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 public class SwerveSubsystem extends SubsystemBase {
 
-    public final SwerveDrivetrain<?, ?, ?> drivetrain;
-    private SwerveConfigurations activeConfig;
+    private final SwerveDrivetrain<?, ?, ?> drivetrain;
+    private final SwerveConfigurations activeConfig;
+
+    private final SwerveRequest.FieldCentric fieldCentricRequest =
+        new SwerveRequest.FieldCentric()
+            .withDriveRequestType(DriveRequestType.Velocity)
+            .withSteerRequestType(SteerRequestType.Position)
+            .withDeadband(maxSpeed * 0.1)
+            .withRotationalDeadband(maxAngularSpeed.baseUnitMagnitude() * 0.1);
+
+    private final SwerveRequest.FieldCentricFacingAngle headingLockRequest =
+        new SwerveRequest.FieldCentricFacingAngle()
+            .withDriveRequestType(DriveRequestType.Velocity)
+            .withSteerRequestType(SteerRequestType.Position)
+            .withDeadband(maxSpeed * 0.1);
+
+    private final SwerveRequest.RobotCentric robotCentricRequest =
+        new SwerveRequest.RobotCentric()
+            .withDriveRequestType(DriveRequestType.Velocity)
+            .withSteerRequestType(SteerRequestType.Position)
+            .withDeadband(maxSpeed * 0.1)
+            .withRotationalDeadband(maxAngularSpeed.baseUnitMagnitude() * 0.1);
+
+    private final SwerveRequest.ApplyRobotSpeeds autoRequest =
+        new SwerveRequest.ApplyRobotSpeeds()
+            .withDriveRequestType(DriveRequestType.Velocity);
+
+    private final SwerveRequest.SwerveDriveBrake lockRequest =
+        new SwerveRequest.SwerveDriveBrake();
 
     private final SlipDetector slipDetector = new SlipDetector();
-    private volatile boolean slipping = false;
+    private final AtomicBoolean currentlySlipping = new AtomicBoolean(false);
+    private boolean isInSlipRecovery = false;
     private double lastSlipTimestamp = -1.0;
-    private volatile boolean isInSlipRecovery = false;
 
     private Pose3d pose3d = new Pose3d();
     private double movementOverride = 0.0;
-
-    public boolean isFieldRelative = defaultFieldRelative;
-    public Rotation2d teleopHeadingOffset = Rotation2d.fromDegrees(0.0);
-
+    private boolean isFieldRelativeState = defaultFieldRelative;
+    private Rotation2d teleopHeadingOffset = Rotation2d.kZero;
 
     private Optional<Alliance> cachedAlliance = Optional.empty();
     private boolean hasCheckedAlliance = false;
 
-    private final SwerveRequest.SwerveDriveBrake lockRequest = new SwerveRequest.SwerveDriveBrake();
-
-    private final StructPublisher<Pose2d> posePublisher = NetworkTableInstance.getDefault().getStructTopic("Pose", Pose2d.struct).publish();
-    private final StructPublisher<Pose3d> pose3dPublisher = NetworkTableInstance.getDefault().getStructTopic("Pose3d", Pose3d.struct).publish();
+    private final StructPublisher<Pose2d> posePublisher =
+        NetworkTableInstance.getDefault().getStructTopic("Pose", Pose2d.struct).publish();
+    private final StructPublisher<Pose3d> pose3dPublisher =
+        NetworkTableInstance.getDefault().getStructTopic("Pose3d", Pose3d.struct).publish();
 
     public SwerveSubsystem(SwerveConfigurations config) {
         drivetrain = new SwerveDrivetrain<>(
@@ -68,8 +96,12 @@ public class SwerveSubsystem extends SubsystemBase {
             odomUpdateFrequency,
             config.modules[0], config.modules[1], config.modules[2], config.modules[3]
         );
-        drivetrain.setStateStdDevs(normalStdDevs);
         activeConfig = config;
+
+        drivetrain.setStateStdDevs(normalStdDevs);
+
+        headingLockRequest.HeadingController.setPID(headingLockKP, 0, headingLockKD);
+        headingLockRequest.HeadingController.enableContinuousInput(-Math.PI, Math.PI);
 
         if (Utils.isSimulation()) {
             drivetrain.resetPose(
@@ -78,25 +110,24 @@ public class SwerveSubsystem extends SubsystemBase {
         }
 
         drivetrain.registerTelemetry(this::updateOdometry);
-
         configurePathPlanner();
     }
 
     private void updateOdometry(SwerveDriveState state) {
-        slipping = slipDetector.update(state.ModuleStates, state.ModuleTargets);
+        currentlySlipping.set(slipDetector.update(state.ModuleStates, state.ModuleTargets));
     }
 
     @Override
     public void periodic() {
-        double present = Utils.getCurrentTimeSeconds();
+        double now = Utils.getCurrentTimeSeconds();
 
-        if (slipping) {
-            lastSlipTimestamp = present;
+        if (currentlySlipping.get()) {
+            lastSlipTimestamp = now;
             if (!isInSlipRecovery) {
                 isInSlipRecovery = true;
                 drivetrain.setStateStdDevs(slipStdDevs);
             }
-        } else if (isInSlipRecovery && (present - lastSlipTimestamp) > slipRecoverySeconds) {
+        } else if (isInSlipRecovery && (now - lastSlipTimestamp) > slipRecoverySeconds) {
             isInSlipRecovery = false;
             drivetrain.setStateStdDevs(normalStdDevs);
         }
@@ -116,9 +147,40 @@ public class SwerveSubsystem extends SubsystemBase {
         drivetrain.updateSimState(0.020, RobotController.getBatteryVoltage());
     }
 
+    public void driveFieldCentric(double vX, double vY, double omega) {
+        drivetrain.setControl(
+            fieldCentricRequest
+                .withVelocityX(vX)
+                .withVelocityY(vY)
+                .withRotationalRate(omega)
+        );
+    }
+
+    public void driveFieldCentricFacingAngle(double vX, double vY, Rotation2d targetHeading) {
+        drivetrain.setControl(
+            headingLockRequest
+                .withVelocityX(vX)
+                .withVelocityY(vY)
+                .withTargetDirection(targetHeading)
+        );
+    }
+
+    /** Robot-centric drive (used when field-relative is toggled off). */
+    public void driveRobotCentric(double vX, double vY, double omega) {
+        drivetrain.setControl(
+            robotCentricRequest
+                .withVelocityX(vX)
+                .withVelocityY(vY)
+                .withRotationalRate(omega)
+        );
+    }
+
+    public void setDriverPerspective(Rotation2d heading) {
+        drivetrain.setOperatorPerspectiveForward(heading);
+    }
+
     public void drive(ChassisSpeeds chassisSpeeds) {
-        drivetrain.setControl(new SwerveRequest.ApplyRobotSpeeds()
-            .withSpeeds(chassisSpeeds));
+        drivetrain.setControl(autoRequest.withSpeeds(chassisSpeeds));
     }
 
     public void lockModules() {
@@ -129,6 +191,7 @@ public class SwerveSubsystem extends SubsystemBase {
         return drivetrain.getState().Pose;
     }
 
+    /** Pose flipped to the current alliance's perspective. Use for all game logic. */
     public Pose2d getRelativePose() {
         Pose2d pose = getPose();
         return shouldFlip() ? FlippingUtil.flipFieldPose(pose) : pose;
@@ -200,6 +263,35 @@ public class SwerveSubsystem extends SubsystemBase {
         return flatTrigger.getAsBoolean();
     }
 
+    public boolean isFieldRelative() {
+        return isFieldRelativeState;
+    }
+
+    public void setFieldRelative(boolean fieldRelative) {
+        isFieldRelativeState = fieldRelative;
+    }
+
+    public void toggleFieldRelative() {
+        isFieldRelativeState = !isFieldRelativeState;
+    }
+
+    public Rotation2d getHeadingOffset() {
+        return teleopHeadingOffset;
+    }
+
+    /** Snaps the driver's forward perspective to the robot's current heading. */
+    public void resetHeadingOffset() {
+        teleopHeadingOffset = getPose().getRotation();
+    }
+
+    public double getMovementOverride() {
+        return movementOverride;
+    }
+
+    public void setMovementOverride(double override) {
+        movementOverride = override;
+    }
+
     public boolean isSlipping() {
         return isInSlipRecovery;
     }
@@ -214,16 +306,9 @@ public class SwerveSubsystem extends SubsystemBase {
         return cachedAlliance.isPresent() && cachedAlliance.get() == Alliance.Red;
     }
 
-    public double getMovementOverride() {
-        return movementOverride;
-    }
-
-    public void setMovementOverride(double override) {
-        movementOverride = override;
-    }
-
-    public void resetHeadingOffset() {
-        teleopHeadingOffset = getPose().getRotation();
+    public void resetAlliance() {
+        cachedAlliance = Optional.empty();
+        hasCheckedAlliance = false;
     }
 
     private void configurePathPlanner() {
