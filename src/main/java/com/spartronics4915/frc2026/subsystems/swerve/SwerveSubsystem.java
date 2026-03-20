@@ -20,8 +20,12 @@ import com.pathplanner.lib.util.FlippingUtil;
 
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
 import com.spartronics4915.frc2026.util.swerve.SlipDetector;
+import com.spartronics4915.frc2026.util.vision.ConcurrentTimeBuffer;
+import com.spartronics4915.frc2026.util.vision.MovingAveragePose;
 
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -76,6 +80,15 @@ public class SwerveSubsystem extends SubsystemBase {
     private boolean isInSlipRecovery = false;
     private double lastSlipTimestamp = -1.0;
 
+    private final ConcurrentTimeBuffer<Double> yawRateBuffer = ConcurrentTimeBuffer.createDoubleBuffer(1.0);
+
+    private double prevYawRad = Double.NaN;
+    private double prevYawTimestamp = Double.NaN;
+
+    private Pose2d smoothedPose = new Pose2d();
+    private final MovingAveragePose poseFilter =
+        new MovingAveragePose(0.15);
+
     private Pose3d pose3d = new Pose3d();
     private double movementOverride = 0.0;
     private boolean isFieldRelativeState = defaultFieldRelative;
@@ -115,6 +128,19 @@ public class SwerveSubsystem extends SubsystemBase {
 
     private void updateOdometry(SwerveDriveState state) {
         currentlySlipping.set(slipDetector.update(state.ModuleStates, state.ModuleTargets));
+
+        // Record yaw rate numerically from consecutive odometry poses
+        double nowYaw = state.Pose.getRotation().getRadians();
+        double nowTs = state.Timestamp;
+        if (!Double.isNaN(prevYawTimestamp)) {
+            double dt = nowTs - prevYawTimestamp;
+            if (dt > 0) {
+                double yawRate = MathUtil.angleModulus(nowYaw - prevYawRad) / dt;
+                yawRateBuffer.addSample(nowTs, yawRate);
+            }
+        }
+        prevYawRad       = nowYaw;
+        prevYawTimestamp = nowTs;
     }
 
     @Override
@@ -133,6 +159,7 @@ public class SwerveSubsystem extends SubsystemBase {
         }
 
         Pose2d pose = getPose();
+        smoothedPose = poseFilter.calculate(getRelativePose());
         posePublisher.set(pose);
         pose3d = new Pose3d(
             pose.getX(), pose.getY(), 0,
@@ -212,6 +239,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public void resetPose(Pose2d pose) {
         drivetrain.resetPose(pose);
+        poseFilter.reset(pose);
     }
 
     public ChassisSpeeds getRobotVelocity() {
@@ -328,6 +356,30 @@ public class SwerveSubsystem extends SubsystemBase {
         Translation2d linear = new Translation2d(
             in.vxMetersPerSecond, in.vyMetersPerSecond).rotateBy(offset);
         return new ChassisSpeeds(linear.getX(), linear.getY(), in.omegaRadiansPerSecond);
+    }
+
+    public Pose2d getSmoothedPose() {
+        return smoothedPose;
+    }
+
+    public java.util.OptionalDouble getMaxAbsYawRateInRange(double minTime, double maxTime) {
+        return yawRateBuffer.getMaxAbsValueInRange(minTime, maxTime);
+    }
+
+    public Optional<Pose2d> getHistoricalPose(double timestamp) {
+        try {
+            return drivetrain.samplePoseAt(timestamp);
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
+    public void configureStandardDevsForDisabled() {
+        drivetrain.setStateStdDevs(VecBuilder.fill(1.0, 1.0, 1.0));
+    }
+
+    public void configureStandardDevsForEnabled() {
+        drivetrain.setStateStdDevs(normalStdDevs);
     }
 
     public record RobotHeading(Rotation3d rotation, double timestamp) {}

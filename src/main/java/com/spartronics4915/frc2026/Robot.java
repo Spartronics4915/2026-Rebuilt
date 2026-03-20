@@ -121,6 +121,7 @@ public class Robot extends TimedRobot {
         timeUntilSwitchPub.set(timeUntilSwitch);
 
         // schedule the autonomous command (example)
+        robotContainer.swerveSubsystem.configureStandardDevsForEnabled();
         if (autonomousCommand != null) {
             CommandScheduler.getInstance().schedule(autonomousCommand);
         }
