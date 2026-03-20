@@ -119,7 +119,7 @@ public class Superstructure extends SubsystemBase {
     @Override
     public void periodic() {
         Translation2d turretTranslation = swerve.getRelativePose().getTranslation()
-            .plus(turretTranslation2D.rotateBy(swerve.getPose().getRotation()));
+            .plus(turretTranslation2D.rotateBy(swerve.getRelativePose().getRotation()));
 
         Zone newZone = zoneMap.evaluate(turretTranslation);
 
@@ -163,8 +163,6 @@ public class Superstructure extends SubsystemBase {
             .onFalse(commands.conditionalPivotReady());
     }
 
-    // Public API -----------------------------------------------------
-
     /**
      * Called when a manual driver override is released to snap the robot back
      * to whatever state it should be in based on its field position.
@@ -173,11 +171,11 @@ public class Superstructure extends SubsystemBase {
         return Commands.defer(() -> {
             switch (currentZone) {
                 case ALLIANCE_ZONE: return commands.shooting();
-                case TRENCH:        return commands.trench();
-                case NEUTRAL_ZONE:  return commands.traversal();
+                case TRENCH: return commands.trench();
+                case NEUTRAL_ZONE: return commands.traversal();
                 case BUMP:
                 case OPPONENT_ZONE: return commands.cruise();
-                default:            return commands.idle();
+                default: return commands.idle();
             }
         }, Set.of()).withName("Restore Zone State");
     }

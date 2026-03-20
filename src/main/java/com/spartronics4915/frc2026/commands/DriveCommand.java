@@ -4,14 +4,12 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.driveController;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
-import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
-import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
-import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.XboxController;
@@ -22,8 +20,20 @@ import com.pathplanner.lib.trajectory.PathPlannerTrajectoryState;
 
 /**
  * Default teleop drive command for swerve chassis.
- * Owns all controller input processing, movement override logic, 
- * and trajectory calculation.
+ *
+ * <p>Intentionally imports no CTRE types — all drive calls go through
+ * {@link SwerveSubsystem}'s named API so this command is insulated from
+ * any future drivetrain library changes.
+ *
+ * <p>Features:
+ * <ul>
+ *   <li>Cubic response curve for finer low-speed control
+ *   <li>Heading lock: when the rotation stick is released the robot actively
+ *       holds its last heading via {@link SwerveSubsystem#driveFieldCentricFacingAngle}
+ *   <li>Movement override: trapezoidal Y-axis snap for trench alignment
+ *   <li>Debug controller hot-swap: if a second controller is connected it
+ *       takes over input automatically
+ * </ul>
  */
 public class DriveCommand extends Command {
 
@@ -33,19 +43,8 @@ public class DriveCommand extends Command {
 
     private static final double maxAngularRate = maxAngularSpeed.in(RadiansPerSecond);
 
-    private final SwerveRequest.FieldCentric fieldCentricRequest =
-        new SwerveRequest.FieldCentric()
-            .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
-            .withSteerRequestType(SteerRequestType.Position)
-            .withDeadband(maxSpeed * 0.1)
-            .withRotationalDeadband(maxAngularRate * 0.1);
-
-    private final SwerveRequest.RobotCentric robotCentricRequest =
-        new SwerveRequest.RobotCentric()
-            .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
-            .withSteerRequestType(SteerRequestType.Position)
-            .withDeadband(maxSpeed * 0.1)
-            .withRotationalDeadband(maxAngularRate * 0.1);
+    // Heading lock — null means no lock is active yet.
+    private Rotation2d lockedHeading = null;
 
     private final TrapezoidProfile trapezoidProfile = new TrapezoidProfile(trenchAlignConstraints);
     private final TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
@@ -69,33 +68,39 @@ public class DriveCommand extends Command {
     public void execute() {
         XboxController hid = resolveController();
 
-        double vX = applyResponseCurve(MathUtil.applyDeadband(hid.getLeftY() * -1.0, stickDeadband)) * maxSpeed;
-        double vY = applyResponseCurve(MathUtil.applyDeadband(hid.getLeftX() * -1.0, stickDeadband)) * maxSpeed;
-        double omega = applyResponseCurve(MathUtil.applyDeadband(hid.getRightX() * -1.0, stickDeadband)) * maxAngularRate;
+        double vX    = applyResponseCurve(MathUtil.applyDeadband(-hid.getLeftY(),  stickDeadband)) * maxSpeed;
+        double vY    = applyResponseCurve(MathUtil.applyDeadband(-hid.getLeftX(),  stickDeadband)) * maxSpeed;
+        double omega = applyResponseCurve(MathUtil.applyDeadband(-hid.getRightX(), stickDeadband)) * maxAngularRate;
 
+        // Movement override replaces Y velocity for trench alignment.
         double override = swerve.getMovementOverride();
         if (override != 0.0) {
             vY = computeOverrideVY(override);
         } else {
             wasOverriding = false;
-            yState.position = swerve.getPose().getY();
+            yState.position = swerve.getRelativePose().getY();
             yState.velocity = swerve.getFieldVelocity().vyMetersPerSecond;
         }
-        if (swerve.isFieldRelative) {
-            swerve.drivetrain.setOperatorPerspectiveForward(swerve.teleopHeadingOffset);
-            swerve.drivetrain.setControl(
-                fieldCentricRequest
-                    .withVelocityX(vX)
-                    .withVelocityY(vY)
-                    .withRotationalRate(omega)
-            );
+
+        if (!swerve.isFieldRelative()) {
+            swerve.driveRobotCentric(vX, vY, omega);
+            lockedHeading = null;
+            return;
+        }
+
+        swerve.setDriverPerspective(swerve.getHeadingOffset());
+
+        boolean driverIsRotating = Math.abs(omega) > maxAngularRate * 0.05;
+        if (driverIsRotating) {
+            // Driver is actively rotating — clear the lock and drive normally.
+            lockedHeading = null;
+            swerve.driveFieldCentric(vX, vY, omega);
         } else {
-            swerve.drivetrain.setControl(
-                robotCentricRequest
-                    .withVelocityX(vX)
-                    .withVelocityY(vY)
-                    .withRotationalRate(omega)
-            );
+            // Rotation stick released — engage heading lock.
+            if (lockedHeading == null) {
+                lockedHeading = swerve.getRelativePose().getRotation();
+            }
+            swerve.driveFieldCentricFacingAngle(vX, vY, lockedHeading);
         }
     }
 
@@ -104,7 +109,7 @@ public class DriveCommand extends Command {
         ChassisSpeeds fieldVel = swerve.getFieldVelocity();
 
         if (!wasOverriding) {
-            yState.position = swerve.getPose().getY();
+            yState.position = swerve.getRelativePose().getY();
             yState.velocity = fieldVel.vyMetersPerSecond;
             wasOverriding = true;
         }
@@ -113,7 +118,7 @@ public class DriveCommand extends Command {
         targetState.velocity = 0;
         yState = trapezoidProfile.calculate(dt, yState, targetState);
 
-        Pose2d currentPose = swerve.getPose();
+        Pose2d currentPose = swerve.getRelativePose();
         goalState.pose = new Pose2d(currentPose.getX(), yState.position, currentPose.getRotation());
         goalState.fieldSpeeds = new ChassisSpeeds();
 
@@ -124,18 +129,15 @@ public class DriveCommand extends Command {
     @Override
     public void end(boolean interrupted) {
         wasOverriding = false;
+        lockedHeading = null;
         yState = new TrapezoidProfile.State();
     }
 
     @Override
-    public boolean isFinished() {
-        return false;
-    }
+    public boolean isFinished() { return false; }
 
     @Override
-    public boolean runsWhenDisabled() {
-        return false;
-    }
+    public boolean runsWhenDisabled() { return false; }
 
     private XboxController resolveController() {
         if (testingController != null) {
@@ -146,7 +148,7 @@ public class DriveCommand extends Command {
     }
 
     private static double applyResponseCurve(double x) {
-        return Math.signum(x) * (x * x);
+        return x * x * x;
     }
-
+    
 }
