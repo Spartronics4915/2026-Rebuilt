@@ -27,7 +27,7 @@ import org.photonvision.simulation.SimCameraProperties;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.PathplannerConfigs;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.PhotonProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
-import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
+
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
@@ -367,21 +367,84 @@ public final class Constants {
                 simCameraProperties.setLatencyStdDevMs(0);
             }
 
-        public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.18;  // 0.5 — trust vision closer to odometry levels
-            public static final double baseThetaStdDev = 0.24;  // 0.5 — heading from vision is still less reliable
-            public static final double ambiguityWeight = 1.0;  // 0.8
-            public static final double areaWeight = 0.9;  // 0.6
-            public static final double motionWeight = 0.3;  // 0.4
-            public static final double latencyWeight = 1.0;  // 0.4
+        public static final int maxResultQueueSize = 5;
+        
+        //--------------------------------------------------------------------------------
 
-            /**
-             * Smoothing factor for the exponential moving average applied to distance and area.
-             * Range [0.0, 1.0] — lower values smooth more but react slower to real changes.
-             * At 20fps: 0.05 - 1s lag, 0.15 - 0.3s lag, 0.30 - 0.15s lag.
-             */
-            public static final double smoothingAlpha = 0.6;
-        }
+        /** Base XY standard deviation at "perfect" quality (tag fills frame). */
+        public static final double baseXYDevs = 0.04;  // meters
+
+        /**
+         * Base heading standard deviation at perfect quality.
+         * Only applied to multi-tag results; single-tag always gets LARGE_VARIANCE.
+         */
+        public static final double baseThetaDevs = 0.06;  // radians
+
+        /**
+         * Effectively infinite variance, basically tells the Kalman filter to ignore the
+         * heading component entirely
+         */
+        public static final double largeVariance = 1e6;
+
+        /**
+         * Tag area (fraction of camera frame) at which quality saturates to 1.0.
+         * Tags larger than this are treated as maximum quality.
+         */
+        public static final double saturationArea = 0.10;  // 10 %
+
+        /**
+         * Minimum quality floor to prevent stdDevs from growing unboundedly.
+         * Measurements below this quality are rejected rather than
+         * submitted with enormous stdDevs.
+         */
+        public static final double minQuality = 0.05;
+
+        // Multi-tag bonus: seeing 2 tags halves the uncertainty, 3 tags cuts it further.
+        // Follows sqrt(N) improvement, capped at a 3× improvement.
+        public static final double maxTagBonus = 3.0;
+
+        //--------------------------------------------------------------------------------
+
+        /**
+         * If two cameras' posed estimates agree within this distance (metres), apply
+         * a consistency bonus that tightens the fused stdDevs
+         */
+        public static final double consistencyThreshold = 0.15;
+
+        /**
+         * Bonus multiplier applied to fused stdDevs when cameras agree closely
+         */
+        public static final double agreementBonus = 0.6;
+
+        /**
+         * Penalty multiplier applied to stdDevs when cameras disagree beyond the CONSISTENCY_THRESHOLD
+         */
+        public static final double disagreementPenalty = 2.5;
+
+        //--------------------------------------------------------------------------------
+
+        public static final double ambiguityThreshold = 0.19;
+
+        public static final double minAreaSingleTag = 0.005;
+
+        /**
+         * Maximum Z height discrepancy (metres) from floor level
+         */
+        public static final double maxZError = 0.25;
+
+        /**
+         * Window (seconds) over which yaw rate is checked before accepting a
+         * single-tag gyro-bearing measurement
+         */
+        public static final double yawLookBack = 0.3;
+        public static final double maxYawRate = 4.0;
+        public static final double maxYawDiff = 15.0;
+
+        public static final double maxOdometryJump = 100.0;
+
+        public static final double areaForYawCheck = 0.02;
+
+        public static final double validPoseStaleness = 0.5;
 
         public static final class CameraConstants {
 
@@ -448,27 +511,23 @@ public final class Constants {
                     "evan", 
                     apriltagFieldLayout, 
                     frontTowerCamTransform, 
-                    new StdDevCalculator(1.3), 
                     simCameraProperties
                 ),
                 "daniil", new PhotonProcessor(
                     "daniil", 
                     apriltagFieldLayout, 
-                    rioCamTransform, 
-                    new StdDevCalculator(1.3), 
+                    rioCamTransform,  
                     simCameraProperties
                 ),
                 "val", new PhotonProcessor(
                     "val", 
                     apriltagFieldLayout, 
                     backTowerCamTransform, 
-                    new StdDevCalculator(1.3), 
                     simCameraProperties
                 )
                 //"gollum", new LimelightProcessor(
                 //    "gollum", 
-                //    swerveCamTransform, 
-                //    new StdDevCalculator(1.2), 
+                //    swerveCamTransform,  
                 //    null // We add this later
                 //)
             );

@@ -106,6 +106,7 @@ public class Robot extends TimedRobot {
         hubEnabled = true;
 
         // schedule the autonomous command (example)
+        robotContainer.swerveSubsystem.configureStandardDevsForEnabled();
         if (autonomousCommand != null) {
             CommandScheduler.getInstance().schedule(autonomousCommand);
         }

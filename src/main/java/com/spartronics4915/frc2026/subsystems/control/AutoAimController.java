@@ -168,7 +168,7 @@ public class AutoAimController extends SubsystemBase {
         }
 
         return autoAim.calculateDynamicAim(
-            swerve.getRelativePose(),
+            swerve.getSmoothedPose(),
             swerve.getFieldRelativeVelocity(),
             target,
             RPSToMPS(Robot.isSimulation() ? shooter.getCurrentSetpoint() : shooter.getCurrentRPS()),
@@ -226,7 +226,7 @@ public class AutoAimController extends SubsystemBase {
     }
 
     private boolean checkHubCollision(Rotation2d pitch, double shotSpeed, boolean usePadding) {
-        Translation2d robotPos2d = swerve.getRelativePose().getTranslation()
+        Translation2d robotPos2d = swerve.getSmoothedPose().getTranslation()
             .plus(turretTranslation2D.rotateBy(swerve.getRelativePose().getRotation()));
 
         Translation2d targetPos2d = new Translation2d(hubPose.getX(), hubPose.getY());

@@ -36,7 +36,6 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsyst
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem.IndexerState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
-import com.spartronics4915.frc2026.subsystems.vision.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 import com.spartronics4915.frc2026.Constants.AutoAimConstants;
 
@@ -71,7 +70,6 @@ public class RobotContainer {
     public final VisionSubsystem visionSubsystem = new VisionSubsystem(
         VisionConstants.CameraConstants.cameras, 
         VisionConstants.apriltagFieldLayout, 
-        new VisionConfiguration(), 
         swerveSubsystem::addVisionMeasurement, 
         swerveSubsystem
     );

@@ -1,5 +1,7 @@
 package com.spartronics4915.frc2026.subsystems.vision.cameras;
 
+import static com.spartronics4915.frc2026.Constants.VisionConstants.*;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -28,20 +30,7 @@ import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Notifier;
 
 /**
- * A processor backed by PhotonVision's camera and pose estimator.
- *
- * <p>All PhotonVision-specific types ({@link PhotonCamera}, {@link PhotonPoseEstimator},
- * {@link PhotonCameraSim}, {@link SimCameraProperties}) are private implementation
- * details. They no longer appear in {@link ProcessorInterface}, which allows
- * non-PhotonVision processors (e.g. {@code LimelightProcessor}) to implement the
- * same interface without carrying PhotonVision as a dependency.
- *
- * <p>Simulation is exposed via the optional {@link #getCameraSim()} override.
- * {@link com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem} checks
- * {@code isPresent()} before wiring it into the sim.
- *
- * <p>All per-frame calculation methods use plain loops rather than stream pipelines
- * to avoid iterator and lambda allocation on the hot Notifier path.
+ * Vision processor backed by PhotonVision
  */
 public class PhotonProcessor implements ProcessorInterface {
 
@@ -50,7 +39,6 @@ public class PhotonProcessor implements ProcessorInterface {
     private final AprilTagFieldLayout fieldLayout;
     private final Transform3d cameraTransform;
     private final PhotonPoseEstimator poseEstimator;
-    private final StdDevCalculator stdDevCalculator;
 
     private final PhotonCameraSim cameraSim;
 
@@ -63,15 +51,12 @@ public class PhotonProcessor implements ProcessorInterface {
 
     private volatile boolean isRunning;
 
-    // Reusable scratch list for converting PhotonTrackedTarget -> TrackedTag
-    // on the Notifier thread. Never shared across threads.
     private final List<TrackedTag> tagScratch = new ArrayList<>(8);
 
     public PhotonProcessor(
         String name,
         AprilTagFieldLayout layout,
         Transform3d transform,
-        StdDevCalculator calculator,
         SimCameraProperties properties
     ) {
         this.cameraName = name;
@@ -79,21 +64,18 @@ public class PhotonProcessor implements ProcessorInterface {
         this.fieldLayout = layout;
         this.cameraTransform = transform;
         this.poseEstimator = new PhotonPoseEstimator(fieldLayout, cameraTransform);
-        this.stdDevCalculator = calculator;
 
         this.cameraSim = new PhotonCameraSim(photonCamera, properties);
 
         this.resultQueue = new ConcurrentLinkedQueue<>();
         this.queueSize = new AtomicInteger(0);
-        this.maxQueueSize = 5;
+        this.maxQueueSize = maxResultQueueSize;
 
-        this.processingNotifier  = new Notifier(this::process);
         this.processingFrequency = 70.0;
+        this.processingNotifier  = new Notifier(this::process);
         this.processingNotifier.setName("Photon-" + cameraName);
         this.isRunning = false;
     }
-
-    //#region Processing
 
     @Override
     public void start() {
@@ -113,17 +95,15 @@ public class PhotonProcessor implements ProcessorInterface {
     public void process() {
         if (!isRunning) return;
 
-        List<PhotonPipelineResult> rawResults = photonCamera.getAllUnreadResults();
-
-        for (PhotonPipelineResult rawResult : rawResults) {
-            Optional<ApriltagResult> apriltagResult = processApriltagResult(rawResult);
-            if (apriltagResult.isPresent()) {
+        for (PhotonPipelineResult rawResult : photonCamera.getAllUnreadResults()) {
+            processApriltagResult(rawResult).ifPresent(result -> {
+                // Drop the oldest frame if the consumer can't keep up.
                 while (queueSize.get() >= maxQueueSize) {
                     if (resultQueue.poll() != null) queueSize.decrementAndGet();
                 }
-                resultQueue.add(apriltagResult.get());
+                resultQueue.add(result);
                 queueSize.incrementAndGet();
-            }
+            });
         }
     }
 
@@ -131,31 +111,33 @@ public class PhotonProcessor implements ProcessorInterface {
         if (!rawResult.hasTargets()) return Optional.empty();
 
         List<PhotonTrackedTarget> targets = rawResult.getTargets();
-        int targetCount = targets.size();
+        int numTags   = targets.size();
+        boolean isMultiTag = numTags > 1;
 
-        double avgAmbiguity = calculateAmbiguity(targets);
-        double avgArea = calculateAverageArea(targets);
+        double avgAmbiguity = computeAvgAmbiguity(targets);
+        double avgArea      = computeAvgArea(targets);
 
-        Optional<EstimatedRobotPose> poseOptional = (targetCount > 1)
+        // Multi-tag: coprocessor multi-tag solve. Single-tag: lowest-ambiguity solve.
+        Optional<EstimatedRobotPose> poseOpt = isMultiTag
             ? poseEstimator.estimateCoprocMultiTagPose(rawResult)
             : poseEstimator.estimateLowestAmbiguityPose(rawResult);
 
-        if (poseOptional.isEmpty()) return Optional.empty();
+        if (poseOpt.isEmpty()) return Optional.empty();
 
-        EstimatedRobotPose estimatedPose = poseOptional.get();
-        Pose2d resultantPose = estimatedPose.estimatedPose.toPose2d();
+        EstimatedRobotPose estimated = poseOpt.get();
+        Pose2d robotPose = estimated.estimatedPose.toPose2d();
+        double timestamp = estimated.timestampSeconds;
+        double latencyMs = rawResult.metadata.getLatencyMillis();
 
-        double timestamp = estimatedPose.timestampSeconds;
-        double latency = rawResult.metadata.getLatencyMillis();
+        Matrix<N3, N1> stdDevs = StdDevCalculator.calculate(avgArea, numTags, isMultiTag);
 
-        Matrix<N3, N1> stdDevs = stdDevCalculator.calculate(
-            avgAmbiguity, 
-            avgArea, 
-            latency, 
-            targetCount
-        );
+        // For single-tag, capture the raw camera-to-target transform.
+        // VisionSubsystem uses this for the gyro-bearing path, which bypasses
+        // the ambiguous heading from the pose solve entirely.
+        Optional<Transform3d> cameraToTarget = (!isMultiTag && !targets.isEmpty())
+            ? Optional.of(targets.get(0).getBestCameraToTarget())
+            : Optional.empty();
 
-        // Convert PhotonTrackedTarget -> TrackedTag (camera-agnostic).
         tagScratch.clear();
         for (int i = 0; i < targets.size(); i++) {
             PhotonTrackedTarget t = targets.get(i);
@@ -163,52 +145,41 @@ public class PhotonProcessor implements ProcessorInterface {
         }
 
         return Optional.of(new ApriltagResult(
-            cameraName, 
-            timestamp, 
-            latency, 
-            resultantPose, 
+            cameraName,
+            timestamp,
+            latencyMs,
+            robotPose,
             stdDevs,
-            tagScratch, 
-            avgAmbiguity, 
-            avgArea
+            tagScratch,
+            avgAmbiguity,
+            avgArea,
+            cameraToTarget,
+            isMultiTag
         ));
     }
 
-    //#endregion
-
-    //#region Calculation
-
-    private static double calculateAmbiguity(List<PhotonTrackedTarget> targets) {
+    private static double computeAvgAmbiguity(List<PhotonTrackedTarget> targets) {
         if (targets.size() == 1) return targets.get(0).getPoseAmbiguity();
-
-        double minAmbiguity = 0.15;
-        for (PhotonTrackedTarget target : targets) {
-            double a = target.getPoseAmbiguity();
-            if (a >= 0 && a < minAmbiguity) minAmbiguity = a;
+        // Multi-tag: report the best (lowest) individual ambiguity, normalized
+        // down by sqrt(N) to reflect that more tags = more constrained solve.
+        double best = Double.MAX_VALUE;
+        for (PhotonTrackedTarget t : targets) {
+            double a = t.getPoseAmbiguity();
+            if (a >= 0 && a < best) best = a;
         }
-        return minAmbiguity / Math.sqrt(targets.size());
+        return (best == Double.MAX_VALUE ? 0.15 : best) / Math.sqrt(targets.size());
     }
 
-    private static double calculateAverageArea(List<PhotonTrackedTarget> targets) {
+    private static double computeAvgArea(List<PhotonTrackedTarget> targets) {
         if (targets.isEmpty()) return 0.0;
         double sum = 0.0;
-        for (PhotonTrackedTarget target : targets) sum += target.getArea();
+        for (PhotonTrackedTarget t : targets) sum += t.getArea();
         return sum / targets.size();
     }
 
-    //#endregion
+    @Override public String getCameraName()     { return cameraName; }
+    @Override public Transform3d getCameraTransform() { return cameraTransform; }
 
-    //#region ProcessorInterface
-
-    @Override public String getCameraName() { 
-        return cameraName; 
-    }
-
-    @Override public Transform3d getCameraTransform() { 
-        return cameraTransform;
-    }
-
-    /** Exposes the PhotonVision sim camera for {@code VisionSystemSim} wiring. */
     @Override
     public Optional<PhotonCameraSim> getCameraSim() {
         return Optional.of(cameraSim);
@@ -216,18 +187,18 @@ public class PhotonProcessor implements ProcessorInterface {
 
     @Override
     public void drainResultQueue(List<ResultInterface> destination) {
-        ResultInterface result;
-        while ((result = resultQueue.poll()) != null) {
-            destination.add(result);
+        ResultInterface r;
+        while ((r = resultQueue.poll()) != null) {
+            destination.add(r);
             queueSize.decrementAndGet();
         }
     }
 
     @Override
     public List<ResultInterface> getResultQueue() {
-        List<ResultInterface> results = new ArrayList<>();
-        drainResultQueue(results);
-        return results;
+        List<ResultInterface> out = new ArrayList<>();
+        drainResultQueue(out);
+        return out;
     }
 
     @Override public int getMaxQueueSize() { 
@@ -241,19 +212,19 @@ public class PhotonProcessor implements ProcessorInterface {
     @Override public double getFrequency() { 
         return processingFrequency; 
     }
-    @Override public boolean isRunning() { 
+
+    @Override public boolean isRunning() {
         return isRunning; 
     }
 
     @Override
-    public void setPipeline(int newPipelineIndex) {
-        photonCamera.setPipelineIndex(newPipelineIndex);
+    public void setPipeline(int index) {
+        photonCamera.setPipelineIndex(index);
     }
 
     @Override
-    public void setCameraTransform(Transform3d newCameraTransform) {
-        poseEstimator.setRobotToCameraTransform(newCameraTransform);
+    public void setCameraTransform(Transform3d newTransform) {
+        poseEstimator.setRobotToCameraTransform(newTransform);
     }
 
-    //#endregion
 }
