@@ -1,5 +1,6 @@
 package com.spartronics4915.frc2026.util.vision;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 
@@ -34,16 +35,12 @@ public class ConcurrentTimeBuffer<T> {
         this.historySeconds = historySeconds;
     }
 
-    // ------ Factories ----------------------------------------------------------------
-
     public static ConcurrentTimeBuffer<Double> createDoubleBuffer(double historySeconds) {
         return new ConcurrentTimeBuffer<>(
             (a, b, t) -> a + (b - a) * t,
             historySeconds
         );
     }
-
-    // ------ Mutation -----------------------------------------------------------------
 
     public void addSample(double timestamp, T value) {
         buffer.put(timestamp, value);
@@ -63,8 +60,6 @@ public class ConcurrentTimeBuffer<T> {
             }
         }
     }
-
-    // ------ Query --------------------------------------------------------------------
 
     /**
      * Returns the interpolated value at {@code timestamp}, or the nearest
@@ -97,7 +92,7 @@ public class ConcurrentTimeBuffer<T> {
      * [{@code minTime}, {@code maxTime}), or empty if no samples exist in range.
      */
     public java.util.OptionalDouble getMaxAbsValueInRange(double minTime, double maxTime) {
-        var sub = buffer.subMap(minTime, true, maxTime, true).values();
+        Collection<T> sub = buffer.subMap(minTime, true, maxTime, true).values();
         return sub.stream()
             .mapToDouble(v -> Math.abs((Double)(Object) v))
             .max();
