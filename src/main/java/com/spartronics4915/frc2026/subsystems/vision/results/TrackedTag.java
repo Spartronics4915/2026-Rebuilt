@@ -21,7 +21,7 @@ public final class TrackedTag {
 
     public TrackedTag(int fiducialId, double area, double ambiguity) {
         this.fiducialId = fiducialId;
-        this.area       = area;
+        this.area = area;
         this.ambiguity  = ambiguity;
     }
     

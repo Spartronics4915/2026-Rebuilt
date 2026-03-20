@@ -8,7 +8,7 @@ import edu.wpi.first.math.geometry.Translation2d;
  *
  * <p>Only X and Y are smoothed. Rotation is always taken from the raw input
  * because the Pigeon2 already provides excellent short-term heading stability
- * and filtering heading introduces phase lag that hurts auto-aim accuracy.
+ * and filtering heading introduces phase lag that hurts accuracy.
  *
  * <p>Intended for use by {@link com.spartronics4915.frc2026.subsystems.control.AutoAimController}
  * and any other consumer that needs smooth, low-jitter pose at the cost of a
@@ -71,4 +71,5 @@ public class MovingAveragePose {
     public void reset() {
         initialized = false;
     }
+    
 }
