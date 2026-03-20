@@ -104,8 +104,8 @@ public class LimelightProcessor implements ProcessorInterface {
 
         tagScratch.clear();
         if (estimate.rawFiducials != null) {
-            for (RawFiducial f : estimate.rawFiducials) {
-                tagScratch.add(new TrackedTag(f.id, avgArea, f.ambiguity));
+            for (RawFiducial fiducial : estimate.rawFiducials) {
+                tagScratch.add(new TrackedTag(fiducial.id, avgArea, fiducial.ambiguity));
             }
         }
         if (tagScratch.isEmpty()) return null;
@@ -134,7 +134,7 @@ public class LimelightProcessor implements ProcessorInterface {
         if (fiducials.length == 1) return fiducials[0].ambiguity;
 
         double sum = 0.0;
-        for (RawFiducial f : fiducials) sum += f.ambiguity;
+        for (RawFiducial fiducial : fiducials) sum += fiducial.ambiguity;
         return (sum / fiducials.length) / Math.sqrt(fiducials.length);
     }
 
@@ -164,9 +164,9 @@ public class LimelightProcessor implements ProcessorInterface {
 
     @Override
     public void drainResultQueue(List<ResultInterface> destination) {
-        ResultInterface r;
-        while ((r = resultQueue.poll()) != null) {
-            destination.add(r);
+        ResultInterface result;
+        while ((result = resultQueue.poll()) != null) {
+            destination.add(result);
             queueSize.decrementAndGet();
         }
     }

@@ -13,8 +13,6 @@ import edu.wpi.first.math.numbers.N3;
  */
 public interface ResultInterface {
 
-    //#region ------ Getters ------
-
     /** Human-readable name of the camera or fused source that produced this result. */
     String getSourceName();
 
@@ -48,7 +46,5 @@ public interface ResultInterface {
 
     /** Average tag area as a fraction of the camera frame (0-1). */
     double getAverageArea();
-
-    //#endregion
     
 }

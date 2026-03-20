@@ -16,18 +16,12 @@ import edu.wpi.first.wpilibj.Notifier;
  */
 public interface ProcessorInterface {
 
-    // ------ Lifecycle ------
-
     void start();
     void stop();
     void process();
 
-    // ------ Identity & Geometry ------
-
     String getCameraName();
     Transform3d getCameraTransform();
-
-    // ------ Result Queue ------
 
     /**
      * Drains all pending results into {@code destination}.
@@ -38,19 +32,13 @@ public interface ProcessorInterface {
     /** Convenience wrapper; use {@link #drainResultQueue(List)} */
     List<ResultInterface> getResultQueue();
 
-    // ------ Introspection ------
-
     int getMaxQueueSize();
     Notifier getNotifier();
     double getFrequency();
     boolean isRunning();
 
-    // ------ Configuration ------
-
     void setPipeline(int newPipelineIndex);
     void setCameraTransform(Transform3d newCameraTransform);
-
-    // ------ Simulation (opt-in) ------
 
     /**
      * Returns the PhotonVision simulated camera, if this processor supports it.
@@ -58,4 +46,5 @@ public interface ProcessorInterface {
     default Optional<PhotonCameraSim> getCameraSim() {
         return Optional.empty();
     }
+    
 }

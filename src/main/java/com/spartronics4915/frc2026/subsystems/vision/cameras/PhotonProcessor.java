@@ -111,11 +111,11 @@ public class PhotonProcessor implements ProcessorInterface {
         if (!rawResult.hasTargets()) return Optional.empty();
 
         List<PhotonTrackedTarget> targets = rawResult.getTargets();
-        int numTags   = targets.size();
+        int numTags = targets.size();
         boolean isMultiTag = numTags > 1;
 
         double avgAmbiguity = computeAvgAmbiguity(targets);
-        double avgArea      = computeAvgArea(targets);
+        double avgArea = computeAvgArea(targets);
 
         // Multi-tag: coprocessor multi-tag solve. Single-tag: lowest-ambiguity solve.
         Optional<EstimatedRobotPose> poseOpt = isMultiTag
@@ -140,8 +140,14 @@ public class PhotonProcessor implements ProcessorInterface {
 
         tagScratch.clear();
         for (int i = 0; i < targets.size(); i++) {
-            PhotonTrackedTarget t = targets.get(i);
-            tagScratch.add(new TrackedTag(t.fiducialId, t.getArea(), t.getPoseAmbiguity()));
+            PhotonTrackedTarget target = targets.get(i);
+            tagScratch.add(
+                new TrackedTag(
+                    target.fiducialId, 
+                    target.getArea(), 
+                    target.getPoseAmbiguity()
+                )
+            );
         }
 
         return Optional.of(new ApriltagResult(
@@ -177,8 +183,13 @@ public class PhotonProcessor implements ProcessorInterface {
         return sum / targets.size();
     }
 
-    @Override public String getCameraName()     { return cameraName; }
-    @Override public Transform3d getCameraTransform() { return cameraTransform; }
+    @Override public String getCameraName() { 
+        return cameraName; 
+    }
+
+    @Override public Transform3d getCameraTransform() { 
+        return cameraTransform; 
+    }
 
     @Override
     public Optional<PhotonCameraSim> getCameraSim() {
@@ -187,9 +198,9 @@ public class PhotonProcessor implements ProcessorInterface {
 
     @Override
     public void drainResultQueue(List<ResultInterface> destination) {
-        ResultInterface r;
-        while ((r = resultQueue.poll()) != null) {
-            destination.add(r);
+        ResultInterface result;
+        while ((result = resultQueue.poll()) != null) {
+            destination.add(result);
             queueSize.decrementAndGet();
         }
     }

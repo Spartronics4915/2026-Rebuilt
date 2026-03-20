@@ -101,8 +101,8 @@ public class PoseFusionEngine {
         double totalWY = wyA + wyB;
         double totalWT = wtA + wtB;
 
-        double fusedX  = (previewedPoseA.getX() * wxA + poseB.getX() * wxB) / totalWX;
-        double fusedY  = (previewedPoseA.getY() * wyA + poseB.getY() * wyB) / totalWY;
+        double fusedX = (previewedPoseA.getX() * wxA + poseB.getX() * wxB) / totalWX;
+        double fusedY = (previewedPoseA.getY() * wyA + poseB.getY() * wyB) / totalWY;
 
         Rotation2d fusedHeading;
         boolean aHasTrustedHeading = varA[2] < largeVariance * 0.5;
@@ -129,12 +129,11 @@ public class PoseFusionEngine {
         );
 
         tagScratch.clear();
-        mergeTags(a.getTrackedTags());
-        mergeTags(b.getTrackedTags());
+            mergeTags(a.getTrackedTags());
+            mergeTags(b.getTrackedTags());
 
         nameBuilder.setLength(0);
-        nameBuilder
-            .append("fused[")
+        nameBuilder.append("fused[")
             .append(a.getSourceName()).append(", ")
             .append(b.getSourceName()).append(']');
 

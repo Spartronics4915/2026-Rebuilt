@@ -2,6 +2,7 @@ package com.spartronics4915.frc2026.util.vision;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
@@ -66,20 +67,20 @@ public class ConcurrentTimeBuffer<T> {
      * available sample if {@code timestamp} is outside the buffer range.
      */
     public java.util.Optional<T> getSample(double timestamp) {
-        if (buffer.isEmpty()) return java.util.Optional.empty();
+        if (buffer.isEmpty()) return Optional.empty();
 
         // Exact hit
         T exact = buffer.get(timestamp);
-        if (exact != null) return java.util.Optional.of(exact);
+        if (exact != null) return Optional.of(exact);
 
         Map.Entry<Double, T> floor = buffer.floorEntry(timestamp);
         Map.Entry<Double, T> ceil = buffer.ceilingEntry(timestamp);
 
-        if (floor == null) return java.util.Optional.of(ceil.getValue());
-        if (ceil == null)  return java.util.Optional.of(floor.getValue());
+        if (floor == null) return Optional.of(ceil.getValue());
+        if (ceil == null)  return Optional.of(floor.getValue());
 
         double t = (timestamp - floor.getKey()) / (ceil.getKey() - floor.getKey());
-        return java.util.Optional.of(interpolator.interpolate(floor.getValue(), ceil.getValue(), t));
+        return Optional.of(interpolator.interpolate(floor.getValue(), ceil.getValue(), t));
     }
 
     /** Returns the most recent entry, or {@code null} if empty. */
@@ -102,4 +103,5 @@ public class ConcurrentTimeBuffer<T> {
     public ConcurrentSkipListMap<Double, T> getInternalBuffer() {
         return buffer;
     }
+    
 }
