@@ -98,7 +98,7 @@ public final class Constants {
 
         public static final boolean defaultFieldRelative = true;
 
-        public static final double stickDeadband = 0.05;
+        public static final double stickDeadband = 0.0;
         public static final double tiltThresholdDegrees = 1.0;
         public static final double tiltDebounce = 0.5;
 
@@ -133,7 +133,7 @@ public final class Constants {
                 compChassisFactory(),
                 // Front Left
                 new ModuleConfig(1, 2, 3,
-                    Rotations.of(-0.30712890625),
+                    Rotations.of(-0.30615234375),
                     Inches.of(9.585892), Inches.of(12.1640885),
                     false),
                 // Front Right
@@ -143,12 +143,12 @@ public final class Constants {
                     true),
                 // Back Left
                 new ModuleConfig(7, 8, 9,
-                    Rotations.of(0.156982421875),
+                    Rotations.of(0.1591796875),
                     Inches.of(-9.585892), Inches.of(12.1640885),
                     false),
                 // Back Right
                 new ModuleConfig(10, 11, 12,
-                    Rotations.of(0.15576171875),
+                    Rotations.of(0.155517578125),
                     Inches.of(-9.585892), Inches.of(-12.1640885),
                     true)
             );
@@ -194,7 +194,7 @@ public final class Constants {
                     .withSpeedAt12Volts(MetersPerSecond.of(5.12))
                     .withSlipCurrent(Amps.of(120))
                     .withSteerMotorGains(new Slot0Configs()
-                        .withKP(100).withKI(0).withKD(0.5)
+                        .withKP(100).withKI(0).withKD(0.8)
                         .withKS(0.1).withKV(2.49).withKA(0)
                         .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseClosedLoopSign))
                     .withDriveMotorGains(new Slot0Configs()
@@ -322,9 +322,8 @@ public final class Constants {
                     new Translation2d(Inches.of(-12.634).in(Meter), Inches.of(12.280).in(Meter)), // Back left
                     new Translation2d(Inches.of(-12.634).in(Meter), Inches.of(-12.280).in(Meter))  // Back right
                 )),
-
                 COMP_CHASSIS(new RobotConfig(
-                    Pounds.of(140),
+                    Pounds.of(160),
                     KilogramSquareMeters.of(2),
                     new com.pathplanner.lib.config.ModuleConfig(
                         Inches.of(2.0),
@@ -424,7 +423,8 @@ public final class Constants {
 
         public static final double ambiguityThreshold = 0.19;
 
-        public static final double minAreaSingleTag = 0.005;
+        // Calculation for area is wrong
+        public static final double minAreaSingleTag = 0.0;
 
         /**
          * Maximum Z height discrepancy (metres) from floor level
@@ -452,7 +452,7 @@ public final class Constants {
                 new Translation3d(
                     -0.119170, 
                     0.310900,
-                    -0.520276
+                    0.520276
                 ),
                 new Rotation3d(
                     Math.toRadians(0), 
