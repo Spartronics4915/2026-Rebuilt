@@ -30,7 +30,7 @@ import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Notifier;
 
 /**
- * Vision processor backed by PhotonVision
+ * Vision processor backed by PhotonVision.
  */
 public class PhotonProcessor implements ProcessorInterface {
 
@@ -111,16 +111,41 @@ public class PhotonProcessor implements ProcessorInterface {
         if (!rawResult.hasTargets()) return Optional.empty();
 
         List<PhotonTrackedTarget> targets = rawResult.getTargets();
-        int numTags = targets.size();
-        boolean isMultiTag = numTags > 1;
 
         double avgAmbiguity = computeAvgAmbiguity(targets);
-        double avgArea = computeAvgArea(targets);
 
-        // Multi-tag: coprocessor multi-tag solve. Single-tag: lowest-ambiguity solve.
-        Optional<EstimatedRobotPose> poseOpt = isMultiTag
-            ? poseEstimator.estimateCoprocMultiTagPose(rawResult)
-            : poseEstimator.estimateLowestAmbiguityPose(rawResult);
+        // Fix: PhotonTrackedTarget.getArea() returns area as a percentage of the
+        // camera frame (0–100), not a fraction (0–1). StdDevCalculator and all
+        // downstream area thresholds (minAreaSingleTag, areaForYawCheck) expect
+        // fraction. Divide by 100 here so every consumer sees a consistent unit.
+        // LimelightProcessor already does this division; previously PhotonProcessor
+        // did not, making quality always saturate to 1.0 and area filters never fire.
+        double avgArea = computeAvgArea(targets) / 100.0;
+
+        Optional<EstimatedRobotPose> poseOpt;
+        boolean isMultiTag;
+        boolean headingTrusted;
+
+        if (targets.size() > 1) {
+            // Prefer coprocessor multi-tag solve (heading is trusted).
+            poseOpt = poseEstimator.estimateCoprocMultiTagPose(rawResult);
+            if (poseOpt.isPresent()) {
+                isMultiTag    = true;
+                headingTrusted = true;
+            } else {
+                // Fix: if the coprocessor didn't solve multi-tag (PhotonVision not
+                // configured for it, or the frame was dropped), fall back to the
+                // lowest-ambiguity single-target solve rather than silently dropping
+                // the entire frame. Heading is not trusted in this fallback path.
+                poseOpt       = poseEstimator.estimateLowestAmbiguityPose(rawResult);
+                isMultiTag    = false;
+                headingTrusted = false;
+            }
+        } else {
+            poseOpt       = poseEstimator.estimateLowestAmbiguityPose(rawResult);
+            isMultiTag    = false;
+            headingTrusted = false;
+        }
 
         if (poseOpt.isEmpty()) return Optional.empty();
 
@@ -129,25 +154,25 @@ public class PhotonProcessor implements ProcessorInterface {
         double timestamp = estimated.timestampSeconds;
         double latencyMs = rawResult.metadata.getLatencyMillis();
 
-        Matrix<N3, N1> stdDevs = StdDevCalculator.calculate(avgArea, numTags, isMultiTag);
+        // numTags for stdDev calculation: use actual count for multi-tag, 1 for
+        // single-tag fallback (coprocessor solve failed, so heading benefit is gone).
+        int numTagsForStdDev = isMultiTag ? targets.size() : 1;
+        Matrix<N3, N1> stdDevs = StdDevCalculator.calculate(avgArea, numTagsForStdDev, headingTrusted);
 
-        // For single-tag, capture the raw camera-to-target transform.
-        // VisionSubsystem uses this for the gyro-bearing path, which bypasses
-        // the ambiguous heading from the pose solve entirely.
+        // Capture the raw camera-to-target transform for single-tag results.
+        // VisionSubsystem uses this for the gyro-bearing path, which reconstructs
+        // the robot position using gyro heading instead of the ambiguous vision heading.
         Optional<Transform3d> cameraToTarget = (!isMultiTag && !targets.isEmpty())
             ? Optional.of(targets.get(0).getBestCameraToTarget())
             : Optional.empty();
 
         tagScratch.clear();
-        for (int i = 0; i < targets.size(); i++) {
-            PhotonTrackedTarget target = targets.get(i);
-            tagScratch.add(
-                new TrackedTag(
-                    target.fiducialId, 
-                    target.getArea(), 
-                    target.getPoseAmbiguity()
-                )
-            );
+        for (PhotonTrackedTarget target : targets) {
+            tagScratch.add(new TrackedTag(
+                target.fiducialId,
+                target.getArea() / 100.0,  // store as fraction, consistent with avgArea
+                target.getPoseAmbiguity()
+            ));
         }
 
         return Optional.of(new ApriltagResult(
@@ -160,13 +185,13 @@ public class PhotonProcessor implements ProcessorInterface {
             avgAmbiguity,
             avgArea,
             cameraToTarget,
-            isMultiTag
+            headingTrusted
         ));
     }
 
     private static double computeAvgAmbiguity(List<PhotonTrackedTarget> targets) {
         if (targets.size() == 1) return targets.get(0).getPoseAmbiguity();
-        // Multi-tag: report the best (lowest) individual ambiguity, normalized
+        // Multi-tag: report the best (lowest) individual ambiguity, normalised
         // down by sqrt(N) to reflect that more tags = more constrained solve.
         double best = Double.MAX_VALUE;
         for (PhotonTrackedTarget t : targets) {
@@ -176,6 +201,7 @@ public class PhotonProcessor implements ProcessorInterface {
         return (best == Double.MAX_VALUE ? 0.15 : best) / Math.sqrt(targets.size());
     }
 
+    /** Returns average area in the raw PhotonVision scale (0–100). Caller divides by 100. */
     private static double computeAvgArea(List<PhotonTrackedTarget> targets) {
         if (targets.isEmpty()) return 0.0;
         double sum = 0.0;
@@ -183,12 +209,12 @@ public class PhotonProcessor implements ProcessorInterface {
         return sum / targets.size();
     }
 
-    @Override public String getCameraName() { 
-        return cameraName; 
+    @Override public String getCameraName() {
+        return cameraName;
     }
 
-    @Override public Transform3d getCameraTransform() { 
-        return cameraTransform; 
+    @Override public Transform3d getCameraTransform() {
+        return cameraTransform;
     }
 
     @Override
@@ -212,21 +238,10 @@ public class PhotonProcessor implements ProcessorInterface {
         return out;
     }
 
-    @Override public int getMaxQueueSize() { 
-        return maxQueueSize; 
-    }
-
-    @Override public Notifier getNotifier() { 
-        return processingNotifier; 
-    }
-
-    @Override public double getFrequency() { 
-        return processingFrequency; 
-    }
-
-    @Override public boolean isRunning() {
-        return isRunning; 
-    }
+    @Override public int getMaxQueueSize()    { return maxQueueSize; }
+    @Override public Notifier getNotifier()   { return processingNotifier; }
+    @Override public double getFrequency()    { return processingFrequency; }
+    @Override public boolean isRunning()      { return isRunning; }
 
     @Override
     public void setPipeline(int index) {

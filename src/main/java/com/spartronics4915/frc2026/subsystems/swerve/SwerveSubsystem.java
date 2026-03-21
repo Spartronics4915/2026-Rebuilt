@@ -11,6 +11,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain.SwerveDriveState;
+import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
@@ -26,22 +27,28 @@ import com.spartronics4915.frc2026.util.vision.MovingAveragePose;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.networktables.BooleanPublisher;
+import edu.wpi.first.networktables.DoublePublisher;
+import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 public class SwerveSubsystem extends SubsystemBase {
 
@@ -51,26 +58,22 @@ public class SwerveSubsystem extends SubsystemBase {
     private final SwerveRequest.FieldCentric fieldCentricRequest =
         new SwerveRequest.FieldCentric()
             .withDriveRequestType(DriveRequestType.Velocity)
-            .withSteerRequestType(SteerRequestType.Position)
-            .withDeadband(maxSpeed * 0.1)
-            .withRotationalDeadband(maxAngularSpeed.baseUnitMagnitude() * 0.1);
+            .withSteerRequestType(SteerRequestType.Position);
 
     private final SwerveRequest.FieldCentricFacingAngle headingLockRequest =
         new SwerveRequest.FieldCentricFacingAngle()
             .withDriveRequestType(DriveRequestType.Velocity)
-            .withSteerRequestType(SteerRequestType.Position)
-            .withDeadband(maxSpeed * 0.1);
+            .withSteerRequestType(SteerRequestType.Position);
 
     private final SwerveRequest.RobotCentric robotCentricRequest =
         new SwerveRequest.RobotCentric()
             .withDriveRequestType(DriveRequestType.Velocity)
-            .withSteerRequestType(SteerRequestType.Position)
-            .withDeadband(maxSpeed * 0.1)
-            .withRotationalDeadband(maxAngularSpeed.baseUnitMagnitude() * 0.1);
+            .withSteerRequestType(SteerRequestType.Position);
 
     private final SwerveRequest.ApplyRobotSpeeds autoRequest =
         new SwerveRequest.ApplyRobotSpeeds()
-            .withDriveRequestType(DriveRequestType.Velocity);
+            .withDriveRequestType(DriveRequestType.Velocity)
+            .withSteerRequestType(SteerRequestType.Position);
 
     private final SwerveRequest.SwerveDriveBrake lockRequest =
         new SwerveRequest.SwerveDriveBrake();
@@ -89,7 +92,7 @@ public class SwerveSubsystem extends SubsystemBase {
     private final MovingAveragePose poseFilter =
         new MovingAveragePose(0.15);
 
-    private Pose3d pose3d = new Pose3d();
+    private Pose3d currentPose3d = new Pose3d();
     private double movementOverride = 0.0;
     private boolean isFieldRelativeState = defaultFieldRelative;
     private Rotation2d teleopHeadingOffset = Rotation2d.kZero;
@@ -97,10 +100,10 @@ public class SwerveSubsystem extends SubsystemBase {
     private Optional<Alliance> cachedAlliance = Optional.empty();
     private boolean hasCheckedAlliance = false;
 
-    private final StructPublisher<Pose2d> posePublisher =
-        NetworkTableInstance.getDefault().getStructTopic("Pose", Pose2d.struct).publish();
-    private final StructPublisher<Pose3d> pose3dPublisher =
-        NetworkTableInstance.getDefault().getStructTopic("Pose3d", Pose3d.struct).publish();
+    private final Debouncer flatDebouncer = new Debouncer(tiltDebounce);
+    private boolean isFlatDebouncedValue = false;
+
+    private final SwerveTelemetry telemetry = new SwerveTelemetry();
 
     public SwerveSubsystem(SwerveConfigurations config) {
         drivetrain = new SwerveDrivetrain<>(
@@ -139,14 +142,14 @@ public class SwerveSubsystem extends SubsystemBase {
                 yawRateBuffer.addSample(nowTs, yawRate);
             }
         }
-        prevYawRad       = nowYaw;
+        prevYawRad = nowYaw;
         prevYawTimestamp = nowTs;
     }
 
     @Override
     public void periodic() {
         double now = Utils.getCurrentTimeSeconds();
-
+ 
         if (currentlySlipping.get()) {
             lastSlipTimestamp = now;
             if (!isInSlipRecovery) {
@@ -158,17 +161,20 @@ public class SwerveSubsystem extends SubsystemBase {
             drivetrain.setStateStdDevs(normalStdDevs);
         }
 
+        isFlatDebouncedValue = flatDebouncer.calculate(isFlat());
+ 
         Pose2d pose = getPose();
-        smoothedPose = poseFilter.calculate(getRelativePose());
-        posePublisher.set(pose);
-        pose3d = new Pose3d(
+
+        smoothedPose = poseFilter.calculate(getPose());
+        currentPose3d = new Pose3d(
             pose.getX(), pose.getY(), 0,
             new Rotation3d(getRoll().getRadians(), getPitch().getRadians(),
                 pose.getRotation().getRadians())
         );
-        pose3dPublisher.set(pose3d);
+ 
+        telemetry.publish(drivetrain.getState(), this);
     }
-
+ 
     @Override
     public void simulationPeriodic() {
         drivetrain.updateSimState(0.020, RobotController.getBatteryVoltage());
@@ -285,10 +291,8 @@ public class SwerveSubsystem extends SubsystemBase {
             && Math.abs(getRoll().getDegrees()) < tiltThresholdDegrees;
     }
 
-    private final Trigger flatTrigger = new Trigger(this::isFlat).debounce(tiltDebounce);
-
     public boolean isFlatDebounced() {
-        return flatTrigger.getAsBoolean();
+        return isFlatDebouncedValue;
     }
 
     public boolean isFieldRelative() {
@@ -384,4 +388,123 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public record RobotHeading(Rotation3d rotation, double timestamp) {}
 
+    private final class SwerveTelemetry {
+ 
+        private static final String[] MODULE_NAMES = {"FL", "FR", "BL", "BR"};
+ 
+        private final NetworkTable root = NetworkTableInstance.getDefault().getTable("swerve");
+
+        private final StructPublisher<Pose2d> pose = root.getStructTopic("Pose", Pose2d.struct).publish();
+        private final StructPublisher<Pose3d> pose3d = root.getStructTopic("Pose3d", Pose3d.struct).publish();
+        private final StructPublisher<Pose2d> smoothed = root.getStructTopic("SmoothedPose", Pose2d.struct).publish();
+        private final StructPublisher<ChassisSpeeds> measuredSpeeds = root.getStructTopic("MeasuredSpeeds", ChassisSpeeds.struct).publish();
+        private final StructPublisher<ChassisSpeeds> fieldSpeeds = root.getStructTopic("FieldRelativeSpeeds", ChassisSpeeds.struct).publish();
+ 
+        private final StructArrayPublisher<SwerveModuleState> moduleStates = root.getStructArrayTopic("ModuleStates", SwerveModuleState.struct).publish();
+        private final StructArrayPublisher<SwerveModuleState> moduleTargets = root.getStructArrayTopic("ModuleTargets", SwerveModuleState.struct).publish();
+        private final StructArrayPublisher<SwerveModulePosition> modulePositions = root.getStructArrayTopic("ModulePositions", SwerveModulePosition.struct).publish();
+ 
+        private final DoublePublisher speed         = root.getDoubleTopic("SpeedMPS").publish();
+        private final DoublePublisher odometryHz    = root.getDoubleTopic("OdometryHz").publish();
+        private final DoublePublisher batteryV      = root.getDoubleTopic("BatteryVoltage").publish();
+        private final DoublePublisher headingDeg    = root.getDoubleTopic("HeadingDeg").publish();
+        private final DoublePublisher rollDeg       = root.getDoubleTopic("RollDeg").publish();
+        private final DoublePublisher pitchDeg      = root.getDoubleTopic("PitchDeg").publish();
+        private final DoublePublisher yawRateRadS   = root.getDoubleTopic("YawRateRadS").publish();
+        private final BooleanPublisher slipping     = root.getBooleanTopic("IsSlipping").publish();
+        private final BooleanPublisher slipRecovery = root.getBooleanTopic("IsInSlipRecovery").publish();
+        private final BooleanPublisher fieldRelative= root.getBooleanTopic("IsFieldRelative").publish();
+ 
+        private final DoublePublisher[] driveVelMPS       = new DoublePublisher[4];
+        private final DoublePublisher[] driveTargetMPS    = new DoublePublisher[4];
+        private final DoublePublisher[] drivePositionM    = new DoublePublisher[4];
+        private final DoublePublisher[] driveCurrentA     = new DoublePublisher[4];
+        private final DoublePublisher[] driveVoltageV     = new DoublePublisher[4];
+        private final DoublePublisher[] driveTempC        = new DoublePublisher[4];
+        private final DoublePublisher[] driveCLError      = new DoublePublisher[4];
+        private final DoublePublisher[] driveClosedLoopRef= new DoublePublisher[4];
+ 
+        private final DoublePublisher[] steerAngleDeg     = new DoublePublisher[4];
+        private final DoublePublisher[] steerTargetDeg    = new DoublePublisher[4];
+        private final DoublePublisher[] steerCurrentA     = new DoublePublisher[4];
+        private final DoublePublisher[] steerVoltageV     = new DoublePublisher[4];
+        private final DoublePublisher[] steerTempC        = new DoublePublisher[4];
+        private final DoublePublisher[] steerCLError      = new DoublePublisher[4];
+ 
+ 
+        SwerveTelemetry() {
+            for (int i = 0; i < 4; i++) {
+                NetworkTable m = root.getSubTable("modules/" + MODULE_NAMES[i]);
+ 
+                driveVelMPS[i]        = m.getDoubleTopic("DriveVelocityMPS").publish();
+                driveTargetMPS[i]     = m.getDoubleTopic("DriveTargetMPS").publish();
+                drivePositionM[i]     = m.getDoubleTopic("DrivePositionM").publish();
+                driveCurrentA[i]      = m.getDoubleTopic("DriveCurrentA").publish();
+                driveVoltageV[i]      = m.getDoubleTopic("DriveVoltageV").publish();
+                driveTempC[i]         = m.getDoubleTopic("DriveTempC").publish();
+                driveCLError[i]       = m.getDoubleTopic("DriveClosedLoopError").publish();
+                driveClosedLoopRef[i] = m.getDoubleTopic("DriveClosedLoopRef").publish();
+ 
+                steerAngleDeg[i]      = m.getDoubleTopic("SteerAngleDeg").publish();
+                steerTargetDeg[i]     = m.getDoubleTopic("SteerTargetDeg").publish();
+                steerCurrentA[i]      = m.getDoubleTopic("SteerCurrentA").publish();
+                steerVoltageV[i]      = m.getDoubleTopic("SteerVoltageV").publish();
+                steerTempC[i]         = m.getDoubleTopic("SteerTempC").publish();
+                steerCLError[i]       = m.getDoubleTopic("SteerClosedLoopError").publish();
+ 
+            }
+        }
+ 
+        void publish(SwerveDriveState state, SwerveSubsystem swerve) {
+            Pose2d rawPose = state.Pose;
+            pose.set(rawPose);
+            // Fix #4: unambiguous reference now that outer field is currentPose3d.
+            pose3d.set(swerve.currentPose3d);
+            smoothed.set(swerve.smoothedPose);
+            measuredSpeeds.set(state.Speeds);
+            fieldSpeeds.set(swerve.getFieldVelocity());
+ 
+            moduleStates.set(state.ModuleStates);
+            moduleTargets.set(state.ModuleTargets);
+            modulePositions.set(state.ModulePositions);
+ 
+            ChassisSpeeds v = swerve.getFieldVelocity();
+            speed.set(Math.hypot(v.vxMetersPerSecond, v.vyMetersPerSecond));
+ 
+            if (state.OdometryPeriod > 0) {
+                odometryHz.set(1.0 / state.OdometryPeriod);
+            }
+ 
+            batteryV.set(RobotController.getBatteryVoltage());
+            headingDeg.set(rawPose.getRotation().getDegrees());
+            rollDeg.set(swerve.getRoll().getDegrees());
+            pitchDeg.set(swerve.getPitch().getDegrees());
+            yawRateRadS.set(swerve.getRobotVelocity().omegaRadiansPerSecond);
+            slipping.set(swerve.currentlySlipping.get());
+            slipRecovery.set(swerve.isInSlipRecovery);
+            fieldRelative.set(swerve.isFieldRelativeState);
+ 
+            for (int i = 0; i < 4; i++) {
+                SwerveModule<?, ?, ?> mod = swerve.drivetrain.getModule(i);
+                TalonFX drive = (TalonFX) mod.getDriveMotor();
+                TalonFX steer = (TalonFX) mod.getSteerMotor();
+ 
+                driveVelMPS[i].set(state.ModuleStates[i].speedMetersPerSecond);
+                driveTargetMPS[i].set(state.ModuleTargets[i].speedMetersPerSecond);
+                drivePositionM[i].set(state.ModulePositions[i].distanceMeters);
+                driveCurrentA[i].set(drive.getStatorCurrent().getValueAsDouble());
+                driveVoltageV[i].set(drive.getMotorVoltage().getValueAsDouble());
+                driveTempC[i].set(drive.getDeviceTemp().getValueAsDouble());
+                driveCLError[i].set(drive.getClosedLoopError().getValueAsDouble());
+                driveClosedLoopRef[i].set(drive.getClosedLoopReference().getValueAsDouble());
+ 
+                steerAngleDeg[i].set(state.ModuleStates[i].angle.getDegrees());
+                steerTargetDeg[i].set(state.ModuleTargets[i].angle.getDegrees());
+                steerCurrentA[i].set(steer.getStatorCurrent().getValueAsDouble());
+                steerVoltageV[i].set(steer.getMotorVoltage().getValueAsDouble());
+                steerTempC[i].set(steer.getDeviceTemp().getValueAsDouble());
+                steerCLError[i].set(steer.getClosedLoopError().getValueAsDouble());
+            }
+        }
+    }
 }
