@@ -3,6 +3,7 @@ package com.spartronics4915.frc2026.subsystems.vision;
 import static com.spartronics4915.frc2026.Constants.VisionConstants.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,6 +35,7 @@ import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.Timer;
@@ -41,11 +43,24 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 /**
  * Vision subsystem that processes AprilTag detections and fuses them with
- * wheel odometry for accurate robot pose estimation
+ * wheel odometry for accurate robot pose estimation.
  */
 public class VisionSubsystem extends SubsystemBase {
 
-    private double lastAcceptedTimestamp = 0.0;
+    // Tracks the most recently SUBMITTED timestamp per camera.
+    // Used only for hasValidPose() — NOT for filtering incoming results.
+    //
+    // Previous versions used this map (or a single global value) as a watermark
+    // to skip "already-seen" frames. That caused permanent camera lockout whenever
+    // PhotonVision latency fluctuated even slightly: a frame at T with 20 ms
+    // latency produces timestamp T-0.020; the next frame with 25 ms latency
+    // produces T-0.025 < T-0.020, failing the ">" check, and every subsequent
+    // frame from that camera was silently dropped forever.
+    //
+    // The queue is already DRAINED (each frame consumed exactly once via
+    // ConcurrentLinkedQueue.poll()), so no watermark-based deduplication is
+    // needed. Removing the filter entirely.
+    private final Map<String, Double> lastSubmittedTimestampPerCamera = new HashMap<>();
 
     private final Map<String, ProcessorInterface> cameras;
     private final AprilTagFieldLayout fieldLayout;
@@ -64,12 +79,15 @@ public class VisionSubsystem extends SubsystemBase {
 
     private static final NetworkTable NT = NetworkTableInstance.getDefault().getTable("vision");
 
-    private final StructPublisher<Pose2d> fusedPosePublisher = NT.getStructTopic("FusedPose", Pose2d.struct).publish();
-    private final DoublePublisher xyStdDevPublisher = NT.getDoubleTopic("XY_StdDev").publish();
-    private final DoublePublisher thetaStdDevPublisher = NT.getDoubleTopic("Theta_StdDev").publish();
-    private final DoublePublisher cameraCountPublisher = NT.getDoubleTopic("AcceptedCameras").publish();
-    private final BooleanPublisher usingVisionPublisher = NT.getBooleanTopic("UsingVision").publish();
-    private final StructArrayPublisher<Pose3d> tagPosesPublisher = NT.getStructArrayTopic("TrackedTagPoses", Pose3d.struct).publish();
+    private final StructPublisher<Pose2d>      fusedPosePublisher      = NT.getStructTopic("FusedPose", Pose2d.struct).publish();
+    private final DoublePublisher              xyStdDevPublisher        = NT.getDoubleTopic("XY_StdDev").publish();
+    private final DoublePublisher              thetaStdDevPublisher     = NT.getDoubleTopic("Theta_StdDev").publish();
+    private final DoublePublisher              cameraCountPublisher     = NT.getDoubleTopic("AcceptedCameras").publish();
+    private final BooleanPublisher             usingVisionPublisher     = NT.getBooleanTopic("UsingVision").publish();
+    private final StructArrayPublisher<Pose3d> tagPosesPublisher        = NT.getStructArrayTopic("TrackedTagPoses", Pose3d.struct).publish();
+    private final StringPublisher              rejectionPublisher       = NT.getStringTopic("LastRejectionReason").publish();
+    private final DoublePublisher              rejectionCountPublisher  = NT.getDoubleTopic("RejectionCount").publish();
+    private long totalRejections = 0;
 
     public VisionSubsystem(
         Map<String, ProcessorInterface> cameras,
@@ -110,9 +128,12 @@ public class VisionSubsystem extends SubsystemBase {
         usingVisionPublisher.set(useVision);
         if (!useVision) return;
 
-        double headingDeg  = swerve.getRelativePose().getRotation().getDegrees();
-        double yawRateDegS = Math.toDegrees(
-            swerve.getRobotVelocity().omegaRadiansPerSecond);
+        // Seed Limelight with the raw field-frame heading (getPose()), not the
+        // alliance-flipped one. getBotPoseEstimate_wpiBlue_MegaTag2 returns poses
+        // in the WPILib blue-origin frame and requires the heading in that same
+        // frame. On Red alliance getRelativePose() is ~180° off.
+        double headingDeg  = swerve.getPose().getRotation().getDegrees();
+        double yawRateDegS = Math.toDegrees(swerve.getRobotVelocity().omegaRadiansPerSecond);
         for (ProcessorInterface camera : cameras.values()) {
             if (camera instanceof LimelightProcessor ll) {
                 ll.updateHeading(headingDeg, yawRateDegS);
@@ -140,8 +161,7 @@ public class VisionSubsystem extends SubsystemBase {
             for (ResultInterface raw : rawResultScratch) {
                 if (!(raw instanceof ApriltagResult result)) continue;
 
-                // Skip stale timestamps.
-                if (result.getTimestampSeconds() <= lastAcceptedTimestamp) continue;
+                // No timestamp watermark — see field-level comment.
 
                 Optional<ApriltagResult> accepted = processResult(result, camera.getCameraTransform());
                 if (accepted.isEmpty()) continue;
@@ -166,7 +186,10 @@ public class VisionSubsystem extends SubsystemBase {
         ApriltagResult result,
         Transform3d cameraTransform
     ) {
-        if (!isPlausible(result)) return Optional.empty();
+        if (!isPlausible(result)) {
+            reject(result.getSourceName(), "no tracked tags");
+            return Optional.empty();
+        }
 
         if (result.isHeadingTrusted()) {
             return processMultiTag(result);
@@ -179,8 +202,14 @@ public class VisionSubsystem extends SubsystemBase {
 
     private Optional<ApriltagResult> processMultiTag(ApriltagResult result) {
         if (!result.isMultiTag()) {
-            if (result.getAmbiguity() > ambiguityThreshold)  return Optional.empty();
-            if (result.getAverageArea() < minAreaSingleTag) return Optional.empty();
+            if (result.getAmbiguity() > ambiguityThreshold) {
+                reject(result.getSourceName(), "ambiguity " + result.getAmbiguity());
+                return Optional.empty();
+            }
+            if (result.getAverageArea() < minAreaSingleTag) {
+                reject(result.getSourceName(), "area too small " + result.getAverageArea());
+                return Optional.empty();
+            }
 
             if (result.getAverageArea() < areaForYawCheck) {
                 Optional<Pose2d> historicalPose =
@@ -190,14 +219,21 @@ public class VisionSubsystem extends SubsystemBase {
                     double yawDiff = Math.abs(MathUtil.angleModulus(
                         historicalPose.get().getRotation().getRadians()
                         - result.getPose().getRotation().getRadians()));
-                    if (Math.toDegrees(yawDiff) > maxYawDiff) return Optional.empty();
+                    if (Math.toDegrees(yawDiff) > maxYawDiff) {
+                        reject(result.getSourceName(),
+                            "yaw diff " + Math.toDegrees(yawDiff) + " deg");
+                        return Optional.empty();
+                    }
                 }
             }
         }
 
         double jump = result.getPose().getTranslation()
-            .getDistance(swerve.getRelativePose().getTranslation());
-        if (jump > maxOdometryJump) return Optional.empty();
+            .getDistance(swerve.getPose().getTranslation());
+        if (jump > maxOdometryJump) {
+            reject(result.getSourceName(), "odometry jump " + jump + " m");
+            return Optional.empty();
+        }
 
         return Optional.of(result);
     }
@@ -211,37 +247,69 @@ public class VisionSubsystem extends SubsystemBase {
             result.getTimestampSeconds()
         ).orElse(Double.POSITIVE_INFINITY);
 
-        if (maxYaw > maxYawRate) return Optional.empty();
-        if (result.getSingleTagCameraToTarget().isEmpty()) return Optional.empty();
-        if (result.getTrackedTags().isEmpty()) return Optional.empty();
+        if (maxYaw > maxYawRate) {
+            reject(result.getSourceName(), "gyro-bearing: yaw rate " + maxYaw);
+            return Optional.empty();
+        }
+        if (result.getSingleTagCameraToTarget().isEmpty()) {
+            reject(result.getSourceName(), "gyro-bearing: no camera-to-target transform");
+            return Optional.empty();
+        }
+        if (result.getTrackedTags().isEmpty()) {
+            reject(result.getSourceName(), "gyro-bearing: no tracked tags");
+            return Optional.empty();
+        }
 
         int tagId = result.getTrackedTags().get(0).fiducialId;
 
         Optional<Pose3d> maybeTagPose = fieldLayout.getTagPose(tagId);
-        if (maybeTagPose.isEmpty()) return Optional.empty();
+        if (maybeTagPose.isEmpty()) {
+            reject(result.getSourceName(), "gyro-bearing: unknown tag " + tagId);
+            return Optional.empty();
+        }
 
         Optional<Pose2d> historicalPose = swerve.getHistoricalPose(result.getTimestampSeconds());
-        if (historicalPose.isEmpty()) return Optional.empty();
+        if (historicalPose.isEmpty()) {
+            reject(result.getSourceName(), "gyro-bearing: no historical pose");
+            return Optional.empty();
+        }
 
         Rotation2d gyroHeading = historicalPose.get().getRotation();
+        Translation2d tagFieldPosition = maybeTagPose.get().toPose2d().getTranslation();
 
-        Pose2d fieldToTag = new Pose2d(
-            maybeTagPose.get().toPose2d().getTranslation(),
-            Rotation2d.kZero
-        );
-        Pose2d robotToTag = fieldToTag.relativeTo(result.getPose());
+        // Derive the robot-to-tag vector from the raw camera-to-target transform
+        // and the camera's known mounting offset, then rotate to field frame using
+        // the gyro heading.
+        //
+        // The old code called fieldToTag.relativeTo(result.getPose()), which applied
+        // the inverse of the ambiguous single-tag vision heading — the heading this
+        // path is trying to avoid in the first place.
+        Transform3d cameraToTarget3d = result.getSingleTagCameraToTarget().get();
 
-        Translation2d robotToTagInField =
-            robotToTag.getTranslation().rotateBy(gyroHeading);
+        // (X, Y) of camera-to-target in camera frame = horizontal plane projection.
+        Translation2d tagInCameraFrame = new Translation2d(
+            cameraToTarget3d.getX(), cameraToTarget3d.getY());
+
+        // Rotate to robot frame via camera yaw, then offset by camera position.
+        Rotation2d camYawInRobot = new Rotation2d(cameraTransform.getRotation().getZ());
+        Translation2d tagInRobotFrame = tagInCameraFrame
+            .rotateBy(camYawInRobot)
+            .plus(new Translation2d(cameraTransform.getX(), cameraTransform.getY()));
+
+        // Rotate from robot frame to field frame using the trusted gyro heading.
+        Translation2d robotToTagInField = tagInRobotFrame.rotateBy(gyroHeading);
 
         Pose2d gyroBasedPose = new Pose2d(
-            fieldToTag.getTranslation().minus(robotToTagInField),
+            tagFieldPosition.minus(robotToTagInField),
             gyroHeading
         );
 
         double jump = gyroBasedPose.getTranslation()
-            .getDistance(swerve.getRelativePose().getTranslation());
-        if (jump > maxOdometryJump) return Optional.empty();
+            .getDistance(swerve.getPose().getTranslation());
+        if (jump > maxOdometryJump) {
+            reject(result.getSourceName(), "gyro-bearing: odometry jump " + jump + " m");
+            return Optional.empty();
+        }
 
         Matrix<N3, N1> stdDevs = StdDevCalculator.calculate(
             result.getAverageArea(), 1, false
@@ -267,7 +335,15 @@ public class VisionSubsystem extends SubsystemBase {
             result.getTimestampSeconds(),
             result.getStdDevs()
         );
-        lastAcceptedTimestamp = result.getTimestampSeconds();
+
+        // Track submission time per camera for hasValidPose().
+        // Strip "[gyro]" suffix so the key always matches the raw camera name.
+        for (ApriltagResult accepted : acceptedPerCamera) {
+            String cameraName = accepted.getSourceName().replace("[gyro]", "");
+            lastSubmittedTimestampPerCamera.merge(
+                cameraName, accepted.getTimestampSeconds(), Math::max
+            );
+        }
 
         fusedPosePublisher.set(result.getPose());
         xyStdDevPublisher.set(result.getStdDevs().get(0, 0));
@@ -276,9 +352,14 @@ public class VisionSubsystem extends SubsystemBase {
         tagPosesPublisher.set(buildTagPoseArray(result.getTrackedTags()));
     }
 
+    private void reject(String source, String reason) {
+        totalRejections++;
+        rejectionPublisher.set("[" + source + "] " + reason);
+        rejectionCountPublisher.set(totalRejections);
+    }
+
     private static boolean isPlausible(ApriltagResult result) {
-        if (result.getTrackedTags().isEmpty()) return false;
-        return true;
+        return !result.getTrackedTags().isEmpty();
     }
 
     private Pose3d[] buildTagPoseArray(List<TrackedTag> tags) {
@@ -303,8 +384,12 @@ public class VisionSubsystem extends SubsystemBase {
 
     public boolean hasValidPose() {
         if (!useVision) return false;
-        if (lastAcceptedTimestamp == 0.0) return false;
-        return Timer.getFPGATimestamp() - lastAcceptedTimestamp <= validPoseStaleness;
+        if (lastSubmittedTimestampPerCamera.isEmpty()) return false;
+        double mostRecent = lastSubmittedTimestampPerCamera.values().stream()
+            .mapToDouble(Double::doubleValue)
+            .max()
+            .orElse(0.0);
+        return Timer.getFPGATimestamp() - mostRecent <= validPoseStaleness;
     }
 
     @FunctionalInterface

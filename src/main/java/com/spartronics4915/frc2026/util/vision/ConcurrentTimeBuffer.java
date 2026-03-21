@@ -9,13 +9,6 @@ import java.util.concurrent.ConcurrentSkipListMap;
  * A thread-safe buffer of timestamped samples that supports linear interpolation
  * between entries and range queries.
  *
- * <p>Backed by a {@link ConcurrentSkipListMap} so reads and writes from different
- * threads (e.g. the CTRE odometry Notifier and the main robot loop) are safe
- * without external locking.
- *
- * <p>Old entries beyond {@code historySeconds} are pruned automatically on every
- * write to bound memory usage.
- *
  * @param <T> Sample type. Must be interpolatable via the supplied
  *            {@link Interpolator}, or use the pre-built factories for
  *            {@code Double} and {@code Pose2d}.
@@ -89,14 +82,27 @@ public class ConcurrentTimeBuffer<T> {
     }
 
     /**
-     * Returns the maximum absolute value in the half-open range
-     * [{@code minTime}, {@code maxTime}), or empty if no samples exist in range.
+     * Returns the maximum absolute value in the range [{@code minTime}, {@code maxTime}].
+     *
+     * @return the max absolute value in the window, or the nearest bracketing
+     *         sample if the window is empty, or {@link OptionalDouble#empty()} only
+     *         if the buffer contains no entries at all.
      */
     public java.util.OptionalDouble getMaxAbsValueInRange(double minTime, double maxTime) {
         Collection<T> sub = buffer.subMap(minTime, true, maxTime, true).values();
-        return sub.stream()
+        java.util.OptionalDouble inRange = sub.stream()
             .mapToDouble(v -> Math.abs((Double)(Object) v))
             .max();
+        if (inRange.isPresent()) return inRange;
+
+        if (buffer.isEmpty()) return java.util.OptionalDouble.empty();
+
+        double best = Double.POSITIVE_INFINITY;
+        Map.Entry<Double, T> floor = buffer.floorEntry(minTime);
+        Map.Entry<Double, T> ceil  = buffer.ceilingEntry(maxTime);
+        if (floor != null) best = Math.min(best, Math.abs((Double)(Object) floor.getValue()));
+        if (ceil != null) best = Math.min(best, Math.abs((Double)(Object) ceil.getValue()));
+        return java.util.OptionalDouble.of(best);
     }
 
     /** Exposes the raw map for advanced queries (read-only intent). */
