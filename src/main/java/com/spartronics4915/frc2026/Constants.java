@@ -445,11 +445,11 @@ public final class Constants {
         public static final double maxYawRate = 4.0;
 
         // 254 uses 5° (kDefaultYawDiffThreshold). 15° was 3× too loose — tightening to match.
-        public static final double maxYawDiff = 180.0; // 5.0
+        public static final double maxYawDiff = 185.0; // 5.0
 
         // Reject vision poses more than this many metres from current odometry.
         // 100.0 was a debug value that made this check inert. 1.5 m is a reasonable safety net.
-        public static final double maxOdometryJump = 180.0; // 1.5
+        public static final double maxOdometryJump = 100.5; // 1.5
 
         public static final double validPoseStaleness = 0.5;
 
