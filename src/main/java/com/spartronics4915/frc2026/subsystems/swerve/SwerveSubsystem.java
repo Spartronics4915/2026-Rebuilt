@@ -267,11 +267,11 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public Rotation2d getRoll() {
-        return Rotation2d.fromDegrees(drivetrain.getPigeon2().getRoll().getValueAsDouble());
+        return Rotation2d.fromDegrees(drivetrain.getPigeon2().getRoll(false).getValueAsDouble());
     }
 
     public Rotation2d getPitch() {
-        return Rotation2d.fromDegrees(drivetrain.getPigeon2().getPitch().getValueAsDouble());
+        return Rotation2d.fromDegrees(drivetrain.getPigeon2().getPitch(false).getValueAsDouble());
     }
 
     public Rotation3d getGyroRotation3d() {
@@ -492,18 +492,18 @@ public class SwerveSubsystem extends SubsystemBase {
                 driveVelMPS[i].set(state.ModuleStates[i].speedMetersPerSecond);
                 driveTargetMPS[i].set(state.ModuleTargets[i].speedMetersPerSecond);
                 drivePositionM[i].set(state.ModulePositions[i].distanceMeters);
-                driveCurrentA[i].set(drive.getStatorCurrent().getValueAsDouble());
-                driveVoltageV[i].set(drive.getMotorVoltage().getValueAsDouble());
-                driveTempC[i].set(drive.getDeviceTemp().getValueAsDouble());
-                driveCLError[i].set(drive.getClosedLoopError().getValueAsDouble());
-                driveClosedLoopRef[i].set(drive.getClosedLoopReference().getValueAsDouble());
+                driveCurrentA[i].set(drive.getStatorCurrent(false).getValueAsDouble());
+                driveVoltageV[i].set(drive.getMotorVoltage(false).getValueAsDouble());
+                driveTempC[i].set(drive.getDeviceTemp(false).getValueAsDouble());
+                driveCLError[i].set(drive.getClosedLoopError(false).getValueAsDouble());
+                driveClosedLoopRef[i].set(drive.getClosedLoopReference(false).getValueAsDouble());
  
                 steerAngleDeg[i].set(state.ModuleStates[i].angle.getDegrees());
                 steerTargetDeg[i].set(state.ModuleTargets[i].angle.getDegrees());
-                steerCurrentA[i].set(steer.getStatorCurrent().getValueAsDouble());
-                steerVoltageV[i].set(steer.getMotorVoltage().getValueAsDouble());
-                steerTempC[i].set(steer.getDeviceTemp().getValueAsDouble());
-                steerCLError[i].set(steer.getClosedLoopError().getValueAsDouble());
+                steerCurrentA[i].set(steer.getStatorCurrent(false).getValueAsDouble());
+                steerVoltageV[i].set(steer.getMotorVoltage(false).getValueAsDouble());
+                steerTempC[i].set(steer.getDeviceTemp(false).getValueAsDouble());
+                steerCLError[i].set(steer.getClosedLoopError(false).getValueAsDouble());
             }
         }
     }
