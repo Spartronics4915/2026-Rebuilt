@@ -165,7 +165,7 @@ public class SwerveSubsystem extends SubsystemBase {
  
         Pose2d pose = getPose();
 
-        smoothedPose = poseFilter.calculate(getPose());
+        smoothedPose = poseFilter.calculate(getRelativePose());
         currentPose3d = new Pose3d(
             pose.getX(), pose.getY(), 0,
             new Rotation3d(getRoll().getRadians(), getPitch().getRadians(),
