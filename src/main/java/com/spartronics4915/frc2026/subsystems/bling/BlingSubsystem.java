@@ -23,7 +23,7 @@ public class BlingSubsystem extends SubsystemBase {
     private static final RGBWColor red = new RGBWColor(255, 0, 0, 0);
     private static final RGBWColor blue = new RGBWColor(0, 0, 255, 0);
     private static final RGBWColor purple = new RGBWColor(86, 26, 143, 0); //og = 186 112 255
-    private static final RGBWColor yellow = new RGBWColor(246, 255, 0, 0);
+    private static final RGBWColor yellow = new RGBWColor(77, 42, 3, 0);
     private static final RGBWColor white = new RGBWColor(Color.kWhite).scaleBrightness(0.5);
     private static final RGBWColor violet = RGBWColor.fromHSV(Degrees.of(270), 0.9, 0.8);
 
@@ -88,6 +88,27 @@ public class BlingSubsystem extends SubsystemBase {
         anim0Chooser.addOption("Strobe", AnimationType.Strobe);
 
         SmartDashboard.putData("Animation 0", anim0Chooser);
+    }
+
+    public void intakingAnimation() {
+        candle.setControl(
+            new StrobeAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
+                .withColor(green)
+        );
+    }
+
+    public void shootingAnimation() {
+        candle.setControl(
+            new StrobeAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
+                .withColor(purple)
+        );
+    }
+
+    public void intakingAndShootingAnimation() {
+        candle.setControl(
+            new StrobeAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
+                .withColor(blue)
+        );
     }
 
     public void colorFlowAnimation() {
@@ -162,6 +183,8 @@ public class BlingSubsystem extends SubsystemBase {
         final var anim0Selection = anim0Chooser.getSelected();
         if (anim0State != anim0Selection) {
             anim0State = anim0Selection;
+
+            candle.setControl(new EmptyAnimation(slot0StartIdx).withSlot(0));
 
             switch (anim0State) {
                 default:
@@ -251,6 +274,7 @@ public class BlingSubsystem extends SubsystemBase {
                     candle.setControl(
                         new StrobeAnimation(slot0StartIdx, slot0EndIdx).withSlot(0)
                             .withColor(green)
+                            .withFrameRate(0)
                     );
                     break;
             }

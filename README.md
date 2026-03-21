@@ -25,7 +25,9 @@ First we re, then we built. LET'S REBUILT!
 | LED Pattern | Meaning |
 | --- | --- |
 | Off | Robot needs to be turned on |
-| Green | 👍 |
+| Green | Intaking |
+| Purple | Shooting |
+| Blue | Intaking & Shooting |
 
 ### Controller Rumble
 | Controller | Rumble Strength | Meaning |
