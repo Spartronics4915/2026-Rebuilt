@@ -61,7 +61,6 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
             cancoderConfigurator.MagnetSensor.MagnetOffset = MAGNET_OFFSET;
             encoder.getConfigurator().apply(cancoderConfigurator);
 
-        setMechanismAngle(Rotation2d.fromRotations(encoder.getAbsolutePosition().getValueAsDouble()));
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         motor.addProfile(trapProfile);
@@ -117,11 +116,6 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
 
     public void setState(PivotState state){
         currentSetpoint = state.angle;
-    }
-
-    private void setMechanismAngle(Rotation2d angle){
-        motor.setPosition(angle.getRotations());
-        resetMechanism(angle);
     }
 
     public void resetMechanism(){

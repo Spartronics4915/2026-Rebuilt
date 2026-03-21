@@ -65,6 +65,7 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 import com.ctre.phoenix6.signals.StaticFeedforwardSignValue;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants.ClosedLoopOutputType;
@@ -725,7 +726,10 @@ public final class Constants {
             .withSupplyCurrentLowerTime(LOWER_TIME);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
-            .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
+            .withFeedbackSensorSource(FeedbackSensorSourceValue.FusedCANcoder)
+            .withFeedbackRemoteSensorID(ENCODER_ID)
+            .withRotorToSensorRatio(MOTOR_MECHANISM_RATIO)
+            .withSensorToMechanismRatio(1.0);
 
         public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
             .withInverted(InvertedValue.Clockwise_Positive)
