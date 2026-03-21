@@ -36,7 +36,7 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
 
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
-    private Rotation2d currentSetpoint;
+    private Rotation2d currentSetpoint = new Rotation2d();
     private State currentState = new State();
 
     private PositionVoltage positionVoltage = new PositionVoltage(0.0);
