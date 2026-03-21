@@ -1,5 +1,6 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms;
 
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
@@ -17,6 +18,7 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -61,7 +63,9 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
             cancoderConfigurator.MagnetSensor.MagnetOffset = MAGNET_OFFSET;
             encoder.getConfigurator().apply(cancoderConfigurator);
 
-        setMechanismAngle(Rotation2d.fromRotations(encoder.getAbsolutePosition().getValueAsDouble()));
+        StatusSignal<Angle> pos = encoder.getAbsolutePosition();
+        pos.waitForUpdate(0.5);
+        setMechanismAngle(Rotation2d.fromRotations(pos.getValueAsDouble()));
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         motor.addProfile(trapProfile);
