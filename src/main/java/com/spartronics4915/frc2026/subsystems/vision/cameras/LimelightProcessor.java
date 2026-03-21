@@ -4,7 +4,6 @@ import static com.spartronics4915.frc2026.Constants.VisionConstants.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -121,7 +120,6 @@ public class LimelightProcessor implements ProcessorInterface {
             tagScratch,
             avgAmbiguity,
             avgArea,
-            Optional.empty(),
             trustHeading
         );
     }

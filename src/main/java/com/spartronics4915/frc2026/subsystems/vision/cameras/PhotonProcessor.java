@@ -117,12 +117,6 @@ public class PhotonProcessor implements ProcessorInterface {
 
         double avgAmbiguity = computeAvgAmbiguity(targets);
 
-        // Fix: PhotonTrackedTarget.getArea() returns area as a percentage of the
-        // camera frame (0–100), not a fraction (0–1). StdDevCalculator and all
-        // downstream area thresholds (minAreaSingleTag, areaForYawCheck) expect
-        // fraction. Divide by 100 here so every consumer sees a consistent unit.
-        // LimelightProcessor already does this division; previously PhotonProcessor
-        // did not, making quality always saturate to 1.0 and area filters never fire.
         double avgArea = computeAvgArea(targets) / 100.0;
 
         Optional<EstimatedRobotPose> poseOpt;
@@ -136,10 +130,6 @@ public class PhotonProcessor implements ProcessorInterface {
                 isMultiTag    = true;
                 headingTrusted = true;
             } else {
-                // Fix: if the coprocessor didn't solve multi-tag (PhotonVision not
-                // configured for it, or the frame was dropped), fall back to the
-                // lowest-ambiguity single-target solve rather than silently dropping
-                // the entire frame. Heading is not trusted in this fallback path.
                 poseOpt       = poseEstimator.estimateLowestAmbiguityPose(rawResult);
                 isMultiTag    = false;
                 headingTrusted = false;
@@ -162,13 +152,6 @@ public class PhotonProcessor implements ProcessorInterface {
         int numTagsForStdDev = isMultiTag ? targets.size() : 1;
         Matrix<N3, N1> stdDevs = StdDevCalculator.calculate(avgArea, numTagsForStdDev, headingTrusted);
 
-        // Capture the raw camera-to-target transform for single-tag results.
-        // VisionSubsystem uses this for the gyro-bearing path, which reconstructs
-        // the robot position using gyro heading instead of the ambiguous vision heading.
-        Optional<Transform3d> cameraToTarget = (!isMultiTag && !targets.isEmpty())
-            ? Optional.of(targets.get(0).getBestCameraToTarget())
-            : Optional.empty();
-
         tagScratch.clear();
         for (PhotonTrackedTarget target : targets) {
             tagScratch.add(new TrackedTag(
@@ -187,7 +170,6 @@ public class PhotonProcessor implements ProcessorInterface {
             tagScratch,
             avgAmbiguity,
             avgArea,
-            cameraToTarget,
             headingTrusted
         ));
     }

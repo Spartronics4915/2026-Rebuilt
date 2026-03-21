@@ -121,7 +121,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
         if (Utils.isSimulation()) {
             drivetrain.resetPose(
-                new Pose2d(new Translation2d(2.0, 5.0), Rotation2d.fromDegrees(120))
+                new Pose2d(new Translation2d(14.0, 5.0), Rotation2d.fromDegrees(0))
             );
         }
 

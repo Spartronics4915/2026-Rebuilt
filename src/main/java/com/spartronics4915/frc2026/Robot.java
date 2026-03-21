@@ -133,11 +133,11 @@ public class Robot extends TimedRobot {
 
     @Override
     public void teleopInit() {
-        // This makes sure that the autonomous stops running when teleop starts running. If you want the autonomous to continue until
-        // interrupted by another command, remove this line or comment it out.
         if (autonomousCommand != null) {
             autonomousCommand.cancel();
         }
+
+        robotContainer.swerveSubsystem.configureStandardDevsForEnabled();
 
         // If match time is near zero (or negative), we are likely in pure Teleop mode (counting up)
         // In practice mode or real matches, teleop starts with a high number (e.g. 135) and counts down.

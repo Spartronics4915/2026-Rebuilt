@@ -27,8 +27,6 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform3d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.networktables.BooleanPublisher;
@@ -79,7 +77,12 @@ public class VisionSubsystem extends SubsystemBase {
 
     private static final NetworkTable NT = NetworkTableInstance.getDefault().getTable("vision");
 
-    private final StructPublisher<Pose2d>      fusedPosePublisher      = NT.getStructTopic("FusedPose", Pose2d.struct).publish();
+    // RobotPose: the actual Kalman-fused estimate (odometry + all past vision). This is
+    // what the robot truly believes about its position. Reads swerve.getPose() which
+    // is drivetrain.getState().Pose — the CTRE SwerveDrivePoseEstimator output.
+    private final StructPublisher<Pose2d>      robotPosePublisher       = NT.getStructTopic("RobotPose", Pose2d.struct).publish();
+    // VisionEstimate: the raw vision-only measurement before Kalman fusion.
+    private final StructPublisher<Pose2d>      visionEstimatePublisher  = NT.getStructTopic("VisionEstimate", Pose2d.struct).publish();
     private final DoublePublisher              xyStdDevPublisher        = NT.getDoubleTopic("XY_StdDev").publish();
     private final DoublePublisher              thetaStdDevPublisher     = NT.getDoubleTopic("Theta_StdDev").publish();
     private final DoublePublisher              cameraCountPublisher     = NT.getDoubleTopic("AcceptedCameras").publish();
@@ -128,10 +131,6 @@ public class VisionSubsystem extends SubsystemBase {
         usingVisionPublisher.set(useVision);
         if (!useVision) return;
 
-        // Seed Limelight with the raw field-frame heading (getPose()), not the
-        // alliance-flipped one. getBotPoseEstimate_wpiBlue_MegaTag2 returns poses
-        // in the WPILib blue-origin frame and requires the heading in that same
-        // frame. On Red alliance getRelativePose() is ~180° off.
         double headingDeg  = swerve.getPose().getRotation().getDegrees();
         double yawRateDegS = Math.toDegrees(swerve.getRobotVelocity().omegaRadiansPerSecond);
         for (ProcessorInterface camera : cameras.values()) {
@@ -161,9 +160,7 @@ public class VisionSubsystem extends SubsystemBase {
             for (ResultInterface raw : rawResultScratch) {
                 if (!(raw instanceof ApriltagResult result)) continue;
 
-                // No timestamp watermark — see field-level comment.
-
-                Optional<ApriltagResult> accepted = processResult(result, camera.getCameraTransform());
+                Optional<ApriltagResult> accepted = processResult(result);
                 if (accepted.isEmpty()) continue;
 
                 ApriltagResult acceptedResult = accepted.get();
@@ -182,10 +179,7 @@ public class VisionSubsystem extends SubsystemBase {
         }
     }
 
-    private Optional<ApriltagResult> processResult(
-        ApriltagResult result,
-        Transform3d cameraTransform
-    ) {
+    private Optional<ApriltagResult> processResult(ApriltagResult result) {
         if (!isPlausible(result)) {
             reject(result.getSourceName(), "no tracked tags");
             return Optional.empty();
@@ -194,74 +188,37 @@ public class VisionSubsystem extends SubsystemBase {
         if (result.isHeadingTrusted()) {
             return processMultiTag(result);
         } else {
-            Optional<ApriltagResult> gyro = processGyroBearing(result, cameraTransform);
+            Optional<ApriltagResult> gyro = processGyroBearing(result);
             if (gyro.isPresent()) return gyro;
             return processMultiTag(result);
         }
     }
 
-    private Optional<ApriltagResult> processMultiTag(ApriltagResult result) {
-        if (!result.isMultiTag()) {
-            if (result.getAmbiguity() > ambiguityThreshold) {
-                reject(result.getSourceName(), "ambiguity " + result.getAmbiguity());
-                return Optional.empty();
-            }
-            if (result.getAverageArea() < minAreaSingleTag) {
-                reject(result.getSourceName(), "area too small " + result.getAverageArea());
-                return Optional.empty();
-            }
-
-            if (result.getAverageArea() < areaForYawCheck) {
-                Optional<Pose2d> historicalPose =
-                    swerve.getHistoricalPose(result.getTimestampSeconds());
-
-                if (historicalPose.isPresent()) {
-                    double yawDiff = Math.abs(MathUtil.angleModulus(
-                        historicalPose.get().getRotation().getRadians()
-                        - result.getPose().getRotation().getRadians()));
-                    if (Math.toDegrees(yawDiff) > maxYawDiff) {
-                        reject(result.getSourceName(),
-                            "yaw diff " + Math.toDegrees(yawDiff) + " deg");
-                        return Optional.empty();
-                    }
-                }
-            }
-        }
-
-        double jump = result.getPose().getTranslation()
-            .getDistance(swerve.getPose().getTranslation());
-        if (jump > maxOdometryJump) {
-            reject(result.getSourceName(), "odometry jump " + jump + " m");
-            return Optional.empty();
-        }
-
-        return Optional.of(result);
-    }
-
-    private Optional<ApriltagResult> processGyroBearing(
-        ApriltagResult result,
-        Transform3d cameraTransform
-    ) {
+    /**
+     * Gyro-bearing pose estimate for single-tag results, ported directly from 254's
+     * fuseWithGyro (FRC-2025-Public). Pure 2D field geometry — no camera transforms.
+     *
+     * The PNP solver already produced a field-frame robot pose (result.getPose()).
+     * That pose's XY is usable even when the heading is the mirror solution.
+     * We derive the robot-to-tag vector via fieldToTag.relativeTo(result.getPose()),
+     * then substitute the trusted gyro heading and recompute robot position.
+     */
+    private Optional<ApriltagResult> processGyroBearing(ApriltagResult result) {
         double maxYaw = swerve.getMaxAbsYawRateInRange(
             result.getTimestampSeconds() - yawLookBack,
             result.getTimestampSeconds()
-        ).orElse(Double.POSITIVE_INFINITY);
-
+        ).orElse(0.0);
         if (maxYaw > maxYawRate) {
             reject(result.getSourceName(), "gyro-bearing: yaw rate " + maxYaw);
             return Optional.empty();
         }
-        if (result.getSingleTagCameraToTarget().isEmpty()) {
-            reject(result.getSourceName(), "gyro-bearing: no camera-to-target transform");
-            return Optional.empty();
-        }
+
         if (result.getTrackedTags().isEmpty()) {
             reject(result.getSourceName(), "gyro-bearing: no tracked tags");
             return Optional.empty();
         }
 
         int tagId = result.getTrackedTags().get(0).fiducialId;
-
         Optional<Pose3d> maybeTagPose = fieldLayout.getTagPose(tagId);
         if (maybeTagPose.isEmpty()) {
             reject(result.getSourceName(), "gyro-bearing: unknown tag " + tagId);
@@ -275,32 +232,20 @@ public class VisionSubsystem extends SubsystemBase {
         }
 
         Rotation2d gyroHeading = historicalPose.get().getRotation();
-        Translation2d tagFieldPosition = maybeTagPose.get().toPose2d().getTranslation();
 
-        // Derive the robot-to-tag vector from the raw camera-to-target transform
-        // and the camera's known mounting offset, then rotate to field frame using
-        // the gyro heading.
-        //
-        // The old code called fieldToTag.relativeTo(result.getPose()), which applied
-        // the inverse of the ambiguous single-tag vision heading — the heading this
-        // path is trying to avoid in the first place.
-        Transform3d cameraToTarget3d = result.getSingleTagCameraToTarget().get();
+        // Tag position in field frame (ignore facing — we only need XY).
+        Pose2d fieldToTag = new Pose2d(
+            maybeTagPose.get().toPose2d().getTranslation(), Rotation2d.kZero);
 
-        // (X, Y) of camera-to-target in camera frame = horizontal plane projection.
-        Translation2d tagInCameraFrame = new Translation2d(
-            cameraToTarget3d.getX(), cameraToTarget3d.getY());
+        // Robot-to-tag vector in robot frame, from the PNP robot pose.
+        // Matches 254 fuseWithGyro: robotToTag = fieldToTag.relativeTo(pnpRobotPose).
+        // PNP XY is reliable even when PNP heading is the mirror solution.
+        Pose2d robotToTag = fieldToTag.relativeTo(result.getPose());
 
-        // Rotate to robot frame via camera yaw, then offset by camera position.
-        Rotation2d camYawInRobot = new Rotation2d(cameraTransform.getRotation().getZ());
-        Translation2d tagInRobotFrame = tagInCameraFrame
-            .rotateBy(camYawInRobot)
-            .plus(new Translation2d(cameraTransform.getX(), cameraTransform.getY()));
-
-        // Rotate from robot frame to field frame using the trusted gyro heading.
-        Translation2d robotToTagInField = tagInRobotFrame.rotateBy(gyroHeading);
-
+        // Recompute robot position using the trusted gyro heading.
         Pose2d gyroBasedPose = new Pose2d(
-            tagFieldPosition.minus(robotToTagInField),
+            fieldToTag.getTranslation()
+                .minus(robotToTag.getTranslation().rotateBy(gyroHeading)),
             gyroHeading
         );
 
@@ -312,8 +257,7 @@ public class VisionSubsystem extends SubsystemBase {
         }
 
         Matrix<N3, N1> stdDevs = StdDevCalculator.calculate(
-            result.getAverageArea(), 1, false
-        );
+            result.getAverageArea(), 1, false);
 
         return Optional.of(new ApriltagResult(
             result.getSourceName() + "[gyro]",
@@ -327,6 +271,45 @@ public class VisionSubsystem extends SubsystemBase {
         ));
     }
 
+    private Optional<ApriltagResult> processMultiTag(ApriltagResult result) {
+        if (!result.isMultiTag()) {
+            if (result.getAmbiguity() > ambiguityThreshold) {
+                reject(result.getSourceName(), "ambiguity " + result.getAmbiguity());
+                return Optional.empty();
+            }
+            if (result.getAverageArea() < minAreaSingleTag) {
+                reject(result.getSourceName(), "area too small " + result.getAverageArea());
+                return Optional.empty();
+            }
+
+            Optional<Pose2d> historicalPose =
+                swerve.getHistoricalPose(result.getTimestampSeconds());
+
+            if (historicalPose.isEmpty()) {
+                reject(result.getSourceName(), "no historical pose for yaw check");
+                return Optional.empty();
+            }
+
+            double yawDiff = Math.abs(MathUtil.angleModulus(
+                historicalPose.get().getRotation().getRadians()
+                - result.getPose().getRotation().getRadians()));
+            if (Math.toDegrees(yawDiff) > maxYawDiff) {
+                reject(result.getSourceName(),
+                    "yaw diff " + Math.toDegrees(yawDiff) + " deg");
+                return Optional.empty();
+            }
+        }
+
+        double jump = result.getPose().getTranslation()
+            .getDistance(swerve.getPose().getTranslation());
+        if (jump > maxOdometryJump) {
+            reject(result.getSourceName(), "odometry jump " + jump + " m");
+            return Optional.empty();
+        }
+
+        return Optional.of(result);
+    }
+
     private void submit(ApriltagResult result) {
         if (result.getStdDevs() == null) return;
 
@@ -336,8 +319,6 @@ public class VisionSubsystem extends SubsystemBase {
             result.getStdDevs()
         );
 
-        // Track submission time per camera for hasValidPose().
-        // Strip "[gyro]" suffix so the key always matches the raw camera name.
         for (ApriltagResult accepted : acceptedPerCamera) {
             String cameraName = accepted.getSourceName().replace("[gyro]", "");
             lastSubmittedTimestampPerCamera.merge(
@@ -345,7 +326,8 @@ public class VisionSubsystem extends SubsystemBase {
             );
         }
 
-        fusedPosePublisher.set(result.getPose());
+        robotPosePublisher.set(swerve.getPose());
+        visionEstimatePublisher.set(result.getPose());
         xyStdDevPublisher.set(result.getStdDevs().get(0, 0));
         thetaStdDevPublisher.set(result.getStdDevs().get(2, 0));
         cameraCountPublisher.set(acceptedPerCamera.size());

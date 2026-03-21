@@ -156,7 +156,7 @@ public class DriveCommand extends Command {
     }
 
     private static double applyResponseCurve(double x) {
-        return x * x * x;
+        return Math.signum(x) * (x * x);
     }
     
 }

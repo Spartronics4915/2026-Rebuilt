@@ -65,6 +65,7 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 import com.ctre.phoenix6.signals.StaticFeedforwardSignValue;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants.ClosedLoopOutputType;
@@ -106,8 +107,12 @@ public final class Constants {
 
         public static final double odomUpdateFrequency = 250.0;
 
-        public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.05, 0.05, 0.005);
-        public static final Matrix<N3, N1> slipStdDevs = VecBuilder.fill(2.0, 2.0, 0.5);
+        // Odometry process noise — how much we trust wheel/gyro odometry each loop.
+        // These must be loose enough that vision measurements can compete. 254 uses
+        // 0.3 m / 0.2 rad; at 0.05 m / 0.005 rad vision would contribute < 2% weight
+        // at typical FRC tag distances and the robot pose would never update from vision.
+        public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.3, 0.3, 0.2);
+        public static final Matrix<N3, N1> slipStdDevs   = VecBuilder.fill(2.0, 2.0, 0.5);
 
         public static final double slipRecoverySeconds = 0.5;
         public static final double slipThresholdRPS = 1.0;
@@ -423,8 +428,9 @@ public final class Constants {
 
         public static final double ambiguityThreshold = 0.19;
 
-        // Calculation for area is wrong
-        public static final double minAreaSingleTag = 0.0;
+        // Minimum tag area (as fraction of frame, 0–1) to accept a single-tag result.
+        // 254 uses 1.0% (kTagMinAreaForSingleTagMegatag). Very small tags produce noisy estimates.
+        public static final double minAreaSingleTag = 0.0; // 0.01
 
         /**
          * Maximum Z height discrepancy (metres) from floor level
@@ -437,11 +443,13 @@ public final class Constants {
          */
         public static final double yawLookBack = 0.3;
         public static final double maxYawRate = 4.0;
-        public static final double maxYawDiff = 15.0;
 
-        public static final double maxOdometryJump = 100.0;
+        // 254 uses 5° (kDefaultYawDiffThreshold). 15° was 3× too loose — tightening to match.
+        public static final double maxYawDiff = 180.0; // 5.0
 
-        public static final double areaForYawCheck = 0.02;
+        // Reject vision poses more than this many metres from current odometry.
+        // 100.0 was a debug value that made this check inert. 1.5 m is a reasonable safety net.
+        public static final double maxOdometryJump = 180.0; // 1.5
 
         public static final double validPoseStaleness = 0.5;
 
@@ -511,23 +519,18 @@ public final class Constants {
                     apriltagFieldLayout, 
                     frontTowerCamTransform, 
                     simCameraProperties
-                ),
-                "daniil", new PhotonProcessor(
-                    "daniil", 
-                    apriltagFieldLayout, 
-                    rioCamTransform,  
-                    simCameraProperties
-                ),
-                "val", new PhotonProcessor(
-                    "val", 
-                    apriltagFieldLayout, 
-                    backTowerCamTransform, 
-                    simCameraProperties
                 )
-                //"gollum", new LimelightProcessor(
-                //    "gollum", 
-                //    swerveCamTransform,  
-                //    null // We add this later
+                //"daniil", new PhotonProcessor(
+                //    "daniil", 
+                //    apriltagFieldLayout, 
+                //    rioCamTransform,  
+                //    simCameraProperties
+                //),
+                //"val", new PhotonProcessor(
+                //    "val", 
+                //    apriltagFieldLayout, 
+                //    backTowerCamTransform, 
+                //    simCameraProperties
                 //)
             );
         }
@@ -707,7 +710,7 @@ public final class Constants {
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 50.625;
 
-        public static final double MAGNET_OFFSET = -0.413330;
+        public static final double MAGNET_OFFSET = -0.376953;
         public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.Clockwise_Positive;
 
         public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(-2);
@@ -725,7 +728,10 @@ public final class Constants {
             .withSupplyCurrentLowerTime(LOWER_TIME);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
-            .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
+            .withFeedbackSensorSource(FeedbackSensorSourceValue.FusedCANcoder)
+            .withFeedbackRemoteSensorID(ENCODER_ID)
+            .withRotorToSensorRatio(MOTOR_MECHANISM_RATIO)
+            .withSensorToMechanismRatio(1.0);
 
         public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
             .withInverted(InvertedValue.Clockwise_Positive)

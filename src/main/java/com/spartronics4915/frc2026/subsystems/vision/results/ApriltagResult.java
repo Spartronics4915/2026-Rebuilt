@@ -1,11 +1,9 @@
 package com.spartronics4915.frc2026.subsystems.vision.results;
 
 import java.util.List;
-import java.util.Optional;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 
@@ -24,7 +22,6 @@ public class ApriltagResult implements ResultInterface {
     private final double avgAmbiguity;
     private final double avgArea;
 
-    private final Optional<Transform3d> singleTagCameraToTarget;
 
     private final boolean headingTrusted;
 
@@ -37,7 +34,6 @@ public class ApriltagResult implements ResultInterface {
         List<TrackedTag> tags,
         double averageAmbiguity,
         double averageArea,
-        Optional<Transform3d> singleTagCameraToTarget,
         boolean headingTrusted
     ) {
         this.sourceName = name;
@@ -49,7 +45,6 @@ public class ApriltagResult implements ResultInterface {
         this.targetCount = tags.size();
         this.avgAmbiguity = averageAmbiguity;
         this.avgArea = averageArea;
-        this.singleTagCameraToTarget = singleTagCameraToTarget;
         this.headingTrusted = headingTrusted;
     }
 
@@ -72,7 +67,6 @@ public class ApriltagResult implements ResultInterface {
             tags,
             averageAmbiguity, 
             averageArea, 
-            Optional.empty(), 
             false
         );
     }
@@ -111,10 +105,6 @@ public class ApriltagResult implements ResultInterface {
 
     @Override public double getAverageArea() { 
         return avgArea; 
-    }
-
-    public Optional<Transform3d> getSingleTagCameraToTarget() {
-        return singleTagCameraToTarget;
     }
 
     public boolean isMultiTag() {
