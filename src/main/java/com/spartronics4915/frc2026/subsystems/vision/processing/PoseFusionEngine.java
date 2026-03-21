@@ -1,11 +1,12 @@
 package com.spartronics4915.frc2026.subsystems.vision.processing;
 
-import static com.spartronics4915.frc2026.Constants.VisionConstants.*;
-
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
+import com.spartronics4915.frc2026.Constants.VisionConstants.StdDevConstants;
+import com.spartronics4915.frc2026.subsystems.vision.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
 import com.spartronics4915.frc2026.subsystems.vision.results.TrackedTag;
 
@@ -13,190 +14,237 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 
 /**
- * Fuses accepted pose estimates from multiple cameras into a single measurement.
+ * Fuses pose estimates from multiple cameras into a single, more accurate measurement.
  */
 public class PoseFusionEngine {
 
-    // Supplier of historical robot pose keyed by timestamp (from SwerveSubsystem).
-    private final java.util.function.Function<Double, Optional<Pose2d>> poseBufferSupplier;
-
+    private final List<ApriltagResult> sortedScratch = new ArrayList<>(8);
+    private final List<ApriltagResult> currentGroup = new ArrayList<>(8);
+    private final List<ApriltagResult> bestGroup = new ArrayList<>(8);
+    private final List<ApriltagResult> filteredScratch = new ArrayList<>(8);
+    private final List<ApriltagResult> validScratch = new ArrayList<>(8);
     private final List<TrackedTag> tagScratch = new ArrayList<>(16);
+
     private final StringBuilder nameBuilder = new StringBuilder(64);
 
-    public PoseFusionEngine(
-        java.util.function.Function<Double, Optional<Pose2d>> poseBufferSupplier
-    ) {
-        this.poseBufferSupplier = poseBufferSupplier;
+    public Optional<ApriltagResult> fusePoses(List<ApriltagResult> apriltagResults, VisionConfiguration config) {
+        if (apriltagResults.size() == 1) {
+            return Optional.of(apriltagResults.get(0));
+        }
+
+        if (!config.enablePoseFusion || apriltagResults.size() < config.minCamerasForFusion) {
+            return selectBestResult(apriltagResults);
+        }
+
+        getLargestTimestampGroup(apriltagResults, config.fusionTimestampThreshold);
+        rejectOutliers(bestGroup, config.fusionOutlierThresholdSigma);
+
+        if (filteredScratch.size() < config.minCamerasForFusion) {
+            return selectBestResult(filteredScratch);
+        }
+
+        return performWeightedFusion(filteredScratch);
     }
 
-    /**
-     * Fuses a list of accepted results (one per camera) into a single estimate.
-     *
-     * @param accepted Non-empty list of accepted per-camera results.
-     * @return Fused result, or the best single result if fusion is not possible.
-     */
-    public Optional<ApriltagResult> fuse(List<ApriltagResult> accepted) {
-        if (accepted.isEmpty()) return Optional.empty();
-        if (accepted.size() == 1) return Optional.of(accepted.get(0));
+    private void getLargestTimestampGroup(List<ApriltagResult> results, double timestampThreshold) {
+        sortedScratch.clear();
+        sortedScratch.addAll(results);
+        sortedScratch.sort(Comparator.comparingDouble(ApriltagResult::getTimestampSeconds));
 
-        // Sort descending by quality (tighter stdDevs = better) so iterative
-        // fusion always starts with the most trusted pair.
-        accepted.sort((a, b) -> {
-            double qa = a.getStdDevs() == null ? Double.MAX_VALUE : a.getStdDevs().get(0, 0);
-            double qb = b.getStdDevs() == null ? Double.MAX_VALUE : b.getStdDevs().get(0, 0);
-            return Double.compare(qa, qb); // ascending, tighter first
-        });
+        bestGroup.clear();
+        currentGroup.clear();
+        double groupStart = -1;
 
-        ApriltagResult running = accepted.get(0);
-        for (int i = 1; i < accepted.size(); i++) {
-            Optional<ApriltagResult> merged = fuseTwo(running, accepted.get(i));
-            if (merged.isPresent()) running = merged.get();
+        for (int i = 0; i < sortedScratch.size(); i++) {
+            ApriltagResult result = sortedScratch.get(i);
+            double ts = result.getTimestampSeconds();
+
+            if (groupStart < 0 || Math.abs(ts - groupStart) <= timestampThreshold) {
+                if (groupStart < 0) groupStart = ts;
+                currentGroup.add(result);
+            } else {
+                if (currentGroup.size() >= bestGroup.size()) {
+                    bestGroup.clear();
+                    bestGroup.addAll(currentGroup);
+                }
+                currentGroup.clear();
+                currentGroup.add(result);
+                groupStart = ts;
+            }
         }
-        return Optional.of(running);
+
+        if (currentGroup.size() >= bestGroup.size()) {
+            bestGroup.clear();
+            bestGroup.addAll(currentGroup);
+        }
     }
 
+    private void rejectOutliers(List<ApriltagResult> results, double thresholdSigma) {
+        filteredScratch.clear();
 
-    /**
-     * Fuses exactly two results using inverse-variance weighting.
-     *
-     * <p>The older result is previewed forward to the newer timestamp via the
-     * odometry buffer before fusion, so both represent the robot's pose at the
-     * same moment
-     */
-    private Optional<ApriltagResult> fuseTwo(ApriltagResult a, ApriltagResult b) {
-        if (a.getStdDevs() == null || b.getStdDevs() == null) {
-            return a.getStdDevs() != null ? Optional.of(a) : Optional.of(b);
+        if (results.size() <= 2) {
+            filteredScratch.addAll(results);
+            return;
         }
 
-        // Ensure b is always the newer measurement.
-        if (b.getTimestampSeconds() < a.getTimestampSeconds()) {
-            ApriltagResult tmp = a; a = b; b = tmp;
+        Pose2d meanPose = calculateMeanPose(results);
+
+        for (int i = 0; i < results.size(); i++) {
+            ApriltagResult result = results.get(i);
+            double distance = calculateNormalizedDistance(result.getPose(), meanPose, result.getStdDevs());
+            if (distance < thresholdSigma) filteredScratch.add(result);
         }
 
-        // Preview a's pose forward to b's timestamp using odometry interpolation.
-        Pose2d previewedPoseA = previewToTimestamp(a, b.getTimestampSeconds());
-        Pose2d poseB = b.getPose();
+        if (filteredScratch.isEmpty()) filteredScratch.addAll(results);
+    }
 
-        // Check inter-camera consistency.
-        double separation = previewedPoseA.getTranslation().getDistance(poseB.getTranslation());
-        double consistencyMultiplier = consistencyMultiplier(separation);
-
-        double[] varA = squaredStdDevs(a.getStdDevs());
-        double[] varB = squaredStdDevs(b.getStdDevs());
-
-        double wxA = 1.0 / varA[0];
-        double wyA = 1.0 / varA[1];
-        double wtA = 1.0 / varA[2];
-
-        double wxB = 1.0 / varB[0];
-        double wyB = 1.0 / varB[1];
-        double wtB = 1.0 / varB[2];
-
-        double totalWX = wxA + wxB;
-        double totalWY = wyA + wyB;
-        double totalWT = wtA + wtB;
-
-        double fusedX = (previewedPoseA.getX() * wxA + poseB.getX() * wxB) / totalWX;
-        double fusedY = (previewedPoseA.getY() * wyA + poseB.getY() * wyB) / totalWY;
-
-        Rotation2d fusedHeading;
-        boolean aHasTrustedHeading = varA[2] < largeVariance * 0.5;
-        boolean bHasTrustedHeading = varB[2] < largeVariance * 0.5;
-        if (aHasTrustedHeading && bHasTrustedHeading) {
-            fusedHeading = new Rotation2d(
-                previewedPoseA.getRotation().getCos() * wtA / totalWT
-                    + poseB.getRotation().getCos() * wtB / totalWT,
-                previewedPoseA.getRotation().getSin() * wtA / totalWT
-                    + poseB.getRotation().getSin() * wtB / totalWT
-            );
-        } else {
-            fusedHeading = bHasTrustedHeading
-                ? poseB.getRotation()
-                : previewedPoseA.getRotation();
+    private static Pose2d calculateMeanPose(List<ApriltagResult> results) {
+        double sumX = 0;
+        double sumY = 0;
+        double sumSin = 0;
+        double sumCos = 0;
+        
+        for (int i = 0; i < results.size(); i++) {
+            Pose2d pose = results.get(i).getPose();
+            sumX += pose.getX();
+            sumY += pose.getY();
+            double rad = pose.getRotation().getRadians();
+            sumSin += Math.sin(rad);
+            sumCos += Math.cos(rad);
         }
 
-        Pose2d fusedPose = new Pose2d(fusedX, fusedY, fusedHeading);
+        double invN = 1.0 / results.size();
+        return new Pose2d(
+            sumX * invN, 
+            sumY * invN,
+            new Rotation2d(Math.atan2(sumSin * invN, sumCos * invN))
+        );
+    }
+
+    private static double calculateNormalizedDistance(Pose2d pose1, Pose2d pose2, Matrix<N3, N1> stdDevs) {
+        if (stdDevs == null) return Double.MAX_VALUE;
+
+        double dx = pose1.getX() - pose2.getX();
+        double dy = pose1.getY() - pose2.getY();
+        double dtheta = Math.IEEEremainder(
+            pose1.getRotation().getRadians() 
+            - pose2.getRotation().getRadians(), 2 * Math.PI
+        );
+
+        double distX = Math.abs(dx) / Math.max(stdDevs.get(0, 0), 0.001);
+        double distY = Math.abs(dy) / Math.max(stdDevs.get(1, 0), 0.001);
+        double distTheta = Math.abs(dtheta) / Math.max(stdDevs.get(2, 0), 0.001);
+
+        return Math.sqrt(distX * distX + distY * distY + distTheta * distTheta);
+    }
+
+    private Optional<ApriltagResult> performWeightedFusion(List<ApriltagResult> results) {
+        double totalWeightX = 0;
+        double totalWeightY = 0;
+        double totalWeightTheta = 0;
+
+        double weightedX = 0;
+        double weightedY = 0;
+        double weightedSin = 0;
+        double weightedCos = 0;
+
+        double latestTimestamp = Double.NEGATIVE_INFINITY;
+
+        double sumLatency = 0;
+        double sumAmbiguity = 0;
+        double sumArea = 0;
+
+        validScratch.clear();
+
+        for (int i = 0; i < results.size(); i++) {
+            ApriltagResult result = results.get(i);
+            Matrix<N3, N1> stdDevs = result.getStdDevs();
+            if (stdDevs == null) continue;
+            validScratch.add(result);
+
+            Pose2d pose = result.getPose();
+            double sx = stdDevs.get(0, 0), sy = stdDevs.get(1, 0), st = stdDevs.get(2, 0);
+            double wX = 1.0 / (sx * sx), wY = 1.0 / (sy * sy), wT = 1.0 / (st * st);
+
+            totalWeightX += wX; totalWeightY += wY; totalWeightTheta += wT;
+            weightedX += pose.getX() * wX;
+            weightedY += pose.getY() * wY;
+
+            double theta = pose.getRotation().getRadians();
+            weightedSin += Math.sin(theta) * wT;
+            weightedCos += Math.cos(theta) * wT;
+
+            if (result.getTimestampSeconds() > latestTimestamp)
+                latestTimestamp = result.getTimestampSeconds();
+
+            sumLatency += result.getLatencyMs();
+            sumAmbiguity += result.getAmbiguity();
+            sumArea += result.getAverageArea();
+        }
+
+        if (validScratch.isEmpty()) return selectBestResult(results);
+
+        double invN = 1.0 / validScratch.size();
+
+        Pose2d fusedPose = new Pose2d(
+            weightedX / totalWeightX,
+            weightedY / totalWeightY,
+            new Rotation2d(Math.atan2(weightedSin / totalWeightTheta, weightedCos / totalWeightTheta))
+        );
 
         Matrix<N3, N1> fusedStdDevs = VecBuilder.fill(
-            Math.sqrt(1.0 / totalWX) * consistencyMultiplier,
-            Math.sqrt(1.0 / totalWY) * consistencyMultiplier,
-            Math.sqrt(1.0 / totalWT) * consistencyMultiplier
+            Math.sqrt(1.0 / totalWeightX),
+            Math.sqrt(1.0 / totalWeightY),
+            Math.sqrt(1.0 / totalWeightTheta)
         );
 
         tagScratch.clear();
-            mergeTags(a.getTrackedTags());
-            mergeTags(b.getTrackedTags());
+        outer:
+        for (int i = 0; i < validScratch.size(); i++) {
+            List<TrackedTag> tags = validScratch.get(i).getTrackedTags();
+            for (int j = 0; j < tags.size(); j++) {
+                TrackedTag t = tags.get(j);
+                for (int k = 0; k < tagScratch.size(); k++) {
+                    if (tagScratch.get(k).fiducialId == t.fiducialId) continue outer;
+                }
+                tagScratch.add(t);
+            }
+        }
 
         nameBuilder.setLength(0);
-        nameBuilder.append("fused[")
-            .append(a.getSourceName()).append(", ")
-            .append(b.getSourceName()).append(']');
+        nameBuilder.append("fused[");
+        for (int i = 0; i < validScratch.size(); i++) {
+            if (i > 0) nameBuilder.append(',');
+            nameBuilder.append(validScratch.get(i).getSourceName());
+        }
+        nameBuilder.append(']');
 
         return Optional.of(new ApriltagResult(
-            nameBuilder.toString(),
-            b.getTimestampSeconds(),
-            Math.max(a.getLatencyMs(), b.getLatencyMs()),
-            fusedPose,
-            fusedStdDevs,
-            tagScratch,
-            Math.max(a.getAmbiguity(), b.getAmbiguity()),
-            (a.getAverageArea() + b.getAverageArea()) / 2.0
+            nameBuilder.toString(), latestTimestamp,
+            sumLatency * invN, fusedPose, fusedStdDevs,
+            tagScratch, sumAmbiguity * invN, sumArea * invN
         ));
     }
 
-    /**
-     * Previews {@code result}'s pose forward to {@code targetTimestamp} by
-     * applying the odometry delta between the two timestamps. If the buffer
-     * cannot supply historical poses, the original pose is returned unchanged.
-     */
-    private Pose2d previewToTimestamp(ApriltagResult result, double targetTimestamp) {
-        Optional<Pose2d> atResult = poseBufferSupplier.apply(result.getTimestampSeconds());
-        Optional<Pose2d> atTarget = poseBufferSupplier.apply(targetTimestamp);
+    private static Optional<ApriltagResult> selectBestResult(List<ApriltagResult> results) {
+        ApriltagResult best = null;
+        double bestScore = Double.MAX_VALUE;
+        for (int i = 0; i < results.size(); i++) {
+            ApriltagResult result = results.get(i);
+            Matrix<N3, N1> dev = result.getStdDevs();
 
-        if (atResult.isEmpty() || atTarget.isEmpty()) {
-            return result.getPose();
+            if (dev == null) continue;
+
+            double score = (2.0 * dev.get(0, 0) / StdDevConstants.baseXYStdDev)
+                + (dev.get(2, 0) / StdDevConstants.baseThetaStdDev);
+
+            if (score < bestScore) { bestScore = score; best = result; }
         }
-
-        // Delta in odometry from result's timestamp to target's timestamp.
-        Transform2d delta = new Transform2d(atResult.get(), atTarget.get());
-        return result.getPose().transformBy(delta);
+        return Optional.ofNullable(best);
     }
 
-    /**
-     * Returns a multiplier to apply to fused stdDevs based on inter-camera agreement.
-     */
-    private static double consistencyMultiplier(double separationMeters) {
-        if (separationMeters <= consistencyThreshold) {
-            // Smooth interpolation from AGREEMENT_BONUS at 0 to 1.0 at threshold.
-            double t = separationMeters / consistencyThreshold;
-            return agreementBonus + (1.0 - agreementBonus) * t;
-        } else {
-            // Ramp penalty linearly from 1.0 at threshold to DISAGREEMENT_PENALTY at 2× threshold.
-            double excess = (separationMeters - consistencyThreshold) / consistencyThreshold;
-            return Math.min(1.0 + (disagreementPenalty - 1.0) * excess, disagreementPenalty);
-        }
-    }
-
-    private static double[] squaredStdDevs(Matrix<N3, N1> stdDevs) {
-        double sx = stdDevs.get(0, 0);
-        double sy = stdDevs.get(1, 0);
-        double st = stdDevs.get(2, 0);
-        return new double[]{ sx * sx, sy * sy, st * st };
-    }
-
-    private void mergeTags(List<TrackedTag> source) {
-        outer:
-        for (TrackedTag t : source) {
-            for (TrackedTag existing : tagScratch) {
-                if (existing.fiducialId == t.fiducialId) continue outer;
-            }
-            tagScratch.add(t);
-        }
-    }
-    
 }
