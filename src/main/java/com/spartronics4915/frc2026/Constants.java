@@ -358,9 +358,9 @@ public final class Constants {
         
         public static final SimCameraProperties simCameraProperties = new SimCameraProperties();
             static {
-                simCameraProperties.setCalibration(1600, 1200, Rotation2d.fromDegrees(97.65));
+                simCameraProperties.setCalibration(640, 480, Rotation2d.fromDegrees(97.65));
                 simCameraProperties.setCalibError(0.05, 0.005);
-                simCameraProperties.setFPS(50);
+                simCameraProperties.setFPS(15);
                 simCameraProperties.setAvgLatencyMs(20);
                 simCameraProperties.setLatencyStdDevMs(0);
             }

@@ -66,6 +66,9 @@ public class PhotonProcessor implements ProcessorInterface {
         this.poseEstimator = new PhotonPoseEstimator(fieldLayout, cameraTransform);
 
         this.cameraSim = new PhotonCameraSim(photonCamera, properties);
+        this.cameraSim.enableDrawWireframe(false);
+        this.cameraSim.enableProcessedStream(false);
+        this.cameraSim.enableRawStream(false);
 
         this.resultQueue = new ConcurrentLinkedQueue<>();
         this.queueSize = new AtomicInteger(0);
