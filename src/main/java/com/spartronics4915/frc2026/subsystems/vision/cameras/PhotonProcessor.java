@@ -144,8 +144,21 @@ public class PhotonProcessor implements ProcessorInterface {
 
         EstimatedRobotPose estimated = poseOpt.get();
         Pose2d robotPose = estimated.estimatedPose.toPose2d();
-        double timestamp = estimated.timestampSeconds;
         double latencyMs = rawResult.metadata.getLatencyMillis();
+
+        // Compute the image capture timestamp in FPGA-domain seconds directly,
+        // instead of using estimated.timestampSeconds from PhotonLib.
+        //
+        // PhotonLib applies a Pi→FPGA clock correction via NT timesync, but if
+        // the timesync hasn't fully converged (or is in a transient state), the
+        // corrected timestamp can be dozens of seconds in the future relative to
+        // the RIO's FPGA clock. CTRE silently drops any addVisionMeasurement call
+        // whose timestamp falls outside its 1.5-second pose history window.
+        //
+        // Using (currentFPGA - latency) bypasses the timesync entirely and is
+        // guaranteed to be in FPGA domain regardless of Pi clock state.
+        double timestamp = edu.wpi.first.wpilibj.Timer.getFPGATimestamp()
+            - (latencyMs / 1000.0);
 
         // numTags for stdDev calculation: use actual count for multi-tag, 1 for
         // single-tag fallback (coprocessor solve failed, so heading benefit is gone).

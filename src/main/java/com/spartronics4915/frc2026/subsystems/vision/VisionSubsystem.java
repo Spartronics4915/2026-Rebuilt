@@ -45,19 +45,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  */
 public class VisionSubsystem extends SubsystemBase {
 
-    // Tracks the most recently SUBMITTED timestamp per camera.
-    // Used only for hasValidPose() — NOT for filtering incoming results.
-    //
-    // Previous versions used this map (or a single global value) as a watermark
-    // to skip "already-seen" frames. That caused permanent camera lockout whenever
-    // PhotonVision latency fluctuated even slightly: a frame at T with 20 ms
-    // latency produces timestamp T-0.020; the next frame with 25 ms latency
-    // produces T-0.025 < T-0.020, failing the ">" check, and every subsequent
-    // frame from that camera was silently dropped forever.
-    //
-    // The queue is already DRAINED (each frame consumed exactly once via
-    // ConcurrentLinkedQueue.poll()), so no watermark-based deduplication is
-    // needed. Removing the filter entirely.
     private final Map<String, Double> lastSubmittedTimestampPerCamera = new HashMap<>();
 
     private final Map<String, ProcessorInterface> cameras;
@@ -80,6 +67,8 @@ public class VisionSubsystem extends SubsystemBase {
     // RobotPose: the actual Kalman-fused estimate (odometry + all past vision). This is
     // what the robot truly believes about its position. Reads swerve.getPose() which
     // is drivetrain.getState().Pose — the CTRE SwerveDrivePoseEstimator output.
+    private final DoublePublisher              lastSubmittedTimestampPublisher = NT.getDoubleTopic("LastSubmittedTimestamp").publish();
+    private final DoublePublisher              fpgaTimePublisher = NT.getDoubleTopic("FPGATimeAtSubmit").publish();
     private final StructPublisher<Pose2d>      robotPosePublisher       = NT.getStructTopic("RobotPose", Pose2d.struct).publish();
     // VisionEstimate: the raw vision-only measurement before Kalman fusion.
     private final StructPublisher<Pose2d>      visionEstimatePublisher  = NT.getStructTopic("VisionEstimate", Pose2d.struct).publish();
@@ -326,6 +315,9 @@ public class VisionSubsystem extends SubsystemBase {
             );
         }
 
+        double fpgaNow = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
+        lastSubmittedTimestampPublisher.set(result.getTimestampSeconds());
+        fpgaTimePublisher.set(fpgaNow);
         robotPosePublisher.set(swerve.getPose());
         visionEstimatePublisher.set(result.getPose());
         xyStdDevPublisher.set(result.getStdDevs().get(0, 0));
