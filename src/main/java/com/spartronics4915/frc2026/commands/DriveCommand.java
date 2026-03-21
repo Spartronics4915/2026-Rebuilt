@@ -39,6 +39,8 @@ public class DriveCommand extends Command {
     private TrapezoidProfile.State yState = new TrapezoidProfile.State();
     private boolean wasOverriding = false;
 
+    private boolean wasAligning = false;
+
     private final PPHolonomicDriveController overrideController =
         new PPHolonomicDriveController(alignTranslationPID, alignRotationPID);
 
@@ -77,6 +79,18 @@ public class DriveCommand extends Command {
         }
 
         swerve.setDriverPerspective(swerve.getHeadingOffset());
+
+        boolean alignTriggerHeld = hid.getRightTriggerAxis() > 0.5;
+        boolean movingFastEnough = Math.hypot(vX, vY) > maxSpeed * 0.1;
+
+        if (alignTriggerHeld && movingFastEnough) {
+            lockedHeading = new Rotation2d(vX, vY).minus(swerve.getHeadingOffset());
+            wasAligning = true;
+            swerve.driveFieldCentricFacingAngle(vX, vY, lockedHeading);
+            return;
+        } else if (wasAligning) {
+            wasAligning = false;
+        }
 
         double rotationBreakThreshold = (lockedHeading != null) ? maxAngularRate * 0.12 : maxAngularRate * 0.05;
         boolean driverIsRotating = Math.abs(omega) > rotationBreakThreshold;
@@ -122,6 +136,7 @@ public class DriveCommand extends Command {
     @Override
     public void end(boolean interrupted) {
         wasOverriding = false;
+        wasAligning = false;
         lockedHeading = null;
         yState = new TrapezoidProfile.State();
     }
