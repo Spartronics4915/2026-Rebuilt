@@ -24,6 +24,9 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+import com.ctre.phoenix6.StatusSignal;
+import edu.wpi.first.units.measure.Angle;
+
 import static com.spartronics4915.frc2026.Constants.TurretConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
@@ -45,7 +48,9 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("turret").getDoubleTopic("applied out").publish();
     private final StructPublisher<Rotation2d> positionPublisher = NetworkTableInstance.getDefault().getTable("turret").getStructTopic("position", Rotation2d.struct).publish();
     private final StructPublisher<Rotation2d> setpointPublisher = NetworkTableInstance.getDefault().getTable("turret").getStructTopic("setpoint", Rotation2d.struct).publish();
-    
+
+    private final StatusSignal<Angle> encoderPosSignal;
+
     public TurretSubsystem() {
 
         TalonFXConfigurator motorConfigurator = motor.getConfigurator();
@@ -59,7 +64,10 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
             cancoderConfigurator.MagnetSensor.SensorDirection = ENCODER_SENSOR_DIRECTION;
             cancoderConfigurator.MagnetSensor.MagnetOffset = MAGNET_OFFSET;
             encoder.getConfigurator().apply(cancoderConfigurator);
-        
+
+        encoderPosSignal = encoder.getAbsolutePosition();
+        encoderPosSignal.waitForUpdate(0.5);
+
         currentClamp = TurretClamp.UNRESTRICTED;
             minAngle = currentClamp.minAngle;
             maxAngle = currentClamp.maxAngle;
@@ -94,18 +102,18 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
             
         motor.setControl(positionVoltage);
 
-        appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
+        appliedOutPublisher.accept(motor.getCachedDutyCycle().getValueAsDouble());
         positionPublisher.accept(getPosition());
         setpointPublisher.accept(Rotation2d.fromRotations(targetState.position));
     }
 
     public Rotation2d getPosition() {
-        double position = motor.getPosition().getValue().in(Rotations);
+        double position = motor.getCachedPosition().getValue().in(Rotations);
         return Rotation2d.fromRotations(position);
     }
 
     public Rotation2d getEncoderPosition() {
-        double position = encoder.getAbsolutePosition().getValue().in(Rotations) * ENCODER_MECHANISM_RATIO;
+        double position = encoderPosSignal.getValue().in(Rotations) * ENCODER_MECHANISM_RATIO;
         return Rotation2d.fromRotations(position);
     }
 

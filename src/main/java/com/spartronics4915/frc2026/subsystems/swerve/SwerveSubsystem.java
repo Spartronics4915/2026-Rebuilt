@@ -12,7 +12,6 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain.SwerveDriveState;
-import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
@@ -54,6 +53,9 @@ public class SwerveSubsystem extends SubsystemBase {
 
     private final SwerveDrivetrain<?, ?, ?> drivetrain;
     private final SwerveConfigurations activeConfig;
+
+    private com.ctre.phoenix6.StatusSignal<?> pigeonRollSignal;
+    private com.ctre.phoenix6.StatusSignal<?> pigeonPitchSignal;
 
     private final SwerveRequest.FieldCentric fieldCentricRequest =
         new SwerveRequest.FieldCentric()
@@ -112,6 +114,9 @@ public class SwerveSubsystem extends SubsystemBase {
             config.modules[0], config.modules[1], config.modules[2], config.modules[3]
         );
         activeConfig = config;
+
+        pigeonRollSignal = drivetrain.getPigeon2().getRoll(false);
+        pigeonPitchSignal = drivetrain.getPigeon2().getPitch(false);
 
         drivetrain.setStateStdDevs(normalStdDevs);
 
@@ -261,15 +266,11 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public Rotation2d getRoll() {
-        return Rotation2d.fromDegrees(
-            drivetrain.getPigeon2().getRoll(false).getValueAsDouble()
-        );
+        return Rotation2d.fromDegrees(pigeonRollSignal.getValueAsDouble());
     }
 
     public Rotation2d getPitch() {
-        return Rotation2d.fromDegrees(
-            drivetrain.getPigeon2().getPitch(false).getValueAsDouble()
-        );
+        return Rotation2d.fromDegrees(pigeonPitchSignal.getValueAsDouble());
     }
 
     public Rotation3d getGyroRotation3d() {
@@ -418,6 +419,19 @@ public class SwerveSubsystem extends SubsystemBase {
         private final DoublePublisher[] steerTempC = new DoublePublisher[4];
         private final DoublePublisher[] steerCLError = new DoublePublisher[4];
  
+        // Cached StatusSignals to prevent loop overruns from garbage collection
+        private com.ctre.phoenix6.StatusSignal<?>[] driveCurrentSignals;
+        private com.ctre.phoenix6.StatusSignal<?>[] driveVoltageSignals;
+        private com.ctre.phoenix6.StatusSignal<?>[] driveTempSignals;
+        private com.ctre.phoenix6.StatusSignal<?>[] driveCLErrorSignals;
+        private com.ctre.phoenix6.StatusSignal<?>[] driveCLRefSignals;
+
+        private com.ctre.phoenix6.StatusSignal<?>[] steerCurrentSignals;
+        private com.ctre.phoenix6.StatusSignal<?>[] steerVoltageSignals;
+        private com.ctre.phoenix6.StatusSignal<?>[] steerTempSignals;
+        private com.ctre.phoenix6.StatusSignal<?>[] steerCLErrorSignals;
+
+        private com.ctre.phoenix6.BaseStatusSignal[] allSwerveSignals;
  
         SwerveTelemetry() {
             for (int i = 0; i < 4; i++) {
@@ -443,6 +457,48 @@ public class SwerveSubsystem extends SubsystemBase {
         }
  
         void publish(SwerveDriveState state, SwerveSubsystem swerve) {
+            if (allSwerveSignals == null) {
+                driveCurrentSignals = new com.ctre.phoenix6.StatusSignal[4];
+                driveVoltageSignals = new com.ctre.phoenix6.StatusSignal[4];
+                driveTempSignals = new com.ctre.phoenix6.StatusSignal[4];
+                driveCLErrorSignals = new com.ctre.phoenix6.StatusSignal[4];
+                driveCLRefSignals = new com.ctre.phoenix6.StatusSignal[4];
+                
+                steerCurrentSignals = new com.ctre.phoenix6.StatusSignal[4];
+                steerVoltageSignals = new com.ctre.phoenix6.StatusSignal[4];
+                steerTempSignals = new com.ctre.phoenix6.StatusSignal[4];
+                steerCLErrorSignals = new com.ctre.phoenix6.StatusSignal[4];
+                
+                allSwerveSignals = new com.ctre.phoenix6.BaseStatusSignal[36];
+
+                for (int i = 0; i < 4; i++) {
+                    TalonFX drive = (TalonFX) swerve.drivetrain.getModule(i).getDriveMotor();
+                    TalonFX steer = (TalonFX) swerve.drivetrain.getModule(i).getSteerMotor();
+                    
+                    driveCurrentSignals[i] = drive.getStatorCurrent(false);
+                    driveVoltageSignals[i] = drive.getMotorVoltage(false);
+                    driveTempSignals[i] = drive.getDeviceTemp(false);
+                    driveCLErrorSignals[i] = drive.getClosedLoopError(false);
+                    driveCLRefSignals[i] = drive.getClosedLoopReference(false);
+                    
+                    steerCurrentSignals[i] = steer.getStatorCurrent(false);
+                    steerVoltageSignals[i] = steer.getMotorVoltage(false);
+                    steerTempSignals[i] = steer.getDeviceTemp(false);
+                    steerCLErrorSignals[i] = steer.getClosedLoopError(false);
+
+                    int base = i * 9;
+                    allSwerveSignals[base + 0] = driveCurrentSignals[i];
+                    allSwerveSignals[base + 1] = driveVoltageSignals[i];
+                    allSwerveSignals[base + 2] = driveTempSignals[i];
+                    allSwerveSignals[base + 3] = driveCLErrorSignals[i];
+                    allSwerveSignals[base + 4] = driveCLRefSignals[i];
+                    allSwerveSignals[base + 5] = steerCurrentSignals[i];
+                    allSwerveSignals[base + 6] = steerVoltageSignals[i];
+                    allSwerveSignals[base + 7] = steerTempSignals[i];
+                    allSwerveSignals[base + 8] = steerCLErrorSignals[i];
+                }
+            }
+
             Pose2d rawPose = state.Pose;
             pose.set(rawPose);
 
@@ -471,25 +527,21 @@ public class SwerveSubsystem extends SubsystemBase {
             fieldRelative.set(swerve.isFieldRelativeState);
  
             for (int i = 0; i < 4; i++) {
-                SwerveModule<?, ?, ?> mod = swerve.drivetrain.getModule(i);
-                TalonFX drive = (TalonFX) mod.getDriveMotor();
-                TalonFX steer = (TalonFX) mod.getSteerMotor();
- 
                 driveVelMPS[i].set(state.ModuleStates[i].speedMetersPerSecond);
                 driveTargetMPS[i].set(state.ModuleTargets[i].speedMetersPerSecond);
                 drivePositionM[i].set(state.ModulePositions[i].distanceMeters);
-                driveCurrentA[i].set(drive.getStatorCurrent(false).getValueAsDouble());
-                driveVoltageV[i].set(drive.getMotorVoltage(false).getValueAsDouble());
-                driveTempC[i].set(drive.getDeviceTemp(false).getValueAsDouble());
-                driveCLError[i].set(drive.getClosedLoopError(false).getValueAsDouble());
-                driveClosedLoopRef[i].set(drive.getClosedLoopReference(false).getValueAsDouble());
+                driveCurrentA[i].set(driveCurrentSignals[i].getValueAsDouble());
+                driveVoltageV[i].set(driveVoltageSignals[i].getValueAsDouble());
+                driveTempC[i].set(driveTempSignals[i].getValueAsDouble());
+                driveCLError[i].set(driveCLErrorSignals[i].getValueAsDouble());
+                driveClosedLoopRef[i].set(driveCLRefSignals[i].getValueAsDouble());
  
                 steerAngleDeg[i].set(state.ModuleStates[i].angle.getDegrees());
                 steerTargetDeg[i].set(state.ModuleTargets[i].angle.getDegrees());
-                steerCurrentA[i].set(steer.getStatorCurrent(false).getValueAsDouble());
-                steerVoltageV[i].set(steer.getMotorVoltage(false).getValueAsDouble());
-                steerTempC[i].set(steer.getDeviceTemp(false).getValueAsDouble());
-                steerCLError[i].set(steer.getClosedLoopError(false).getValueAsDouble());
+                steerCurrentA[i].set(steerCurrentSignals[i].getValueAsDouble());
+                steerVoltageV[i].set(steerVoltageSignals[i].getValueAsDouble());
+                steerTempC[i].set(steerTempSignals[i].getValueAsDouble());
+                steerCLError[i].set(steerCLErrorSignals[i].getValueAsDouble());
             }
         }
     }

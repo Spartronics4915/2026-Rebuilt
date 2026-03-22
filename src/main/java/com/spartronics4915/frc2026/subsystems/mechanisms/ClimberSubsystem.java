@@ -76,14 +76,14 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
         positionVoltage.withEnableFOC(ENABLE_FOC).Position = currentState.position;
         motor.setControl(positionVoltage);
 
-        appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
+        appliedOutPublisher.accept(motor.getCachedDutyCycle().getValueAsDouble());
         positionPublisher.accept(getPosition());
         desiredStatePublisher.accept(currentState.position);
         setpointPublisher.accept(currentSetpoint);
     }
 
     public double getPosition() {
-        return motor.getPosition().getValueAsDouble();
+        return motor.getCachedPosition().getValueAsDouble();
     }
 
     public double getCurrentSetpoint() {

@@ -1,6 +1,5 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms;
 
-import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
@@ -18,11 +17,12 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+import com.ctre.phoenix6.StatusSignal;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import static com.spartronics4915.frc2026.Constants.PivotConstants.*;
 import static edu.wpi.first.units.Units.Rotations;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
@@ -50,6 +50,8 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
 
     private final StructPublisher<Rotation2d> encoderPositionPublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("encoder position", Rotation2d.struct).publish();
     
+    private final StatusSignal<Angle> encoderPosSignal;
+
     public PivotSubsystem() {
         TalonFXConfigurator motorConfig = motor.getConfigurator();
             motorConfig.apply(PID_CONFIG);
@@ -63,9 +65,9 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
             cancoderConfigurator.MagnetSensor.MagnetOffset = MAGNET_OFFSET;
             encoder.getConfigurator().apply(cancoderConfigurator);
 
-        StatusSignal<Angle> pos = encoder.getAbsolutePosition();
-        pos.waitForUpdate(0.5);
-        setMechanismAngle(Rotation2d.fromRotations(pos.getValueAsDouble()));
+        encoderPosSignal = encoder.getAbsolutePosition();
+        encoderPosSignal.waitForUpdate(0.5);
+        setMechanismAngle(Rotation2d.fromRotations(encoderPosSignal.getValueAsDouble()));
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         motor.addProfile(trapProfile);
@@ -98,16 +100,16 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
         positionVoltage.withEnableFOC(ENABLE_FOC).Position = currentState.position;
         motor.setControl(positionVoltage);
 
-        appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
+        appliedOutPublisher.accept(motor.getCachedDutyCycle().getValueAsDouble());
         positionPublisher.accept(getPosition());
         desiredStatePublisher.accept(Rotation2d.fromRotations(currentState.position));
         setpointPublisher.accept(currentSetpoint);
 
-        encoderPositionPublisher.accept(Rotation2d.fromRotations(encoder.getAbsolutePosition().getValueAsDouble()));
+        encoderPositionPublisher.accept(Rotation2d.fromRotations(encoderPosSignal.getValueAsDouble()));
     }
 
     public Rotation2d getPosition() {
-        double position = motor.getPosition().getValue().in(Rotations);
+        double position = motor.getCachedPosition().getValue().in(Rotations);
         return Rotation2d.fromRotations(position);
     }
 
