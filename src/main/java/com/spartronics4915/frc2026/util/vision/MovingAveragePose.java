@@ -10,10 +10,6 @@ import edu.wpi.first.math.geometry.Translation2d;
  * because the Pigeon2 already provides excellent short-term heading stability
  * and filtering heading introduces phase lag that hurts accuracy.
  *
- * <p>Intended for use by {@link com.spartronics4915.frc2026.subsystems.control.AutoAimController}
- * and any other consumer that needs smooth, low-jitter pose at the cost of a
- * small lag (typically 50–200 ms depending on alpha).
- *
  * <p>Alpha tuning guide (at 50 Hz periodic):
  * <ul>
  *   <li>0.05 → ~1.0 s lag, very smooth

@@ -102,8 +102,7 @@ public class DriveCommand extends Command {
             swerve.driveFieldCentric(vX, vY, omega);
         } else if (driverIsTranslating) {
             if (lockedHeading == null) {
-                lockedHeading = swerve.getPose().getRotation()
-                    .minus(swerve.getHeadingOffset());
+                lockedHeading = swerve.getPose().getRotation().minus(swerve.getHeadingOffset());
             }
             swerve.driveFieldCentricFacingAngle(vX, vY, lockedHeading);
         } else {
@@ -154,10 +153,14 @@ public class DriveCommand extends Command {
     }
 
     @Override
-    public boolean isFinished() { return false; }
+    public boolean isFinished() { 
+        return false; 
+    }
 
     @Override
-    public boolean runsWhenDisabled() { return false; }
+    public boolean runsWhenDisabled() { 
+        return false; 
+    }
 
     private XboxController resolveController() {
         if (testingController != null) {
