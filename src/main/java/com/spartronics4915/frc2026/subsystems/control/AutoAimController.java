@@ -14,21 +14,18 @@ import com.spartronics4915.frc2026.util.control.AutoAim;
 import com.spartronics4915.frc2026.util.control.AutoAim.AutoAimResult;
 import com.spartronics4915.frc2026.util.control.TurretController;
 
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.StructArrayPublisher;
 
 import static edu.wpi.first.units.Units.InchesPerSecond;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -73,7 +70,6 @@ public class AutoAimController extends SubsystemBase {
     private boolean isAimEnabled = false;
     private boolean isAutoShootingEnabled = false;
     private AutoAimResult lastResult = null;
-    private double lastSimShotTime = 0.0;
     private Translation3d targetOverride = null;
     private boolean shootOverride = false;
 
@@ -89,12 +85,6 @@ public class AutoAimController extends SubsystemBase {
     private final BooleanPublisher requiresIdealSpeedPublisher =
         NetworkTableInstance.getDefault()
             .getBooleanTopic("superstructure/AutoAim/RequiresIdealSpeed").publish();
-    private final StructArrayPublisher<Pose3d> successPublisher =
-        NetworkTableInstance.getDefault()
-            .getStructArrayTopic("Flywheel/FuelProjectileSuccessfulShot", Pose3d.struct).publish();
-    private final StructArrayPublisher<Pose3d> failPublisher =
-        NetworkTableInstance.getDefault()
-            .getStructArrayTopic("Flywheel/FuelProjectileUnsuccessfulShot", Pose3d.struct).publish();
 
     public AutoAimController(
         HoodSubsystem hood,
@@ -139,10 +129,6 @@ public class AutoAimController extends SubsystemBase {
         if (!hasResult) return;
 
         applyAimResult(lastResult);
-
-        if (Robot.isSimulation()) {
-            shootSimProjectile(lastResult);
-        }
     }
 
     //#endregion
@@ -267,45 +253,6 @@ public class AutoAimController extends SubsystemBase {
         // If it is lower than the rim height when crossing the rim boundary,
         // it hits the side of the hub.
         return zAtCollision < HUB_POSITION.getZ() + (usePadding ? HUB_IDEAL_SHOT_PADDING.in(Meters) : HUB_SHOT_PADDING.in(Meters));
-    }
-
-    /**
-     * Spawns a simulation projectile at most once every
-     * {@link #SIM_SHOT_INTERVAL_SECONDS} seconds so AdvantageScope trajectory
-     * visualization stays readable. No-ops when ToF is {@code -1}.
-     */
-    private void shootSimProjectile(AutoAimResult result) {
-        if (result.ToF() == -1) return;
-        if ((Timer.getFPGATimestamp() - lastSimShotTime) < SIM_SHOT_INTERVAL_SECONDS) return;
-
-        // lastSimShotTime = Timer.getFPGATimestamp();
-
-        // Rotation2d yaw = result.yaw();
-        // if (swerve.shouldFlip()) {
-        //     yaw = FieldMirroringUtils.toCurrentAllianceRotation(yaw);
-        // }
-
-        // RebuiltFuelOnFly projectile = new RebuiltFuelOnFly(
-        //     swerve.getRobotPose().getTranslation(),
-        //     TURRET_TRANSLATION.rotateBy(swerve.getRobotPose().getRotation()),
-        //     swerve.getFieldVelocity(),
-        //     yaw,
-        //     Meters.of(TURRET_TRANSLATION_3D.getZ()),
-        //     MetersPerSecond.of(RPSToMPS(shooter.getCurrentSetpoint())),
-        //     Degrees.of(result.pitch().getDegrees())
-        // );
-
-        // projectile
-        //     .withTargetPosition(() -> FieldMirroringUtils.toCurrentAllianceTranslation(getDefaultTarget()))
-        //     .withTargetTolerance(new Translation3d(0.67, 0.67, 0.3));
-
-        // projectile.withProjectileTrajectoryDisplayCallBack(
-        //     poses -> { successPublisher.set(poses.toArray(Pose3d[]::new)); failPublisher.set(new Pose3d[0]); },
-        //     poses -> { failPublisher.set(poses.toArray(Pose3d[]::new)); successPublisher.set(new Pose3d[0]); }
-        // );
-        // projectile.disableBecomesGamePieceOnFieldAfterTouchGround();
-
-        // SimulatedArena.getInstance().addGamePieceProjectile(projectile);
     }
 
     //#endregion
