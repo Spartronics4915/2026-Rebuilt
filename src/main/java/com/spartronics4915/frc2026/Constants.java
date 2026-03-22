@@ -502,7 +502,7 @@ public final class Constants {
         public static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
         public static final double PIVOT_JOSTLE_FREQUENCY = 2.0; // Hz
 
-        public static final double percentLoss = 0.09; // Percent loss on shooter to ball transfer
+        public static final double percentLoss = 0.07; // Percent loss on shooter to ball transfer
 
     }
 

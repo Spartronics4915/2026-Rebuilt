@@ -167,7 +167,7 @@ public class AutoAimController extends SubsystemBase {
             swerve.getFieldRelativeVelocity(),
             target,
             RPSToMPS(Robot.isSimulation() ? shooter.getCurrentSetpoint() : shooter.getCurrentRPS()),
-            0.07 // Dynamic processing compensation can be supplied here
+            0.03 // Dynamic processing compensation can be supplied here
         );
     }
 
