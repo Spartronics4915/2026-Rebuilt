@@ -94,8 +94,8 @@ public final class Constants {
 
     public static final class SwerveConstants {
 
-        public static final double maxSpeed = 5.12;
-        public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(6);
+        public static final double maxSpeed = 7.12; // 5.12
+        public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(8); // 6
 
         public static final boolean defaultFieldRelative = true;
 
