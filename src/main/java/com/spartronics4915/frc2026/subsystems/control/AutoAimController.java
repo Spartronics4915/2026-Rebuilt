@@ -58,7 +58,7 @@ public class AutoAimController extends SubsystemBase {
     private final AutoAim autoAim = new AutoAim(
         30,
         100,
-        0.01,
+        0.001,
         turretTranslation3D,
         Rotation2d.fromDegrees(50),
         Rotation2d.fromDegrees(90),
