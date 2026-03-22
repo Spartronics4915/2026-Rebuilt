@@ -84,7 +84,7 @@ public class DriveCommand extends Command {
         boolean movingFastEnough = Math.hypot(vX, vY) > maxSpeed * 0.1;
 
         if (alignTriggerHeld && movingFastEnough) {
-            lockedHeading = new Rotation2d(vX, vY).minus(swerve.getHeadingOffset());
+            lockedHeading = new Rotation2d(vX, vY);
             wasAligning = true;
             swerve.driveFieldCentricFacingAngle(vX, vY, lockedHeading);
             return;
