@@ -81,7 +81,7 @@ public class DriveCommand extends Command {
         swerve.setDriverPerspective(swerve.getHeadingOffset());
 
         boolean alignTriggerHeld = hid.getRightTriggerAxis() > 0.5;
-        boolean movingFastEnough = Math.hypot(vX, vY) > maxSpeed * 0.1;
+        boolean movingFastEnough = Math.hypot(vX, vY) > 0.1;
 
         if (alignTriggerHeld && movingFastEnough) {
             lockedHeading = new Rotation2d(vX, vY);

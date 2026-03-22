@@ -97,9 +97,9 @@ public class Robot extends TimedRobot {
 
         SmartDashboard.putNumber("Match Time", DriverStation.getMatchTime());
         
-        CANBusStatus canStatus = CAN_BUS.getStatus();
-        isCanbusOK.set(canStatus.Status.isOK() && canStatus.BusUtilization > 0);
-        canBusUtilizationPub.set(canStatus.BusUtilization);
+        //CANBusStatus canStatus = CAN_BUS.getStatus();
+        //isCanbusOK.set(canStatus.Status.isOK() && canStatus.BusUtilization > 0);
+        //canBusUtilizationPub.set(canStatus.BusUtilization);
     }
 
     /** This function is called once each time the robot enters Disabled mode. */
