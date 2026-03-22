@@ -112,7 +112,7 @@ public final class Constants {
         // 0.3 m / 0.2 rad; at 0.05 m / 0.005 rad vision would contribute < 2% weight
         // at typical FRC tag distances and the robot pose would never update from vision.
         public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.3, 0.3, 0.2);
-        public static final Matrix<N3, N1> slipStdDevs   = VecBuilder.fill(2.0, 2.0, 0.5);
+        public static final Matrix<N3, N1> slipStdDevs = VecBuilder.fill(2.0, 2.0, 0.5);
 
         public static final double slipRecoverySeconds = 0.5;
         public static final double slipThresholdRPS = 1.0;
