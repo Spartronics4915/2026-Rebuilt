@@ -388,7 +388,7 @@ public final class Constants {
         public static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
         public static final double PIVOT_JOSTLE_FREQUENCY = 2.0; // Hz
 
-        public static final double percentLoss = 0.06; // Percent loss on shooter to ball transfer
+        public static final double percentLoss = 0.05; // Percent loss on shooter to ball transfer
 
     }
 
@@ -532,7 +532,7 @@ public final class Constants {
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 50.625;
 
-        public static final double MAGNET_OFFSET = -0.465332;
+        public static final double MAGNET_OFFSET = -0.130371;
         public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.Clockwise_Positive;
 
         public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(-2);
