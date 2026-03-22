@@ -3,6 +3,7 @@ package com.spartronics4915.frc2026.util.vision;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
@@ -59,7 +60,7 @@ public class ConcurrentTimeBuffer<T> {
      * Returns the interpolated value at {@code timestamp}, or the nearest
      * available sample if {@code timestamp} is outside the buffer range.
      */
-    public java.util.Optional<T> getSample(double timestamp) {
+    public Optional<T> getSample(double timestamp) {
         if (buffer.isEmpty()) return Optional.empty();
 
         // Exact hit
@@ -88,21 +89,22 @@ public class ConcurrentTimeBuffer<T> {
      *         sample if the window is empty, or {@link OptionalDouble#empty()} only
      *         if the buffer contains no entries at all.
      */
-    public java.util.OptionalDouble getMaxAbsValueInRange(double minTime, double maxTime) {
+    public OptionalDouble getMaxAbsValueInRange(double minTime, double maxTime) {
         Collection<T> sub = buffer.subMap(minTime, true, maxTime, true).values();
-        java.util.OptionalDouble inRange = sub.stream()
+        OptionalDouble inRange = sub.stream()
             .mapToDouble(v -> Math.abs((Double)(Object) v))
             .max();
         if (inRange.isPresent()) return inRange;
 
-        if (buffer.isEmpty()) return java.util.OptionalDouble.empty();
+        if (buffer.isEmpty()) return OptionalDouble.empty();
 
         double best = Double.POSITIVE_INFINITY;
         Map.Entry<Double, T> floor = buffer.floorEntry(minTime);
         Map.Entry<Double, T> ceil  = buffer.ceilingEntry(maxTime);
+        
         if (floor != null) best = Math.min(best, Math.abs((Double)(Object) floor.getValue()));
         if (ceil != null) best = Math.min(best, Math.abs((Double)(Object) ceil.getValue()));
-        return java.util.OptionalDouble.of(best);
+        return OptionalDouble.of(best);
     }
 
     /** Exposes the raw map for advanced queries (read-only intent). */
