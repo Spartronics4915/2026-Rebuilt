@@ -56,23 +56,20 @@ public class VisionSubsystem extends SubsystemBase {
 
     private volatile boolean hasValidPose;
 
-    private static final NetworkTable visionTable =
-        NetworkTableInstance.getDefault().getTable("vision");
+    private static final NetworkTable NT = NetworkTableInstance.getDefault().getTable("vision");
 
-    private final StructPublisher<Pose2d> posePublisher =
-        visionTable.getStructTopic("Vision Pose", Pose2d.struct).publish();
-    private final StructPublisher<Pose2d> usedPosePublisher =
-        visionTable.getStructTopic("Used Vision Pose", Pose2d.struct).publish();
+    private final StructPublisher<Pose2d> posePublisher = NT.getStructTopic("Vision Pose", Pose2d.struct).publish();
+    private final StructPublisher<Pose2d> usedPosePublisher = NT.getStructTopic("Used Vision Pose", Pose2d.struct).publish();
 
-    private final DoublePublisher transStdDevPublisher = visionTable.getDoubleTopic("XY Std Devs").publish();
-    private final DoublePublisher rotStdDevPublisher = visionTable.getDoubleTopic("Theta Std Devs").publish();
-    private final DoublePublisher avgAmbiguityPublisher = visionTable.getDoubleTopic("Avg Ambiguity").publish();
-    private final DoublePublisher avgAreaPublisher = visionTable.getDoubleTopic("Avg Area").publish();
-    private final DoublePublisher latencyPublisher = visionTable.getDoubleTopic("Latency").publish();
-    private final DoublePublisher targetCountPublisher = visionTable.getDoubleTopic("Target Count").publish();
+    private final DoublePublisher transStdDevPublisher = NT.getDoubleTopic("XY Std Devs").publish();
+    private final DoublePublisher rotStdDevPublisher = NT.getDoubleTopic("Theta Std Devs").publish();
+    private final DoublePublisher avgAmbiguityPublisher = NT.getDoubleTopic("Avg Ambiguity").publish();
+    private final DoublePublisher avgAreaPublisher = NT.getDoubleTopic("Avg Area").publish();
+    private final DoublePublisher latencyPublisher = NT.getDoubleTopic("Latency").publish();
+    private final DoublePublisher targetCountPublisher = NT.getDoubleTopic("Target Count").publish();
 
     private final StructArrayPublisher<Pose3d> trackedApriltagsPublisher =
-        visionTable.getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
+        NT.getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
 
     public VisionSubsystem(
         Map<String, ProcessorInterface> cameras,
@@ -162,7 +159,8 @@ public class VisionSubsystem extends SubsystemBase {
             ResultInterface result = combinedResults.get(i);
             if (result instanceof ApriltagResult ar
                     && ar.getStdDevs() != null
-                    && aprilTagFilter.test(ar)) {
+                    && aprilTagFilter.test(ar)
+            ) {
                 combinedApriltagResults.add(ar);
             }
         }
@@ -219,7 +217,9 @@ public class VisionSubsystem extends SubsystemBase {
         return result;
     }
 
-    public boolean hasValidPose() { return hasValidPose; }
+    public boolean hasValidPose() { 
+        return hasValidPose; 
+    }
 
     @FunctionalInterface
     public interface VisionPoseConsumer {

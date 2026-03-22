@@ -1,4 +1,4 @@
-package com.spartronics4915.frc2026.util.vision;
+package com.spartronics4915.frc2026.util.general;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;

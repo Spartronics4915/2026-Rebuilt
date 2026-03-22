@@ -21,9 +21,9 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.util.FlippingUtil;
 
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
+import com.spartronics4915.frc2026.util.general.MovingAveragePose;
 import com.spartronics4915.frc2026.util.swerve.SlipDetector;
 import com.spartronics4915.frc2026.util.vision.ConcurrentTimeBuffer;
-import com.spartronics4915.frc2026.util.vision.MovingAveragePose;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.MathUtil;

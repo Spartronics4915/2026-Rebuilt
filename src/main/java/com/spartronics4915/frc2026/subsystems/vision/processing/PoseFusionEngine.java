@@ -204,16 +204,16 @@ public class PoseFusionEngine {
 
         tagScratch.clear();
         outer:
-        for (int i = 0; i < validScratch.size(); i++) {
-            List<TrackedTag> tags = validScratch.get(i).getTrackedTags();
-            for (int j = 0; j < tags.size(); j++) {
-                TrackedTag t = tags.get(j);
-                for (int k = 0; k < tagScratch.size(); k++) {
-                    if (tagScratch.get(k).fiducialId == t.fiducialId) continue outer;
+            for (int i = 0; i < validScratch.size(); i++) {
+                List<TrackedTag> tags = validScratch.get(i).getTrackedTags();
+                for (int j = 0; j < tags.size(); j++) {
+                    TrackedTag t = tags.get(j);
+                    for (int k = 0; k < tagScratch.size(); k++) {
+                        if (tagScratch.get(k).fiducialId == t.fiducialId) continue outer;
+                    }
+                    tagScratch.add(t);
                 }
-                tagScratch.add(t);
             }
-        }
 
         nameBuilder.setLength(0);
         nameBuilder.append("fused[");

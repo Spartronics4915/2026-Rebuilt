@@ -30,19 +30,6 @@ import edu.wpi.first.wpilibj.Notifier;
 
 /**
  * A processor backed by PhotonVision's camera and pose estimator.
- *
- * <p>All PhotonVision-specific types ({@link PhotonCamera}, {@link PhotonPoseEstimator},
- * {@link PhotonCameraSim}, {@link SimCameraProperties}) are private implementation
- * details. They no longer appear in {@link ProcessorInterface}, which allows
- * non-PhotonVision processors (e.g. {@code LimelightProcessor}) to implement the
- * same interface without carrying PhotonVision as a dependency.
- *
- * <p>Simulation is exposed via the optional {@link #getCameraSim()} override.
- * {@link com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem} checks
- * {@code isPresent()} before wiring it into the sim.
- *
- * <p>All per-frame calculation methods use plain loops rather than stream pipelines
- * to avoid iterator and lambda allocation on the hot Notifier path.
  */
 public class PhotonProcessor implements ProcessorInterface {
 
@@ -64,8 +51,6 @@ public class PhotonProcessor implements ProcessorInterface {
 
     private volatile boolean isRunning;
 
-    // Reusable scratch list for converting PhotonTrackedTarget -> TrackedTag
-    // on the Notifier thread. Never shared across threads.
     private final List<TrackedTag> tagScratch = new ArrayList<>(8);
 
     public PhotonProcessor(
