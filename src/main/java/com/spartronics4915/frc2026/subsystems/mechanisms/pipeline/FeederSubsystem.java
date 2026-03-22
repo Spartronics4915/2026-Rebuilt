@@ -63,13 +63,13 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
             motor.setControl(new VoltageOut(0.0));
         }
 
-        appliedOutPublisher.accept(motor.getCachedDutyCycle().getValueAsDouble());
+        appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPM());
         setpointPublisher.accept(currentSetpoint);
     }
 
     public double getCurrentRPM() {
-        return motor.getCachedVelocity().getValueAsDouble();
+        return motor.getVelocity().getValueAsDouble();
     }
 
     public void setSetpoint(double setpoint){

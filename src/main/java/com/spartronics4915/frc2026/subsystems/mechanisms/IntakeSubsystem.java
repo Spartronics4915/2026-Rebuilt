@@ -64,17 +64,17 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
             motor.setControl(new VoltageOut(0.0));
         }
 
-        appliedOutPublisher.accept(motor.getCachedDutyCycle().getValueAsDouble());
+        appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPS());
         setpointPublisher.accept(currentSetpoint);
     }
 
     public double getCurrentRPS() {
-        return motor.getCachedVelocity().getValueAsDouble();
+        return motor.getVelocity().getValueAsDouble();
     }
 
     public double getAppliedVoltage() {
-        return motor.getCachedMotorVoltage().getValueAsDouble();
+        return motor.getMotorVoltage().getValueAsDouble();
     }
 
     public void setSetpoint(double newSetpoint){

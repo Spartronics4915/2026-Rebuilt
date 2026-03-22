@@ -6,17 +6,12 @@ import java.util.function.DoubleConsumer;
 import java.util.function.DoubleSupplier;
 
 import com.ctre.phoenix6.CANBus;
-import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.SlotConfigs;
 import com.ctre.phoenix6.hardware.TalonFX;
 
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.units.measure.Current;
-import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.util.sendable.SendableBuilder;
 
 public class MotorHelpers {
@@ -36,41 +31,9 @@ public class MotorHelpers {
             private DoubleSupplier getSetpoint;
             private DoubleConsumer setSetpoint;
 
-            private final StatusSignal<Double> dutyCycleSignal;
-            private final StatusSignal<Voltage> motorVoltageSignal;
-            private final StatusSignal<Current> supplyCurrentSignal;
-            private final StatusSignal<Angle> positionSignal;
-            private final StatusSignal<AngularVelocity> velocitySignal;
-
             public LoggedTalonFX(int deviceId, CANBus canbus) {
                 super(deviceId, canbus);
                 this.canID = deviceId;
-                
-                this.dutyCycleSignal = super.getDutyCycle(false);
-                this.motorVoltageSignal = super.getMotorVoltage(false);
-                this.supplyCurrentSignal = super.getSupplyCurrent(false);
-                this.positionSignal = super.getPosition(false);
-                this.velocitySignal = super.getVelocity(false);
-            }
-
-            public StatusSignal<Double> getCachedDutyCycle() {
-                return this.dutyCycleSignal;
-            }
-
-            public StatusSignal<Voltage> getCachedMotorVoltage() {
-                return this.motorVoltageSignal;
-            }
-
-            public StatusSignal<Current> getCachedSupplyCurrent() {
-                return this.supplyCurrentSignal;
-            }
-
-            public StatusSignal<Angle> getCachedPosition() {
-                return this.positionSignal;
-            }
-
-            public StatusSignal<AngularVelocity> getCachedVelocity() {
-                return this.velocitySignal;
             }
 
             public void addProfile(LoggedTrapezoidProfile profile) {
@@ -153,11 +116,11 @@ public class MotorHelpers {
                 }
 
                 // General logging (that can't be changed since it's just data)
-                builder.addDoubleProperty("Applied Output", () -> this.getCachedDutyCycle().getValueAsDouble(), null);
-                builder.addDoubleProperty("Voltage", () -> this.getCachedMotorVoltage().getValueAsDouble(), null);
-                builder.addDoubleProperty("Amp usage", () -> this.getCachedSupplyCurrent().getValueAsDouble(), null);
-                builder.addDoubleProperty("Position", () -> this.getCachedPosition().getValueAsDouble(), null);
-                builder.addDoubleProperty("Velocity", () -> this.getCachedVelocity().getValueAsDouble(), null);
+                builder.addDoubleProperty("Applied Output", () -> this.getDutyCycle(false).getValueAsDouble(), null);
+                builder.addDoubleProperty("Voltage", () -> this.getMotorVoltage(false).getValueAsDouble(), null);
+                builder.addDoubleProperty("Amp usage", () -> this.getSupplyCurrent(false).getValueAsDouble(), null);
+                builder.addDoubleProperty("Position", () -> this.getPosition(false).getValueAsDouble(), null);
+                builder.addDoubleProperty("Velocity", () -> this.getVelocity(false).getValueAsDouble(), null);
             }
         }
     }

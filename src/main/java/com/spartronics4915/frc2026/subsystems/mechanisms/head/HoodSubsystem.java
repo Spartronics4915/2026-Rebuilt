@@ -84,13 +84,13 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
 
         motor.setControl(positionVoltage);
 
-        appliedOutPublisher.accept(motor.getCachedDutyCycle().getValueAsDouble());
+        appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         positionPublisher.accept(getPosition());
         setpointPublisher.accept(Rotation2d.fromRotations(targetState.position));
     }
 
     public Rotation2d getPosition() {
-        double position = motor.getCachedPosition().getValue().in(Rotations);
+        double position = motor.getPosition().getValue().in(Rotations);
         return Rotation2d.fromRotations(position);
     }
 

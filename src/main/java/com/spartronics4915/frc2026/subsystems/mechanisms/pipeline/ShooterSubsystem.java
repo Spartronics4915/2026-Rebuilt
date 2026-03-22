@@ -91,13 +91,13 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
             leadMotor.setControl(stopRequest);
         }
 
-        appliedOutPublisher.accept(leadMotor.getCachedDutyCycle().getValueAsDouble());
+        appliedOutPublisher.accept(leadMotor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPS());
         setpointPublisher.accept(workingSetpoint);
     }
 
     public double getCurrentRPS() {
-        return leadMotor.getCachedVelocity().getValueAsDouble();
+        return leadMotor.getVelocity().getValueAsDouble();
     }
 
     public ShooterClamp getShooterClamp() {
