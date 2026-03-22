@@ -21,6 +21,7 @@ import com.pathplanner.lib.trajectory.PathPlannerTrajectoryState;
 
 /**
  * Default teleop drive command for swerve chassis.
+ * Optimized to avoid factory method allocations.
  */
 public class DriveCommand extends Command {
 
@@ -59,8 +60,8 @@ public class DriveCommand extends Command {
     public void execute() {
         XboxController hid = resolveController();
 
-        double vX    = applyResponseCurve(MathUtil.applyDeadband(-hid.getLeftY(),  stickDeadband)) * maxSpeed;
-        double vY    = applyResponseCurve(MathUtil.applyDeadband(-hid.getLeftX(),  stickDeadband)) * maxSpeed;
+        double vX = applyResponseCurve(MathUtil.applyDeadband(-hid.getLeftY(),  stickDeadband)) * maxSpeed;
+        double vY = applyResponseCurve(MathUtil.applyDeadband(-hid.getLeftX(),  stickDeadband)) * maxSpeed;
         double omega = applyResponseCurve(MathUtil.applyDeadband(-hid.getRightX(), stickDeadband)) * maxAngularRate;
 
         double override = swerve.getMovementOverride();
@@ -126,11 +127,22 @@ public class DriveCommand extends Command {
         yState = trapezoidProfile.calculate(dt, yState, targetState);
 
         Pose2d currentPose = swerve.getRelativePose();
-        goalState.pose = new Pose2d(currentPose.getX(), yState.position, currentPose.getRotation());
+        
+        goalState.pose = new Pose2d(
+            currentPose.getX(), 
+            yState.position, 
+            currentPose.getRotation()
+        );
+        
         goalState.fieldSpeeds = new ChassisSpeeds();
 
         ChassisSpeeds robotTarget = overrideController.calculateRobotRelativeSpeeds(currentPose, goalState);
-        return ChassisSpeeds.fromRobotRelativeSpeeds(robotTarget, currentPose.getRotation()).vyMetersPerSecond;
+        
+        double cosTheta = currentPose.getRotation().getCos();
+        double sinTheta = currentPose.getRotation().getSin();
+        
+        return robotTarget.vxMetersPerSecond * sinTheta + 
+               robotTarget.vyMetersPerSecond * cosTheta;
     }
 
     @Override
@@ -158,5 +170,4 @@ public class DriveCommand extends Command {
     private static double applyResponseCurve(double x) {
         return Math.signum(x) * (x * x);
     }
-    
 }
