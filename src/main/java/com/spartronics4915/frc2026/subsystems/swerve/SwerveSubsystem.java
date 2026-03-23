@@ -89,8 +89,9 @@ public class SwerveSubsystem extends SubsystemBase {
     private double prevYawTimestamp = Double.NaN;
 
     private Pose2d smoothedPose = new Pose2d();
+
     private final MovingAveragePose poseFilter =
-        new MovingAveragePose(0.20); // 0.15
+        new MovingAveragePose(0.30); // previously 0.20
 
     private double movementOverride = 0.0;
     private boolean isFieldRelativeState = defaultFieldRelative;

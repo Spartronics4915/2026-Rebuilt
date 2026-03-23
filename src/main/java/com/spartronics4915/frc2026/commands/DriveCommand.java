@@ -171,6 +171,9 @@ public class DriveCommand extends Command {
     }
 
     private static double applyResponseCurve(double x) {
-        return Math.signum(x) * (x * x);
+        double ax = Math.abs(x);
+        double linearWeight = 0.60;
+        double shaped = linearWeight * ax + (1.0 - linearWeight) * (ax * ax);
+        return Math.signum(x) * shaped;
     }
 }
