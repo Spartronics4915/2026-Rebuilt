@@ -130,7 +130,7 @@ public class PhotonProcessor implements ProcessorInterface {
         this.maxQueueSize = 4;
 
         this.processingNotifier = new Notifier(this::process);
-        this.processingFrequency = 70.0;
+        this.processingFrequency = 20.0;
         this.processingNotifier.setName("Photon-" + cameraName);
         this.isRunning = false;
     }
