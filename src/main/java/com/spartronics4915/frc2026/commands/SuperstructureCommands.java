@@ -76,7 +76,6 @@ public class SuperstructureCommands {
 
     //#region Controls
 
-    // Issue #8: Update currentPipelineState when setting pipeline state
     public Command setPipelineState(PipelineState state) {
         this.currentPipelineState = state;
         
