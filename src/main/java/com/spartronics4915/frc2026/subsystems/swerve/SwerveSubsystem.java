@@ -263,13 +263,13 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public Rotation2d getRoll() {
         return Rotation2d.fromDegrees(
-            drivetrain.getPigeon2().getRoll(false).getValueAsDouble()
+            drivetrain.getPigeon2().getRoll().getValueAsDouble()
         );
     }
 
     public Rotation2d getPitch() {
         return Rotation2d.fromDegrees(
-            drivetrain.getPigeon2().getPitch(false).getValueAsDouble()
+            drivetrain.getPigeon2().getPitch().getValueAsDouble()
         );
     }
 
