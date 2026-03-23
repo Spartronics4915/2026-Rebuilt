@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.photonvision.PhotonCamera;
 import org.photonvision.simulation.PhotonCameraSim;
@@ -26,6 +27,7 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.networktables.DoublePublisher;
@@ -33,6 +35,7 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class VisionSubsystem extends SubsystemBase {
@@ -48,6 +51,15 @@ public class VisionSubsystem extends SubsystemBase {
     private final VisionPoseConsumer poseConsumer;
 
     private final SwerveSubsystem swerve;
+
+    /**
+     * Supplier for the turret's current robot-relative yaw angle.
+     * {@code null} when there is no turreted camera in the camera map.
+     * When non-null, the angle is pushed to every processor each loop via
+     * {@link ProcessorInterface#updateTurretAngle}, fixed cameras ignore it
+     * through the default no-op implementation.
+     */
+    private final Supplier<Rotation2d> turretAngleSupplier;
 
     private final List<ResultInterface> combinedResults = new ArrayList<>(16);
     private final List<ApriltagResult> combinedApriltagResults = new ArrayList<>(16);
@@ -68,8 +80,7 @@ public class VisionSubsystem extends SubsystemBase {
     private final DoublePublisher latencyPublisher = NT.getDoubleTopic("Latency").publish();
     private final DoublePublisher targetCountPublisher = NT.getDoubleTopic("Target Count").publish();
 
-    private final StructArrayPublisher<Pose3d> trackedApriltagsPublisher =
-        NT.getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
+    private final StructArrayPublisher<Pose3d> trackedApriltagsPublisher = NT.getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
 
     public VisionSubsystem(
         Map<String, ProcessorInterface> cameras,
@@ -78,6 +89,26 @@ public class VisionSubsystem extends SubsystemBase {
         VisionPoseConsumer poseConsumer,
         SwerveSubsystem swerveSubsystem
     ) {
+        this(cameras, fieldLayout, configuration, poseConsumer, swerveSubsystem, null);
+    }
+
+    /**
+     * Full constructor. Pass a non-null {@code turretAngleSupplier} when the
+     * camera map contains a {@link TurretedPhotonProcessor}. The supplier is
+     * sampled every periodic loop and pushed to all processors via
+     * {@link ProcessorInterface#updateTurretAngle}; fixed cameras ignore it.
+     *
+     * @param turretAngleSupplier Supplier for the turret's current robot-relative
+     *                            yaw, or {@code null} if no turreted camera is used.
+     */
+    public VisionSubsystem(
+        Map<String, ProcessorInterface> cameras,
+        AprilTagFieldLayout fieldLayout,
+        VisionConfiguration configuration,
+        VisionPoseConsumer poseConsumer,
+        SwerveSubsystem swerveSubsystem,
+        Supplier<Rotation2d> turretAngleSupplier
+    ) {
         this.cameras = cameras;
         this.fusionEngine = new PoseFusionEngine();
         this.visionSystemSim = new VisionSystemSim("main");
@@ -85,6 +116,7 @@ public class VisionSubsystem extends SubsystemBase {
         this.config = configuration;
         this.swerve = swerveSubsystem;
         this.hasValidPose = false;
+        this.turretAngleSupplier = turretAngleSupplier;
 
         this.aprilTagFilter = new PipelineFilter(buildFilterList(configuration, swerveSubsystem));
 
@@ -97,7 +129,7 @@ public class VisionSubsystem extends SubsystemBase {
 
         for (ProcessorInterface camera : cameras.values()) {
             camera.start();
-        
+
             if (isSimulation) {
                 Optional<PhotonCameraSim> cameraSim = camera.getCameraSim();
                 cameraSim.ifPresent(sim ->
@@ -132,6 +164,14 @@ public class VisionSubsystem extends SubsystemBase {
             }
         }
 
+        if (turretAngleSupplier != null) {
+            Rotation2d turretAngle = turretAngleSupplier.get();
+            double timestamp = Timer.getFPGATimestamp();
+            for (ProcessorInterface camera : cameras.values()) {
+                camera.updateTurretAngle(turretAngle, timestamp);
+            }
+        }
+
         collectResults();
         filterAndCollectApriltags();
 
@@ -159,8 +199,7 @@ public class VisionSubsystem extends SubsystemBase {
             ResultInterface result = combinedResults.get(i);
             if (result instanceof ApriltagResult ar
                     && ar.getStdDevs() != null
-                    && aprilTagFilter.test(ar)
-            ) {
+                    && aprilTagFilter.test(ar)) {
                 combinedApriltagResults.add(ar);
             }
         }
@@ -217,9 +256,7 @@ public class VisionSubsystem extends SubsystemBase {
         return result;
     }
 
-    public boolean hasValidPose() { 
-        return hasValidPose; 
-    }
+    public boolean hasValidPose() { return hasValidPose; }
 
     @FunctionalInterface
     public interface VisionPoseConsumer {

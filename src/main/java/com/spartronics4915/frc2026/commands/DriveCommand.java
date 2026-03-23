@@ -60,8 +60,8 @@ public class DriveCommand extends Command {
     public void execute() {
         XboxController hid = resolveController();
 
-        double vX = applyResponseCurve(MathUtil.applyDeadband(-hid.getLeftY(),  stickDeadband)) * maxSpeed;
-        double vY = applyResponseCurve(MathUtil.applyDeadband(-hid.getLeftX(),  stickDeadband)) * maxSpeed;
+        double vX = applyResponseCurve(MathUtil.applyDeadband(-hid.getLeftY(), stickDeadband)) * maxSpeed;
+        double vY = applyResponseCurve(MathUtil.applyDeadband(-hid.getLeftX(), stickDeadband)) * maxSpeed;
         double omega = applyResponseCurve(MathUtil.applyDeadband(-hid.getRightX(), stickDeadband)) * maxAngularRate;
 
         double override = swerve.getMovementOverride();
