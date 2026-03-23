@@ -19,9 +19,10 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.util.FlippingUtil;
-
+import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
 import com.spartronics4915.frc2026.util.general.MovingAveragePose;
+import com.spartronics4915.frc2026.util.simulation.BumpSim;
 import com.spartronics4915.frc2026.util.swerve.SlipDetector;
 import com.spartronics4915.frc2026.util.vision.ConcurrentTimeBuffer;
 
@@ -30,6 +31,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -93,6 +95,9 @@ public class SwerveSubsystem extends SubsystemBase {
     private final MovingAveragePose poseFilter =
         new MovingAveragePose(0.30); // previously 0.20
 
+    public static Pose3d pose3d = new Pose3d();
+    private final BumpSim bumpSim;
+
     private double movementOverride = 0.0;
     private boolean isFieldRelativeState = defaultFieldRelative;
     private Rotation2d teleopHeadingOffset = Rotation2d.kZero;
@@ -119,10 +124,19 @@ public class SwerveSubsystem extends SubsystemBase {
         headingLockRequest.HeadingController.setPID(headingLockKP, 0, headingLockKD);
         headingLockRequest.HeadingController.enableContinuousInput(-Math.PI, Math.PI);
 
-        if (Utils.isSimulation()) {
+        if (Robot.isSimulation()) {
             drivetrain.resetPose(
                 new Pose2d(new Translation2d(14.0, 5.0), Rotation2d.fromDegrees(0))
             );
+            Pose2d[] modulePoses = new Pose2d[] {
+                new Pose2d(config.modules[0].LocationX, config.modules[0].LocationY, Rotation2d.kZero),
+                new Pose2d(config.modules[1].LocationX, config.modules[1].LocationY, Rotation2d.kZero),
+                new Pose2d(config.modules[2].LocationX, config.modules[2].LocationY, Rotation2d.kZero),
+                new Pose2d(config.modules[3].LocationX, config.modules[3].LocationY, Rotation2d.kZero)
+            };
+            bumpSim = new BumpSim(modulePoses, 20, 0.1);
+        } else {
+            bumpSim = null;
         }
 
         drivetrain.registerTelemetry(this::updateOdometry);
@@ -149,7 +163,7 @@ public class SwerveSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         double now = Utils.getCurrentTimeSeconds();
- 
+
         if (currentlySlipping.get()) {
             lastSlipTimestamp = now;
             if (!isInSlipRecovery) {
@@ -164,7 +178,14 @@ public class SwerveSubsystem extends SubsystemBase {
         isFlatDebouncedValue = flatDebouncer.calculate(isFlat());
 
         smoothedPose = poseFilter.calculate(getPose());
- 
+
+        if (Robot.isSimulation() && bumpSim != null) {
+            Pose3d resolvedPose = bumpSim.resolveRobotPose(getPose());
+            if (resolvedPose != null) {
+                pose3d = resolvedPose;
+            }
+        }
+
         telemetry.publish(drivetrain.getState(), this);
     }
  
@@ -262,18 +283,27 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public Rotation2d getRoll() {
+        if (Robot.isSimulation()) {
+            return new Rotation2d(pose3d.getRotation().getX());
+        }
         return Rotation2d.fromDegrees(
             drivetrain.getPigeon2().getRoll().getValueAsDouble()
         );
     }
 
     public Rotation2d getPitch() {
+        if (Robot.isSimulation()) {
+            return new Rotation2d(pose3d.getRotation().getY());
+        }
         return Rotation2d.fromDegrees(
             drivetrain.getPigeon2().getPitch().getValueAsDouble()
         );
     }
 
     public Rotation3d getGyroRotation3d() {
+        if (Robot.isSimulation()) {
+            return pose3d.getRotation();
+        }
         return drivetrain.getRotation3d();
     }
 
@@ -389,6 +419,7 @@ public class SwerveSubsystem extends SubsystemBase {
         private final NetworkTable root = NetworkTableInstance.getDefault().getTable("swerve");
 
         private final StructPublisher<Pose2d> pose = root.getStructTopic("Pose", Pose2d.struct).publish();
+        private final StructPublisher<Pose3d> pose3dPub = root.getStructTopic("Pose3d", Pose3d.struct).publish();
         private final StructPublisher<Pose2d> smoothed = root.getStructTopic("SmoothedPose", Pose2d.struct).publish();
         private final StructPublisher<ChassisSpeeds> measuredSpeeds = root.getStructTopic("MeasuredSpeeds", ChassisSpeeds.struct).publish();
         private final StructPublisher<ChassisSpeeds> fieldSpeeds = root.getStructTopic("FieldRelativeSpeeds", ChassisSpeeds.struct).publish();
@@ -451,6 +482,7 @@ public class SwerveSubsystem extends SubsystemBase {
         void publish(SwerveDriveState state, SwerveSubsystem swerve) {
             Pose2d rawPose = state.Pose;
             pose.set(rawPose);
+            pose3dPub.set(SwerveSubsystem.pose3d);
 
             smoothed.set(swerve.smoothedPose);
             measuredSpeeds.set(state.Speeds);
