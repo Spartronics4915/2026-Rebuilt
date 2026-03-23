@@ -102,7 +102,7 @@ public final class Constants {
 
         public static final double stickDeadband = 0.0;
         public static final double tiltThresholdDegrees = 1.0;
-        public static final double tiltDebounce = 0.5;
+        public static final double tiltDebounce = 0.1;
 
         public static final Constraints trenchAlignConstraints = new Constraints(3, 3);
 
