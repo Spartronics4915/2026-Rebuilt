@@ -77,7 +77,7 @@ public class ZoneTransition {
             ),
             new Pose2d(
                 hubPose.plus( // Pose will be really wrong over the bump so set the setpoint *way* farther
-                    exitTransform.rotateBy(Rotation2d.fromDegrees(IOFlip))
+                    bumpExitTransform.rotateBy(Rotation2d.fromDegrees(IOFlip))
                 ).plus(
                     bumpTransform.rotateBy(Rotation2d.fromDegrees(LRFlip))
                 ),
@@ -133,7 +133,9 @@ public class ZoneTransition {
                 hubPose.plus(
                     trenchTransform.rotateBy(Rotation2d.fromDegrees(LRFlip))
                 ).plus(
-                    approachTransform.rotateBy(Rotation2d.fromDegrees(IOFlip + 180.0))
+                    toNeutralZone
+                        ? approachTransform.rotateBy(Rotation2d.fromDegrees(IOFlip + 180.0))
+                        : trenchExitTransform.rotateBy(Rotation2d.fromDegrees(IOFlip))
                 ),
                 Rotation2d.fromDegrees(IOFlip)
             )
