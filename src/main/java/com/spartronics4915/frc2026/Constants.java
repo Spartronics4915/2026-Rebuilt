@@ -96,6 +96,7 @@ public final class Constants {
 
         public static final double maxSpeed = 7.12; // 5.12
         public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(8); // 6
+        public static final double maxSpeedWhenShooting = maxSpeed * 0.4;
 
         public static final boolean defaultFieldRelative = true;
 

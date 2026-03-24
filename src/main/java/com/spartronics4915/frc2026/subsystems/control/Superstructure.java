@@ -6,8 +6,10 @@ import static edu.wpi.first.units.Units.Meters;
 
 import java.util.Set;
 
+import com.spartronics4915.frc2026.commands.DriveCommand;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands.PipelineState;
+import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.util.control.FieldRegion;
 import com.spartronics4915.frc2026.util.control.FieldZoneMap;
@@ -40,8 +42,10 @@ public class Superstructure extends SubsystemBase {
     }
 
     private final SwerveSubsystem swerve;
+    private final ShooterSubsystem shooter;
     private final AutoAimController controller;
-    private final SuperstructureCommands commands;
+    private final SuperstructureCommands superCommands;
+    private final DriveCommand driveCommand;
 
     private final FieldZoneMap<Zone> zoneMap;
     private Zone currentZone = Zone.UNKNOWN;
@@ -51,12 +55,16 @@ public class Superstructure extends SubsystemBase {
 
     public Superstructure(
         SwerveSubsystem swerve,
+        ShooterSubsystem shooter,
         AutoAimController controller,
-        SuperstructureCommands commands
+        SuperstructureCommands superCommands,
+        DriveCommand driveCommand
     ) {
         this.swerve = swerve;
+        this.shooter = shooter;
         this.controller = controller;
-        this.commands = commands;
+        this.superCommands = superCommands;
+        this.driveCommand = driveCommand;
         this.zoneMap = buildZoneMap();
 
         configureTriggers();
@@ -127,6 +135,12 @@ public class Superstructure extends SubsystemBase {
             currentZone = newZone;
             zonePublisher.accept(currentZone.name());
         }
+
+        if (currentZone == Zone.ALLIANCE_ZONE && shooter.getIsShooting()) {
+            driveCommand.setSpeedLimit(true);
+        } else {
+            driveCommand.setSpeedLimit(false);
+        }
     }
 
     // Triggers -----------------------------------------------------
@@ -134,13 +148,13 @@ public class Superstructure extends SubsystemBase {
     private void configureTriggers() {
         // Zone triggers
         new Trigger(() -> currentZone == Zone.ALLIANCE_ZONE)
-            .onTrue(commands.shooting().withName("Auto: Shooting Zone"));
+            .onTrue(superCommands.shooting().withName("Auto: Shooting Zone"));
         new Trigger(() -> currentZone == Zone.TRENCH)
-            .onTrue(commands.trench().withName("Auto: Trench Traversal"));
+            .onTrue(superCommands.trench().withName("Auto: Trench Traversal"));
         new Trigger(() -> currentZone == Zone.NEUTRAL_ZONE)
-            .onTrue(commands.traversal().withName("Auto: Neutral Traversal"));
+            .onTrue(superCommands.traversal().withName("Auto: Neutral Traversal"));
         new Trigger(() -> currentZone == Zone.BUMP || currentZone == Zone.OPPONENT_ZONE)
-            .onTrue(commands.cruise().withName("Auto: Cruise Zone"));
+            .onTrue(superCommands.cruise().withName("Auto: Cruise Zone"));
 
         // Pipeline triggers, falling edge debounced so the pipeline turns on instantly
         // but won't turn off until isReadyToShoot has been false for the full duration.
@@ -148,19 +162,19 @@ public class Superstructure extends SubsystemBase {
             .debounce(PIPELINE_RATE_LIMIT_SEC, DebounceType.kFalling);
 
         pipelineOn
-            .onTrue(commands.setPipelineState(PipelineState.ON))
-            .onFalse(commands.setPipelineState(PipelineState.OFF));
+            .onTrue(superCommands.setPipelineState(PipelineState.ON))
+            .onFalse(superCommands.setPipelineState(PipelineState.OFF));
 
         // In auto, jostle the pivot while the pipeline is active
         pipelineOn
             .and(DriverStation::isAutonomous)
             .onTrue(Commands.sequence(
-                commands.conditionalPivotSafe(),
+                superCommands.conditionalPivotSafe(),
                 Commands.waitSeconds(0.5 / PIVOT_JOSTLE_FREQUENCY),
-                commands.conditionalPivotReady(),
+                superCommands.conditionalPivotReady(),
                 Commands.waitSeconds(0.5 / PIVOT_JOSTLE_FREQUENCY)
             ).repeatedly())
-            .onFalse(commands.conditionalPivotReady());
+            .onFalse(superCommands.conditionalPivotReady());
     }
 
     /**
@@ -170,12 +184,12 @@ public class Superstructure extends SubsystemBase {
     public Command getReturnToZoneCommand() {
         return Commands.defer(() -> {
             switch (currentZone) {
-                case ALLIANCE_ZONE: return commands.shooting();
-                case TRENCH: return commands.trench();
-                case NEUTRAL_ZONE: return commands.traversal();
+                case ALLIANCE_ZONE: return superCommands.shooting();
+                case TRENCH: return superCommands.trench();
+                case NEUTRAL_ZONE: return superCommands.traversal();
                 case BUMP:
-                case OPPONENT_ZONE: return commands.cruise();
-                default: return commands.idle();
+                case OPPONENT_ZONE: return superCommands.cruise();
+                default: return superCommands.idle();
             }
         }, Set.of()).withName("Restore Zone State");
     }

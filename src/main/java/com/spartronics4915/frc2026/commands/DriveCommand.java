@@ -8,6 +8,7 @@ import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -32,6 +33,11 @@ public class DriveCommand extends Command {
     private static final double maxAngularRate = maxAngularSpeed.in(RadiansPerSecond);
 
     private Rotation2d lockedHeading = null;
+
+    private boolean limitChassisSpeeds = false;
+    private SlewRateLimiter xRateLimiter = new SlewRateLimiter(0.2);
+    private SlewRateLimiter yRateLimiter = new SlewRateLimiter(0.2);
+    private SlewRateLimiter omegaRateLimiter = new SlewRateLimiter(0.2);
 
     private final TrapezoidProfile trapezoidProfile = new TrapezoidProfile(trenchAlignConstraints);
     private final TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
@@ -71,6 +77,16 @@ public class DriveCommand extends Command {
             wasOverriding = false;
             yState.position = swerve.getRelativePose().getY();
             yState.velocity = swerve.getFieldVelocity().vyMetersPerSecond;
+        }
+
+        if (limitChassisSpeeds) {
+            vX = Math.min(Math.abs(vX), maxSpeedWhenShooting) * Math.signum(vX);
+            vY = Math.min(Math.abs(vY), maxSpeedWhenShooting) * Math.signum(vY);
+            omega = Math.min(Math.abs(omega), maxSpeedWhenShooting) * Math.signum(omega);
+            
+            vX = xRateLimiter.calculate(vX);
+            vY = yRateLimiter.calculate(vY);
+            omega = omegaRateLimiter.calculate(omega);
         }
 
         if (!swerve.isFieldRelative()) {
@@ -142,6 +158,10 @@ public class DriveCommand extends Command {
         
         return robotTarget.vxMetersPerSecond * sinTheta + 
                robotTarget.vyMetersPerSecond * cosTheta;
+    }
+
+    public void setSpeedLimit(boolean isLimited) {
+        limitChassisSpeeds = isLimited;
     }
 
     @Override

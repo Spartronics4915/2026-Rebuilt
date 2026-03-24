@@ -39,6 +39,8 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     private final VoltageOut stopRequest = new VoltageOut(0.0);
 
+    private boolean isShooting = false;
+
     //#region Main Functionality
 
     public ShooterSubsystem() {
@@ -78,9 +80,10 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
             maxRPS
         );
 
+        isShooting = currentSetpoint != 0;
+
         double workingSetpoint = currentSetpoint;
-        
-        if (workingSetpoint == 0 && !Robot.isPureTeleop) {
+        if (currentSetpoint == 0 && !Robot.isPureTeleop) {
             workingSetpoint = IDLE_SHOOTER_RPS;
         }
 
@@ -94,6 +97,8 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
         appliedOutPublisher.accept(leadMotor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPS());
         setpointPublisher.accept(workingSetpoint);
+
+        SmartDashboard.putBoolean("Is Shooting", isShooting);
     }
 
     public double getCurrentRPS() {
@@ -106,6 +111,10 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     public double getCurrentSetpoint() {
         return currentSetpoint;
+    }
+
+    public boolean getIsShooting() {
+        return isShooting;
     }
 
     public void setSetpoint(double setpoint){
