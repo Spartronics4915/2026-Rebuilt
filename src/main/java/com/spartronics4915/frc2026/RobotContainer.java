@@ -10,6 +10,7 @@ import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfiguration
 import com.spartronics4915.frc2026.autos.ComplexAutoChooser;
 import com.spartronics4915.frc2026.autos.DriveToPOI;
 import com.spartronics4915.frc2026.autos.NeutralZoneAutos;
+import com.spartronics4915.frc2026.autos.PreAlignment;
 import com.spartronics4915.frc2026.autos.DriveToPOI.POI;
 import com.spartronics4915.frc2026.autos.ZoneTransition;
 import com.spartronics4915.frc2026.Constants.VisionConstants;
@@ -79,8 +80,9 @@ public class RobotContainer {
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
     private final DriveToPOI POIFactory = new DriveToPOI(swerveSubsystem, climberSubsystem);
     private final NeutralZoneAutos neutralZoneFactory = new NeutralZoneAutos(swerveSubsystem);
+    private final PreAlignment preAlignmentFactory = new PreAlignment(swerveSubsystem);
 
-    private final ComplexAutoChooser autoChooser = new ComplexAutoChooser(transitionFactory, POIFactory, neutralZoneFactory, 15);
+    private final ComplexAutoChooser autoChooser = new ComplexAutoChooser(transitionFactory, POIFactory, neutralZoneFactory, preAlignmentFactory, 15);
     private final AutoAimController autoAimController = new AutoAimController(hoodSubsystem, turretSubsystem, swerveSubsystem, shooterSubsystem);
 
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);

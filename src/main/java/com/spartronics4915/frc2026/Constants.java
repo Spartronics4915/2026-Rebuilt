@@ -280,7 +280,7 @@ public final class Constants {
             public static final Distance bumperThickness = Millimeters.of(72.7);
 
             public static final PathConstraints defaultPathConstraints = new PathConstraints(
-                2.0,
+                3.0,
                 3.0,
                 1.0 * Math.PI,
                 2.0 * Math.PI
@@ -310,6 +310,13 @@ public final class Constants {
             public static final PathConstraints climbPathConstraints = new PathConstraints(
                 1.5,
                 2.0,
+                1.0 * Math.PI,
+                1.0 * Math.PI
+            );
+
+            public static final PathConstraints alignPathConstraints = new PathConstraints( // OP pre-alignment tech
+                1.0,
+                1.0,
                 1.0 * Math.PI,
                 1.0 * Math.PI
             );

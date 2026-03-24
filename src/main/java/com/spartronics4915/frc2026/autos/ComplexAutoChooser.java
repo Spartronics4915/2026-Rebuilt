@@ -8,6 +8,7 @@ import java.util.function.Supplier;
 
 import com.spartronics4915.frc2026.autos.ZoneTransition.TraversalMethod;
 
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEvent;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -85,6 +86,7 @@ public class ComplexAutoChooser {
     private final ZoneTransition transitionFactory;
     private final DriveToPOI POIFactory;
     private final NeutralZoneAutos neutralZoneFactory;
+    private final PreAlignment preAlignmentFactory;
 
     private double shootWaitTime;
 
@@ -97,12 +99,14 @@ public class ComplexAutoChooser {
      * @param transitionFactory Factory for generating zone transition commands.
      * @param POIfactory Factory for generating drive-to-POI commands.
      * @param neutralZoneFactory Factory for generating neutral zone commands.
+     * @param preAlignmentFactory Factory for generating pre-alignment (OP Tech) commands.
      * @param maxSegments Maximum number of auto segments.
      */
-    public ComplexAutoChooser(ZoneTransition transitionFactory, DriveToPOI POIFactory, NeutralZoneAutos neutralZoneFactory, int maxSegments) {
+    public ComplexAutoChooser(ZoneTransition transitionFactory, DriveToPOI POIFactory, NeutralZoneAutos neutralZoneFactory, PreAlignment preAlignmentFactory, int maxSegments) {
         this.transitionFactory = transitionFactory;
         this.POIFactory = POIFactory;
         this.neutralZoneFactory = neutralZoneFactory;
+        this.preAlignmentFactory = preAlignmentFactory;
 
         this.selectedSegments = new AutoSegment[maxSegments];
         this.segmentChoosers = (SendableChooser<AutoSegment>[]) new SendableChooser[maxSegments];
@@ -235,7 +239,10 @@ public class ComplexAutoChooser {
                     commands.add(POIFactory.generateCommand(DriveToPOI.POI.TOWER));
                     break;
                 case PAUSE:
-                    commands.add(Commands.waitSeconds(shootWaitTime));
+                    commands.add(Commands.deadline(
+                        Commands.waitSeconds(shootWaitTime),
+                        preAlignmentFactory.generateCommand(prevSegment, futureSegment)
+                    ));
                     break;
                 case UNUSED:
                     System.out.println("Chat what are we doing?");
