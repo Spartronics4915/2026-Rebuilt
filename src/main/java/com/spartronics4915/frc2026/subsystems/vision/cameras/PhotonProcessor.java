@@ -14,6 +14,7 @@ import org.photonvision.simulation.SimCameraProperties;
 import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 
+import com.ctre.phoenix6.Utils;
 import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
 import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
 import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
@@ -29,10 +30,6 @@ import edu.wpi.first.wpilibj.Notifier;
 
 /**
  * A processor backed by PhotonVision's camera and pose estimator.
- *
- * <p>Supports both fixed cameras and cameras mounted on a rotating turret.
- * Use the standard constructor for a fixed camera, or
- * {@link #createTurreted} for a camera that rotates with the turret.
  */
 public class PhotonProcessor implements ProcessorInterface {
 
@@ -54,33 +51,30 @@ public class PhotonProcessor implements ProcessorInterface {
 
     private volatile boolean isRunning;
 
-    // Reusable scratch list (Notifier thread only).
     private final List<TrackedTag> tagScratch = new ArrayList<>(8);
-
-    // ----- Constructors -----
 
     public PhotonProcessor(
         String name,
         AprilTagFieldLayout layout,
-        Transform3d robotToCamera,
+        Transform3d transform,
         StdDevCalculator calculator,
         SimCameraProperties properties
     ) {
         this.cameraName = name;
         this.photonCamera = new PhotonCamera(cameraName);
         this.fieldLayout = layout;
-        this.cameraTransform = robotToCamera;
-        this.poseEstimator = new PhotonPoseEstimator(fieldLayout, robotToCamera);
+        this.cameraTransform = transform;
+        this.poseEstimator = new PhotonPoseEstimator(fieldLayout, cameraTransform);
         this.stdDevCalculator = calculator;
 
         this.cameraSim = new PhotonCameraSim(photonCamera, properties);
 
         this.resultQueue = new ConcurrentLinkedQueue<>();
         this.queueSize = new AtomicInteger(0);
-        this.maxQueueSize = 6;
+        this.maxQueueSize = 4;
 
-        this.processingNotifier = new Notifier(this::process);
-        this.processingFrequency = 70.0;
+        this.processingNotifier  = new Notifier(this::process);
+        this.processingFrequency = 20.0;
         this.processingNotifier.setName("Photon-" + cameraName);
         this.isRunning = false;
     }
@@ -135,32 +129,33 @@ public class PhotonProcessor implements ProcessorInterface {
         if (poseOptional.isEmpty()) return Optional.empty();
 
         EstimatedRobotPose estimatedPose = poseOptional.get();
-        double timestamp = estimatedPose.timestampSeconds;
-        double latency = rawResult.metadata.getLatencyMillis();
-
         Pose2d resultantPose = estimatedPose.estimatedPose.toPose2d();
 
+        double timestamp = Utils.fpgaToCurrentTime(estimatedPose.timestampSeconds);
+        double latency = rawResult.metadata.getLatencyMillis();
+
         Matrix<N3, N1> stdDevs = stdDevCalculator.calculate(
-            avgAmbiguity,
-            avgArea,
-            latency,
+            avgAmbiguity, 
+            avgArea, 
+            latency, 
             targetCount
         );
 
+        // Convert PhotonTrackedTarget -> TrackedTag (camera-agnostic).
         tagScratch.clear();
         for (int i = 0; i < targets.size(); i++) {
-            PhotonTrackedTarget t = targets.get(i);
-            tagScratch.add(new TrackedTag(t.fiducialId, t.getArea(), t.getPoseAmbiguity()));
+            PhotonTrackedTarget target = targets.get(i);
+            tagScratch.add(new TrackedTag(target.fiducialId, target.getArea(), target.getPoseAmbiguity()));
         }
 
         return Optional.of(new ApriltagResult(
-            cameraName,
-            timestamp,
-            latency,
-            resultantPose,
+            cameraName, 
+            timestamp, 
+            latency, 
+            resultantPose, 
             stdDevs,
-            tagScratch,
-            avgAmbiguity,
+            tagScratch, 
+            avgAmbiguity, 
             avgArea
         ));
     }
@@ -196,7 +191,7 @@ public class PhotonProcessor implements ProcessorInterface {
     }
 
     @Override public Transform3d getCameraTransform() { 
-        return cameraTransform; 
+        return cameraTransform;
     }
 
     /** Exposes the PhotonVision sim camera for {@code VisionSystemSim} wiring. */
@@ -232,7 +227,6 @@ public class PhotonProcessor implements ProcessorInterface {
     @Override public double getFrequency() { 
         return processingFrequency; 
     }
-
     @Override public boolean isRunning() { 
         return isRunning; 
     }
@@ -248,4 +242,5 @@ public class PhotonProcessor implements ProcessorInterface {
     }
 
     //#endregion
+    
 }
