@@ -378,6 +378,7 @@ public final class Constants {
                 simCameraProperties.setLatencyStdDevMs(0);
             }
 
+        // TODO: Tune these values more (PLEASE!)
         public static final class StdDevConstants {
             public static final double baseXYStdDev = 0.32;  // 0.18
             public static final double baseThetaStdDev = 0.87;  // 0.5 — heading from vision is still less reliable
