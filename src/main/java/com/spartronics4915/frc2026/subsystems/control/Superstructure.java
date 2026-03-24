@@ -126,8 +126,8 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
-        Translation2d turretTranslation = swerve.getRelativePose().getTranslation()
-            .plus(turretTranslation2D.rotateBy(swerve.getRelativePose().getRotation()));
+        Translation2d turretTranslation = swerve.getSmoothedRelativePose().getTranslation()
+            .plus(turretTranslation2D.rotateBy(swerve.getSmoothedRelativePose().getRotation()));
 
         Zone newZone = zoneMap.evaluate(turretTranslation);
 
