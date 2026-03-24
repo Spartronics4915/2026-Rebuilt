@@ -35,7 +35,6 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class VisionSubsystem extends SubsystemBase {
@@ -51,15 +50,6 @@ public class VisionSubsystem extends SubsystemBase {
     private final VisionPoseConsumer poseConsumer;
 
     private final SwerveSubsystem swerve;
-
-    /**
-     * Supplier for the turret's current robot-relative yaw angle.
-     * {@code null} when there is no turreted camera in the camera map.
-     * When non-null, the angle is pushed to every processor each loop via
-     * {@link ProcessorInterface#updateTurretAngle}, fixed cameras ignore it
-     * through the default no-op implementation.
-     */
-    private final Supplier<Rotation2d> turretAngleSupplier;
 
     private final List<ResultInterface> combinedResults = new ArrayList<>(16);
     private final List<ApriltagResult> combinedApriltagResults = new ArrayList<>(16);
@@ -116,7 +106,6 @@ public class VisionSubsystem extends SubsystemBase {
         this.config = configuration;
         this.swerve = swerveSubsystem;
         this.hasValidPose = false;
-        this.turretAngleSupplier = turretAngleSupplier;
 
         this.aprilTagFilter = new PipelineFilter(buildFilterList(configuration, swerveSubsystem));
 
@@ -161,14 +150,6 @@ public class VisionSubsystem extends SubsystemBase {
                 if (camera instanceof LimelightProcessor ll) {
                     ll.updateHeading(headingDegrees);
                 }
-            }
-        }
-
-        if (turretAngleSupplier != null) {
-            Rotation2d turretAngle = turretAngleSupplier.get();
-            double timestamp = Timer.getFPGATimestamp();
-            for (ProcessorInterface camera : cameras.values()) {
-                camera.updateTurretAngle(turretAngle, timestamp);
             }
         }
 

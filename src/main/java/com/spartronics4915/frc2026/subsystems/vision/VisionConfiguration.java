@@ -6,10 +6,8 @@ public class VisionConfiguration {
     public final double maxSingleTagDistanceMeters;
     public final double maxMultiTagDistanceMeters;
     public final double maxAmbiguityScore;
-    public final double maxAnisotropy;
     public final double minArea;
     public final double maxArea;
-    public final double maxPeriodicTimeMs;
     public final boolean enableMotionPunishment;
     public final double velocityPunishmentThreshold;
     public final double angularVelocityThreshold;
@@ -24,11 +22,9 @@ public class VisionConfiguration {
             110,
             6.0, 
             8.0,
-            0.2,
-            1.9,
+            0.9,
             0.05,
             0.70,
-            20.0, 
             true,  
             3.0,
             2.0,
@@ -36,7 +32,7 @@ public class VisionConfiguration {
             0.05,
             2,   
             3.0,
-            100
+            Double.MAX_VALUE
         );
     }
 
@@ -45,10 +41,8 @@ public class VisionConfiguration {
         double maxSingleTagDistanceMeters,
         double maxMultiTagDistanceMeters,
         double maxAmbiguityScore,
-        double maxAnisotropy,
         double minArea,
         double maxArea,
-        double maxPeriodicTimeMs,
         boolean enableMotionPunishment,
         double velocityPunishmentThreshold,
         double angularVelocityThreshold,
@@ -62,10 +56,8 @@ public class VisionConfiguration {
         this.maxSingleTagDistanceMeters = maxSingleTagDistanceMeters;
         this.maxMultiTagDistanceMeters = maxMultiTagDistanceMeters;
         this.maxAmbiguityScore = maxAmbiguityScore;
-        this.maxAnisotropy = maxAnisotropy;
         this.minArea = minArea;
         this.maxArea = maxArea;
-        this.maxPeriodicTimeMs = maxPeriodicTimeMs;
         this.enableMotionPunishment = enableMotionPunishment;
         this.velocityPunishmentThreshold = velocityPunishmentThreshold;
         this.angularVelocityThreshold = angularVelocityThreshold;

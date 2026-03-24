@@ -376,7 +376,7 @@ public final class Constants {
         public static final class StdDevConstants {
             public static final double baseXYStdDev = 0.32;  // 0.18
             public static final double baseThetaStdDev = 0.87;  // 0.5 — heading from vision is still less reliable
-            public static final double ambiguityWeight = 0.6;  // 0.8
+            public static final double ambiguityWeight = 1.0;  // 0.6
             public static final double areaWeight = 0.9;  // 0.6
             public static final double motionWeight = 0.3;  // 0.4
             public static final double latencyWeight = 1.0;  // 0.4
