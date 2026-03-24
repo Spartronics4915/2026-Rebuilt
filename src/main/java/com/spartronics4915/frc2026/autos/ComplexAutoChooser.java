@@ -173,57 +173,55 @@ public class ComplexAutoChooser {
         }
     }
 
+    private boolean isRight(AutoSegment segment) {
+        // Triggers with RT -> N, RB -> N, RT -> A, and RB -> A, the rest are "left"
+        return segment.userFacingName.charAt(0) == 'R';
+    }
+
     /**
      * Generates the auto command based on the currently selected segments.
      * @return The command representing the selected autonomous routine.
      */
     public Command getAuto() {
         ArrayList<Command> commands = new ArrayList<>();
-        boolean right = false;
         AutoSegment prevSegment = UNUSED;
         for (int i = 0; i < selectedSegments.length; i++) {
-            AutoSegment segment = selectedSegments[i];
+            AutoSegment currentSegment = selectedSegments[i];
+            AutoSegment futureSegment = (i + 1 < selectedSegments.length) ? selectedSegments[i + 1] : UNUSED;
 
-            if (segment == UNUSED) {
+            if (currentSegment == UNUSED) {
                 break;
             }
 
-            switch (segment) {
+            switch (currentSegment) {
                 case L_TRENCH_TO_NEUTRAL:
-                    right = false;
                     commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, true));
                     break;
                 case L_BUMP_TO_NEUTRAL:
-                    right = false;
                     commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP, true));
                     break;
                 case R_TRENCH_TO_NEUTRAL:
-                    right = true;
                     commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, true));
                     break;
                 case R_BUMP_TO_NEUTRAL:
-                    right = true;
                     commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, true));
                     break;
 
                 case INTAKE_QUARTER:
                 case INTAKE_HALF:
+                    commands.add(addNeutralZoneCommand(currentSegment, isRight(prevSegment), isRight(futureSegment)));
                     break;
 
                 case L_TRENCH_TO_ALLIANCE:
-                    commands.add(addNeutralZoneCommand(prevSegment, right, false));
                     commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, false));
                     break;
                 case L_BUMP_TO_ALLIANCE:
-                    commands.add(addNeutralZoneCommand(prevSegment, right, false));
                     commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP, false));
                     break;
                 case R_TRENCH_TO_ALLIANCE:
-                    commands.add(addNeutralZoneCommand(prevSegment, right, true));
                     commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, false));
                     break;
                 case R_BUMP_TO_ALLIANCE:
-                    commands.add(addNeutralZoneCommand(prevSegment, right, true));
                     commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, false));
                     break;
 
@@ -244,7 +242,7 @@ public class ComplexAutoChooser {
                     break;
             }
 
-            prevSegment = segment;
+            prevSegment = currentSegment;
         }
 
         Command[] commandsArray = new Command[commands.size()];
