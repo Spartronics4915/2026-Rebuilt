@@ -177,7 +177,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
         isFlatDebouncedValue = flatDebouncer.calculate(isFlat());
 
-        smoothedPose = poseFilter.calculate(getRelativePose());
+        smoothedPose = poseFilter.calculate(getPose());
 
         if (Robot.isSimulation() && bumpSim != null) {
             Pose3d resolvedPose = bumpSim.resolveRobotPose(getPose());
@@ -309,6 +309,11 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public RobotHeading getHeading() {
         return new RobotHeading(getGyroRotation3d(), Timer.getFPGATimestamp());
+    }
+
+    public Pose2d getSmoothedRelativePose() {
+        Pose2d pose = getSmoothedPose();
+        return shouldFlip() ? FlippingUtil.flipFieldPose(pose) : pose;
     }
 
     public Pose2d getSmoothedPose() {
