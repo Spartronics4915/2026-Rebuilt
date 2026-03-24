@@ -70,15 +70,6 @@ public class DriveCommand extends Command {
         double vY = applyResponseCurve(MathUtil.applyDeadband(-hid.getLeftX(), stickDeadband)) * maxSpeed;
         double omega = applyResponseCurve(MathUtil.applyDeadband(-hid.getRightX(), stickDeadband)) * maxAngularRate;
 
-        double override = swerve.getMovementOverride();
-        if (override != 0.0) {
-            vY = computeOverrideVY(override);
-        } else {
-            wasOverriding = false;
-            yState.position = swerve.getRelativePose().getY();
-            yState.velocity = swerve.getFieldVelocity().vyMetersPerSecond;
-        }
-
         if (limitChassisSpeeds) {
             vX = Math.min(Math.abs(vX), maxSpeedWhenShooting) * Math.signum(vX);
             vY = Math.min(Math.abs(vY), maxSpeedWhenShooting) * Math.signum(vY);
@@ -91,6 +82,15 @@ public class DriveCommand extends Command {
             xRateLimiter.reset(vX);
             yRateLimiter.reset(vY);
             omegaRateLimiter.reset(omega);
+        }
+
+        double override = swerve.getMovementOverride();
+        if (override != 0.0) {
+            vY = computeOverrideVY(override);
+        } else {
+            wasOverriding = false;
+            yState.position = swerve.getRelativePose().getY();
+            yState.velocity = swerve.getFieldVelocity().vyMetersPerSecond;
         }
 
         if (!swerve.isFieldRelative()) {
@@ -195,9 +195,10 @@ public class DriveCommand extends Command {
     }
 
     private static double applyResponseCurve(double x) {
-        double ax = Math.abs(x);
-        double linearWeight = 0.60;
-        double shaped = linearWeight * ax + (1.0 - linearWeight) * (ax * ax);
-        return Math.signum(x) * shaped;
+        //double ax = Math.abs(x);
+        //double linearWeight = 0.60;
+        //double shaped = linearWeight * ax + (1.0 - linearWeight) * (ax * ax);
+        //return Math.signum(x) * shaped;
+        return Math.signum(x) * Math.pow(Math.abs(x), 1.5);
     }
 }

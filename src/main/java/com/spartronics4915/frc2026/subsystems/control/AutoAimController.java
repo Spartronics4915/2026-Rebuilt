@@ -53,8 +53,8 @@ public class AutoAimController extends SubsystemBase {
     private final SwerveSubsystem swerve;
 
     private final AutoAim autoAim = new AutoAim(
-        30,
-        100,
+        20, // 30
+        50, // 100
         0.001,
         turretTranslation3D,
         Rotation2d.fromDegrees(50),

@@ -49,8 +49,8 @@ public class VisionSubsystem extends SubsystemBase {
 
     private final SwerveSubsystem swerve;
 
-    private final List<ResultInterface> combinedResults = new ArrayList<>(16);
-    private final List<ApriltagResult> combinedApriltagResults = new ArrayList<>(16);
+    private final List<ResultInterface> combinedResults = new ArrayList<>(4);
+    private final List<ApriltagResult> combinedApriltagResults = new ArrayList<>(4);
 
     private final Pose3d[] tagPoseScratch = new Pose3d[33];
 

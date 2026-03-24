@@ -106,6 +106,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     private final Debouncer flatDebouncer = new Debouncer(tiltDebounce);
     private boolean isFlatDebouncedValue = false;
+    private volatile double lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
 
     private final SwerveTelemetry telemetry = new SwerveTelemetry();
 
@@ -185,6 +186,11 @@ public class SwerveSubsystem extends SubsystemBase {
             }
         }
 
+        if ((now - lastDriveCommandTimestamp) > staleCommandTimeout) {
+            drivetrain.setControl(autoRequest.withSpeeds(new ChassisSpeeds(0.0, 0.0, 0.0)));
+            lastDriveCommandTimestamp = now;
+        }
+
         telemetry.publish(drivetrain.getState(), this);
     }
  
@@ -194,6 +200,7 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public void driveFieldCentric(double vX, double vY, double omega) {
+        lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
         drivetrain.setControl(
             fieldCentricRequest
                 .withVelocityX(vX)
@@ -203,6 +210,7 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public void driveFieldCentricFacingAngle(double vX, double vY, Rotation2d targetHeading) {
+        lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
         drivetrain.setControl(
             headingLockRequest
                 .withVelocityX(vX)
@@ -213,6 +221,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     /** Robot-centric drive (used when field-relative is toggled off). */
     public void driveRobotCentric(double vX, double vY, double omega) {
+        lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
         drivetrain.setControl(
             robotCentricRequest
                 .withVelocityX(vX)
@@ -226,6 +235,7 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public void drive(ChassisSpeeds chassisSpeeds) {
+        lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
         drivetrain.setControl(autoRequest.withSpeeds(chassisSpeeds));
     }
 
