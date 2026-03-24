@@ -163,7 +163,7 @@ public class ComplexAutoChooser {
 
     private Command addNeutralZoneCommand(AutoSegment segment, boolean inRight, boolean outRight) {
         if (segment == INTAKE_QUARTER) {
-            return neutralZoneFactory.generateQuadrantCommand(inRight, inRight ^ outRight);
+            return neutralZoneFactory.generateQuadrantCommand(inRight);
         } else {
             return neutralZoneFactory.generateHalfCommand(inRight, inRight ^ outRight);
         }

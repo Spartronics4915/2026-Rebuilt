@@ -30,14 +30,14 @@ public class NeutralZoneAutos {
         this.swerve = swerve;
     }
 
-    public Command generateQuadrantCommand(boolean isRightSide, boolean endWithSpeed) {
+    public Command generateQuadrantCommand(boolean isRightSide) {
         return Commands.defer(() -> {
             double sideMultiplier = isRightSide ? -1 : 1;
             Rotation2d rotation = Rotation2d.fromDegrees(isRightSide ? 90 : -90);
 
             Translation2d offsetFromCenter = new Translation2d(
-                -robotWidth.in(Meters) / 2 - centerPadding.in(Meters),
-                (robotLength.in(Meters) / 2 + intakeLength.in(Meters)) * sideMultiplier
+                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters),
+                (robotLength.in(Meters) / 2 + intakeLength.in(Meters) + paddingFromCenter.in(Meters)) * sideMultiplier
             );
 
             Pose2d intakeStart = new Pose2d(
@@ -60,7 +60,7 @@ public class NeutralZoneAutos {
                 List.of(),
                 defaultPathConstraints,
                 Autos.generateStartingState(swerve),
-                new GoalEndState(endWithSpeed ? intakePathConstraints.maxVelocity() : MetersPerSecond.of(0), rotation),
+                new GoalEndState(intakePathConstraints.maxVelocity(), rotation),
                 false
             );
             
@@ -74,12 +74,12 @@ public class NeutralZoneAutos {
             Rotation2d rotation = Rotation2d.fromDegrees(isRightSide ? 90 : -90);
 
             Translation2d startOffset = new Translation2d(
-                -robotWidth.in(Meters) / 2 - centerPadding.in(Meters),
+                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters),
                 (robotLength.in(Meters) / 2 + intakeLength.in(Meters)) * sideMultiplier
             ).plus(fuelIntakeTransform.times(sideMultiplier));
 
             Translation2d endOffset = new Translation2d(
-                -robotWidth.in(Meters) / 2 - centerPadding.in(Meters),
+                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters),
                 0
             ).plus(fuelIntakeTransform.times(-sideMultiplier));
 
