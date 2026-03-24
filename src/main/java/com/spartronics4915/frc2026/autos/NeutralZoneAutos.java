@@ -37,14 +37,22 @@ public class NeutralZoneAutos {
 
             Translation2d offsetFromCenter = new Translation2d(
                 -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters),
-                (robotLength.in(Meters) / 2 + intakeLength.in(Meters) + paddingFromCenter.in(Meters)) * sideMultiplier
+                (robotLength.in(Meters) / 2 + intakeLength.in(Meters)) * sideMultiplier
             );
 
             Pose2d intakeStart = new Pose2d(
                 centerPose.plus(offsetFromCenter).plus(fuelIntakeTransform.times(sideMultiplier)),
                 rotation
             );
-            Pose2d quadrantEnd = new Pose2d(centerPose.plus(offsetFromCenter), rotation);
+            Pose2d quadrantEnd = new Pose2d(
+                centerPose.plus(offsetFromCenter).plus(
+                    new Translation2d(
+                        0, 
+                        paddingFromCenter.in(Meters)
+                    ).times(sideMultiplier)
+                ), 
+                rotation
+            );
 
             List<Pose2d> poses = new ArrayList<>(List.of(intakeStart, quadrantEnd));
 

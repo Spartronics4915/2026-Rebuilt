@@ -271,7 +271,7 @@ public final class Constants {
             public static final Distance towerPadding = Inches.of(10);
             public static final Distance outpostPadding = Inches.of(6);
             public static final Distance paddingFromOp = Inches.of(3); // Padding away from center so we don't hit opponent robots
-            public static final Distance paddingFromCenter = Meters.of(0.75); // Padding from center so we don't hit friendly robots (and implement u-turn movement)
+            public static final Distance paddingFromCenter = Meters.of(0.25); // Padding from center so we don't hit friendly robots (and implement u-turn movement)
             public static final Distance bumperThickness = Millimeters.of(72.7);
 
             public static final PathConstraints defaultPathConstraints = new PathConstraints(
