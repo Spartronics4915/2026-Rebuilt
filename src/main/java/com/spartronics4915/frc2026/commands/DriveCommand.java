@@ -35,9 +35,9 @@ public class DriveCommand extends Command {
     private Rotation2d lockedHeading = null;
 
     private boolean limitChassisSpeeds = false;
-    private SlewRateLimiter xRateLimiter = new SlewRateLimiter(0.2);
-    private SlewRateLimiter yRateLimiter = new SlewRateLimiter(0.2);
-    private SlewRateLimiter omegaRateLimiter = new SlewRateLimiter(0.2);
+    private SlewRateLimiter xRateLimiter = new SlewRateLimiter(maxSpeedWhenShooting / timeUntilLimitedMaxSpeed);
+    private SlewRateLimiter yRateLimiter = new SlewRateLimiter(maxSpeedWhenShooting / timeUntilLimitedMaxSpeed);
+    private SlewRateLimiter omegaRateLimiter = new SlewRateLimiter(maxOmegaWhenShooting / timeUntilLimitedMaxSpeed);
 
     private final TrapezoidProfile trapezoidProfile = new TrapezoidProfile(trenchAlignConstraints);
     private final TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
@@ -82,11 +82,15 @@ public class DriveCommand extends Command {
         if (limitChassisSpeeds) {
             vX = Math.min(Math.abs(vX), maxSpeedWhenShooting) * Math.signum(vX);
             vY = Math.min(Math.abs(vY), maxSpeedWhenShooting) * Math.signum(vY);
-            omega = Math.min(Math.abs(omega), maxSpeedWhenShooting) * Math.signum(omega);
+            omega = Math.min(Math.abs(omega), maxOmegaWhenShooting) * Math.signum(omega);
             
             vX = xRateLimiter.calculate(vX);
             vY = yRateLimiter.calculate(vY);
             omega = omegaRateLimiter.calculate(omega);
+        } else {
+            xRateLimiter.reset(vX);
+            yRateLimiter.reset(vY);
+            omegaRateLimiter.reset(omega);
         }
 
         if (!swerve.isFieldRelative()) {
