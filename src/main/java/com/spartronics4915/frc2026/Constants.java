@@ -268,7 +268,7 @@ public final class Constants {
             public static final Translation2d approachTransform = new Translation2d(-1.1, 0);
             public static final Translation2d trenchExitTransform = new Translation2d(1.5, 0);
             public static final Translation2d bumpExitTransform = new Translation2d((centerPose.getX() - hubPose.getX()) * 1.2, 0);
-            public static final Translation2d fuelIntakeTransform = new Translation2d(0, 1.5);
+            public static final Translation2d fuelIntakeTransform = new Translation2d(0, 1.75);
 
             public static final Distance robotLength = Millimeters.of(818.5);
             public static final Distance robotWidth = Millimeters.of(875.65);

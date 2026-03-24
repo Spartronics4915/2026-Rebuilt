@@ -76,6 +76,47 @@ public class NeutralZoneAutos {
         }, Set.of(swerve));
     }
 
+    public Command generateInvertedQuadrantCommand(boolean toRightSide) {
+        return Commands.defer(() -> {
+            double sideMultiplier = toRightSide ? 1 : -1;
+            Rotation2d rotation = Rotation2d.fromDegrees(toRightSide ? -90 : 90);
+
+            Translation2d offsetFromCenter = new Translation2d(
+                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters),
+                (robotLength.in(Meters) / 2 + intakeLength.in(Meters)) * sideMultiplier
+            );
+
+            Pose2d quadrantEnd = new Pose2d(
+                centerPose.plus(offsetFromCenter).plus(fuelIntakeTransform.times(-sideMultiplier)),
+                rotation
+            );
+            Pose2d intakeStart = new Pose2d(
+                centerPose.plus(offsetFromCenter), 
+                rotation
+            );
+
+            List<Pose2d> poses = new ArrayList<>(List.of(intakeStart, quadrantEnd));
+
+            Autos.addStartingPoseToPath(swerve, poses);
+
+            List<Waypoint> waypoints = PathPlannerPath.waypointsFromPoses(poses);
+
+            PathPlannerPath path = new PathPlannerPath(
+                waypoints,
+                List.of(new RotationTarget(1, rotation)),
+                List.of(),
+                List.of(new ConstraintsZone(1, 2, intakePathConstraints)),
+                List.of(),
+                defaultPathConstraints,
+                Autos.generateStartingState(swerve),
+                new GoalEndState(intakePathConstraints.maxVelocity(), rotation),
+                false
+            );
+            
+            return AutoBuilder.followPath(path);
+        }, Set.of(swerve));
+    }
+
     public Command generateHalfCommand(boolean isRightSide, boolean endWithSpeed) {
         return Commands.defer(() -> {
             double sideMultiplier = isRightSide ? -1 : 1;
