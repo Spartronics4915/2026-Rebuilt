@@ -213,7 +213,7 @@ public class RobotContainer {
 
         operatorController.povUp().whileTrue(
             Commands.run(() -> {
-                hoodSubsystem.setSetpoint(hoodSubsystem.getCurrentSetpoint().plus(Rotation2d.fromDegrees(0.5 * 3)));
+                pivotSubsystem.deltaSetpoint(Rotation2d.fromDegrees(1.5));
             })
         );
 
@@ -231,9 +231,17 @@ public class RobotContainer {
 
         operatorController.povDown().whileTrue(
             Commands.run(() -> {
-                hoodSubsystem.setSetpoint(hoodSubsystem.getCurrentSetpoint().minus(Rotation2d.fromDegrees(0.5 * 3)));
+                pivotSubsystem.deltaSetpoint(Rotation2d.fromDegrees(-1.5));
             })
         );
+
+        operatorController.leftStick().onTrue(
+            Commands.runOnce(() -> {
+                pivotSubsystem.resetMechanism(Rotation2d.kZero);
+            })
+        );
+
+        SmartDashboard.putData("Pivot Reset", Commands.runOnce(() -> pivotSubsystem.resetMechanism(Rotation2d.kZero)));
 
         operatorController.leftTrigger().onTrue(
             Commands.parallel(

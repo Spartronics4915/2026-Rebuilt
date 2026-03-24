@@ -81,14 +81,6 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
 
     @Override
     public void periodic(){
-        currentSetpoint = Rotation2d.fromRotations(
-            MathUtil.clamp(
-                currentSetpoint.getRotations(), 
-                MIN_ANGLE.getRotations(), 
-                MAX_ANGLE.getRotations()
-            )
-        );
-
         currentState = trapProfile.calculate(
             dtCalc.update(), 
             currentState, 
@@ -112,7 +104,13 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
     }
 
     public void setSetpoint(Rotation2d setpoint){
-        currentSetpoint = setpoint;
+        currentSetpoint = Rotation2d.fromRotations(
+            MathUtil.clamp(
+                setpoint.getRotations(), 
+                MIN_ANGLE.getRotations(), 
+                MAX_ANGLE.getRotations()
+            )
+        );
     }
 
     public Rotation2d getSetpoint() {
@@ -120,7 +118,7 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
     }
 
     public void setState(PivotState state){
-        currentSetpoint = state.angle;
+        setSetpoint(state.angle);
     }
 
     private void setMechanismAngle(Rotation2d angle){
@@ -132,9 +130,14 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
         resetMechanism(getPosition());
     }
 
-    public void resetMechanism(Rotation2d angle){
-        currentSetpoint = angle;
+    public void resetMechanism(Rotation2d angle) {
+        setSetpoint(angle);
         currentState = new State(angle.getRotations(), 0.0);
+    }
+
+    // Ignores limits for the purpose of manual reset
+    public void deltaSetpoint(Rotation2d delta) {
+        currentSetpoint = Rotation2d.fromDegrees(getSetpoint().getDegrees() + delta.getDegrees());
     }
 
     //#endregion
