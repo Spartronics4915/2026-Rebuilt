@@ -525,18 +525,18 @@ public class SwerveSubsystem extends SubsystemBase {
                 driveVelMPS[i].set(state.ModuleStates[i].speedMetersPerSecond);
                 driveTargetMPS[i].set(state.ModuleTargets[i].speedMetersPerSecond);
                 drivePositionM[i].set(state.ModulePositions[i].distanceMeters);
-                driveCurrentA[i].set(drive.getStatorCurrent(false).getValueAsDouble());
-                driveVoltageV[i].set(drive.getMotorVoltage(false).getValueAsDouble());
-                driveTempC[i].set(drive.getDeviceTemp(false).getValueAsDouble());
-                driveCLError[i].set(drive.getClosedLoopError(false).getValueAsDouble());
-                driveClosedLoopRef[i].set(drive.getClosedLoopReference(false).getValueAsDouble());
- 
+                driveCurrentA[i].set(drive.getStatorCurrent().getValueAsDouble());
+                driveVoltageV[i].set(drive.getMotorVoltage().getValueAsDouble());
+                driveTempC[i].set(drive.getDeviceTemp().getValueAsDouble());
+                driveCLError[i].set(drive.getClosedLoopError().getValueAsDouble());
+                driveClosedLoopRef[i].set(drive.getClosedLoopReference().getValueAsDouble());
+
                 steerAngleDeg[i].set(state.ModuleStates[i].angle.getDegrees());
                 steerTargetDeg[i].set(state.ModuleTargets[i].angle.getDegrees());
-                steerCurrentA[i].set(steer.getStatorCurrent(false).getValueAsDouble());
-                steerVoltageV[i].set(steer.getMotorVoltage(false).getValueAsDouble());
-                steerTempC[i].set(steer.getDeviceTemp(false).getValueAsDouble());
-                steerCLError[i].set(steer.getClosedLoopError(false).getValueAsDouble());
+                steerCurrentA[i].set(steer.getStatorCurrent().getValueAsDouble());
+                steerVoltageV[i].set(steer.getMotorVoltage().getValueAsDouble());
+                steerTempC[i].set(steer.getDeviceTemp().getValueAsDouble());
+                steerCLError[i].set(steer.getClosedLoopError().getValueAsDouble());
             }
         }
     }

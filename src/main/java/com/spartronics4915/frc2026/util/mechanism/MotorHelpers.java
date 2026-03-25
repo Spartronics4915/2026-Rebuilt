@@ -116,11 +116,11 @@ public class MotorHelpers {
                 }
 
                 // General logging (that can't be changed since it's just data)
-                builder.addDoubleProperty("Applied Output", () -> this.getDutyCycle(false).getValueAsDouble(), null);
-                builder.addDoubleProperty("Voltage", () -> this.getMotorVoltage(false).getValueAsDouble(), null);
-                builder.addDoubleProperty("Amp usage", () -> this.getSupplyCurrent(false).getValueAsDouble(), null);
-                builder.addDoubleProperty("Position", () -> this.getPosition(false).getValueAsDouble(), null);
-                builder.addDoubleProperty("Velocity", () -> this.getVelocity(false).getValueAsDouble(), null);
+                builder.addDoubleProperty("Applied Output", () -> this.getDutyCycle().getValueAsDouble(), null);
+                builder.addDoubleProperty("Voltage", () -> this.getMotorVoltage().getValueAsDouble(), null);
+                builder.addDoubleProperty("Amp usage", () -> this.getSupplyCurrent().getValueAsDouble(), null);
+                builder.addDoubleProperty("Position", () -> this.getPosition().getValueAsDouble(), null);
+                builder.addDoubleProperty("Velocity", () -> this.getVelocity().getValueAsDouble(), null);
             }
         }
     }
