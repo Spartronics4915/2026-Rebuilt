@@ -13,7 +13,6 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsyst
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.util.control.FieldRegion;
 import com.spartronics4915.frc2026.util.control.FieldZoneMap;
-import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
 
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -139,7 +138,7 @@ public class Superstructure extends SubsystemBase {
         }
 
         if (currentZone == Zone.ALLIANCE_ZONE && shooter.getIsShooting()) {
-            driveCommand.setSpeedLimit(true);
+            driveCommand.setSpeedLimit(false);
         } else {
             driveCommand.setSpeedLimit(false);
         }

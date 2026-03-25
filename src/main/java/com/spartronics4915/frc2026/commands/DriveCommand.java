@@ -79,7 +79,7 @@ public class DriveCommand extends Command {
             yState.velocity = swerve.getFieldVelocity().vyMetersPerSecond;
         }
 
-        if (limitChassisSpeeds && false) {
+        if (limitChassisSpeeds) {
             vX = Math.min(Math.abs(vX), maxSpeedWhenShooting) * Math.signum(vX);
             vY = Math.min(Math.abs(vY), maxSpeedWhenShooting) * Math.signum(vY);
             omega = Math.min(Math.abs(omega), maxOmegaWhenShooting) * Math.signum(omega);
@@ -113,7 +113,7 @@ public class DriveCommand extends Command {
             wasAligning = false;
         }
 
-        double rotationBreakThreshold = (lockedHeading != null) ? maxAngularRate * 0.03 : maxAngularRate * 0.03;
+        //double rotationBreakThreshold = (lockedHeading != null) ? maxAngularRate * 0.03 : maxAngularRate * 0.03;
         boolean driverIsRotating = true /*Math.abs(omega) > rotationBreakThreshold*/;
         boolean driverIsTranslating = Math.hypot(vX, vY) > maxSpeed * 0.05;
 
