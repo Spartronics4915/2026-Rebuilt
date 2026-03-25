@@ -108,10 +108,15 @@ public class AutoAimController extends SubsystemBase {
         turretController.reset(turret.getPosition());
     }
 
+    // Collision cache
+    private Double cachedCollisionDist = null;
+
     @Override
     public void periodic() {
         isAimEnabledPublisher.accept(isAimEnabled);
         isShootingEnabledPublisher.accept(isAutoShootingEnabled);
+
+        updateCollisionCache();
 
         if (!isAimEnabled && !shootOverride) {
             lastResult = null;
@@ -209,39 +214,17 @@ public class AutoAimController extends SubsystemBase {
     }
 
     private boolean checkHubCollision(Rotation2d pitch, double shotSpeed, boolean usePadding) {
-        Translation2d robotPos2d = swerve.getSmoothedRelativePose().getTranslation()
-            .plus(turretTranslation2D.rotateBy(swerve.getRelativePose().getRotation()));
+        if (cachedCollisionDist == null) return false;
+        double collisionDist = cachedCollisionDist;
 
-        Translation2d targetPos2d = new Translation2d(hubPose.getX(), hubPose.getY());
+        if (collisionDist <= 0) return true;
 
         // Shooter height from ground
         double shooterZ = Units.inchesToMeters(21.443748 + 2.955);
 
-        // Distance to target in XY plane
-        double distToTarget = robotPos2d.getDistance(targetPos2d);
-
         // Projectile horizontal velocity (v_xy) and vertical velocity (v_z)
         double vXY = shotSpeed * pitch.getCos();
         double vZ = shotSpeed * pitch.getSin();
-
-        double halfSide = Units.inchesToMeters(47) / 2.0;
-
-        // Vector from robot to target
-        Translation2d toTarget = targetPos2d.minus(robotPos2d);
-        Rotation2d angleToTarget = toTarget.getAngle();
-        double absCos = Math.abs(angleToTarget.getCos());
-        double absSin = Math.abs(angleToTarget.getSin());
-
-        // Distance from center to the square boundary along the shot line
-        // We are firing AT the center. The distance from center to edge is determined by
-        // which wall we hit first (based on angle).
-        // If |cos(theta)| > |sin(theta)|, we hit the vertical walls at x = +/- L/2
-        // Else we hit horizontal walls at y = +/- L/2
-        double distCenterToWall = (absCos > absSin) ? halfSide / absCos : halfSide / absSin;
-
-        // Distance from robot to the collision wall
-        double collisionDist = distToTarget - distCenterToWall;
-        if (collisionDist <= 0) return true;
 
         // Time to travel that horizontal distance
         double t = collisionDist / vXY;
@@ -253,6 +236,24 @@ public class AutoAimController extends SubsystemBase {
         // If it is lower than the rim height when crossing the rim boundary,
         // it hits the side of the hub.
         return zAtCollision < HUB_POSITION.getZ() + (usePadding ? HUB_IDEAL_SHOT_PADDING.in(Meters) : HUB_SHOT_PADDING.in(Meters));
+    }
+
+    private void updateCollisionCache() {
+        Translation2d robotPos2d = swerve.getSmoothedRelativePose().getTranslation()
+            .plus(turretTranslation2D.rotateBy(swerve.getRelativePose().getRotation()));
+
+        Translation2d targetPos2d = new Translation2d(hubPose.getX(), hubPose.getY());
+
+        double distToTarget = robotPos2d.getDistance(targetPos2d);
+        double halfSide = Units.inchesToMeters(47) / 2.0;
+
+        Translation2d toTarget = targetPos2d.minus(robotPos2d);
+        Rotation2d angleToTarget = toTarget.getAngle();
+        double absCos = Math.abs(angleToTarget.getCos());
+        double absSin = Math.abs(angleToTarget.getSin());
+
+        double distCenterToWall = (absCos > absSin) ? halfSide / absCos : halfSide / absSin;
+        cachedCollisionDist = distToTarget - distCenterToWall;
     }
 
     //#endregion
