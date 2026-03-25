@@ -79,7 +79,7 @@ public class DriveCommand extends Command {
             yState.velocity = swerve.getFieldVelocity().vyMetersPerSecond;
         }
 
-        if (limitChassisSpeeds) {
+        if (limitChassisSpeeds && false) {
             vX = Math.min(Math.abs(vX), maxSpeedWhenShooting) * Math.signum(vX);
             vY = Math.min(Math.abs(vY), maxSpeedWhenShooting) * Math.signum(vY);
             omega = Math.min(Math.abs(omega), maxOmegaWhenShooting) * Math.signum(omega);
