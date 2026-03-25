@@ -114,7 +114,7 @@ public class DriveCommand extends Command {
         }
 
         double rotationBreakThreshold = (lockedHeading != null) ? maxAngularRate * 0.03 : maxAngularRate * 0.03;
-        boolean driverIsRotating = Math.abs(omega) > rotationBreakThreshold;
+        boolean driverIsRotating = true /*Math.abs(omega) > rotationBreakThreshold*/;
         boolean driverIsTranslating = Math.hypot(vX, vY) > maxSpeed * 0.05;
 
         if (driverIsRotating) {

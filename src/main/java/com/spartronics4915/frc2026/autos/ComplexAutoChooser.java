@@ -241,7 +241,8 @@ public class ComplexAutoChooser {
                 case PAUSE:
                     commands.add(Commands.deadline(
                         Commands.waitSeconds(shootWaitTime),
-                        preAlignmentFactory.generateCommand(prevSegment, futureSegment)
+                        Commands.none()
+                        //preAlignmentFactory.generateCommand(prevSegment, futureSegment)
                     ));
                     break;
                 case UNUSED:

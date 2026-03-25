@@ -199,11 +199,11 @@ public class SuperstructureCommands {
     public Command traversal() {
         return Commands.sequence(
             Commands.parallel(
+                conditionalPivotReady(),
                 conditionalAutoAimOn(),
                 conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
-                conditionalPivotReady(),
                 climber.setStateCommand(ClimberState.DOWN)),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
@@ -216,11 +216,11 @@ public class SuperstructureCommands {
     public Command trench() {
         return Commands.sequence(
             Commands.parallel(
+                conditionalPivotReady(),
                 conditionalAutoAimOn(),
                 conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.RESTRICTED),
                 shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
-                conditionalPivotReady(),
                 climber.setStateCommand(ClimberState.DOWN)),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
@@ -233,11 +233,11 @@ public class SuperstructureCommands {
     public Command tower() {
         return Commands.sequence(
             Commands.parallel(
+                conditionalPivotReady(),
                 conditionalAutoAimOn(),
                 conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.RESTRICTED),
-                conditionalPivotReady(),
                 climber.setStateCommand(ClimberState.DOWN)),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
@@ -250,11 +250,11 @@ public class SuperstructureCommands {
     public Command cruise() {
         return Commands.sequence(
             Commands.parallel(
+                conditionalPivotReady(),
                 conditionalAutoAimOn(),
                 conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
-                conditionalPivotReady(),
                 climber.setStateCommand(ClimberState.DOWN)),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(

@@ -97,10 +97,10 @@ public final class Constants {
         public static final double maxSpeed = 7.12; // 5.12
         public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(8); // 6
 
-        public static final double maxSpeedWhenShooting = maxSpeed * 0.5;
-        public static final double maxOmegaWhenShooting = maxAngularSpeed.in(RadiansPerSecond) * 0.5;
+        public static final double maxSpeedWhenShooting = maxSpeed * 0.35;
+        public static final double maxOmegaWhenShooting = maxAngularSpeed.in(RadiansPerSecond) * 0.35;
 
-        public static final double timeUntilLimitedMaxSpeed = 0.5;
+        public static final double timeUntilLimitedMaxSpeed = 0.75;
 
         public static final boolean defaultFieldRelative = true;
 
@@ -218,11 +218,21 @@ public final class Constants {
                     .withDriveInertia(KilogramSquareMeters.of(0.01))
                     .withSteerFrictionVoltage(Volts.of(0.2))
                     .withDriveFrictionVoltage(Volts.of(0.2))
-                    .withSteerMotorInitialConfigs(new TalonFXConfiguration()
-                        .withCurrentLimits(new CurrentLimitsConfigs()
-                            .withStatorCurrentLimit(Amps.of(60))
-                            .withStatorCurrentLimitEnable(true)
-                        )
+                    .withSteerMotorInitialConfigs(
+                        new TalonFXConfiguration()
+                            .withCurrentLimits(
+                                new CurrentLimitsConfigs()
+                                    .withStatorCurrentLimit(Amps.of(60))
+                                    .withStatorCurrentLimitEnable(true)
+                            )
+                    )
+                    .withDriveMotorInitialConfigs(
+                        new TalonFXConfiguration()
+                            .withCurrentLimits(
+                                new CurrentLimitsConfigs()
+                                    .withStatorCurrentLimit(Amps.of(60))
+                                    .withStatorCurrentLimitEnable(true)
+                            )
                     );
             }
         }
@@ -294,8 +304,8 @@ public final class Constants {
             );
 
             public static final PathConstraints bumpPathConstraints = new PathConstraints(
-                2.0,
-                2.0,
+                3.0,
+                4.0,
                 1.0 * Math.PI,
                 2.0 * Math.PI
             );
@@ -387,12 +397,11 @@ public final class Constants {
 
         // TODO: Tune these values more (PLEASE!)
         public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.32;  // 0.18
+            public static final double baseXYStdDev = 0.42;  // 0.18
             public static final double baseThetaStdDev = 0.87;  // 0.5 — heading from vision is still less reliable
-            public static final double ambiguityWeight = 0.6;  // 0.6
-            public static final double areaWeight = 0.9;  // 0.6
-            public static final double motionWeight = 0.3;  // 0.4
-            public static final double latencyWeight = 1.0;  // 0.4
+            public static final double ambiguityWeight = 0.3;  // 0.6
+            public static final double areaWeight = 0.8;  // 0.6
+            public static final double latencyWeight = 0.9;  // 0.4
         }
 
         public static final class CameraConstants {
@@ -560,7 +569,7 @@ public final class Constants {
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.123;
-        public static final double A = 30;
+        public static final double A = 60;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 80;
@@ -644,8 +653,8 @@ public final class Constants {
         public static final double I = 0.0;
         public static final double D = 0.2;
 
-        public static final double MAX_VELOCITY = 8;
-        public static final double MAX_ACCELERATION = 8;
+        public static final double MAX_VELOCITY = 10;
+        public static final double MAX_ACCELERATION = 10;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
