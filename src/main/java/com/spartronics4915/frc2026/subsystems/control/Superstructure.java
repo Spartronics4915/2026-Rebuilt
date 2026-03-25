@@ -13,6 +13,7 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsyst
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.util.control.FieldRegion;
 import com.spartronics4915.frc2026.util.control.FieldZoneMap;
+import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
 
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -23,6 +24,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 /**
@@ -175,6 +177,10 @@ public class Superstructure extends SubsystemBase {
                 Commands.waitSeconds(0.5 / PIVOT_JOSTLE_FREQUENCY)
             ).repeatedly())
             .whileFalse(superCommands.conditionalPivotReady());
+        
+        RobotModeTriggers.teleop().onTrue(Commands.runOnce(() -> {
+            controller.setShootingState(false);
+        }));
     }
 
     /**
