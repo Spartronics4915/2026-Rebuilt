@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -119,7 +120,7 @@ public class AutoAim {
         double turretVxField = turretVxRobot * cos - turretVyRobot * sin;
         double turretVyField = turretVxRobot * sin + turretVyRobot * cos;
 
-        ChassisSpeeds speeds = new ChassisSpeeds(
+        ChassisSpeeds turretFieldSpeeds = new ChassisSpeeds(
             fieldSpeeds.vxMetersPerSecond + turretVxField,
             fieldSpeeds.vyMetersPerSecond + turretVyField,
             fieldSpeeds.omegaRadiansPerSecond
@@ -127,13 +128,27 @@ public class AutoAim {
 
         Translation3d prevDisplacement = new Translation3d();
         AutoAimResult result = null;
+        Translation2d currentTurretTranslation = turretTransform.toTranslation2d().rotateBy(robotPose.getRotation());
+
         for (int i = 0; i < maxIterations; i++) {
             Translation3d virtualTarget = targetTranslation.minus(prevDisplacement);
-            result = calculateStaticAim(robotPose, virtualTarget, projectileSpeed, speeds);
+            result = calculateStaticAim(robotPose, virtualTarget, projectileSpeed, turretFieldSpeeds);
             if (result == null || result.ToF() == -1) {
                 return result;
             }
-            Translation3d displacement = new Translation3d(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, 0).times(result.ToF() + processingCompensation);
+            
+            Rotation2d futureRotation = robotPose.getRotation().plus(new Rotation2d(fieldSpeeds.omegaRadiansPerSecond * processingCompensation));
+            Translation2d futureTurretTranslation = turretTransform.toTranslation2d().rotateBy(futureRotation);
+            
+            // Projectile drift depends on the full turret velocity during ToF, 
+            // but the robot itself only moves/rotates during processingCompensation before launch
+            Translation2d projectileDrift = new Translation2d(turretFieldSpeeds.vxMetersPerSecond, turretFieldSpeeds.vyMetersPerSecond).times(result.ToF());
+            Translation2d robotMovement = new Translation2d(fieldSpeeds.vxMetersPerSecond, fieldSpeeds.vyMetersPerSecond).times(processingCompensation);
+            Translation2d turretShift = futureTurretTranslation.minus(currentTurretTranslation);
+            
+            Translation2d netDisplacement = projectileDrift.plus(robotMovement).plus(turretShift);
+            Translation3d displacement = new Translation3d(netDisplacement.getX(), netDisplacement.getY(), 0.0);
+
             if (i > 0 && displacement.minus(prevDisplacement).getNorm() < convergenceThreshold) {
                 break;
             }
@@ -144,14 +159,22 @@ public class AutoAim {
             return null;
         }
 
+        double lookaheadWaitTime = processingCompensation + lookaheadTime;
+        Rotation2d lookaheadRotation = robotPose.getRotation().plus(new Rotation2d(fieldSpeeds.omegaRadiansPerSecond * lookaheadWaitTime));
+        Translation2d lookaheadTurretTranslation = turretTransform.toTranslation2d().rotateBy(lookaheadRotation);
+        
+        Translation2d lookaheadProjectileDrift = new Translation2d(turretFieldSpeeds.vxMetersPerSecond, turretFieldSpeeds.vyMetersPerSecond).times(result.ToF());
+        Translation2d lookaheadRobotMovement = new Translation2d(fieldSpeeds.vxMetersPerSecond, fieldSpeeds.vyMetersPerSecond).times(lookaheadWaitTime);
+        Translation2d lookaheadTurretShift = lookaheadTurretTranslation.minus(currentTurretTranslation);
+        
+        Translation2d lookaheadNetDisplacement = lookaheadProjectileDrift.plus(lookaheadRobotMovement).plus(lookaheadTurretShift);
+        Translation3d lookaheadDisplacement = new Translation3d(lookaheadNetDisplacement.getX(), lookaheadNetDisplacement.getY(), 0.0);
+
         AutoAimResult lookaheadResult = calculateStaticAim(
             robotPose,
-            targetTranslation.minus(
-                new Translation3d(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, 0)
-                    .times(result.ToF() + processingCompensation + lookaheadTime)
-            ),
+            targetTranslation.minus(lookaheadDisplacement),
             projectileSpeed,
-            speeds
+            turretFieldSpeeds
         );
 
         if (lookaheadResult != null) {
