@@ -144,21 +144,21 @@ public final class Constants {
                 compChassisFactory(),
                 // Front Left
                 new ModuleConfig(1, 2, 3,
-                    Rotations.of(-0.30615234375),
+                    Rotations.of(-0.300048828125),
                     Inches.of(9.585892), Inches.of(12.1640885),
                     false),
                 // Front Right
                 new ModuleConfig(4, 5, 6,
-                    Rotations.of(-0.094970703125),
+                    Rotations.of(0.15380859375),
                     Inches.of(9.585892), Inches.of(-12.1640885),
                     true),
                 // Back Left
                 new ModuleConfig(7, 8, 9,
-                    Rotations.of(0.1591796875),
+                    Rotations.of(-0.08837890625),
                     Inches.of(-9.585892), Inches.of(12.1640885),
                     false),
                 // Back Right
-                new ModuleConfig(10, 11, 12,
+                new ModuleConfig(10, 11, 12, // 10, 11, 12
                     Rotations.of(0.155517578125),
                     Inches.of(-9.585892), Inches.of(-12.1640885),
                     true)
@@ -210,7 +210,7 @@ public final class Constants {
                         .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseClosedLoopSign))
                     .withDriveMotorGains(new Slot0Configs()
                         .withKP(7).withKI(0).withKD(0)
-                        .withKS(1).withKV(0.12))
+                        .withKS(1).withKV(0.124))
                     .withSteerMotorClosedLoopOutput(ClosedLoopOutputType.Voltage)
                     .withDriveMotorClosedLoopOutput(ClosedLoopOutputType.TorqueCurrentFOC)
                     .withFeedbackSource(SteerFeedbackType.FusedCANcoder)
@@ -663,11 +663,11 @@ public final class Constants {
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 50.625;
 
-        public static final double MAGNET_OFFSET = -0.130371;
+        public static final double MAGNET_OFFSET = -0.149658;
         public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.Clockwise_Positive;
 
         public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(-2);
-        public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(130);
+        public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(132);
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
