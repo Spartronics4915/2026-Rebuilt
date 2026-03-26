@@ -541,6 +541,9 @@ public final class Constants {
         public static final Translation3d HUB_POSITION = new Translation3d(hubPose.getX(), hubPose.getY(), HUB_HEIGHT);
         public static final Translation3d BOTTOM_FUNNEL_POSITION = new Translation3d(hubPose.getX(), hubPose.getY(), HUB_HEIGHT - FUNNEL_HEIGHT);
         public static final double MAX_SHOOTER_RPS = 100;
+        
+        // ik this is badly named but it basically defines how much below the setpoint in manual mode is still considered fine for the shot
+        public static final double manualShooterLeniency = 0.1;
 
         public static final Distance HUB_SHOT_PADDING = Meters.of(0.1);
         public static final Distance HUB_IDEAL_SHOT_PADDING = Meters.of(0.5);
