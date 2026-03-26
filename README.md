@@ -29,7 +29,7 @@ First we re, then we built. LET'S REBUILT!
 | B | Unjam Feeder / Spindexer |
 | X | Toggle Auto Score |
 | Y | Full Stow Intake |
-| D-pad | Manual Turret / Manual Intake Pivot |
+| D-pad | Corner Presets / Manual Intake Pivot |
 | Left Stick Down | Reset Pivot Position |
 | Menu | Toggle Auto-Aim |
 | Windows | Reset Dynamics |
