@@ -73,6 +73,24 @@ public class AutoAimController extends SubsystemBase {
     private Translation3d targetOverride = null;
     private boolean shootOverride = false;
 
+    public enum ManualOverride {
+        LEFT(Rotation2d.fromDegrees(-127.885), Rotation2d.fromDegrees(28.12), 8.382),
+        RIGHT(Rotation2d.fromDegrees(-48.015), Rotation2d.fromDegrees(28.78), 8.447);
+
+        public final Rotation2d yaw;
+        public final Rotation2d pitch;
+        public final double speedMPS;
+
+        ManualOverride(Rotation2d yaw, Rotation2d pitch, double speedMPS) {
+            this.yaw = yaw;
+            this.pitch = pitch;
+            this.speedMPS = speedMPS;
+        }
+    }
+    
+    private int manualOverrideIndex = 0;
+    private ManualOverride activeManualOverride = null;
+
     private final BooleanPublisher isAimEnabledPublisher =
         NetworkTableInstance.getDefault()
             .getBooleanTopic("superstructure/AutoAim/AimEnabled").publish();
@@ -118,10 +136,28 @@ public class AutoAimController extends SubsystemBase {
 
         updateCollisionCache();
 
-        if (!isAimEnabled && !shootOverride) {
+        if (!isAimEnabled) {
             lastResult = null;
             hasValidResultPublisher.accept(false);
             requiresIdealSpeedPublisher.accept(false);
+
+            if (activeManualOverride == null) {
+                return;
+            }
+
+            if (shootOverride) {
+                shooter.setSetpoint(MPSToRPS(activeManualOverride.speedMPS));
+                hood.setSetpoint(
+                    activeManualOverride.pitch
+                );
+            } else {
+                shooter.setSetpoint(0);
+                hood.setSetpoint(Rotation2d.kZero);
+            }
+
+            turret.setSetpoint(
+                activeManualOverride.yaw
+            );
             return;
         }
 
@@ -358,6 +394,13 @@ public class AutoAimController extends SubsystemBase {
                 shooter.setSetpoint(0);
             }
         );
+    }
+
+    public Command setManualOverride(ManualOverride override) {
+        return Commands.startEnd(
+            () -> activeManualOverride = override,
+            () -> activeManualOverride = null
+        ).ignoringDisable(true);
     }
 
     //#endregion

@@ -24,6 +24,7 @@ import com.spartronics4915.frc2026.commands.DriveCommand;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands.PipelineState;
 import com.spartronics4915.frc2026.subsystems.control.AutoAimController;
+import com.spartronics4915.frc2026.subsystems.control.AutoAimController.ManualOverride;
 import com.spartronics4915.frc2026.subsystems.control.Superstructure;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem;
@@ -220,15 +221,11 @@ public class RobotContainer {
         );
 
         operatorController.povLeft().whileTrue(
-            Commands.run(() -> {
-                turretSubsystem.setSetpoint(Rotation2d.fromDegrees(turretSubsystem.getCurrentSetpoint().getDegrees() + 0.75 * 3));
-            })
+            autoAimController.setManualOverride(ManualOverride.LEFT)
         );
 
         operatorController.povRight().whileTrue(
-            Commands.run(() -> {
-                turretSubsystem.setSetpoint(Rotation2d.fromDegrees(turretSubsystem.getCurrentSetpoint().getDegrees() - 0.75 * 3));
-            })
+            autoAimController.setManualOverride(ManualOverride.RIGHT)
         );
 
         operatorController.povDown().whileTrue(
