@@ -141,7 +141,7 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
  
     public enum HoodClamp {
         RESTRICTED(Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
-        UNRESTRICTED(Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(33));
+        UNRESTRICTED(Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(40));
 
         Rotation2d minAngle;
         Rotation2d maxAngle;
