@@ -13,10 +13,12 @@ import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.util.control.AutoAim;
 import com.spartronics4915.frc2026.util.control.AutoAim.AutoAimResult;
 import com.spartronics4915.frc2026.util.control.TurretController;
+import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -90,6 +92,10 @@ public class AutoAimController extends SubsystemBase {
     
     private int manualOverrideIndex = 0;
     private ManualOverride activeManualOverride = null;
+    
+    private final TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
+    private ChassisSpeeds lastFieldSpeeds = new ChassisSpeeds();
+    private ChassisSpeeds fieldAccelerations = new ChassisSpeeds();
 
     private final BooleanPublisher isAimEnabledPublisher =
         NetworkTableInstance.getDefault()
@@ -133,6 +139,16 @@ public class AutoAimController extends SubsystemBase {
     public void periodic() {
         isAimEnabledPublisher.accept(isAimEnabled);
         isShootingEnabledPublisher.accept(isAutoShootingEnabled);
+
+        double dt = Math.max(dtCalc.update(), 0.001); // Prevent division by zero
+        ChassisSpeeds currentSpeeds = swerve.getFieldRelativeVelocity();
+
+        fieldAccelerations = new ChassisSpeeds(
+            (currentSpeeds.vxMetersPerSecond - lastFieldSpeeds.vxMetersPerSecond) / dt,
+            (currentSpeeds.vyMetersPerSecond - lastFieldSpeeds.vyMetersPerSecond) / dt,
+            (currentSpeeds.omegaRadiansPerSecond - lastFieldSpeeds.omegaRadiansPerSecond) / dt
+        );
+        lastFieldSpeeds = currentSpeeds;
 
         updateCollisionCache();
 
@@ -191,7 +207,8 @@ public class AutoAimController extends SubsystemBase {
 
         return autoAim.calculateDynamicAim(
             swerve.getSmoothedRelativePose(),
-            swerve.getFieldRelativeVelocity(),
+            lastFieldSpeeds,
+            fieldAccelerations,
             target,
             RPSToMPS(Robot.isSimulation() ? shooter.getCurrentSetpoint() : shooter.getCurrentRPS()),
             0.09 // Dynamic processing compensation can be supplied here
