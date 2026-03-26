@@ -704,6 +704,7 @@ public final class Constants {
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.24;
+        public static final double A = 0.0;
 
         public static final double MAX_RPS = 100;
 
@@ -718,7 +719,8 @@ public final class Constants {
             .withKP(P)
             .withKI(I)
             .withKD(D)
-            .withKV(V);
+            .withKV(V)
+            .withKA(A);
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
@@ -746,6 +748,7 @@ public final class Constants {
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.462;
+        public static final double A = 0.0;
 
         public static final double MAX_RPS = 100;
 
@@ -760,7 +763,8 @@ public final class Constants {
             .withKP(P)
             .withKI(I)
             .withKD(D)
-            .withKV(V);
+            .withKV(V)
+            .withKA(A);
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
