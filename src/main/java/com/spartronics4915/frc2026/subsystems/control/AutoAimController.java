@@ -58,7 +58,7 @@ public class AutoAimController extends SubsystemBase {
         0.001,
         turretTranslation3D,
         Rotation2d.fromDegrees(50),
-        Rotation2d.fromDegrees(83),
+        Rotation2d.fromDegrees(90),
         RPSToMPS(MAX_SHOOTER_RPS),
         0.02,
         this::collidesWithHub,
