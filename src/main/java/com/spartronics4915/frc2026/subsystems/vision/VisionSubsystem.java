@@ -28,6 +28,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -70,6 +71,7 @@ public class VisionSubsystem extends SubsystemBase {
     private final DoublePublisher targetCountPublisher = NT.getDoubleTopic("Target Count").publish();
 
     private final StructArrayPublisher<Pose3d> trackedApriltagsPublisher = NT.getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
+    private final BooleanPublisher hasValidPosePublisher = NT.getBooleanTopic("Has Valid Pose").publish();
 
     public VisionSubsystem(
         Map<String, ProcessorInterface> cameras,
@@ -201,6 +203,7 @@ public class VisionSubsystem extends SubsystemBase {
         targetCountPublisher.set(fusedResult.getTargetCount());
 
         trackedApriltagsPublisher.accept(getTargetPoses(fusedResult.getTrackedTags()));
+        hasValidPosePublisher.accept(hasValidPose);
     }
 
     /**
