@@ -161,36 +161,31 @@ public class AutoAimController extends SubsystemBase {
 
         updateCollisionCache();
 
-        if (!isAimEnabled) {
+        if (isAimEnabled) {
+            lastResult = computeAimResult();
+        } else {
             lastResult = null;
-            hasValidResultPublisher.accept(false);
-            requiresIdealSpeedPublisher.accept(false);
-
-            if (activeManualOverride == null) {
-                return;
-            }
-
-            if (shootOverride) {
-                shooter.setSetpoint(MPSToRPS(activeManualOverride.speedMPS));
-                hood.setSetpoint(
-                    activeManualOverride.pitch
-                );
-            } else {
-                shooter.setSetpoint(0);
-                hood.setSetpoint(Rotation2d.kZero);
-            }
-
-            turret.setSetpoint(
-                activeManualOverride.yaw
-            );
-            return;
         }
-
-        lastResult = computeAimResult();
 
         boolean hasResult = lastResult != null && lastResult.ToF() != -1;
         hasValidResultPublisher.accept(hasResult);
         requiresIdealSpeedPublisher.accept(hasResult && lastResult.requiresIdealSpeed());
+
+        if (activeManualOverride != null) {
+            if (shootOverride) {
+                shooter.setSetpoint(MPSToRPS(activeManualOverride.speedMPS));
+                hood.setSetpoint(activeManualOverride.pitch);
+            } else {
+                shooter.setSetpoint(0);
+                hood.setSetpoint(Rotation2d.kZero);
+            }
+            turret.setSetpoint(activeManualOverride.yaw);
+            return;
+        }
+
+        if (!isAimEnabled) {
+            return;
+        }
 
         if (!hasResult) return;
 
