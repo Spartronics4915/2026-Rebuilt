@@ -355,7 +355,7 @@ public class AutoAimController extends SubsystemBase {
         }
 
         // Check if the manual shooter is within the allowed leniency (since we can't check with the auto-aim system if the shot is possible)
-        if (Math.abs(shooter.getCurrentRPS() - shooter.getCurrentSetpoint()) < manualShooterLeniency) {
+        if (shooter.getCurrentRPS() / shooter.getCurrentSetpoint() < 1 - manualShooterLeniency) {
             return true;
         }
         return false;
