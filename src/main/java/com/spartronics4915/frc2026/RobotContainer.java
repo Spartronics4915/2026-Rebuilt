@@ -108,7 +108,8 @@ public class RobotContainer {
         shooterSubsystem,
         autoAimController, 
         superstructureCommands,
-        driveCommand
+        driveCommand,
+        visionSubsystem
     );
 
     public RobotContainer() {

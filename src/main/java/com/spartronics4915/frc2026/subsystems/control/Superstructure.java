@@ -11,10 +11,12 @@ import com.spartronics4915.frc2026.commands.SuperstructureCommands;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands.PipelineState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
+import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 import com.spartronics4915.frc2026.util.control.FieldRegion;
 import com.spartronics4915.frc2026.util.control.FieldZoneMap;
 
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -47,6 +49,7 @@ public class Superstructure extends SubsystemBase {
     private final AutoAimController controller;
     private final SuperstructureCommands superCommands;
     private final DriveCommand driveCommand;
+    private final VisionSubsystem vision;
 
     private final FieldZoneMap<Zone> zoneMap;
     private Zone currentZone = Zone.UNKNOWN;
@@ -59,13 +62,15 @@ public class Superstructure extends SubsystemBase {
         ShooterSubsystem shooter,
         AutoAimController controller,
         SuperstructureCommands superCommands,
-        DriveCommand driveCommand
+        DriveCommand driveCommand,
+        VisionSubsystem vision
     ) {
         this.swerve = swerve;
         this.shooter = shooter;
         this.controller = controller;
         this.superCommands = superCommands;
         this.driveCommand = driveCommand;
+        this.vision = vision;
         this.zoneMap = buildZoneMap();
 
         configureTriggers();
@@ -141,6 +146,16 @@ public class Superstructure extends SubsystemBase {
             driveCommand.setSpeedLimit(false);
         } else {
             driveCommand.setSpeedLimit(false);
+        }
+
+        Pose2d pose = swerve.getPose();
+        
+        if (pose != null) {
+            if (pose.getX() < 0) {
+                swerve.resetPose(vision.getFusedPose());
+            } else if (pose.getY() < 0.0 || pose.getY() > 8.1) {
+                swerve.resetPose(vision.getFusedPose());
+            }
         }
     }
 
