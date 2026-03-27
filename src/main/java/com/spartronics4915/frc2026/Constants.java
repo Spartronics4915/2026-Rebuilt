@@ -120,10 +120,10 @@ public final class Constants {
         public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.3, 0.3, 0.2);
         public static final Matrix<N3, N1> slipStdDevs = VecBuilder.fill(2.0, 2.0, 0.5);
 
-        public static final double slipRecoverySeconds = 0.5;
+        public static final double slipRecoverySeconds = 0.2;
         public static final double slipThresholdRPS = 1.0;
         public static final double minSpeedDetectMPS = 0.5;
-        public static final int slipDebounceCycles = 3;
+        public static final int slipDebounceCycles = 2;
 
         public static final double headingLockKP = 7.0;
         public static final double headingLockKD = 0.0;
