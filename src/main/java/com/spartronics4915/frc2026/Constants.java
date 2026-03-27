@@ -504,7 +504,7 @@ public final class Constants {
         public static final Rotation2d turretMaxSafeThreshold = Rotation2d.fromDegrees(10);
 
         public static final Distance bumpLength = Inches.of(48.93);
-        public static final Distance trenchLength = Inches.of(50);
+        public static final Distance trenchLength = Inches.of(40);
 
         public static final double towerXTransform = 0.5305;
         public static final double towerYTransform = 0.49075;
