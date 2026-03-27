@@ -98,9 +98,9 @@ public class AutoAimController extends SubsystemBase {
     private ChassisSpeeds lastFieldSpeeds = new ChassisSpeeds();
     private ChassisSpeeds fieldAccelerations = new ChassisSpeeds();
     
-    private final LinearFilter accelFilterX = LinearFilter.movingAverage(4);
-    private final LinearFilter accelFilterY = LinearFilter.movingAverage(4);
-    private final LinearFilter accelFilterOmega = LinearFilter.movingAverage(4);
+    private final LinearFilter accelFilterX = LinearFilter.movingAverage(10);
+    private final LinearFilter accelFilterY = LinearFilter.movingAverage(10);
+    private final LinearFilter accelFilterOmega = LinearFilter.movingAverage(10);
 
     private final BooleanPublisher isAimEnabledPublisher =
         NetworkTableInstance.getDefault()
