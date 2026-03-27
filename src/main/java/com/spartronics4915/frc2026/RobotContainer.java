@@ -214,6 +214,12 @@ public class RobotContainer {
             .withName("X Brake Swerve")
         );
 
+        driverController.start().onTrue(
+            Commands.runOnce(
+                () -> swerveSubsystem.resetPose(visionSubsystem.getFusedPose())
+            )
+        );
+
         //#endregion
         //#region Operator Controller
 
