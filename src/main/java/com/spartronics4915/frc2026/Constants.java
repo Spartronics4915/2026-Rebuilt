@@ -230,7 +230,7 @@ public final class Constants {
                         new TalonFXConfiguration()
                             .withCurrentLimits(
                                 new CurrentLimitsConfigs()
-                                    .withStatorCurrentLimit(Amps.of(60))
+                                    .withStatorCurrentLimit(Amps.of(70))
                                     .withStatorCurrentLimitEnable(true)
                             )
                     );
