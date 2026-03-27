@@ -55,6 +55,7 @@ public class VisionSubsystem extends SubsystemBase {
     private final Pose3d[] tagPoseScratch = new Pose3d[33];
 
     private volatile boolean hasValidPose;
+    private Pose2d fusedPose;
 
     private static final NetworkTable NT = NetworkTableInstance.getDefault().getTable("vision");
 
@@ -68,8 +69,7 @@ public class VisionSubsystem extends SubsystemBase {
     private final DoublePublisher latencyPublisher = NT.getDoubleTopic("Latency").publish();
     private final DoublePublisher targetCountPublisher = NT.getDoubleTopic("Target Count").publish();
 
-    private final StructArrayPublisher<Pose3d> trackedApriltagsPublisher =
-        NT.getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
+    private final StructArrayPublisher<Pose3d> trackedApriltagsPublisher = NT.getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
 
     public VisionSubsystem(
         Map<String, ProcessorInterface> cameras,
@@ -174,10 +174,11 @@ public class VisionSubsystem extends SubsystemBase {
         }
 
         ApriltagResult fusedResult = fusedResultOpt.get();
+        fusedPose = fusedResult.getPose();
 
         if (swerve != null && swerve.isFlatDebounced()) {
             poseConsumer.accept(
-                fusedResult.getPose(),
+                fusedPose,
                 fusedResult.getTimestampSeconds(),
                 fusedResult.getStdDevs()
             );
@@ -215,6 +216,11 @@ public class VisionSubsystem extends SubsystemBase {
         Pose3d[] result = new Pose3d[count];
         System.arraycopy(tagPoseScratch, 0, result, 0, count);
         return result;
+    }
+
+    public Pose2d getFusedPose() {
+        if (hasValidPose == false) return null;
+        return fusedPose;
     }
 
     public boolean hasValidPose() { 

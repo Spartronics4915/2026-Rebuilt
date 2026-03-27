@@ -267,6 +267,7 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public void resetPose(Pose2d pose) {
+        if (pose == null) return;
         drivetrain.resetPose(pose);
         poseFilter.reset(pose);
     }

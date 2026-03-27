@@ -119,6 +119,9 @@ public class RobotContainer {
         SmartDashboard.putData("Reset Dynamics", superstructureCommands.resetDynamics());
         SmartDashboard.putData("Pipeline On", superstructureCommands.setPipelineState(PipelineState.ON));
         SmartDashboard.putData("Pipeline Off", superstructureCommands.setPipelineState(PipelineState.OFF));
+        SmartDashboard.putData("Reset Odometry", Commands.runOnce(
+            () -> swerveSubsystem.resetPose(visionSubsystem.getFusedPose())
+        ));
     }
 
     /**
