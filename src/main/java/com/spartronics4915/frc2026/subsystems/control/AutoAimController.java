@@ -15,6 +15,7 @@ import com.spartronics4915.frc2026.util.control.AutoAim.AutoAimResult;
 import com.spartronics4915.frc2026.util.control.TurretController;
 import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
 
+import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -96,6 +97,10 @@ public class AutoAimController extends SubsystemBase {
     private final TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
     private ChassisSpeeds lastFieldSpeeds = new ChassisSpeeds();
     private ChassisSpeeds fieldAccelerations = new ChassisSpeeds();
+    
+    private final LinearFilter accelFilterX = LinearFilter.movingAverage(4);
+    private final LinearFilter accelFilterY = LinearFilter.movingAverage(4);
+    private final LinearFilter accelFilterOmega = LinearFilter.movingAverage(4);
 
     private final BooleanPublisher isAimEnabledPublisher =
         NetworkTableInstance.getDefault()
@@ -143,10 +148,14 @@ public class AutoAimController extends SubsystemBase {
         double dt = Math.max(dtCalc.update(), 0.001); // Prevent division by zero
         ChassisSpeeds currentSpeeds = swerve.getFieldRelativeVelocity();
 
+        double rawAccelX = (currentSpeeds.vxMetersPerSecond - lastFieldSpeeds.vxMetersPerSecond) / dt;
+        double rawAccelY = (currentSpeeds.vyMetersPerSecond - lastFieldSpeeds.vyMetersPerSecond) / dt;
+        double rawAccelOmega = (currentSpeeds.omegaRadiansPerSecond - lastFieldSpeeds.omegaRadiansPerSecond) / dt;
+
         fieldAccelerations = new ChassisSpeeds(
-            (currentSpeeds.vxMetersPerSecond - lastFieldSpeeds.vxMetersPerSecond) / dt,
-            (currentSpeeds.vyMetersPerSecond - lastFieldSpeeds.vyMetersPerSecond) / dt,
-            (currentSpeeds.omegaRadiansPerSecond - lastFieldSpeeds.omegaRadiansPerSecond) / dt
+            accelFilterX.calculate(rawAccelX),
+            accelFilterY.calculate(rawAccelY),
+            accelFilterOmega.calculate(rawAccelOmega)
         );
         lastFieldSpeeds = currentSpeeds;
 
