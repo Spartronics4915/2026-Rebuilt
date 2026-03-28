@@ -230,7 +230,7 @@ public final class Constants {
                         new TalonFXConfiguration()
                             .withCurrentLimits(
                                 new CurrentLimitsConfigs()
-                                    .withStatorCurrentLimit(Amps.of(70))
+                                    .withStatorCurrentLimit(Amps.of(80))
                                     .withStatorCurrentLimitEnable(true)
                             )
                     );
@@ -290,7 +290,7 @@ public final class Constants {
             public static final Distance bumperThickness = Millimeters.of(72.7);
 
             public static final PathConstraints defaultPathConstraints = new PathConstraints(
-                3.0,
+                3.5,
                 3.0,
                 1.0 * Math.PI,
                 2.0 * Math.PI
@@ -311,7 +311,7 @@ public final class Constants {
             );
 
             public static final PathConstraints intakePathConstraints = new PathConstraints(
-                1.5,
+                2.5,
                 5.0,
                 2.0 * Math.PI,
                 1.0 * Math.PI
