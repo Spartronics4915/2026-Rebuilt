@@ -96,13 +96,21 @@ public class Superstructure extends SubsystemBase {
 
         // Checks both the current position and a velocity projected position so the
         // hood lowers before the robot physically enters the trench
-        map.addZone(Zone.TRENCH, pos -> {
+        map.addZone(Zone.TRENCH, pose -> {
             ChassisSpeeds vel = swerve.getFieldRelativeVelocity();
-            Translation2d projected = pos.plus(
+            Translation2d projected = pose.plus(
                 new Translation2d(vel.vxMetersPerSecond, vel.vyMetersPerSecond)
                     .times(TRENCH_LOOKAHEAD_SEC));
-            return inTrenchColumn(pos) && Math.abs(hubDeltaX(pos)) < trenchLength.in(Meters) / 2.0
-                || inTrenchColumn(projected) && Math.abs(hubDeltaX(projected)) < trenchLength.in(Meters) / 2.0;
+
+            double hubPos = hubDeltaX(pose);
+            double hubProjected = hubDeltaX(projected);
+
+            boolean atPose =       inTrenchColumn(pose)      && Math.abs(hubPos)       < trenchLength.in(Meters) / 2.0;
+            boolean atFuturePose = inTrenchColumn(projected) && Math.abs(hubProjected) < trenchLength.in(Meters) / 2.0;
+
+            boolean projectedValid = (hubPos * hubProjected) <= 0.0 && (inTrenchColumn(pose) || inTrenchColumn(projected));
+
+            return atPose || atFuturePose|| projectedValid;
         });
 
         map.addZone(Zone.BUMP, pos ->
