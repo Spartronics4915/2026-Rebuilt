@@ -356,12 +356,12 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public Rotation2d getHeadingOffset() {
-        return teleopHeadingOffset;
+        return teleopHeadingOffset.plus(shouldFlip() ? Rotation2d.kPi : Rotation2d.kZero);
     }
 
     /** Snaps the driver's forward perspective to the robot's current heading. */
     public void resetHeadingOffset() {
-        teleopHeadingOffset = getPose().getRotation();
+        teleopHeadingOffset = getRelativePose().getRotation();
     }
 
     public double getMovementOverride() {
