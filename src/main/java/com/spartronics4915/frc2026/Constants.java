@@ -291,14 +291,14 @@ public final class Constants {
 
             public static final PathConstraints defaultPathConstraints = new PathConstraints(
                 3.5,
-                3.0,
+                4.0,
                 1.0 * Math.PI,
                 2.0 * Math.PI
             );
 
             public static final PathConstraints trenchPathConstraints = new PathConstraints(
-                2.0,
-                2.0,
+                2.5,
+                4.0,
                 1.0 / 2.0 * Math.PI,
                 1.0 * Math.PI
             );
@@ -311,7 +311,7 @@ public final class Constants {
             );
 
             public static final PathConstraints intakePathConstraints = new PathConstraints(
-                2.0,
+                2.5,
                 5.0,
                 2.0 * Math.PI,
                 1.0 * Math.PI
