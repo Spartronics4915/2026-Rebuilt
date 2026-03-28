@@ -144,7 +144,7 @@ public final class Constants {
                 compChassisFactory(),
                 // Front Left
                 new ModuleConfig(1, 2, 3,
-                    Rotations.of(-0.300048828125),
+                    Rotations.of(-0.306885),
                     Inches.of(9.585892), Inches.of(12.1640885),
                     false),
                 // Front Right
