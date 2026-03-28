@@ -311,7 +311,7 @@ public final class Constants {
             );
 
             public static final PathConstraints intakePathConstraints = new PathConstraints(
-                2.5,
+                2.0,
                 5.0,
                 2.0 * Math.PI,
                 1.0 * Math.PI
