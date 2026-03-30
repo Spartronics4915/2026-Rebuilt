@@ -2,6 +2,9 @@ package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
 
 import static edu.wpi.first.units.Units.Volts;
 
+import static com.spartronics4915.frc2026.Constants.ShooterConstants.*;
+import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
+
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.TorqueCurrentFOC;
@@ -18,9 +21,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
-
-import static com.spartronics4915.frc2026.Constants.ShooterConstants.*;
-import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
@@ -68,8 +68,6 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private final VoltageOut stopRequest = new VoltageOut(0.0);
 
     private boolean isShooting = false;
-
-    //#region Main Functionality
 
     public ShooterSubsystem() {
         leadMotor = new LoggedTalonFX(LEAD_MOTOR_ID, CAN_BUS);   

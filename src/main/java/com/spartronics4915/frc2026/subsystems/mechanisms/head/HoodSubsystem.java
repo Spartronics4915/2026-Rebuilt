@@ -4,6 +4,9 @@ import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 
+import static com.spartronics4915.frc2026.Constants.HoodConstants.*;
+import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
+
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.TorqueCurrentFOC;
@@ -26,9 +29,6 @@ import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
 import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
 import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
-
-import static com.spartronics4915.frc2026.Constants.HoodConstants.*;
-import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
@@ -95,8 +95,6 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
         SmartDashboard.putData("Hood Down", setSetpointCommand(Rotation2d.fromDegrees(0)));
         SmartDashboard.putData("Hood Motor", motor);
     }
-
-    //#region Main Functionality
 
     @Override
     public void periodic(){

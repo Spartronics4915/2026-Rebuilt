@@ -4,6 +4,9 @@ import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 
+import static com.spartronics4915.frc2026.Constants.TurretConstants.*;
+import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
+
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
@@ -28,9 +31,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
-
-import static com.spartronics4915.frc2026.Constants.TurretConstants.*;
-import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
@@ -106,8 +106,6 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
         SmartDashboard.putData("Turret 180", setSetpointCommand(Rotation2d.fromDegrees(180)));
         SmartDashboard.putData("Turret Motor", motor);
     }
-
-    //#region Main Functionality
  
     @Override
     public void periodic(){

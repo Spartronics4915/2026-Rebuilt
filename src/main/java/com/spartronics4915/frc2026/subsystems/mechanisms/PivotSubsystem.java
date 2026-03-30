@@ -1,5 +1,11 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms;
 
+import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.Volts;
+
+import static com.spartronics4915.frc2026.Constants.PivotConstants.*;
+import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
+
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
@@ -27,11 +33,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
-
-import static com.spartronics4915.frc2026.Constants.PivotConstants.*;
-import static edu.wpi.first.units.Units.Rotations;
-import static edu.wpi.first.units.Units.Volts;
-import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
@@ -109,8 +110,6 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
         SmartDashboard.putData("Pivot Stow", setStateCommand(PivotState.STOW));
         SmartDashboard.putData("Pivot Motor", motor);
     }
-
-    //#region Main Functionality
 
     @Override
     public void periodic(){

@@ -1,5 +1,10 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
 
+import static edu.wpi.first.units.Units.Volts;
+
+import static com.spartronics4915.frc2026.Constants.IndexerConstants.*;
+import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
+
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
@@ -14,10 +19,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
-
-import static com.spartronics4915.frc2026.Constants.IndexerConstants.*;
-import static edu.wpi.first.units.Units.Volts;
-import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
@@ -55,8 +56,6 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("indexer").getDoubleTopic("applied out").publish();
     private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("indexer").getDoubleTopic("rps").publish();
     private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("indexer").getDoubleTopic("setpoint").publish();
-
-    //#region Main Functionality
 
     public IndexerSubsystem() {
         TalonFXConfigurator configurator = motor.getConfigurator();

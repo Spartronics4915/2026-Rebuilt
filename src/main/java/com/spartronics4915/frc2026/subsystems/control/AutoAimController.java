@@ -35,18 +35,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 /**
  * Continuously calculates setpoints and applies them to the hood and turret.
- * Simulation projectile visualization is handled here as well.
- *
- * <p>Auto-aim can be toggled at any time, including while the robot is disabled,
- * via {@link #aimToggle()}. When disabled, the hood and turret retain their last
- * commanded setpoints.
- *
- * <p>The calculation pipeline each loop:
- * <ol>
- *   <li>Ask {@link AutoAim} for yaw, pitch, and time-of-flight.
- *   <li>Push yaw to the turret via {@link TurretController} and pitch to the hood.
- *   <li>If in simulation, spawn a {@link RebuiltFuelOnFly} projectile for visualization.
- * </ol>
  */
 public class AutoAimController extends SubsystemBase {
 
@@ -91,7 +79,7 @@ public class AutoAimController extends SubsystemBase {
         }
     }
     
-    private int manualOverrideIndex = 0;
+    //private int manualOverrideIndex = 0;
     private ManualOverride activeManualOverride = null;
     
     private final TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
@@ -286,7 +274,7 @@ public class AutoAimController extends SubsystemBase {
         // Time to travel that horizontal distance
         double t = collisionDist / vXY;
 
-        // Height at that time: z = z0 + vz*t - 0.5*g*t^2
+        // Height at that time
         double zAtCollision = shooterZ + vZ * t - 0.5 * 9.81 * t * t;
 
         // Check if z is less than hub height. 

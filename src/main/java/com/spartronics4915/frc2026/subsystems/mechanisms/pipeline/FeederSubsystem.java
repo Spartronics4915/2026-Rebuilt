@@ -2,6 +2,9 @@ package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
 
 import static edu.wpi.first.units.Units.Volts;
 
+import static com.spartronics4915.frc2026.Constants.FeederConstants.*;
+import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
+
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
@@ -19,9 +22,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
-
-import static com.spartronics4915.frc2026.Constants.FeederConstants.*;
-import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterface {
     
