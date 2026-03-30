@@ -1,17 +1,22 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms;
 
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
+import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VoltageOut;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 import static com.spartronics4915.frc2026.Constants.IntakeConstants.*;
+import static edu.wpi.first.units.Units.Volts;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
@@ -25,6 +30,27 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private double currentSetpoint;
 
     private final VelocityTorqueCurrentFOC velocityTorqueRequest = new VelocityTorqueCurrentFOC(0.0);
+
+    private final TorqueCurrentFOC sysIdControl = new TorqueCurrentFOC(0.0);
+    private boolean isCharacterizing = false;
+    private final SysIdRoutine sysIdRoutine = new SysIdRoutine(
+        new SysIdRoutine.Config(
+            null,
+            Volts.of(4),
+            null, 
+            null
+        ),
+        new SysIdRoutine.Mechanism(
+            (Voltage volts) -> motor.setControl(sysIdControl.withOutput(volts.in(Volts))),
+            (log) -> {
+                log.motor("Intake")
+                    .voltage(Volts.of(motor.getTorqueCurrent().getValueAsDouble()))
+                    .angularVelocity(motor.getVelocity().getValue())
+                    .angularAcceleration(motor.getAcceleration().getValue());
+            },
+            this
+        )
+    );
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("applied out").publish();
     private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("rps").publish();
@@ -44,6 +70,11 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         motor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
 
+        SmartDashboard.putData("Intake Quasistatic Forward", sysIdQuasistatic(Direction.kForward));
+        SmartDashboard.putData("Intake Quasistatic Reverse", sysIdQuasistatic(Direction.kReverse));
+        SmartDashboard.putData("Intake Dynamic Forward", sysIdDynamic(Direction.kForward));
+        SmartDashboard.putData("Intake Dynamic Reverse", sysIdDynamic(Direction.kReverse));
+
         SmartDashboard.putData("Intake On", setStateCommand(IntakeState.INTAKE));
         SmartDashboard.putData("Intake Off", setStateCommand(IntakeState.OFF));
         SmartDashboard.putData("Intake Motor", motor);
@@ -57,11 +88,13 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
             MAX_RPS
         );
 
-        if (currentSetpoint != 0) {
-            velocityTorqueRequest.Velocity = currentSetpoint;
-            motor.setControl(velocityTorqueRequest);
-        } else {
-            motor.setControl(new VoltageOut(0.0));
+        if (!isCharacterizing) {
+            if (currentSetpoint != 0) {
+                velocityTorqueRequest.Velocity = currentSetpoint;
+                motor.setControl(velocityTorqueRequest);
+            } else {
+                motor.setControl(new VoltageOut(0.0));
+            }
         }
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
@@ -95,6 +128,18 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     public Command setStateCommand(IntakeState state){
         return setSetpointCommand(state.rps);
+    }
+
+    public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
+        return sysIdRoutine.quasistatic(direction)
+            .beforeStarting(() -> isCharacterizing = true)
+            .finallyDo(() -> isCharacterizing = false);
+    }
+
+    public Command sysIdDynamic(SysIdRoutine.Direction direction) {
+        return sysIdRoutine.dynamic(direction)
+            .beforeStarting(() -> isCharacterizing = true)
+            .finallyDo(() -> isCharacterizing = false);
     }
 
     public enum IntakeState {
