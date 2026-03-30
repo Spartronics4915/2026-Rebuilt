@@ -3,8 +3,9 @@ package com.spartronics4915.frc2026.subsystems.mechanisms;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
-import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
 import com.ctre.phoenix6.hardware.CANcoder;
+
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
 import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
@@ -41,7 +42,7 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
     private Rotation2d currentSetpoint = new Rotation2d();
     private State currentState = new State();
 
-    private PositionVoltage positionVoltage = new PositionVoltage(0.0);
+    private final PositionTorqueCurrentFOC positionTorqueRequest = new PositionTorqueCurrentFOC(0.0);
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("pivot").getDoubleTopic("Applied Out").publish();
     private final StructPublisher<Rotation2d> positionPublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("Position", Rotation2d.struct).publish();
@@ -87,8 +88,8 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
             new State(currentSetpoint.getRotations(), 0.0)
         );
 
-        positionVoltage.withEnableFOC(ENABLE_FOC).Position = currentState.position;
-        motor.setControl(positionVoltage);
+        positionTorqueRequest.Position = currentState.position;
+        motor.setControl(positionTorqueRequest);
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         positionPublisher.accept(getPosition());
