@@ -1,7 +1,7 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms;
 
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
-import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VoltageOut;
 
 import edu.wpi.first.math.MathUtil;
@@ -24,7 +24,7 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     private double currentSetpoint;
 
-    private final VelocityVoltage velocityVoltage = new VelocityVoltage(0.0);
+    private final VelocityTorqueCurrentFOC velocityTorqueRequest = new VelocityTorqueCurrentFOC(0.0);
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("applied out").publish();
     private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("rps").publish();
@@ -58,8 +58,8 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
         );
 
         if (currentSetpoint != 0) {
-            velocityVoltage.withEnableFOC(ENABLE_FOC).Velocity = currentSetpoint;
-            motor.setControl(velocityVoltage);
+            velocityTorqueRequest.Velocity = currentSetpoint;
+            motor.setControl(velocityTorqueRequest);
         } else {
             motor.setControl(new VoltageOut(0.0));
         }
