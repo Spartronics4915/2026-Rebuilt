@@ -5,7 +5,7 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
-import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
 import com.ctre.phoenix6.hardware.CANcoder;
 
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
@@ -36,7 +36,7 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     private State targetState = new State();
 
-    private final PositionVoltage positionVoltage = new PositionVoltage(0.0);
+    private final PositionTorqueCurrentFOC positionTorqueRequest = new PositionTorqueCurrentFOC(0.0);
     
     private TurretClamp currentClamp;
     private Rotation2d minAngle;
@@ -88,11 +88,11 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
             targetState.velocity = 0;
         }
 
-        positionVoltage.withEnableFOC(ENABLE_FOC)
+        positionTorqueRequest
             .withPosition(targetState.position)
             .withVelocity(targetState.velocity);
             
-        motor.setControl(positionVoltage);
+        motor.setControl(positionTorqueRequest);
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         positionPublisher.accept(getPosition());

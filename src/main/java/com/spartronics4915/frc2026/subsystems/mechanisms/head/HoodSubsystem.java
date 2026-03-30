@@ -4,7 +4,7 @@ import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
-import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -33,7 +33,7 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
 
     private State targetState = new State();
 
-    private final PositionVoltage positionVoltage = new PositionVoltage(0.0);
+    private final PositionTorqueCurrentFOC positionTorqueRequest = new PositionTorqueCurrentFOC(0.0);
 
     private HoodClamp currentClamp;
     private Rotation2d minAngle;
@@ -78,11 +78,11 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
             targetState.velocity = 0;
         }
         
-        positionVoltage.withEnableFOC(ENABLE_FOC)
+        positionTorqueRequest
             .withPosition(targetState.position)
             .withVelocity(targetState.velocity);
 
-        motor.setControl(positionVoltage);
+        motor.setControl(positionTorqueRequest);
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         positionPublisher.accept(getPosition());
