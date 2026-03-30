@@ -1,7 +1,10 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
 
+import static edu.wpi.first.units.Units.Volts;
+
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
@@ -9,9 +12,12 @@ import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 import static com.spartronics4915.frc2026.Constants.ShooterConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
@@ -29,6 +35,28 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private double currentSetpoint;
 
     private final VelocityTorqueCurrentFOC velocityTorqueRequest = new VelocityTorqueCurrentFOC(0.0);
+
+    private final TorqueCurrentFOC sysIdControl = new TorqueCurrentFOC(0.0);
+    private boolean isCharacterizing = false;
+
+    private final SysIdRoutine sysIdRoutine = new SysIdRoutine(
+        new SysIdRoutine.Config(
+            null,
+            Volts.of(4),
+            null, 
+            null
+        ),
+        new SysIdRoutine.Mechanism(
+            (Voltage volts) -> leadMotor.setControl(sysIdControl.withOutput(volts.in(Volts))),
+            (log) -> {
+                log.motor("Shooter")
+                    .voltage(Volts.of(leadMotor.getTorqueCurrent().getValueAsDouble()))
+                    .angularVelocity(leadMotor.getVelocity().getValue())
+                    .angularAcceleration(leadMotor.getAcceleration().getValue());
+            },
+            this
+        )
+    );
 
     private ShooterClamp RPSClamp;
     private double maxRPS;
@@ -66,6 +94,11 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
         leadMotor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
 
+        SmartDashboard.putData("Shooter Quasistatic Forward", sysIdQuasistatic(Direction.kForward));
+        SmartDashboard.putData("Shooter Quasistatic Reverse", sysIdQuasistatic(Direction.kReverse));
+        SmartDashboard.putData("Shooter Dynamic Forward", sysIdDynamic(Direction.kForward));
+        SmartDashboard.putData("Shooter Dynamic Reverse", sysIdDynamic(Direction.kReverse));
+
         SmartDashboard.putData("Shooter On", setSetpointCommand(55));
         SmartDashboard.putData("Shooter Off", setSetpointCommand(0));
         SmartDashboard.putData("Lead Shooter Motor", leadMotor);
@@ -87,11 +120,13 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
             workingSetpoint = IDLE_SHOOTER_RPS;
         }
 
-        if (workingSetpoint != 0) {
-            velocityTorqueRequest.Velocity = workingSetpoint;
-            leadMotor.setControl(velocityTorqueRequest);
-        } else {
-            leadMotor.setControl(stopRequest);
+        if (!isCharacterizing) {
+            if (workingSetpoint != 0) {
+                velocityTorqueRequest.Velocity = workingSetpoint;
+                leadMotor.setControl(velocityTorqueRequest);
+            } else {
+                leadMotor.setControl(stopRequest);
+            }
         }
 
         appliedOutPublisher.accept(leadMotor.getDutyCycle().getValueAsDouble());
@@ -136,6 +171,18 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     public Command setClampCommand(ShooterClamp clamp) {
         return this.runOnce(() -> setClamp(clamp));
+    }
+
+    public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
+        return sysIdRoutine.quasistatic(direction)
+            .beforeStarting(() -> isCharacterizing = true)
+            .finallyDo(() -> isCharacterizing = false);
+    }
+
+    public Command sysIdDynamic(SysIdRoutine.Direction direction) {
+        return sysIdRoutine.dynamic(direction)
+            .beforeStarting(() -> isCharacterizing = true)
+            .finallyDo(() -> isCharacterizing = false);
     }
 
     public enum ShooterClamp{
