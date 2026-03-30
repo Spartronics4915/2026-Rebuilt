@@ -1,6 +1,9 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
 
+import static edu.wpi.first.units.Units.Volts;
+
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
+import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
@@ -10,9 +13,12 @@ import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonF
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 import static com.spartronics4915.frc2026.Constants.FeederConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
@@ -25,11 +31,30 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     private final VelocityTorqueCurrentFOC velocityTorqueRequest = new VelocityTorqueCurrentFOC(0.0);
 
+    private final TorqueCurrentFOC sysIdControl = new TorqueCurrentFOC(0.0);
+    private boolean isCharacterizing = false;
+    private final SysIdRoutine sysIdRoutine = new SysIdRoutine(
+        new SysIdRoutine.Config(
+            null,
+            Volts.of(4),
+            null, 
+            null
+        ),
+        new SysIdRoutine.Mechanism(
+            (Voltage volts) -> motor.setControl(sysIdControl.withOutput(volts.in(Volts))),
+            (log) -> {
+                log.motor("Feeder")
+                    .voltage(Volts.of(motor.getTorqueCurrent().getValueAsDouble()))
+                    .angularVelocity(motor.getVelocity().getValue())
+                    .angularAcceleration(motor.getAcceleration().getValue());
+            },
+            this
+        )
+    );
+
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("feeder").getDoubleTopic("applied out").publish();
     private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("feeder").getDoubleTopic("rps").publish();
     private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("feeder").getDoubleTopic("setpoint").publish();
-
-    //#region Main Functionality
 
     public FeederSubsystem() {
         TalonFXConfigurator configurator = motor.getConfigurator();
@@ -42,6 +67,11 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         motor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
+
+        SmartDashboard.putData("Feeder Quasistatic Forward", sysIdQuasistatic(Direction.kForward));
+        SmartDashboard.putData("Feeder Quasistatic Reverse", sysIdQuasistatic(Direction.kReverse));
+        SmartDashboard.putData("Feeder Dynamic Forward", sysIdDynamic(Direction.kForward));
+        SmartDashboard.putData("Feeder Dynamic Reverse", sysIdDynamic(Direction.kReverse));
 
         SmartDashboard.putData("Feeder On", setStateCommand(FeederState.FORWARD));
         SmartDashboard.putData("Feeder Off", setStateCommand(FeederState.OFF));
@@ -56,11 +86,13 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
             MAX_RPS
         );
 
-        if (currentSetpoint != 0) {
-            velocityTorqueRequest.Velocity = currentSetpoint;
-            motor.setControl(velocityTorqueRequest);
-        } else {
-            motor.setControl(new VoltageOut(0.0));
+        if (!isCharacterizing) {
+            if (currentSetpoint != 0) {
+                velocityTorqueRequest.Velocity = currentSetpoint;
+                motor.setControl(velocityTorqueRequest);
+            } else {
+                motor.setControl(new VoltageOut(0.0));
+            }
         }
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
@@ -92,6 +124,18 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
         return setSetpointCommand(state.rps);
     }
 
+    public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
+        return sysIdRoutine.quasistatic(direction)
+            .beforeStarting(() -> isCharacterizing = true)
+            .finallyDo(() -> isCharacterizing = false);
+    }
+
+    public Command sysIdDynamic(SysIdRoutine.Direction direction) {
+        return sysIdRoutine.dynamic(direction)
+            .beforeStarting(() -> isCharacterizing = true)
+            .finallyDo(() -> isCharacterizing = false);
+    }
+
     public enum FeederState{
         FORWARD(32.0),
         REVERSE(-32.0),
@@ -108,5 +152,5 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
     public void onModeSwitch() {
         setState(FeederState.OFF);
     }
-}
 
+}
