@@ -737,13 +737,14 @@ public final class Constants {
         
         public static final int MOTOR_ID = 17;
 
-        public static final double P = 0.5;
+        public static final double P = 20.0;
         public static final double I = 0.0;
         public static final double D = 0.0;
-        public static final double V = 0.462;
-        public static final double A = 0.0;
+        public static final double V = 0.22226;
+        public static final double A = 0.70318;
+        public static final double S = 0.23135;
 
-        public static final double MAX_RPS = 100;
+        public static final double MAX_RPS = 20.0; // 13.238
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;

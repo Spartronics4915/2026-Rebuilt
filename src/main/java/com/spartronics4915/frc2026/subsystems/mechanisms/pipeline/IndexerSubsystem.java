@@ -47,6 +47,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
                 log.motor("Indexer")
                     .voltage(Volts.of(motor.getTorqueCurrent().getValueAsDouble()))
                     .angularVelocity(motor.getVelocity().getValue())
+                    .angularPosition(motor.getPosition().getValue())
                     .angularAcceleration(motor.getAcceleration().getValue());
             },
             this
