@@ -8,6 +8,7 @@ import java.util.function.Supplier;
 
 import com.spartronics4915.frc2026.autos.ZoneTransition.TraversalMethod;
 
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEvent;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -85,6 +86,7 @@ public class ComplexAutoChooser {
     private final ZoneTransition transitionFactory;
     private final DriveToPOI POIFactory;
     private final NeutralZoneAutos neutralZoneFactory;
+    private final PreAlignment preAlignmentFactory;
 
     private double shootWaitTime;
 
@@ -97,12 +99,14 @@ public class ComplexAutoChooser {
      * @param transitionFactory Factory for generating zone transition commands.
      * @param POIfactory Factory for generating drive-to-POI commands.
      * @param neutralZoneFactory Factory for generating neutral zone commands.
+     * @param preAlignmentFactory Factory for generating pre-alignment (OP Tech) commands.
      * @param maxSegments Maximum number of auto segments.
      */
-    public ComplexAutoChooser(ZoneTransition transitionFactory, DriveToPOI POIFactory, NeutralZoneAutos neutralZoneFactory, int maxSegments) {
+    public ComplexAutoChooser(ZoneTransition transitionFactory, DriveToPOI POIFactory, NeutralZoneAutos neutralZoneFactory, PreAlignment preAlignmentFactory, int maxSegments) {
         this.transitionFactory = transitionFactory;
         this.POIFactory = POIFactory;
         this.neutralZoneFactory = neutralZoneFactory;
+        this.preAlignmentFactory = preAlignmentFactory;
 
         this.selectedSegments = new AutoSegment[maxSegments];
         this.segmentChoosers = (SendableChooser<AutoSegment>[]) new SendableChooser[maxSegments];
@@ -163,10 +167,19 @@ public class ComplexAutoChooser {
 
     private Command addNeutralZoneCommand(AutoSegment segment, boolean inRight, boolean outRight) {
         if (segment == INTAKE_QUARTER) {
-            return neutralZoneFactory.generateQuadrantCommand(inRight, inRight ^ outRight);
+            if (inRight ^ outRight) {
+                return neutralZoneFactory.generateInvertedQuadrantCommand(outRight);
+            } else {
+                return neutralZoneFactory.generateQuadrantCommand(inRight);
+            }
         } else {
             return neutralZoneFactory.generateHalfCommand(inRight, inRight ^ outRight);
         }
+    }
+
+    private boolean isRight(AutoSegment segment) {
+        // Triggers with RT -> N, RB -> N, RT -> A, and RB -> A, the rest are "left"
+        return segment.userFacingName.charAt(0) == 'R';
     }
 
     /**
@@ -175,51 +188,44 @@ public class ComplexAutoChooser {
      */
     public Command getAuto() {
         ArrayList<Command> commands = new ArrayList<>();
-        boolean right = false;
         AutoSegment prevSegment = UNUSED;
         for (int i = 0; i < selectedSegments.length; i++) {
-            AutoSegment segment = selectedSegments[i];
+            AutoSegment currentSegment = selectedSegments[i];
+            AutoSegment futureSegment = (i + 1 < selectedSegments.length) ? selectedSegments[i + 1] : UNUSED;
 
-            if (segment == UNUSED) {
+            if (currentSegment == UNUSED) {
                 break;
             }
 
-            switch (segment) {
+            switch (currentSegment) {
                 case L_TRENCH_TO_NEUTRAL:
-                    right = false;
                     commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, true));
                     break;
                 case L_BUMP_TO_NEUTRAL:
-                    right = false;
                     commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP, true));
                     break;
                 case R_TRENCH_TO_NEUTRAL:
-                    right = true;
                     commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, true));
                     break;
                 case R_BUMP_TO_NEUTRAL:
-                    right = true;
                     commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, true));
                     break;
 
                 case INTAKE_QUARTER:
                 case INTAKE_HALF:
+                    commands.add(addNeutralZoneCommand(currentSegment, isRight(prevSegment), isRight(futureSegment)));
                     break;
 
                 case L_TRENCH_TO_ALLIANCE:
-                    commands.add(addNeutralZoneCommand(prevSegment, right, false));
                     commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, false));
                     break;
                 case L_BUMP_TO_ALLIANCE:
-                    commands.add(addNeutralZoneCommand(prevSegment, right, false));
                     commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP, false));
                     break;
                 case R_TRENCH_TO_ALLIANCE:
-                    commands.add(addNeutralZoneCommand(prevSegment, right, true));
                     commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, false));
                     break;
                 case R_BUMP_TO_ALLIANCE:
-                    commands.add(addNeutralZoneCommand(prevSegment, right, true));
                     commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, false));
                     break;
 
@@ -233,14 +239,18 @@ public class ComplexAutoChooser {
                     commands.add(POIFactory.generateCommand(DriveToPOI.POI.TOWER));
                     break;
                 case PAUSE:
-                    commands.add(Commands.waitSeconds(shootWaitTime));
+                    commands.add(Commands.deadline(
+                        Commands.waitSeconds(shootWaitTime),
+                        Commands.none()
+                        //preAlignmentFactory.generateCommand(prevSegment, futureSegment)
+                    ));
                     break;
                 case UNUSED:
                     System.out.println("Chat what are we doing?");
                     break;
             }
 
-            prevSegment = segment;
+            prevSegment = currentSegment;
         }
 
         Command[] commandsArray = new Command[commands.size()];

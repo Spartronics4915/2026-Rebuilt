@@ -1,5 +1,6 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms;
 
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
@@ -17,6 +18,7 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -36,7 +38,7 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
 
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
-    private Rotation2d currentSetpoint;
+    private Rotation2d currentSetpoint = new Rotation2d();
     private State currentState = new State();
 
     private PositionVoltage positionVoltage = new PositionVoltage(0.0);
@@ -61,7 +63,9 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
             cancoderConfigurator.MagnetSensor.MagnetOffset = MAGNET_OFFSET;
             encoder.getConfigurator().apply(cancoderConfigurator);
 
-        setMechanismAngle(Rotation2d.fromRotations(encoder.getAbsolutePosition().getValueAsDouble()));
+        StatusSignal<Angle> pos = encoder.getAbsolutePosition();
+        pos.waitForUpdate(0.5);
+        setMechanismAngle(Rotation2d.fromRotations(pos.getValueAsDouble()));
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         motor.addProfile(trapProfile);
@@ -77,14 +81,6 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
 
     @Override
     public void periodic(){
-        currentSetpoint = Rotation2d.fromRotations(
-            MathUtil.clamp(
-                currentSetpoint.getRotations(), 
-                MIN_ANGLE.getRotations(), 
-                MAX_ANGLE.getRotations()
-            )
-        );
-
         currentState = trapProfile.calculate(
             dtCalc.update(), 
             currentState, 
@@ -108,7 +104,13 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
     }
 
     public void setSetpoint(Rotation2d setpoint){
-        currentSetpoint = setpoint;
+        currentSetpoint = Rotation2d.fromRotations(
+            MathUtil.clamp(
+                setpoint.getRotations(), 
+                MIN_ANGLE.getRotations(), 
+                MAX_ANGLE.getRotations()
+            )
+        );
     }
 
     public Rotation2d getSetpoint() {
@@ -116,7 +118,7 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
     }
 
     public void setState(PivotState state){
-        currentSetpoint = state.angle;
+        setSetpoint(state.angle);
     }
 
     private void setMechanismAngle(Rotation2d angle){
@@ -128,9 +130,14 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
         resetMechanism(getPosition());
     }
 
-    public void resetMechanism(Rotation2d angle){
-        currentSetpoint = angle;
+    public void resetMechanism(Rotation2d angle) {
+        setSetpoint(angle);
         currentState = new State(angle.getRotations(), 0.0);
+    }
+
+    // Ignores limits for the purpose of manual reset
+    public void deltaSetpoint(Rotation2d delta) {
+        currentSetpoint = Rotation2d.fromDegrees(getSetpoint().getDegrees() + delta.getDegrees());
     }
 
     //#endregion
@@ -146,7 +153,7 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
     }
  
     public enum PivotState {
-        READY(Rotation2d.fromDegrees(1)),
+        READY(Rotation2d.fromDegrees(0)),
         SAFE(Rotation2d.fromDegrees(60)),
         STOW(Rotation2d.fromDegrees(130));
 

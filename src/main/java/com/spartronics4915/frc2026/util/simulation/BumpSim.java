@@ -70,7 +70,11 @@ public class BumpSim {
         }
 
         // int modulePair = (highestModuleIndex + (highestModuleIndex % 2 == 0 ? 1 : -1) + modulePoses.length) % modulePoses.length; // Pair modules are FL-BR and FR-BL
-        posePublisher.accept(Arrays.stream(globalModulePoses).map(p -> new Pose3d(p, new Rotation3d())).toArray(Pose3d[]::new));
+        Pose3d[] publishPoses = new Pose3d[globalModulePoses.length];
+        for (int i = 0; i < publishPoses.length; i++) {
+            publishPoses[i] = new Pose3d(globalModulePoses[i], new Rotation3d());
+        }
+        posePublisher.accept(publishPoses);
 
         for (int m = 0; m < modulePoses.length; m++) {
             if (globalModulePoses[m].getZ() > 0.01) {

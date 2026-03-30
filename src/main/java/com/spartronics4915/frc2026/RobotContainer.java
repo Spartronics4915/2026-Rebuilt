@@ -4,20 +4,19 @@
 
 package com.spartronics4915.frc2026;
 
+import com.spartronics4915.frc2026.Constants.AutoAimConstants;
 import com.spartronics4915.frc2026.Constants.OperatorConstants;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
 import com.spartronics4915.frc2026.autos.ComplexAutoChooser;
 import com.spartronics4915.frc2026.autos.DriveToPOI;
 import com.spartronics4915.frc2026.autos.NeutralZoneAutos;
+import com.spartronics4915.frc2026.autos.PreAlignment;
 import com.spartronics4915.frc2026.autos.DriveToPOI.POI;
 import com.spartronics4915.frc2026.autos.ZoneTransition;
 import com.spartronics4915.frc2026.Constants.VisionConstants;
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.hubPose;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.trenchTransform;
-import static com.spartronics4915.frc2026.Constants.*;
-import static com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem.isFieldRelative;
-import static com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem.teleopHeadingOffset;
 
 import java.util.Set;
 
@@ -25,6 +24,7 @@ import com.spartronics4915.frc2026.commands.DriveCommand;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands.PipelineState;
 import com.spartronics4915.frc2026.subsystems.control.AutoAimController;
+import com.spartronics4915.frc2026.subsystems.control.AutoAimController.ManualOverride;
 import com.spartronics4915.frc2026.subsystems.control.Superstructure;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem;
@@ -54,7 +54,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  * This class is where the bulk of the robot should be declared. Since Command-based is a
  * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
  * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
- * subsystems, commands, and trigger mappings) should be declared here.
+ * subsystems, commands, and triggers) should be declared here.
  */
 public class RobotContainer {
 
@@ -81,8 +81,9 @@ public class RobotContainer {
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
     private final DriveToPOI POIFactory = new DriveToPOI(swerveSubsystem, climberSubsystem);
     private final NeutralZoneAutos neutralZoneFactory = new NeutralZoneAutos(swerveSubsystem);
+    private final PreAlignment preAlignmentFactory = new PreAlignment(swerveSubsystem);
 
-    private final ComplexAutoChooser autoChooser = new ComplexAutoChooser(transitionFactory, POIFactory, neutralZoneFactory, 15);
+    private final ComplexAutoChooser autoChooser = new ComplexAutoChooser(transitionFactory, POIFactory, neutralZoneFactory, preAlignmentFactory, 15);
     private final AutoAimController autoAimController = new AutoAimController(hoodSubsystem, turretSubsystem, swerveSubsystem, shooterSubsystem);
 
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
@@ -104,8 +105,11 @@ public class RobotContainer {
 
     public final Superstructure superstructure = new Superstructure(
         swerveSubsystem, 
+        shooterSubsystem,
         autoAimController, 
-        superstructureCommands
+        superstructureCommands,
+        driveCommand,
+        visionSubsystem
     );
 
     public RobotContainer() {
@@ -116,6 +120,9 @@ public class RobotContainer {
         SmartDashboard.putData("Reset Dynamics", superstructureCommands.resetDynamics());
         SmartDashboard.putData("Pipeline On", superstructureCommands.setPipelineState(PipelineState.ON));
         SmartDashboard.putData("Pipeline Off", superstructureCommands.setPipelineState(PipelineState.OFF));
+        SmartDashboard.putData("Reset Odometry", Commands.runOnce(
+            () -> swerveSubsystem.resetPose(visionSubsystem.getFusedPose())
+        ));
     }
 
     /**
@@ -146,15 +153,11 @@ public class RobotContainer {
         //);
 
         driverController.povLeft().whileTrue(
-            Commands.run(() -> {
-                swerveSubsystem.drive(driverNudgeLeft);
-            })
+            Commands.run(() -> swerveSubsystem.drive(driverNudgeLeft), swerveSubsystem)
         );
 
         driverController.povRight().whileTrue(
-            Commands.run(() -> {
-                swerveSubsystem.drive(driverNudgeRight);
-            })
+            Commands.run(() -> swerveSubsystem.drive(driverNudgeRight), swerveSubsystem)
         );
 
         driverController.povDown().onTrue(
@@ -170,7 +173,7 @@ public class RobotContainer {
         driverController.leftBumper().onTrue(
             Commands.runOnce(() -> {
                 swerveSubsystem.setMovementOverride(
-                    hubPose.minus(trenchTransform.times(swerveSubsystem.shouldFlip() ? -1 : 1)).getY()
+                    hubPose.minus(trenchTransform).getY()
                 );
             })
         ).onFalse(
@@ -182,7 +185,7 @@ public class RobotContainer {
         driverController.rightBumper().onTrue(
             Commands.runOnce(() -> {
                 swerveSubsystem.setMovementOverride(
-                    hubPose.plus(trenchTransform.times(swerveSubsystem.shouldFlip() ? -1 : 1)).getY()
+                    hubPose.plus(trenchTransform).getY()
                 );
             })
         ).onFalse(
@@ -193,13 +196,13 @@ public class RobotContainer {
 
         driverController.a().onTrue(
             Commands.runOnce(() -> {
-                teleopHeadingOffset = swerveSubsystem.getPose().getRotation();
+                swerveSubsystem.resetHeadingOffset();
             })
         );
 
         driverController.b().onTrue(
             Commands.runOnce(() -> {
-                isFieldRelative = !isFieldRelative;
+                swerveSubsystem.toggleFieldRelative();
             })
         );
 
@@ -212,32 +215,42 @@ public class RobotContainer {
             .withName("X Brake Swerve")
         );
 
+        driverController.start().onTrue(
+            Commands.runOnce(
+                () -> swerveSubsystem.resetPose(visionSubsystem.getFusedPose())
+            )
+        );
+
         //#endregion
         //#region Operator Controller
 
         operatorController.povUp().whileTrue(
             Commands.run(() -> {
-                hoodSubsystem.setSetpoint(hoodSubsystem.getCurrentSetpoint().plus(Rotation2d.fromDegrees(0.5 * 3)));
+                pivotSubsystem.deltaSetpoint(Rotation2d.fromDegrees(1.5));
             })
         );
 
         operatorController.povLeft().whileTrue(
-            Commands.run(() -> {
-                turretSubsystem.setSetpoint(Rotation2d.fromDegrees(turretSubsystem.getCurrentSetpoint().getDegrees() + 0.75 * 3));
-            })
+            autoAimController.setManualOverride(ManualOverride.LEFT)
         );
 
         operatorController.povRight().whileTrue(
-            Commands.run(() -> {
-                turretSubsystem.setSetpoint(Rotation2d.fromDegrees(turretSubsystem.getCurrentSetpoint().getDegrees() - 0.75 * 3));
-            })
+            autoAimController.setManualOverride(ManualOverride.RIGHT)
         );
 
         operatorController.povDown().whileTrue(
             Commands.run(() -> {
-                hoodSubsystem.setSetpoint(hoodSubsystem.getCurrentSetpoint().minus(Rotation2d.fromDegrees(0.5 * 3)));
+                pivotSubsystem.deltaSetpoint(Rotation2d.fromDegrees(-1.5));
             })
         );
+
+        operatorController.leftStick().onTrue(
+            Commands.runOnce(() -> {
+                pivotSubsystem.resetMechanism(Rotation2d.kZero);
+            })
+        );
+
+        SmartDashboard.putData("Pivot Reset", Commands.runOnce(() -> pivotSubsystem.resetMechanism(Rotation2d.kZero)));
 
         operatorController.leftTrigger().onTrue(
             Commands.parallel(
@@ -304,27 +317,19 @@ public class RobotContainer {
         // Driver nudge defs are in the driverController section
 
         debugController.povUp().whileTrue(
-            Commands.run(() -> {
-                swerveSubsystem.drive(driverNudgeUp);
-            })
+            Commands.run(() -> swerveSubsystem.drive(driverNudgeUp), swerveSubsystem)
         );
 
         debugController.povLeft().whileTrue(
-            Commands.run(() -> {
-                swerveSubsystem.drive(driverNudgeLeft);
-            })
+            Commands.run(() -> swerveSubsystem.drive(driverNudgeLeft), swerveSubsystem)
         );
 
         debugController.povRight().whileTrue(
-            Commands.run(() -> {
-                swerveSubsystem.drive(driverNudgeRight);
-            })
+            Commands.run(() -> swerveSubsystem.drive(driverNudgeRight), swerveSubsystem)
         );
 
         debugController.povDown().whileTrue(
-            Commands.run(() -> {
-                swerveSubsystem.drive(driverNudgeDown);
-            })
+            Commands.run(() -> swerveSubsystem.drive(driverNudgeDown), swerveSubsystem)
         );
 
         debugController.leftTrigger().onTrue(
@@ -340,7 +345,7 @@ public class RobotContainer {
         debugController.leftBumper().onTrue(
             Commands.runOnce(() -> {
                 swerveSubsystem.setMovementOverride(
-                    hubPose.minus(trenchTransform.times(swerveSubsystem.shouldFlip() ? -1 : 1)).getY()
+                    hubPose.minus(trenchTransform).getY()
                 );
             })
         ).onFalse(
@@ -352,7 +357,7 @@ public class RobotContainer {
         debugController.rightBumper().onTrue(
             Commands.runOnce(() -> {
                 swerveSubsystem.setMovementOverride(
-                    hubPose.plus(trenchTransform.times(swerveSubsystem.shouldFlip() ? -1 : 1)).getY()
+                    hubPose.plus(trenchTransform).getY()
                 );
             })
         ).onFalse(
@@ -361,16 +366,15 @@ public class RobotContainer {
             })
         );
 
-
         debugController.a().onTrue(
             Commands.runOnce(() -> {
-                teleopHeadingOffset = swerveSubsystem.getPose().getRotation();
+                swerveSubsystem.resetHeadingOffset();
             })
         );
 
         debugController.b().onTrue(
             Commands.runOnce(() -> {
-                isFieldRelative = !isFieldRelative;
+                swerveSubsystem.toggleFieldRelative();
             })
         );
 
@@ -402,4 +406,5 @@ public class RobotContainer {
     public Command getAutonomousCommand() {
         return Commands.defer(() -> autoChooser.getAuto(), Set.of(swerveSubsystem));
     }
+
 }

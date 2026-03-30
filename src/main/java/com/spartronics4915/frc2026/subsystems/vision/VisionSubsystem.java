@@ -28,6 +28,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -49,30 +50,28 @@ public class VisionSubsystem extends SubsystemBase {
 
     private final SwerveSubsystem swerve;
 
-    private final List<ResultInterface> combinedResults = new ArrayList<>(16);
-    private final List<ApriltagResult> combinedApriltagResults = new ArrayList<>(16);
+    private final List<ResultInterface> combinedResults = new ArrayList<>(4);
+    private final List<ApriltagResult> combinedApriltagResults = new ArrayList<>(4);
 
     private final Pose3d[] tagPoseScratch = new Pose3d[33];
 
     private volatile boolean hasValidPose;
+    private Pose2d fusedPose;
 
-    private static final NetworkTable visionTable =
-        NetworkTableInstance.getDefault().getTable("vision");
+    private static final NetworkTable NT = NetworkTableInstance.getDefault().getTable("vision");
 
-    private final StructPublisher<Pose2d> posePublisher =
-        visionTable.getStructTopic("Vision Pose", Pose2d.struct).publish();
-    private final StructPublisher<Pose2d> usedPosePublisher =
-        visionTable.getStructTopic("Used Vision Pose", Pose2d.struct).publish();
+    private final StructPublisher<Pose2d> posePublisher = NT.getStructTopic("Vision Pose", Pose2d.struct).publish();
+    private final StructPublisher<Pose2d> usedPosePublisher = NT.getStructTopic("Used Vision Pose", Pose2d.struct).publish();
 
-    private final DoublePublisher transStdDevPublisher = visionTable.getDoubleTopic("XY Std Devs").publish();
-    private final DoublePublisher rotStdDevPublisher = visionTable.getDoubleTopic("Theta Std Devs").publish();
-    private final DoublePublisher avgAmbiguityPublisher = visionTable.getDoubleTopic("Avg Ambiguity").publish();
-    private final DoublePublisher avgAreaPublisher = visionTable.getDoubleTopic("Avg Area").publish();
-    private final DoublePublisher latencyPublisher = visionTable.getDoubleTopic("Latency").publish();
-    private final DoublePublisher targetCountPublisher = visionTable.getDoubleTopic("Target Count").publish();
+    private final DoublePublisher transStdDevPublisher = NT.getDoubleTopic("XY Std Devs").publish();
+    private final DoublePublisher rotStdDevPublisher = NT.getDoubleTopic("Theta Std Devs").publish();
+    private final DoublePublisher avgAmbiguityPublisher = NT.getDoubleTopic("Avg Ambiguity").publish();
+    private final DoublePublisher avgAreaPublisher = NT.getDoubleTopic("Avg Area").publish();
+    private final DoublePublisher latencyPublisher = NT.getDoubleTopic("Latency").publish();
+    private final DoublePublisher targetCountPublisher = NT.getDoubleTopic("Target Count").publish();
 
-    private final StructArrayPublisher<Pose3d> trackedApriltagsPublisher =
-        visionTable.getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
+    private final StructArrayPublisher<Pose3d> trackedApriltagsPublisher = NT.getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
+    private final BooleanPublisher hasValidPosePublisher = NT.getBooleanTopic("Has Valid Pose").publish();
 
     public VisionSubsystem(
         Map<String, ProcessorInterface> cameras,
@@ -145,7 +144,7 @@ public class VisionSubsystem extends SubsystemBase {
         }
 
         if (isSimulation) {
-            visionSystemSim.update(swerve.getRobotPose());
+            visionSystemSim.update(swerve.getPose());
         }
     }
 
@@ -162,7 +161,8 @@ public class VisionSubsystem extends SubsystemBase {
             ResultInterface result = combinedResults.get(i);
             if (result instanceof ApriltagResult ar
                     && ar.getStdDevs() != null
-                    && aprilTagFilter.test(ar)) {
+                    && aprilTagFilter.test(ar)
+            ) {
                 combinedApriltagResults.add(ar);
             }
         }
@@ -176,10 +176,11 @@ public class VisionSubsystem extends SubsystemBase {
         }
 
         ApriltagResult fusedResult = fusedResultOpt.get();
+        fusedPose = fusedResult.getPose();
 
         if (swerve != null && swerve.isFlatDebounced()) {
             poseConsumer.accept(
-                fusedResult.getPose(),
+                fusedPose,
                 fusedResult.getTimestampSeconds(),
                 fusedResult.getStdDevs()
             );
@@ -202,6 +203,7 @@ public class VisionSubsystem extends SubsystemBase {
         targetCountPublisher.set(fusedResult.getTargetCount());
 
         trackedApriltagsPublisher.accept(getTargetPoses(fusedResult.getTrackedTags()));
+        hasValidPosePublisher.accept(hasValidPose);
     }
 
     /**
@@ -219,7 +221,14 @@ public class VisionSubsystem extends SubsystemBase {
         return result;
     }
 
-    public boolean hasValidPose() { return hasValidPose; }
+    public Pose2d getFusedPose() {
+        if (hasValidPose == false) return null;
+        return fusedPose;
+    }
+
+    public boolean hasValidPose() { 
+        return hasValidPose; 
+    }
 
     @FunctionalInterface
     public interface VisionPoseConsumer {

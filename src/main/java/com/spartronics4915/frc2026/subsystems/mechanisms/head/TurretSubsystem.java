@@ -11,12 +11,10 @@ import com.ctre.phoenix6.hardware.CANcoder;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
 import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
-import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.LoggedTrapezoidProfile;
 import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -34,14 +32,9 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
     private CANcoder encoder = new CANcoder(ENCODER_ID, CAN_BUS);
     
-    private LoggedTrapezoidProfile trapezoidProfile = new LoggedTrapezoidProfile(
-        new Constraints(MAX_VELOCITY, MAX_ACCELERATION)
-    );
-    
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
     private State targetState = new State();
-    private State currentState = new State();
 
     private final PositionVoltage positionVoltage = new PositionVoltage(0.0);
     
@@ -51,7 +44,6 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("turret").getDoubleTopic("applied out").publish();
     private final StructPublisher<Rotation2d> positionPublisher = NetworkTableInstance.getDefault().getTable("turret").getStructTopic("position", Rotation2d.struct).publish();
-    private final StructPublisher<Rotation2d> desiredStatePublisher = NetworkTableInstance.getDefault().getTable("turret").getStructTopic("desiredState", Rotation2d.struct).publish();
     private final StructPublisher<Rotation2d> setpointPublisher = NetworkTableInstance.getDefault().getTable("turret").getStructTopic("setpoint", Rotation2d.struct).publish();
     
     public TurretSubsystem() {
@@ -75,7 +67,6 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
         setMechanismAngle(Rotation2d.fromDegrees(getEncoderPosition().getDegrees()));
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
-        motor.addProfile(trapezoidProfile);
         motor.addSetpoint(() -> targetState.position, (setpoint) -> setSetpoint(Rotation2d.fromDegrees(setpoint)));
 
         SmartDashboard.putData("Turret 0", setSetpointCommand(Rotation2d.fromDegrees(0)));
@@ -93,27 +84,18 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
             maxAngle.getRotations()
         );
 
-        currentState = trapezoidProfile.calculate(
-            dtCalc.update(), 
-            currentState, 
-            targetState
-        );
-
-        if (currentState.position < minAngle.getRotations() || currentState.position > maxAngle.getRotations()) {
-            currentState.position = MathUtil.clamp(
-                currentState.position, 
-                minAngle.getRotations(), 
-                maxAngle.getRotations()
-            );
-            currentState.velocity = 0.0;
+        if (targetState.position <= minAngle.getRotations() || targetState.position >= maxAngle.getRotations()) {
+            targetState.velocity = 0;
         }
 
-        positionVoltage.withEnableFOC(ENABLE_FOC).Position = currentState.position;
+        positionVoltage.withEnableFOC(ENABLE_FOC)
+            .withPosition(targetState.position)
+            .withVelocity(targetState.velocity);
+            
         motor.setControl(positionVoltage);
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         positionPublisher.accept(getPosition());
-        desiredStatePublisher.accept(Rotation2d.fromRotations(currentState.position));
         setpointPublisher.accept(Rotation2d.fromRotations(targetState.position));
     }
 
@@ -162,7 +144,6 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     public void resetMechanism(Rotation2d angle){
         setSetpoint(angle);
-        currentState = new State(angle.getRotations(), 0.0);
     }
 
     //#endregion
@@ -181,7 +162,7 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     public enum TurretClamp {
         RESTRICTED(Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
-        UNRESTRICTED(Rotation2d.fromDegrees(-355), Rotation2d.fromDegrees(45));
+        UNRESTRICTED(Rotation2d.fromDegrees(-145), Rotation2d.fromDegrees(225));
 
         public Rotation2d minAngle;
         public Rotation2d maxAngle;

@@ -1,204 +1,370 @@
 package com.spartronics4915.frc2026.subsystems.swerve;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Optional;
-import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
-
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.trajectory.PathPlannerTrajectoryState;
-import com.pathplanner.lib.util.FlippingUtil;
-import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
-import com.spartronics4915.frc2026.Robot;
-import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
-import com.spartronics4915.frc2026.util.simulation.BumpSim;
-
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.driveController;
 
-import edu.wpi.first.math.MathUtil;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.Utils;
+import com.ctre.phoenix6.swerve.SwerveDrivetrain;
+import com.ctre.phoenix6.swerve.SwerveDrivetrain.SwerveDriveState;
+import com.ctre.phoenix6.swerve.SwerveModule;
+import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
+import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
+import com.ctre.phoenix6.swerve.SwerveRequest;
+
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.util.FlippingUtil;
+import com.spartronics4915.frc2026.Robot;
+import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
+import com.spartronics4915.frc2026.util.general.MovingAveragePose;
+import com.spartronics4915.frc2026.util.simulation.BumpSim;
+import com.spartronics4915.frc2026.util.swerve.SlipDetector;
+import com.spartronics4915.frc2026.util.vision.ConcurrentTimeBuffer;
+
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
+import edu.wpi.first.networktables.BooleanPublisher;
+import edu.wpi.first.networktables.DoublePublisher;
+import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
-import swervelib.SwerveDrive;
-import swervelib.parser.SwerveParser;
-import swervelib.telemetry.SwerveDriveTelemetry;
-import swervelib.telemetry.SwerveDriveTelemetry.TelemetryVerbosity;
-
-import static edu.wpi.first.units.Units.Meter;
-import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 public class SwerveSubsystem extends SubsystemBase {
-    
-    public final SwerveDrive swerveDrive;
-    public static Pose2d pose;
+
+    private final SwerveDrivetrain<?, ?, ?> drivetrain;
+    private final SwerveConfigurations activeConfig;
+
+    private final SwerveRequest.FieldCentric fieldCentricRequest =
+        new SwerveRequest.FieldCentric()
+            .withDriveRequestType(DriveRequestType.Velocity)
+            .withSteerRequestType(SteerRequestType.Position);
+
+    private final SwerveRequest.FieldCentricFacingAngle headingLockRequest =
+        new SwerveRequest.FieldCentricFacingAngle()
+            .withDriveRequestType(DriveRequestType.Velocity)
+            .withSteerRequestType(SteerRequestType.Position);
+
+    private final SwerveRequest.RobotCentric robotCentricRequest =
+        new SwerveRequest.RobotCentric()
+            .withDriveRequestType(DriveRequestType.Velocity)
+            .withSteerRequestType(SteerRequestType.Position);
+
+    private final SwerveRequest.ApplyRobotSpeeds autoRequest =
+        new SwerveRequest.ApplyRobotSpeeds()
+            .withDriveRequestType(DriveRequestType.Velocity)
+            .withSteerRequestType(SteerRequestType.Position);
+
+    private final SwerveRequest.SwerveDriveBrake lockRequest =
+        new SwerveRequest.SwerveDriveBrake();
+
+    private final SlipDetector slipDetector = new SlipDetector();
+    private final AtomicBoolean currentlySlipping = new AtomicBoolean(false);
+    private boolean isInSlipRecovery = false;
+    private double lastSlipTimestamp = -1.0;
+
+    private final ConcurrentTimeBuffer<Double> yawRateBuffer = ConcurrentTimeBuffer.createDoubleBuffer(1.0);
+
+    private double prevYawRad = Double.NaN;
+    private double prevYawTimestamp = Double.NaN;
+
+    private Pose2d smoothedPose = new Pose2d();
+
+    private final MovingAveragePose poseFilter = new MovingAveragePose(0.30); // previously 0.20
+
     public static Pose3d pose3d = new Pose3d();
-    public static double movementOverride = 0.0;
-    public static boolean isFieldRelative = DEFAULT_IS_FIELD_RELATIVE;
-    public static Rotation2d teleopHeadingOffset = Rotation2d.fromDegrees(0.0);
-    private final File directory;
-    
     private final BumpSim bumpSim;
 
-    public static boolean isRightAlliance;
+    private double movementOverride = 0.0;
+    private boolean isFieldRelativeState = defaultFieldRelative;
+    private Rotation2d teleopHeadingOffset = Rotation2d.kZero;
 
-    private TrapezoidProfile.State yState = new TrapezoidProfile.State();
-    private boolean wasOverriding = false;    
-    StructPublisher<Pose2d> posePublisher = NetworkTableInstance.getDefault().getStructTopic("Pose", Pose2d.struct).publish();
-    StructPublisher<Pose3d> pose3dPublisher = NetworkTableInstance.getDefault().getStructTopic("Pose3d", Pose3d.struct).publish();
+    private Optional<Alliance> cachedAlliance = Optional.empty();
+    private boolean hasCheckedAlliance = false;
+
+    private final Debouncer flatDebouncer = new Debouncer(tiltDebounce);
+    private boolean isFlatDebouncedValue = false;
+    private volatile double lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
+
+    private final SwerveTelemetry telemetry = new SwerveTelemetry();
 
     public SwerveSubsystem(SwerveConfigurations config) {
-        this.directory = new File(Filesystem.getDeployDirectory(), config.directory);
-        try {
-            swerveDrive = new SwerveParser(directory).createSwerveDrive(
-                MAX_SPEED,
-                new Pose2d(new Translation2d(Meter.of(2), Meter.of(5)),
-                Rotation2d.fromDegrees(120))
-            );
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
-        
-        AutoBuilder.configure(
-            this::getPose,
-            swerveDrive::resetOdometry,
-            swerveDrive::getRobotVelocity,
-            (Speeds, FF) -> {drive(Speeds);},
-            driveController,
-            config.pathplannerConfig.config,
-            this::shouldFlip,
-            this
+        drivetrain = new SwerveDrivetrain<>(
+            TalonFX::new, TalonFX::new, CANcoder::new,
+            config.drivetrainConstants,
+            odomUpdateFrequency,
+            config.modules[0], config.modules[1], config.modules[2], config.modules[3]
         );
+        activeConfig = config;
+
+        drivetrain.setStateStdDevs(normalStdDevs);
+
+        headingLockRequest.HeadingController.setPID(headingLockKP, 0, headingLockKD);
+        headingLockRequest.HeadingController.enableContinuousInput(-Math.PI, Math.PI);
 
         if (Robot.isSimulation()) {
-            bumpSim = new BumpSim(swerveDrive.getSwerveModulePoses(new Pose2d()), 20, 0.1);
+            drivetrain.resetPose(
+                new Pose2d(new Translation2d(14.0, 5.0), Rotation2d.fromDegrees(180))
+            );
+            Pose2d[] modulePoses = new Pose2d[] {
+                new Pose2d(config.modules[0].LocationX, config.modules[0].LocationY, Rotation2d.kZero),
+                new Pose2d(config.modules[1].LocationX, config.modules[1].LocationY, Rotation2d.kZero),
+                new Pose2d(config.modules[2].LocationX, config.modules[2].LocationY, Rotation2d.kZero),
+                new Pose2d(config.modules[3].LocationX, config.modules[3].LocationY, Rotation2d.kZero)
+            };
+            bumpSim = new BumpSim(modulePoses, 20, 0.1);
         } else {
             bumpSim = null;
         }
+
+        drivetrain.registerTelemetry(this::updateOdometry);
+        configurePathPlanner();
     }
 
-    public boolean shouldFlip() {
-        Optional<Alliance> alliance = DriverStation.getAlliance();
-        if(alliance.isEmpty()) return false;
-        if (alliance.get() == Alliance.Red) {return true;}
-        return false;
-    }
+    private void updateOdometry(SwerveDriveState state) {
+        currentlySlipping.set(slipDetector.update(state.ModuleStates, state.ModuleTargets));
 
-    public Pose2d getRelativePose() {
-        Pose2d pose = getPose();
-        if (shouldFlip()) {
-            return FlippingUtil.flipFieldPose(pose);
-        } else {
-            return pose;
+        // Record yaw rate numerically from consecutive odometry poses
+        double nowYaw = state.Pose.getRotation().getRadians();
+        double nowTs = state.Timestamp;
+        if (!Double.isNaN(prevYawTimestamp)) {
+            double dt = nowTs - prevYawTimestamp;
+            if (dt > 0) {
+                double yawRate = MathUtil.angleModulus(nowYaw - prevYawRad) / dt;
+                yawRateBuffer.addSample(nowTs, yawRate);
+            }
         }
-    }
-
-    public ChassisSpeeds getFieldRelativeVelocity() {
-        ChassisSpeeds fieldVelocity = getFieldVelocity();
-        if (shouldFlip()) {
-            return FlippingUtil.flipFieldSpeeds(fieldVelocity);
-        } else {
-            return fieldVelocity;
-        }
+        prevYawRad = nowYaw;
+        prevYawTimestamp = nowTs;
     }
 
     @Override
     public void periodic() {
-        Pose2d pose = getPose();
+        double now = Utils.getCurrentTimeSeconds();
 
-        posePublisher.accept(pose);
+        if (currentlySlipping.get()) {
+            lastSlipTimestamp = now;
+            if (!isInSlipRecovery) {
+                isInSlipRecovery = true;
+                drivetrain.setStateStdDevs(slipStdDevs);
+            }
+        } else if (isInSlipRecovery && (now - lastSlipTimestamp) > slipRecoverySeconds) {
+            isInSlipRecovery = false;
+            drivetrain.setStateStdDevs(normalStdDevs);
+        }
 
-        if (Robot.isSimulation()) {
-            Pose3d resolvedPose = bumpSim.resolveRobotPose(pose);
+        isFlatDebouncedValue = flatDebouncer.calculate(isFlat());
+
+        smoothedPose = poseFilter.calculate(getPose());
+
+        if (Robot.isSimulation() && bumpSim != null) {
+            Pose3d resolvedPose = bumpSim.resolveRobotPose(getPose());
             if (resolvedPose != null) {
                 pose3d = resolvedPose;
             }
-        } else {
-            pose3d = new Pose3d(pose.getX(), pose.getY(), 0, getHeading().rotation);
         }
 
-        pose3dPublisher.accept(pose3d);
+        if ((now - lastDriveCommandTimestamp) > staleCommandTimeout) {
+            drivetrain.setControl(autoRequest.withSpeeds(new ChassisSpeeds(0.0, 0.0, 0.0)));
+            lastDriveCommandTimestamp = now;
+        }
+
+        telemetry.publish(drivetrain.getState(), this);
+    }
+ 
+    @Override
+    public void simulationPeriodic() {
+        drivetrain.updateSimState(0.020, RobotController.getBatteryVoltage());
+    }
+
+    public void driveFieldCentric(double vX, double vY, double omega) {
+        lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
+        drivetrain.setControl(
+            fieldCentricRequest
+                .withVelocityX(vX)
+                .withVelocityY(vY)
+                .withRotationalRate(omega)
+        );
+    }
+
+    public void driveFieldCentricFacingAngle(double vX, double vY, Rotation2d targetHeading) {
+        lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
+        drivetrain.setControl(
+            headingLockRequest
+                .withVelocityX(vX)
+                .withVelocityY(vY)
+                .withTargetDirection(targetHeading)
+        );
+    }
+
+    /** Robot-centric drive (used when field-relative is toggled off). */
+    public void driveRobotCentric(double vX, double vY, double omega) {
+        lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
+        drivetrain.setControl(
+            robotCentricRequest
+                .withVelocityX(vX)
+                .withVelocityY(vY)
+                .withRotationalRate(omega)
+        );
+    }
+
+    public void setDriverPerspective(Rotation2d heading) {
+        drivetrain.setOperatorPerspectiveForward(heading);
     }
 
     public void drive(ChassisSpeeds chassisSpeeds) {
-        swerveDrive.drive(chassisSpeeds);
+        lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
+        drivetrain.setControl(autoRequest.withSpeeds(chassisSpeeds));
+    }
+
+    public void lockModules() {
+        drivetrain.setControl(lockRequest);
+    }
+
+    public Pose2d getPose() {
+        return drivetrain.getState().Pose;
+    }
+
+    /** Pose flipped to the current alliance's perspective. Use for all game logic. */
+    public Pose2d getRelativePose() {
+        Pose2d pose = getPose();
+        return shouldFlip() ? FlippingUtil.flipFieldPose(pose) : pose;
+    }
+
+    public Pose2d getPastVisionPose(double timestamp) {
+        try {
+            return drivetrain.samplePoseAt(timestamp).orElse(getPose());
+        } catch (Exception e) {
+            System.err.println("Warning: Could not sample pose at timestamp " + timestamp);
+            return getPose();
+        }
+    }
+
+    public void addVisionMeasurement(Pose2d pose, double timestamp, Matrix<N3, N1> stdDevs) {
+        drivetrain.addVisionMeasurement(pose, timestamp, stdDevs);
+    }
+
+    public void resetPose(Pose2d pose) {
+        if (pose == null) return;
+        drivetrain.resetPose(pose);
+        poseFilter.reset(pose);
+    }
+
+    public ChassisSpeeds getRobotVelocity() {
+        return drivetrain.getState().Speeds;
     }
 
     public ChassisSpeeds getFieldVelocity() {
-        return swerveDrive.getFieldVelocity();
+        return ChassisSpeeds.fromRobotRelativeSpeeds(getRobotVelocity(), getPose().getRotation());
+    }
+
+    public ChassisSpeeds getFieldRelativeVelocity() {
+        ChassisSpeeds velocity = getFieldVelocity();
+        return shouldFlip() ? 
+            FlippingUtil.flipFieldSpeeds(velocity) 
+            : velocity;
+    }
+
+    public double getSpeed() {
+        ChassisSpeeds velocity = getFieldVelocity();
+        return Math.hypot(velocity.vxMetersPerSecond, velocity.vyMetersPerSecond);
+    }
+
+    public Rotation2d getRoll() {
+        if (Robot.isSimulation()) {
+            return new Rotation2d(pose3d.getRotation().getX());
+        }
+        return Rotation2d.fromDegrees(
+            drivetrain.getPigeon2().getRoll().getValueAsDouble()
+        );
+    }
+
+    public Rotation2d getPitch() {
+        if (Robot.isSimulation()) {
+            return new Rotation2d(pose3d.getRotation().getY());
+        }
+        return Rotation2d.fromDegrees(
+            drivetrain.getPigeon2().getPitch().getValueAsDouble()
+        );
     }
 
     public Rotation3d getGyroRotation3d() {
         if (Robot.isSimulation()) {
             return pose3d.getRotation();
         }
-
-        return new Rotation3d(
-            swerveDrive.getRoll().getRadians(),
-            swerveDrive.getPitch().getRadians(),
-            getPose().getRotation().getRadians()
-        );
+        return drivetrain.getRotation3d();
     }
 
     public RobotHeading getHeading() {
         return new RobotHeading(getGyroRotation3d(), Timer.getFPGATimestamp());
     }
 
-    public Pose2d getPose() {
-        return swerveDrive.getPose();
+    public Pose2d getSmoothedRelativePose() {
+        Pose2d pose = getSmoothedPose();
+        return shouldFlip() ? FlippingUtil.flipFieldPose(pose) : pose;
     }
 
-    public Pose2d getSimulatedPose() {
-        return swerveDrive.getMapleSimDrive().get().getSimulatedDriveTrainPose();
+    public Pose2d getSmoothedPose() {
+        return smoothedPose;
     }
 
-    public Pose2d getRobotPose() {
-        if (Robot.isSimulation()) {
-            return getSimulatedPose();
-        } else {
-            return getPose();
-        }
+    public OptionalDouble getMaxAbsYawRateInRange(double minTime, double maxTime) {
+        return yawRateBuffer.getMaxAbsValueInRange(minTime, maxTime);
     }
 
-    public Pose2d getPastVisionPose(double timestamp) {
-        Optional<Pose2d> pose = swerveDrive.swerveDrivePoseEstimator.sampleAt(timestamp);
-        if (pose.isEmpty()) {
-            System.err.println("Warning: Could not sample pose at timestamp " + timestamp);
-            return getPose(); // Return current pose as fallback
-        }
-        return pose.get();
+    public boolean isFlat() {
+        return Math.abs(getPitch().getDegrees()) < tiltThresholdDegrees
+            && Math.abs(getRoll().getDegrees()) < tiltThresholdDegrees;
     }
 
-    public void addVisionMeasurement(Pose2d pose, double timestamp, Matrix<N3, N1> visionMeasurementStdDevs) {
-        swerveDrive.addVisionMeasurement(pose, timestamp, visionMeasurementStdDevs);
+    public boolean isFlatDebounced() {
+        return isFlatDebouncedValue;
     }
 
-    public double getSpeed() {
-        ChassisSpeeds fieldVelocity = getFieldVelocity();
-        return Math.sqrt(fieldVelocity.vxMetersPerSecond * fieldVelocity.vxMetersPerSecond + fieldVelocity.vyMetersPerSecond * fieldVelocity.vyMetersPerSecond);
+    public boolean isFieldRelative() {
+        return isFieldRelativeState;
     }
 
-    public double getMovementOverride() { 
+    public void setFieldRelative(boolean fieldRelative) {
+        isFieldRelativeState = fieldRelative;
+    }
+
+    public void toggleFieldRelative() {
+        isFieldRelativeState = !isFieldRelativeState;
+    }
+
+    public Rotation2d getHeadingOffset() {
+        return teleopHeadingOffset.plus(shouldFlip() ? Rotation2d.kPi : Rotation2d.kZero);
+    }
+
+    /** Snaps the driver's forward perspective to the robot's current heading. */
+    public void resetHeadingOffset() {
+        teleopHeadingOffset = getRelativePose().getRotation();
+    }
+
+    public double getMovementOverride() {
         return movementOverride;
     }
 
@@ -206,113 +372,173 @@ public class SwerveSubsystem extends SubsystemBase {
         movementOverride = override;
     }
 
-    public void lockModules(){
-        swerveDrive.lockPose();
+    public boolean isSlipping() {
+        return isInSlipRecovery;
     }
 
-    public boolean isFlat() {
-        return Math.abs(Rotation2d.fromRadians(getGyroRotation3d().getY()).getDegrees()) < TILT_THRESHOLD_DEGREES
-            && Math.abs(Rotation2d.fromRadians(getGyroRotation3d().getX()).getDegrees()) < TILT_THRESHOLD_DEGREES;
+    public boolean shouldFlip() {
+        if (!hasCheckedAlliance) {
+            cachedAlliance = DriverStation.getAlliance();
+            if (cachedAlliance.isPresent()) {
+                hasCheckedAlliance = true;
+            }
+        }
+        return cachedAlliance.isPresent() && cachedAlliance.get() == Alliance.Red;
     }
 
-    Trigger flatTrigger = new Trigger(this::isFlat).debounce(TILT_DEBOUNCE);
-
-    public boolean isFlatDebounced() {
-        return flatTrigger.getAsBoolean();
+    public void resetAlliance() {
+        cachedAlliance = Optional.empty();
+        hasCheckedAlliance = false;
     }
 
-    static private double applyResponseCurve(double x) {
-        return Math.signum(x) * Math.pow(x, 2);
-    }
-
-    public static ChassisSpeeds rotateLinearChassisSpeeds(ChassisSpeeds in, Rotation2d offset){
-        Translation2d modifiedLinear = new Translation2d(
-            in.vxMetersPerSecond,
-            in.vyMetersPerSecond
-        ).rotateBy(offset);
-
-        return new ChassisSpeeds(
-            modifiedLinear.getX(),
-            modifiedLinear.getY(), 
-            in.omegaRadiansPerSecond
+    private void configurePathPlanner() {
+        AutoBuilder.configure(
+            this::getPose,
+            this::resetPose,
+            this::getRobotVelocity,
+            (speeds, ff) -> drive(speeds),
+            driveController,
+            activeConfig.pathplannerConfig.config,
+            this::shouldFlip,
+            this
         );
     }
 
-    public static Supplier<ChassisSpeeds> computeVelocitiesFromController(Supplier<XboxController> controllerSupplier, BooleanSupplier isFieldRelative, SwerveSubsystem swerve) {
-        TrapezoidProfile trapezoidProfile = new TrapezoidProfile(trenchAlignConstraints);
-        TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
-
-        PathPlannerTrajectoryState goalState = new PathPlannerTrajectoryState();
-        TrapezoidProfile.State targetState = new TrapezoidProfile.State(0,0);
-
-        return () -> {
-            XboxController driverController = controllerSupplier.get();
-
-            Pose2d currentPose = swerve.getPose();
-            double override = swerve.getMovementOverride();
-            ChassisSpeeds fieldVel = swerve.getFieldVelocity();
-            
-            // Raw joystick inputs
-            double joyVX = applyResponseCurve(MathUtil.applyDeadband(driverController.getLeftY() * -1.0, STICK_DEADBAND)) * MAX_SPEED;
-            double joyVY = applyResponseCurve(MathUtil.applyDeadband(driverController.getLeftX() * -1.0, STICK_DEADBAND)) * MAX_SPEED;
-            double joyOmega = applyResponseCurve(MathUtil.applyDeadband(driverController.getRightX() * -1.0, STICK_DEADBAND)) * MAX_ANGULAR_SPEED.in(RadiansPerSecond);
-
-            // Determine joystick components in field space
-            ChassisSpeeds fieldJoy = ChassisSpeeds.fromRobotRelativeSpeeds(joyVX, joyVY, 0, isFieldRelative.getAsBoolean() ? teleopHeadingOffset : currentPose.getRotation());
-            double fieldVX = fieldJoy.vxMetersPerSecond;
-            double fieldVY = fieldJoy.vyMetersPerSecond;
-
-            double dt = dtCalc.update();
-
-            if (override != 0.0) {
-                if (!swerve.wasOverriding) {
-                    swerve.yState.position = currentPose.getY();
-                    swerve.yState.velocity = fieldVel.vyMetersPerSecond;
-                    swerve.wasOverriding = true;
-                }
-
-                double targetX = currentPose.getX();
-                double targetTheta = currentPose.getRotation().getRadians();
-
-                targetState.position = override;
-                targetState.velocity = 0;
-
-                swerve.yState = trapezoidProfile.calculate(
-                    dt, 
-                    swerve.yState, 
-                    targetState
-                );
-                double targetY = swerve.yState.position;
-
-                goalState.pose = new Pose2d(targetX, targetY, Rotation2d.fromRadians(targetTheta));
-                goalState.fieldSpeeds = new ChassisSpeeds();
-
-                ChassisSpeeds robotTarget = driveController.calculateRobotRelativeSpeeds(currentPose, goalState);
-                ChassisSpeeds fieldTarget = ChassisSpeeds.fromRobotRelativeSpeeds(robotTarget, currentPose.getRotation());
-
-                fieldVY = fieldTarget.vyMetersPerSecond;
-            } else {
-                swerve.wasOverriding = false;
-                swerve.yState.position = currentPose.getY();
-                swerve.yState.velocity = fieldVel.vyMetersPerSecond;
-            }
-
-            // Convert field-relative linear speeds back to robot-relative for the drivetrain
-            return ChassisSpeeds.fromFieldRelativeSpeeds(fieldVX, fieldVY, joyOmega, currentPose.getRotation());
-        };
+    public static ChassisSpeeds rotateLinearChassisSpeeds(ChassisSpeeds in, Rotation2d offset) {
+        Translation2d linear = new Translation2d(
+            in.vxMetersPerSecond, 
+            in.vyMetersPerSecond
+        ).rotateBy(offset);
+        return new ChassisSpeeds(linear.getX(), linear.getY(), in.omegaRadiansPerSecond);
     }
 
-    public static Supplier<ChassisSpeeds> computeVelocitiesFromController(Supplier<XboxController> controllerSupplier, SwerveSubsystem swerve) {
-        return computeVelocitiesFromController(controllerSupplier, () -> isFieldRelative, swerve);
+    public void configureStandardDevsForDisabled() {
+        drivetrain.setStateStdDevs(VecBuilder.fill(1.0, 1.0, 1.0));
     }
 
-    public static Supplier<ChassisSpeeds> getSwerveTeleopCSSupplier(Supplier<XboxController> controllerSupplier, SwerveSubsystem swerve){
-        return computeVelocitiesFromController(controllerSupplier, swerve);
-    }
-
-    public Command driveCommand(ChassisSpeeds chassisSpeeds){
-        return Commands.runOnce(() -> drive(chassisSpeeds));
+    public void configureStandardDevsForEnabled() {
+        drivetrain.setStateStdDevs(normalStdDevs);
     }
 
     public record RobotHeading(Rotation3d rotation, double timestamp) {}
+
+    private final class SwerveTelemetry {
+ 
+        private static final String[] MODULE_NAMES = {"FL", "FR", "BL", "BR"};
+ 
+        private final NetworkTable root = NetworkTableInstance.getDefault().getTable("swerve");
+
+        private final StructPublisher<Pose2d> pose = root.getStructTopic("Pose", Pose2d.struct).publish();
+        private final StructPublisher<Pose3d> pose3dPub = root.getStructTopic("Pose3d", Pose3d.struct).publish();
+        private final StructPublisher<Pose2d> smoothed = root.getStructTopic("SmoothedPose", Pose2d.struct).publish();
+        private final StructPublisher<ChassisSpeeds> measuredSpeeds = root.getStructTopic("MeasuredSpeeds", ChassisSpeeds.struct).publish();
+        private final StructPublisher<ChassisSpeeds> fieldSpeeds = root.getStructTopic("FieldRelativeSpeeds", ChassisSpeeds.struct).publish();
+ 
+        private final StructArrayPublisher<SwerveModuleState> moduleStates = root.getStructArrayTopic("ModuleStates", SwerveModuleState.struct).publish();
+        private final StructArrayPublisher<SwerveModuleState> moduleTargets = root.getStructArrayTopic("ModuleTargets", SwerveModuleState.struct).publish();
+        private final StructArrayPublisher<SwerveModulePosition> modulePositions = root.getStructArrayTopic("ModulePositions", SwerveModulePosition.struct).publish();
+ 
+        private final DoublePublisher speed = root.getDoubleTopic("SpeedMPS").publish();
+        private final DoublePublisher odometryHz = root.getDoubleTopic("OdometryHz").publish();
+        private final DoublePublisher batteryV = root.getDoubleTopic("BatteryVoltage").publish();
+        private final DoublePublisher headingDeg = root.getDoubleTopic("HeadingDeg").publish();
+        private final DoublePublisher rollDeg = root.getDoubleTopic("RollDeg").publish();
+        private final DoublePublisher pitchDeg = root.getDoubleTopic("PitchDeg").publish();
+        private final DoublePublisher yawRateRadS = root.getDoubleTopic("YawRateRadS").publish();
+        private final BooleanPublisher slipping = root.getBooleanTopic("IsSlipping").publish();
+        private final BooleanPublisher slipRecovery = root.getBooleanTopic("IsInSlipRecovery").publish();
+        private final BooleanPublisher fieldRelative = root.getBooleanTopic("IsFieldRelative").publish();
+ 
+        private final DoublePublisher[] driveVelMPS = new DoublePublisher[4];
+        private final DoublePublisher[] driveTargetMPS = new DoublePublisher[4];
+        private final DoublePublisher[] drivePositionM = new DoublePublisher[4];
+        private final DoublePublisher[] driveCurrentA = new DoublePublisher[4];
+        private final DoublePublisher[] driveVoltageV = new DoublePublisher[4];
+        private final DoublePublisher[] driveTempC = new DoublePublisher[4];
+        private final DoublePublisher[] driveCLError = new DoublePublisher[4];
+        private final DoublePublisher[] driveClosedLoopRef = new DoublePublisher[4];
+ 
+        private final DoublePublisher[] steerAngleDeg = new DoublePublisher[4];
+        private final DoublePublisher[] steerTargetDeg = new DoublePublisher[4];
+        private final DoublePublisher[] steerCurrentA = new DoublePublisher[4];
+        private final DoublePublisher[] steerVoltageV = new DoublePublisher[4];
+        private final DoublePublisher[] steerTempC = new DoublePublisher[4];
+        private final DoublePublisher[] steerCLError = new DoublePublisher[4];
+ 
+ 
+        SwerveTelemetry() {
+            for (int i = 0; i < 4; i++) {
+                NetworkTable t = root.getSubTable("modules/" + MODULE_NAMES[i]);
+ 
+                driveVelMPS[i] = t.getDoubleTopic("DriveVelocityMPS").publish();
+                driveTargetMPS[i] = t.getDoubleTopic("DriveTargetMPS").publish();
+                drivePositionM[i] = t.getDoubleTopic("DrivePositionM").publish();
+                driveCurrentA[i] = t.getDoubleTopic("DriveCurrentA").publish();
+                driveVoltageV[i] = t.getDoubleTopic("DriveVoltageV").publish();
+                driveTempC[i] = t.getDoubleTopic("DriveTempC").publish();
+                driveCLError[i] = t.getDoubleTopic("DriveClosedLoopError").publish();
+                driveClosedLoopRef[i] = t.getDoubleTopic("DriveClosedLoopRef").publish();
+ 
+                steerAngleDeg[i] = t.getDoubleTopic("SteerAngleDeg").publish();
+                steerTargetDeg[i] = t.getDoubleTopic("SteerTargetDeg").publish();
+                steerCurrentA[i] = t.getDoubleTopic("SteerCurrentA").publish();
+                steerVoltageV[i] = t.getDoubleTopic("SteerVoltageV").publish();
+                steerTempC[i] = t.getDoubleTopic("SteerTempC").publish();
+                steerCLError[i] = t.getDoubleTopic("SteerClosedLoopError").publish();
+ 
+            }
+        }
+ 
+        void publish(SwerveDriveState state, SwerveSubsystem swerve) {
+            Pose2d rawPose = state.Pose;
+            pose.set(rawPose);
+            pose3dPub.set(SwerveSubsystem.pose3d);
+
+            smoothed.set(swerve.smoothedPose);
+            measuredSpeeds.set(state.Speeds);
+            fieldSpeeds.set(swerve.getFieldVelocity());
+ 
+            moduleStates.set(state.ModuleStates);
+            moduleTargets.set(state.ModuleTargets);
+            modulePositions.set(state.ModulePositions);
+ 
+            ChassisSpeeds v = swerve.getFieldVelocity();
+            speed.set(Math.hypot(v.vxMetersPerSecond, v.vyMetersPerSecond));
+ 
+            if (state.OdometryPeriod > 0) {
+                odometryHz.set(1.0 / state.OdometryPeriod);
+            }
+ 
+            batteryV.set(RobotController.getBatteryVoltage());
+            headingDeg.set(rawPose.getRotation().getDegrees());
+            rollDeg.set(swerve.getRoll().getDegrees());
+            pitchDeg.set(swerve.getPitch().getDegrees());
+            yawRateRadS.set(swerve.getRobotVelocity().omegaRadiansPerSecond);
+            slipping.set(swerve.currentlySlipping.get());
+            slipRecovery.set(swerve.isInSlipRecovery);
+            fieldRelative.set(swerve.isFieldRelativeState);
+ 
+            for (int i = 0; i < 4; i++) {
+                SwerveModule<?, ?, ?> mod = swerve.drivetrain.getModule(i);
+                TalonFX drive = (TalonFX) mod.getDriveMotor();
+                TalonFX steer = (TalonFX) mod.getSteerMotor();
+ 
+                driveVelMPS[i].set(state.ModuleStates[i].speedMetersPerSecond);
+                driveTargetMPS[i].set(state.ModuleTargets[i].speedMetersPerSecond);
+                drivePositionM[i].set(state.ModulePositions[i].distanceMeters);
+                driveCurrentA[i].set(drive.getStatorCurrent().getValueAsDouble());
+                driveVoltageV[i].set(drive.getMotorVoltage().getValueAsDouble());
+                driveTempC[i].set(drive.getDeviceTemp().getValueAsDouble());
+                driveCLError[i].set(drive.getClosedLoopError().getValueAsDouble());
+                driveClosedLoopRef[i].set(drive.getClosedLoopReference().getValueAsDouble());
+
+                steerAngleDeg[i].set(state.ModuleStates[i].angle.getDegrees());
+                steerTargetDeg[i].set(state.ModuleTargets[i].angle.getDegrees());
+                steerCurrentA[i].set(steer.getStatorCurrent().getValueAsDouble());
+                steerVoltageV[i].set(steer.getMotorVoltage().getValueAsDouble());
+                steerTempC[i].set(steer.getDeviceTemp().getValueAsDouble());
+                steerCLError[i].set(steer.getClosedLoopError().getValueAsDouble());
+            }
+        }
+    }
 }

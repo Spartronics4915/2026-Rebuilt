@@ -77,6 +77,8 @@ public class SuperstructureCommands {
     //#region Controls
 
     public Command setPipelineState(PipelineState state) {
+        this.currentPipelineState = state;
+        
         if (state == PipelineState.OFF) {
             return Commands.parallel(
                 indexer.setStateCommand(state.indexerState),
@@ -197,11 +199,11 @@ public class SuperstructureCommands {
     public Command traversal() {
         return Commands.sequence(
             Commands.parallel(
+                conditionalPivotReady(),
                 conditionalAutoAimOn(),
                 conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
-                conditionalPivotReady(),
                 climber.setStateCommand(ClimberState.DOWN)),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
@@ -211,15 +213,14 @@ public class SuperstructureCommands {
         );
     }
 
-    /** Specifically for the Trench zone to ensure the hood is clamped */
     public Command trench() {
         return Commands.sequence(
             Commands.parallel(
+                conditionalPivotReady(),
                 conditionalAutoAimOn(),
                 conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.RESTRICTED),
                 shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
-                conditionalPivotReady(),
                 climber.setStateCommand(ClimberState.DOWN)),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
@@ -229,15 +230,14 @@ public class SuperstructureCommands {
         );
     }
 
-    /** Specifically for the Tower zone to ensure the shooter is clamped */
     public Command tower() {
         return Commands.sequence(
             Commands.parallel(
+                conditionalPivotReady(),
                 conditionalAutoAimOn(),
                 conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.RESTRICTED),
-                conditionalPivotReady(),
                 climber.setStateCommand(ClimberState.DOWN)),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
@@ -250,6 +250,7 @@ public class SuperstructureCommands {
     public Command cruise() {
         return Commands.sequence(
             Commands.parallel(
+                conditionalPivotReady(),
                 conditionalAutoAimOn(),
                 conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
@@ -288,8 +289,7 @@ public class SuperstructureCommands {
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 turret.setClampCommand(TurretClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
-                conditionalAutoAimOn(),
-                conditionalAutoShootOn(),
+                conditionalAutoAimOff(),
                 intake.setStateCommand(IntakeSubsystem.IntakeState.OFF)
             )
         );
@@ -332,8 +332,9 @@ public class SuperstructureCommands {
     //#region Guards
 
     public boolean isShooterReady() {
-        return shooter.getCurrentRPS() >= shooter.getCurrentSetpoint() 
-            && shooter.getCurrentSetpoint() != 0;
+        double setpoint = shooter.getCurrentSetpoint();
+        return Math.abs(shooter.getCurrentRPS() - setpoint) < shooterReadyThresholdRPS
+            && setpoint != 0;
     }
 
     private boolean isPivotSafe() {

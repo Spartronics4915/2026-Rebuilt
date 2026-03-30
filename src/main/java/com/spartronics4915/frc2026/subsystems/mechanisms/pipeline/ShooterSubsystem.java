@@ -7,7 +7,6 @@ import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -37,6 +36,10 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("applied out").publish();
     private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("rps").publish();
     private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("setpoint").publish();
+
+    private final VoltageOut stopRequest = new VoltageOut(0.0);
+
+    private boolean isShooting = false;
 
     //#region Main Functionality
 
@@ -76,21 +79,26 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
             -maxRPS, 
             maxRPS
         );
-        
+
+        isShooting = currentSetpoint != 0;
+
+        double workingSetpoint = currentSetpoint;
         if (currentSetpoint == 0 && !Robot.isPureTeleop) {
-            currentSetpoint = IDLE_SHOOTER_RPS;
+            workingSetpoint = IDLE_SHOOTER_RPS;
         }
 
-        if (currentSetpoint != 0) {
-            velocityVoltage.withEnableFOC(ENABLE_FOC).Velocity = currentSetpoint;
+        if (workingSetpoint != 0) {
+            velocityVoltage.withEnableFOC(ENABLE_FOC).Velocity = workingSetpoint;
             leadMotor.setControl(velocityVoltage);
         } else {
-            leadMotor.setControl(new VoltageOut(0.0));
+            leadMotor.setControl(stopRequest);
         }
 
         appliedOutPublisher.accept(leadMotor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPS());
-        setpointPublisher.accept(currentSetpoint);
+        setpointPublisher.accept(workingSetpoint);
+
+        SmartDashboard.putBoolean("Is Shooting", isShooting);
     }
 
     public double getCurrentRPS() {
@@ -103,6 +111,10 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     public double getCurrentSetpoint() {
         return currentSetpoint;
+    }
+
+    public boolean getIsShooting() {
+        return isShooting;
     }
 
     public void setSetpoint(double setpoint){
@@ -127,7 +139,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     }
 
     public enum ShooterClamp{
-        RESTRICTED(0),
+        RESTRICTED(20),
         UNRESTRICTED(200);
 
         double maxRPS;

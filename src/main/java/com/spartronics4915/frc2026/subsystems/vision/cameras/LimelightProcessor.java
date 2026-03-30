@@ -102,9 +102,17 @@ public class LimelightProcessor implements ProcessorInterface {
         if (!isRunning) return;
 
         if (useMegaTag2) {
-            // cachedHeadingDegrees is written by the main thread and read here — volatile
-            // guarantees visibility without requiring a lock.
-            LimelightHelpers.SetRobotOrientation_NoFlush(limelightName, cachedHeadingDegrees, 0, 0, 0, 0, 0);
+            // cachedHeadingDegrees is written by the main thread and read here
+            // TODO: I have a sneaking suspicion something is wrong here
+            LimelightHelpers.SetRobotOrientation_NoFlush(
+                limelightName, 
+                cachedHeadingDegrees, 
+                0, 
+                0, 
+                0, 
+                0, 
+                0
+            );
         }
 
         PoseEstimate estimate = useMegaTag2
