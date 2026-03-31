@@ -2,6 +2,8 @@ package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
 
 import static edu.wpi.first.units.Units.Volts;
 
+import java.util.function.BooleanSupplier;
+
 import static com.spartronics4915.frc2026.Constants.FeederConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
@@ -13,10 +15,12 @@ import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
 import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
 
+import au.grapplerobotics.LaserCan;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -78,6 +82,24 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
         SmartDashboard.putData("Feeder Motor", motor);
     }
 
+    private LaserCan laserCan = new LaserCan(LASER_ID);
+
+    private double getCanOutput(){
+        LaserCan.Measurement measurement = laserCan.getMeasurement();
+        if(measurement == null){
+            return 99;
+        } else{
+            return measurement.distance_mm;
+        }
+    }
+
+    private boolean isBallDetected(){
+        return getCanOutput() <= DETECTION_DISTANCE;
+    };
+
+    private double lastTime = 0.0;    
+    private  double ballDetectedPercent = 0.0;
+    
     @Override
     public void periodic() {
         currentSetpoint = MathUtil.clamp(
@@ -98,6 +120,15 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPM());
         setpointPublisher.accept(currentSetpoint);
+
+        double currentTime = Timer.getFPGATimestamp();
+        double deltaTime = currentTime - lastTime;
+        lastTime = currentTime;
+
+        ballDetectedPercent *= (1-deltaTime);
+        if(isBallDetected()){
+            ballDetectedPercent += deltaTime;
+        }
     }
 
     public double getCurrentRPM() {
@@ -110,6 +141,10 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     public void setState(FeederState state) {
         setSetpoint(state.rps);
+    }
+
+    public double getBallPercent(){
+        return ballDetectedPercent;
     }
 
     //#endregion
