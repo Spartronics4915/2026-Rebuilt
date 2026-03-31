@@ -23,6 +23,7 @@ public class MotorHelpers {
             private double d;
             private double v;
             private double a;
+            private double s;
             private boolean following;
             private LoggedTrapezoidProfile profile;
             private LoggedSlewRateLimiter slewLimiter;
@@ -63,6 +64,7 @@ public class MotorHelpers {
                     .withKD(d)
                     .withKV(v)
                     .withKA(a)
+                    .withKS(s)
                 );
             }
 
@@ -84,6 +86,7 @@ public class MotorHelpers {
                 d = config.kD;
                 v = config.kV;
                 a = config.kA;
+                s = config.kS;
 
                 following = this.getControlMode().getValue() == com.ctre.phoenix6.signals.ControlModeValue.Follower;
 
@@ -97,6 +100,7 @@ public class MotorHelpers {
                     builder.addDoubleProperty("d", () -> d, (d) -> {this.d = d; applyPID();});
                     builder.addDoubleProperty("v", () -> v, (v) -> {this.v = v; applyPID();});
                     builder.addDoubleProperty("a", () -> a, (a) -> {this.a = a; applyPID();});
+                    builder.addDoubleProperty("s", () -> s, (s) -> {this.s = s; applyPID();});
                     
                     if (profile != null) {
                         builder.addDoubleProperty("Max Velocity", () -> maxVelocity, (maxVelocity) -> { this.maxVelocity = maxVelocity; applyProfileConstraints(); });

@@ -50,6 +50,7 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
                 log.motor("Feeder")
                     .voltage(Volts.of(motor.getTorqueCurrent().getValueAsDouble()))
                     .angularVelocity(motor.getVelocity().getValue())
+                    .angularPosition(motor.getPosition().getValue())
                     .angularAcceleration(motor.getAcceleration().getValue());
             },
             this

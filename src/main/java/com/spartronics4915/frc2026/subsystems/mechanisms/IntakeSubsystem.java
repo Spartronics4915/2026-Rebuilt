@@ -46,6 +46,7 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
                 log.motor("Intake")
                     .voltage(Volts.of(motor.getTorqueCurrent().getValueAsDouble()))
                     .angularVelocity(motor.getVelocity().getValue())
+                    .angularPosition(motor.getPosition().getValue())
                     .angularAcceleration(motor.getAcceleration().getValue());
             },
             this

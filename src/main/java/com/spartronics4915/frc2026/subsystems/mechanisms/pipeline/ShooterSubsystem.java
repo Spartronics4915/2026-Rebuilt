@@ -8,7 +8,7 @@ import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.TorqueCurrentFOC;
-import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
+import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 
@@ -34,7 +34,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     private double currentSetpoint;
 
-    private final VelocityTorqueCurrentFOC velocityTorqueRequest = new VelocityTorqueCurrentFOC(0.0);
+    private final VelocityVoltage velocityVoltage = new VelocityVoltage(0.0);
 
     private final TorqueCurrentFOC sysIdControl = new TorqueCurrentFOC(0.0);
     private boolean isCharacterizing = false;
@@ -47,11 +47,15 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
             null
         ),
         new SysIdRoutine.Mechanism(
-            (Voltage volts) -> leadMotor.setControl(sysIdControl.withOutput(volts.in(Volts))),
+            (Voltage volts) -> {
+                leadMotor.setControl(sysIdControl.withOutput(volts.in(Volts)));
+                followerMotor.setControl(new Follower(FOLLOWER_MOTOR_ID, MotorAlignmentValue.Aligned)); 
+            },
             (log) -> {
                 log.motor("Shooter")
                     .voltage(Volts.of(leadMotor.getTorqueCurrent().getValueAsDouble()))
                     .angularVelocity(leadMotor.getVelocity().getValue())
+                    .angularPosition(leadMotor.getPosition().getValue())
                     .angularAcceleration(leadMotor.getAcceleration().getValue());
             },
             this
@@ -120,8 +124,8 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
         if (!isCharacterizing) {
             if (workingSetpoint != 0) {
-                velocityTorqueRequest.Velocity = workingSetpoint;
-                leadMotor.setControl(velocityTorqueRequest);
+                velocityVoltage.Velocity = workingSetpoint;
+                leadMotor.setControl(velocityVoltage);
             } else {
                 leadMotor.setControl(stopRequest);
             }

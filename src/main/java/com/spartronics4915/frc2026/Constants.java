@@ -571,9 +571,9 @@ public final class Constants {
         public static final double P = 0.4;
         public static final double I = 0.0;
         public static final double D = 0.0;
-        public static final double V = 0.123;
+        public static final double V = 0.115;
         public static final double A = 60.0;
-        public static final double S = 0.0;
+        public static final double S = 0.2;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 80;
@@ -606,10 +606,11 @@ public final class Constants {
 
         public static final int MOTOR_ID = 21;
 
-        public static final double P = 280.0;
+        public static final double P = 10000.0;
         public static final double I = 0.0;
-        public static final double D = 0.2;
-        public static final double V = 0.5;
+        public static final double D = 145.0;
+        public static final double V = 30.0;
+        public static final double S = 30.0;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
@@ -622,7 +623,8 @@ public final class Constants {
             .withKP(P)
             .withKI(I)
             .withKD(D)
-            .withKV(V);
+            .withKV(V)
+            .withKS(S);
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
@@ -646,12 +648,12 @@ public final class Constants {
         public static final int MOTOR_ID = 14;
         public static final int ENCODER_ID = 16;
 
-        public static final double P = 120;
+        public static final double P = 1200.0;
         public static final double I = 0.0;
-        public static final double D = 0.2;
+        public static final double D = 85.0;
 
-        public static final double MAX_VELOCITY = 10;
-        public static final double MAX_ACCELERATION = 10;
+        public static final double MAX_VELOCITY = 100;
+        public static final double MAX_ACCELERATION = 100;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
@@ -695,11 +697,11 @@ public final class Constants {
         
         public static final int MOTOR_ID = 18;
 
-        public static final double P = 0.3;
+        public static final double P = 40.0;
         public static final double I = 0.0;
         public static final double D = 0.0;
-        public static final double V = 0.24;
-        public static final double A = 0.0;
+        public static final double V = 0.23073;
+        public static final double A = 1.0303;
 
         public static final double MAX_RPS = 100;
 
@@ -708,7 +710,7 @@ public final class Constants {
         public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 2;
-        public static final double MOTOR_MECHANISM_RATIO = 20.0 / 9.0;
+        public static final double MOTOR_MECHANISM_RATIO = 1.0 / (9.0/34.0);
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
@@ -785,10 +787,10 @@ public final class Constants {
         public static final int MOTOR_ID = 19;
         public static final int ENCODER_ID = 20;
 
-        public static final double P = 300;
+        public static final double P = 3000.0;
         public static final double I = 0.0;
-        public static final double D = 0.0;
-        public static final double V = 0.1;
+        public static final double D = 95.0;
+        public static final double V = 0.5;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
@@ -830,11 +832,11 @@ public final class Constants {
 
         public static final double MAX_RPS = 100;
 
-        public static final double P = 0.08;
+        public static final double P = 20.0;
         public static final double I = 0.0;
         public static final double D = 0.0;
-        public static final double V = 0.37;
-        public static final double A = 0.0;
+        public static final double V = 0.23273;
+        public static final double A = 0.7305;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
