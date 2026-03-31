@@ -149,13 +149,13 @@ public class ZoneTransition {
 
         PathPlannerPath path = new PathPlannerPath(
             waypoints,
-            List.of(new RotationTarget(1, trenchApproachAngle.rotateBy(Rotation2d.fromDegrees(IOFlip)))),
+            List.of(new RotationTarget(1, trenchApproachAngle)),
             List.of(),
             List.of(new ConstraintsZone(1, 2, trenchPathConstraints)),
             List.of(),
             defaultPathConstraints,
             Autos.generateStartingState(swerve),
-            new GoalEndState(trenchPathConstraints.maxVelocityMPS(), trenchApproachAngle.rotateBy(Rotation2d.fromDegrees(IOFlip))),
+            new GoalEndState(trenchPathConstraints.maxVelocityMPS(), trenchApproachAngle),
             false
         );
 

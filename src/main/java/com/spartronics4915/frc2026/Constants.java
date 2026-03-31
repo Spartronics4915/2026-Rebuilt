@@ -297,7 +297,7 @@ public final class Constants {
             );
 
             public static final PathConstraints trenchPathConstraints = new PathConstraints(
-                2.5,
+                4,
                 4.0,
                 1.0 / 2.0 * Math.PI,
                 1.0 * Math.PI
@@ -331,7 +331,7 @@ public final class Constants {
                 1.0 * Math.PI
             );
 
-            public static final Rotation2d trenchApproachAngle = Rotation2d.fromDegrees(0.0);
+            public static final Rotation2d trenchApproachAngle = Rotation2d.fromDegrees(90.0);
             public static final Rotation2d bumpApproachAngle = Rotation2d.fromDegrees(45.0);
 
             public enum PathplannerConfigs {
