@@ -2,8 +2,6 @@ package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
 
 import static edu.wpi.first.units.Units.Volts;
 
-import java.util.function.BooleanSupplier;
-
 import static com.spartronics4915.frc2026.Constants.FeederConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
@@ -173,8 +171,8 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
     }
 
     public enum FeederState{
-        FORWARD(23.0),
-        REVERSE(-23.0),
+        FORWARD(22.0),
+        REVERSE(-22.0),
         OFF(0);
 
         double rps;
