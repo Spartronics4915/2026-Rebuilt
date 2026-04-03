@@ -28,10 +28,13 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterface {
     
     private LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
+    private LaserCan laserCan = new LaserCan(LASER_ID);
     
     private double currentSetpoint;
-
     private final VelocityTorqueCurrentFOC velocityTorqueRequest = new VelocityTorqueCurrentFOC(0.0);
+    
+    private double lastTime = 0.0;    
+    private double ballDetectedPercent = 0.0;
 
     private final TorqueCurrentFOC sysIdControl = new TorqueCurrentFOC(0.0);
     private boolean isCharacterizing = false;
@@ -81,12 +84,10 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
         SmartDashboard.putData("Feeder Motor", motor);
     }
 
-    private LaserCan laserCan = new LaserCan(LASER_ID);
-
     private double getCanOutput(){
         LaserCan.Measurement measurement = laserCan.getMeasurement();
         if(measurement == null){
-            return 99;
+            return -1;
         } else{
             return measurement.distance_mm;
         }
@@ -95,9 +96,6 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private boolean isBallDetected(){
         return getCanOutput() <= DETECTION_DISTANCE;
     };
-
-    private double lastTime = 0.0;    
-    private  double ballDetectedPercent = 0.0;
     
     @Override
     public void periodic() {
