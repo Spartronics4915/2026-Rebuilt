@@ -60,20 +60,20 @@ public class VisionSubsystem extends SubsystemBase {
     private volatile boolean hasValidPose;
     private Pose2d fusedPose;
 
-    private static final NetworkTable NT = NetworkTableInstance.getDefault().getTable("vision");
+    private static final NetworkTable table = NetworkTableInstance.getDefault().getTable("vision");
 
-    private final StructPublisher<Pose2d> posePublisher = NT.getStructTopic("Vision Pose", Pose2d.struct).publish();
-    private final StructPublisher<Pose2d> usedPosePublisher = NT.getStructTopic("Used Vision Pose", Pose2d.struct).publish();
+    private final StructPublisher<Pose2d> posePublisher = table.getStructTopic("Vision Pose", Pose2d.struct).publish();
+    private final StructPublisher<Pose2d> usedPosePublisher = table.getStructTopic("Used Vision Pose", Pose2d.struct).publish();
 
-    private final DoublePublisher transStdDevPublisher = NT.getDoubleTopic("XY Std Devs").publish();
-    private final DoublePublisher rotStdDevPublisher = NT.getDoubleTopic("Theta Std Devs").publish();
-    private final DoublePublisher avgAmbiguityPublisher = NT.getDoubleTopic("Avg Ambiguity").publish();
-    private final DoublePublisher avgAreaPublisher = NT.getDoubleTopic("Avg Area").publish();
-    private final DoublePublisher latencyPublisher = NT.getDoubleTopic("Latency").publish();
-    private final DoublePublisher targetCountPublisher = NT.getDoubleTopic("Target Count").publish();
+    private final DoublePublisher transStdDevPublisher = table.getDoubleTopic("XY Std Devs").publish();
+    private final DoublePublisher rotStdDevPublisher = table.getDoubleTopic("Theta Std Devs").publish();
+    private final DoublePublisher avgAmbiguityPublisher = table.getDoubleTopic("Avg Ambiguity").publish();
+    private final DoublePublisher avgAreaPublisher = table.getDoubleTopic("Avg Area").publish();
+    private final DoublePublisher latencyPublisher = table.getDoubleTopic("Latency").publish();
+    private final DoublePublisher targetCountPublisher = table.getDoubleTopic("Target Count").publish();
 
-    private final StructArrayPublisher<Pose3d> trackedApriltagsPublisher = NT.getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
-    private final BooleanPublisher hasValidPosePublisher = NT.getBooleanTopic("Has Valid Pose").publish();
+    private final StructArrayPublisher<Pose3d> trackedApriltagsPublisher = table.getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
+    private final BooleanPublisher hasValidPosePublisher = table.getBooleanTopic("Has Valid Pose").publish();
 
     public VisionSubsystem(
         Map<String, ProcessorInterface> cameras,
@@ -101,12 +101,14 @@ public class VisionSubsystem extends SubsystemBase {
 
         for (ProcessorInterface camera : cameras.values()) {
             camera.start();
-        
             if (isSimulation) {
                 Optional<PhotonCameraSim> cameraSim = camera.getCameraSim();
-                cameraSim.ifPresent(sim ->
-                    visionSystemSim.addCamera(sim, camera.getCameraTransform())
-                );
+                cameraSim.ifPresent(sim -> {
+                    visionSystemSim.addCamera(sim, camera.getCameraTransform());
+                    sim.enableDrawWireframe(false);
+                    sim.enableProcessedStream(false);
+                    sim.enableRawStream(false);
+                });
             }
         }
 
