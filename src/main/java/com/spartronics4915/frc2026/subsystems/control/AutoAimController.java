@@ -340,14 +340,14 @@ public class AutoAimController extends SubsystemBase {
             && isTurretReady() && isHoodReady()) {
             return true;
         }
-
+ 
         // General false case, don't shoot if operator isn't saying to shoot or if no manual controls are pressed, and if aim is enabled, it failed the above case
         if (!shootOverride || isAimEnabled || activeManualOverride == null) {
             return false;
         }
-
+ 
         // Check if the manual shooter is within the allowed leniency (since we can't check with the auto-aim system if the shot is possible)
-        if (shooter.getCurrentRPS() / shooter.getCurrentSetpoint() < 1 - manualShooterLeniency) {
+        if (shooter.getCurrentRPS() / shooter.getCurrentSetpoint() >= 1.0 - manualShooterLeniency) {
             return true;
         }
         return false;
