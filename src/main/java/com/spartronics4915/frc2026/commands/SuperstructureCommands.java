@@ -14,6 +14,8 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem.Tu
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.*;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem.ShooterClamp;
 
+import java.util.Set;
+
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -78,22 +80,18 @@ public class SuperstructureCommands {
 
     public Command setPipelineState(PipelineState state) {
         this.currentPipelineState = state;
-        
-        if (state == PipelineState.OFF) {
-            return Commands.parallel(
+
+        return Commands.defer(() -> {
+            Command command = Commands.parallel(
                 indexer.setStateCommand(state.indexerState),
                 feeder.setStateCommand(state.feederState)
             );
-        }
 
-        return Commands.sequence(
-            // TODO: Could this be waiting when it shouldnt, the trigger already waits for it to be "ready"
-            Commands.waitUntil(this::isShooterReady),
-            Commands.parallel(
-                indexer.setStateCommand(state.indexerState),
-                feeder.setStateCommand(state.feederState)
-            )
-        );
+            // If it's NOT off, wait for the shooter first; otherwise, just run the action
+            return (state == PipelineState.OFF) ? command : command.beforeStarting(
+                Commands.waitUntil(this::isShooterReady)
+            );
+        }, Set.of(indexer, feeder));
     }
 
     public Command setClimberState(ClimberState state) {
