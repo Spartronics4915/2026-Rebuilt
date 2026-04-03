@@ -34,7 +34,9 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 public class VisionSubsystem extends SubsystemBase {
 
@@ -57,9 +59,6 @@ public class VisionSubsystem extends SubsystemBase {
 
     private volatile boolean hasValidPose;
     private Pose2d fusedPose;
-
-    /** True on the cycle where the robot transitions from not-flat to flat. */
-    private boolean wasFlatLastCycle = true;
 
     private static final NetworkTable NT = NetworkTableInstance.getDefault().getTable("vision");
 
@@ -110,13 +109,20 @@ public class VisionSubsystem extends SubsystemBase {
                 );
             }
         }
+
+        new Trigger(swerve::isFlatDebounced)
+            .onTrue(Commands.runOnce(() -> {
+                if (hasValidPose) {
+                    swerve.resetPose(fusedPose);
+                }
+            }).withName("Relocalize On Flat"));
     }
 
     private static List<FilterInterface> buildFilterList(VisionConfiguration config, SwerveSubsystem swerve) {
         List<FilterInterface> filters = new ArrayList<>();
-        filters.add(new ResultFilters.LatencyFilter(config.maxLatencyMs));
-        filters.add(new ResultFilters.AmbiguityFilter(config.maxAmbiguityScore));
-        filters.add(new ResultFilters.AreaFilter(config.minArea, config.maxArea));
+            filters.add(new ResultFilters.LatencyFilter(config.maxLatencyMs));
+            filters.add(new ResultFilters.AmbiguityFilter(config.maxAmbiguityScore));
+            filters.add(new ResultFilters.AreaFilter(config.minArea, config.maxArea));
 
         if (config.maxOdometryDeviationMeters < Double.MAX_VALUE) {
             filters.add(new ResultFilters.OdometryOutlierFilter(
@@ -181,21 +187,14 @@ public class VisionSubsystem extends SubsystemBase {
         ApriltagResult fusedResult = fusedResultOpt.get();
         fusedPose = fusedResult.getPose();
 
-        boolean isCurrentlyFlat = swerve != null && swerve.isFlatDebounced();
-
-        if (isCurrentlyFlat) {
-            if (!wasFlatLastCycle && swerve != null) {
-                swerve.resetPose(fusedPose);
-            } else {
-                poseConsumer.accept(
-                    fusedPose,
-                    fusedResult.getTimestampSeconds(),
-                    fusedResult.getStdDevs()
-                );
-            }
+        if (swerve != null && swerve.isFlatDebounced()) {
+            poseConsumer.accept(
+                fusedPose,
+                fusedResult.getTimestampSeconds(),
+                fusedResult.getStdDevs()
+            );
         }
 
-        wasFlatLastCycle = isCurrentlyFlat;
         hasValidPose = true;
         publishPoseDiagnostics(fusedResult);
     }
