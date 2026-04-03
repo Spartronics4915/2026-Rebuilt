@@ -58,6 +58,9 @@ public class VisionSubsystem extends SubsystemBase {
     private volatile boolean hasValidPose;
     private Pose2d fusedPose;
 
+    /** True on the cycle where the robot transitions from not-flat to flat. */
+    private boolean wasFlatLastCycle = true;
+
     private static final NetworkTable NT = NetworkTableInstance.getDefault().getTable("vision");
 
     private final StructPublisher<Pose2d> posePublisher = NT.getStructTopic("Vision Pose", Pose2d.struct).publish();
@@ -178,14 +181,21 @@ public class VisionSubsystem extends SubsystemBase {
         ApriltagResult fusedResult = fusedResultOpt.get();
         fusedPose = fusedResult.getPose();
 
-        if (swerve != null && swerve.isFlatDebounced()) {
-            poseConsumer.accept(
-                fusedPose,
-                fusedResult.getTimestampSeconds(),
-                fusedResult.getStdDevs()
-            );
+        boolean isCurrentlyFlat = swerve != null && swerve.isFlatDebounced();
+
+        if (isCurrentlyFlat) {
+            if (!wasFlatLastCycle && swerve != null) {
+                swerve.resetPose(fusedPose);
+            } else {
+                poseConsumer.accept(
+                    fusedPose,
+                    fusedResult.getTimestampSeconds(),
+                    fusedResult.getStdDevs()
+                );
+            }
         }
 
+        wasFlatLastCycle = isCurrentlyFlat;
         hasValidPose = true;
         publishPoseDiagnostics(fusedResult);
     }
