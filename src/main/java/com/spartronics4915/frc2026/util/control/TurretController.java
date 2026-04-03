@@ -97,9 +97,8 @@ public class TurretController {
             onFlippedPath = true;
             candidate = flipped;
         } else {
-            // Neither path is safe (target is in the dead zone of the turret)
-            // Pick the one closest to the current position and clamp to limits
-            onFlippedPath = Math.abs(flipped - currentDeg) < Math.abs(shortest - currentDeg);
+            boolean nearMax = Math.abs(currentDeg - maxLimit) < Math.abs(currentDeg - minLimit);
+            onFlippedPath = nearMax;
             candidate = MathUtil.clamp(onFlippedPath ? flipped : shortest, minLimit, maxLimit);
         }
 
