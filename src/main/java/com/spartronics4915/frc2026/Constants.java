@@ -520,7 +520,7 @@ public final class Constants {
         public static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
         public static final double PIVOT_JOSTLE_FREQUENCY = 2.0; // Hz
 
-        public static final double percentLoss = 0.113; // Percent loss on shooter to ball transfer, 0.85
+        public static final double percentLoss = 0.108; // Percent loss on shooter to ball transfer, 0.85
 
     }
 
@@ -697,7 +697,7 @@ public final class Constants {
         
         public static final int MOTOR_ID = 18;
 
-        public static final double P = 40.0;
+        public static final double P = 50.0;
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.23073;
@@ -742,7 +742,7 @@ public final class Constants {
         
         public static final int MOTOR_ID = 17;
 
-        public static final double P = 30.0;
+        public static final double P = 40.0;
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.22226;
@@ -835,7 +835,7 @@ public final class Constants {
         public static final double P = 20.0;
         public static final double I = 0.0;
         public static final double D = 0.0;
-        public static final double V = 0.23273;
+        public static final double V = 0.23273; // Maybe increase this?
         public static final double A = 0.7305;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
