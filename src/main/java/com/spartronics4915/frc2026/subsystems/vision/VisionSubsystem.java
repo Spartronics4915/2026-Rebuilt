@@ -113,11 +113,12 @@ public class VisionSubsystem extends SubsystemBase {
         }
 
         new Trigger(swerve::isFlatDebounced)
-            .onTrue(Commands.runOnce(() -> {
-                if (hasValidPose) {
+            .onTrue(Commands.sequence(
+                Commands.waitUntil(() -> hasValidPose),
+                Commands.runOnce(() -> {
                     swerve.resetPose(fusedPose);
                 }
-            }).withName("Relocalize On Flat"));
+            )).withName("Re-localize On Flat"));
     }
 
     private static List<FilterInterface> buildFilterList(VisionConfiguration config, SwerveSubsystem swerve) {
