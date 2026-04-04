@@ -217,16 +217,16 @@ public class ComplexAutoChooser {
                     break;
 
                 case L_TRENCH_TO_ALLIANCE:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, false));
+                    commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, futureSegment != PAUSE && futureSegment != UNUSED));
                     break;
                 case L_BUMP_TO_ALLIANCE:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP, false));
+                    commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP, futureSegment != PAUSE && futureSegment != UNUSED));
                     break;
                 case R_TRENCH_TO_ALLIANCE:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, false));
+                    commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, futureSegment != PAUSE && futureSegment != UNUSED));
                     break;
                 case R_BUMP_TO_ALLIANCE:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, false));
+                    commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, futureSegment != PAUSE && futureSegment != UNUSED));
                     break;
 
                 case DEPOT:

@@ -56,10 +56,6 @@ public final class Autos {
         pathBuilder = builder;
     }
 
-    public static Command build(Path path) {
-        return build(path, null, null);
-    }
-
     public static Path.PathConstraints generatePathConstraintZone(Path.PathConstraints constraints, int start, int end) {
         return new Path.PathConstraints()
             .setMaxVelocityMetersPerSec(new Path.RangedConstraint(constraints.getMaxVelocityMetersPerSec().get().get(0).value(), start, end))
@@ -68,8 +64,8 @@ public final class Autos {
             .setMaxAccelerationDegPerSec2(new Path.RangedConstraint(constraints.getMaxAccelerationDegPerSec2().get().get(0).value(), start, end));
     }
 
-    public static Command build(Path path, Rotation2d endWithSpeedDirection) {
-        return build(path, endWithSpeedDirection, null);
+    public static Command build(Path path) {
+        return build(path, null, null);
     }
 
     public static Command build(Path path, Rotation2d endWithSpeedDirection, SwerveSubsystem swerve) {
@@ -101,14 +97,6 @@ public final class Autos {
                 overshootTarget = new Translation2d(velocityEndingDistance.in(Meters), 0).rotateBy(endWithSpeedDirection).plus(finalWaypoint);
     
                 path.addPathElement(new Path.TranslationTarget(overshootTarget));
-                
-                Path.PathConstraints constraints = path.getPathConstraints();
-                if (constraints == null) {
-                    constraints = new Path.PathConstraints();
-                    path.setPathConstraints(constraints);
-                }
-                constraints.setEndTranslationToleranceMeters(velocityEndingDistance.in(Meters))
-                           .setEndRotationToleranceDeg(10);
             }
         }
         
@@ -121,7 +109,6 @@ public final class Autos {
                 pathCommand,
                 Commands.waitUntil(() -> {
                     double dist = swerve.getRelativePose().getTranslation().minus(overshoot).getNorm();
-                    // System.out.println(dist);
                     return dist <= velocityEndingDistance.in(Meters);
                 })
             );

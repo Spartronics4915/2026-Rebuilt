@@ -41,23 +41,23 @@ public class ZoneTransition {
         }
     }
 
-    public Command generateCommand(TraversalMethod method) {
+    public Command generateCommand(TraversalMethod method, boolean endWithSpeed) {
         return Commands.defer(() -> {
-            return generateCommand(method, swerve != null && swerve.getRelativePose().getX() < hubPose.getX());
+            return generateCommand(method, swerve != null && swerve.getRelativePose().getX() < hubPose.getX(), endWithSpeed);
         }, Set.of(swerve));
     }
 
-    public Command generateCommand(TraversalMethod method, boolean toNeutralZone) {
+    public Command generateCommand(TraversalMethod method, boolean toNeutralZone, boolean endWithSpeed) {
         return Commands.defer(() -> {
             if (method.isTrench) {
-                return generateTrenchCommand(method.isRightSide, toNeutralZone);
+                return generateTrenchCommand(method.isRightSide, toNeutralZone, endWithSpeed);
             } else {
-                return generateBumpCommand(method.isRightSide, toNeutralZone);
+                return generateBumpCommand(method.isRightSide, toNeutralZone, endWithSpeed);
             }
         }, Set.of(swerve));
     }
 
-    public Command generateBumpCommand(boolean isRightSide, boolean toNeutralZone) {
+    public Command generateBumpCommand(boolean isRightSide, boolean toNeutralZone, boolean endWithSpeed) {
         Rotation2d LRFlip = isRightSide ? Rotation2d.kZero : Rotation2d.k180deg; // Left/Right flip
         Rotation2d IOFlip = toNeutralZone ? Rotation2d.kZero : Rotation2d.k180deg; // In/Out flip
 
@@ -68,7 +68,7 @@ public class ZoneTransition {
                 ).plus(
                     approachTransform.rotateBy(IOFlip)
                 ),
-                bumpApproachAngle.rotateBy(IOFlip)
+                bumpApproachAngle.times((isRightSide == toNeutralZone) ? 1 : -1).rotateBy(IOFlip)
             ),
             new Path.Waypoint(
                 hubPose.plus( // Pose will be really wrong over the bump so set the setpoint *way* farther
@@ -76,7 +76,7 @@ public class ZoneTransition {
                 ).plus(
                     bumpTransform.rotateBy(LRFlip)
                 ),
-                bumpApproachAngle.rotateBy(IOFlip)
+                bumpApproachAngle.times((isRightSide == toNeutralZone) ? 1 : -1).rotateBy(IOFlip)
             )
         ));
 
@@ -85,7 +85,7 @@ public class ZoneTransition {
         Path path = new Path(pathElements, Autos.generatePathConstraintZone(bumpPathConstraints, 1, 2));
 
         return Commands.race(
-            Autos.build(path, bumpApproachAngle.rotateBy(IOFlip), swerve),
+            Autos.build(path, endWithSpeed ? Rotation2d.kZero.rotateBy(IOFlip) : null, swerve),
             Commands.sequence(
                 Commands.waitUntil(() -> {
                     return swerve.getRelativePose().getMeasureX().in(Meters) > hubPose.getX() ^ !toNeutralZone 
@@ -97,7 +97,7 @@ public class ZoneTransition {
         );
     }
 
-    public Command generateTrenchCommand(boolean isRightSide, boolean toNeutralZone) {
+    public Command generateTrenchCommand(boolean isRightSide, boolean toNeutralZone, boolean endWithSpeed) {
         Rotation2d LRFlip = isRightSide ? Rotation2d.kZero : Rotation2d.k180deg; // Left/Right flip
         Rotation2d IOFlip = toNeutralZone ? Rotation2d.kZero : Rotation2d.k180deg; // In/Out flip
 
@@ -108,7 +108,7 @@ public class ZoneTransition {
                 ).plus(
                     approachTransform.rotateBy(IOFlip)
                 ),
-                trenchApproachAngle.rotateBy(IOFlip)
+                trenchApproachAngle.rotateBy(LRFlip)
             ),
             new Path.Waypoint(
                 hubPose.plus(
@@ -118,7 +118,7 @@ public class ZoneTransition {
                         ? approachTransform.rotateBy(IOFlip.plus(Rotation2d.k180deg))
                         : trenchExitTransform.rotateBy(IOFlip)
                 ),
-                trenchApproachAngle.rotateBy(IOFlip)
+                trenchApproachAngle.rotateBy(LRFlip)
             )
         ));
 
@@ -126,6 +126,6 @@ public class ZoneTransition {
 
         Path path = new Path(pathElements, Autos.generatePathConstraintZone(trenchPathConstraints, 1, 2));
 
-        return Autos.build(path, trenchApproachAngle.rotateBy(IOFlip), swerve);
+        return Autos.build(path, endWithSpeed ? Rotation2d.kZero.rotateBy(IOFlip) : null, swerve);
     }
 }

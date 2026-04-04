@@ -276,7 +276,7 @@ public final class Constants {
             public static final Translation2d trenchTransform = new Translation2d(0, -3.4);
             public static final Translation2d bumpTransform = new Translation2d(0, -1.523);
             public static final Translation2d bumpTrenchDivTransform = new Translation2d(0, 2.604);
-            public static final Translation2d approachTransform = new Translation2d(-1.3, 0);
+            public static final Translation2d approachTransform = new Translation2d(-1.4, 0);
             public static final Translation2d exitTransform = new Translation2d((centerPose.getX() - hubPose.getX()) * 1.2, 0);
             public static final Translation2d trenchExitTransform = new Translation2d(1.5, 0);
             public static final Translation2d fuelIntakeTransform = new Translation2d(0, 1.75);
@@ -293,11 +293,11 @@ public final class Constants {
             public static final Path.DefaultGlobalConstraints defaultPathConstraints = new Path.DefaultGlobalConstraints(
                 3.0, // maxVelocityMetersPerSec
                 9.0, // maxAccelerationMetersPerSec2
-                360, // maxVelocityDegPerSec
-                360, // maxAccelerationDegPerSec2
+                720, // maxVelocityDegPerSec
+                720, // maxAccelerationDegPerSec2
                 0.03, // endTranslationToleranceMeters
                 2.0, // endRotationToleranceDeg
-                0.2 // intermediateHandoffRadiusMeters
+                0.5 // intermediateHandoffRadiusMeters
             );
 
             public static final Path.PathConstraints trenchPathConstraints = new Path.PathConstraints()
@@ -326,7 +326,7 @@ public final class Constants {
 
             public static final Path.PathConstraints alignPathConstraints = new Path.PathConstraints() // OP pre-alignment tech
                 .setMaxVelocityMetersPerSec(1.0)
-                .setMaxAccelerationMetersPerSec2(1.0)
+                .setMaxAccelerationMetersPerSec2(9.0)
                 .setMaxVelocityDegPerSec(180)
                 .setMaxAccelerationDegPerSec2(180);
 

@@ -51,7 +51,7 @@ public class NeutralZoneAutos {
             );
 
             List<PathElement> pathElements = new ArrayList<>(List.of(
-                new Path.Waypoint(intakeStart),
+                new Path.Waypoint(intakeStart, 0.75),
                 new Path.Waypoint(quadrantEnd)
             ));
 
@@ -84,7 +84,7 @@ public class NeutralZoneAutos {
             );
 
             List<PathElement> pathElements = new ArrayList<>(List.of(
-                new Path.Waypoint(intakeStart),
+                new Path.Waypoint(intakeStart, 0.75),
                 new Path.Waypoint(quadrantEnd)
             ));
 
@@ -116,7 +116,7 @@ public class NeutralZoneAutos {
             Pose2d fuelEnd = new Pose2d(centerPose.plus(endOffset), rotation);
 
             List<PathElement> pathElements = new ArrayList<>(List.of(
-                new Path.Waypoint(fuelStart),
+                new Path.Waypoint(fuelStart, 0.75),
                 new Path.Waypoint(fuelEnd)
             ));
 
