@@ -399,20 +399,19 @@ public final class Constants {
 
         public static final double turretHistorySeconds = 0.5;
 
-        // TODO: Tune these values more (PLEASE!)
         public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.42;
-            public static final double baseThetaStdDev = 0.87;
+            public static final double baseXYStdDev = 0.37;
+            public static final double baseThetaStdDev = 0.71;
             public static final double ambiguityWeight = 0.3;
             public static final double areaWeight = 0.8;
-            public static final double latencyWeight = 0.9;
+            public static final double latencyWeight = 0.7;
         }
 
         public static final class FilterConstants {
-            public static final double maxLatencyMs = 110.0;
-            public static final double maxSingleTagDistanceMeters = 6.0;
-            public static final double maxMultiTagDistanceMeters = 8.0;
-            public static final double maxAmbiguity = 0.25;
+            public static final double maxLatencyMs = 100.0;
+            public static final double maxSingleTagDistanceMeters = 5.0;
+            public static final double maxMultiTagDistanceMeters = 7.0;
+            public static final double maxAmbiguity = 0.14;
             public static final double minArea = 0.05;
             public static final double maxArea = 0.70;
 
@@ -421,7 +420,6 @@ public final class Constants {
         }
 
         public static final class FusionConstants {
-            /** Whether to fuse results from multiple cameras at all. */
             public static final boolean enabled = true;
 
             /**
@@ -430,8 +428,7 @@ public final class Constants {
              */
             public static final double timestampThresholdSecs = 0.05;
 
-            /** Minimum number of cameras required to attempt fusion. */
-            public static final int minCameras = 2;
+            public static final int minCameras = 1;
 
             /**
              * Results whose normalized distance from the group mean exceeds this
@@ -469,14 +466,14 @@ public final class Constants {
             /** turret - turret camera */
             public static final Transform3d turretToCamera = new Transform3d(
                 new Translation3d(
-                    Units.inchesToMeters(6.429),
-                    0.0,
-                    Units.inchesToMeters(8.649)
+                    Units.inchesToMeters(-5.55878),
+                    Units.inchesToMeters(1.61053),
+                    Units.inchesToMeters(6.55698)
                 ),
                 new Rotation3d(
                     0.0,
-                    Math.toRadians(-28.0),
-                    0.0
+                    Math.toRadians(-28.1),
+                    Math.toRadians(90.0)
                 )
             );
 
@@ -486,10 +483,10 @@ public final class Constants {
             public static final List<ProcessorInterface> primaryCameras = List.of(
                 new LimelightProcessor(
                     "argos",
-                    SuperstructureConstants.turretTranslation3D,
+                    SuperstructureConstants.shooterBaseTranslation,
                     turretToCamera,
-                    new StdDevCalculator(1.3),
-                    100
+                    new StdDevCalculator(1.0),
+                    80
                 )
             );
 
@@ -500,11 +497,15 @@ public final class Constants {
             public static final List<ProcessorInterface> fallbackCameras = List.of(
                 new PhotonProcessor(
                     "evan", apriltagFieldLayout, frontTowerCamTransform,
-                    new StdDevCalculator(1.3), simCameraProperties, 50.0
+                    new StdDevCalculator(1.2), simCameraProperties, 20.0
                 ),
                 new PhotonProcessor(
                     "val", apriltagFieldLayout, backTowerCamTransform,
-                    new StdDevCalculator(1.3), simCameraProperties, 50.0
+                    new StdDevCalculator(1.2), simCameraProperties, 20.0
+                ),
+                new PhotonProcessor(
+                    "daniil", apriltagFieldLayout, rioCamTransform,
+                    new StdDevCalculator(1.2), simCameraProperties, 20.0
                 )
             );
         }
@@ -518,7 +519,13 @@ public final class Constants {
         public static final Translation2d turretTranslation2D = new Translation2d(-0.1185, -0.1568);
         public static final Translation3d turretTranslation3D = new Translation3d(turretTranslation2D.getX(), turretTranslation2D.getY(), Units.inchesToMeters(21.443748 + 2.955));
 
-        public static final double shooterReadyThresholdRPS = 5.0;
+        public static final Translation3d shooterBaseTranslation = new Translation3d(
+            Units.inchesToMeters(-4.657289), 
+            Units.inchesToMeters(-5.657289), 
+            Units.inchesToMeters(14.262838)
+        );
+
+        public static final double shooterReadyThresholdRPS = 4.0;
         public static final Rotation2d pivotSafeThreshold = Rotation2d.fromDegrees(100);
         public static final Rotation2d turretMinSafeThreshold = Rotation2d.fromDegrees(-10);
         public static final Rotation2d turretMaxSafeThreshold = Rotation2d.fromDegrees(10);
@@ -538,7 +545,7 @@ public final class Constants {
         public static final double TRENCH_LOOKAHEAD_SEC = 0.5;
 
         public static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
-        public static final double PIVOT_JOSTLE_FREQUENCY = 2.0; // Hz
+        public static final double PIVOT_JOSTLE_FREQUENCY = 4.0; // Hz
 
         public static final double percentLoss = 0.108; // Percent loss on shooter to ball transfer, 0.85
 
@@ -586,13 +593,13 @@ public final class Constants {
         public static final int FOLLOWER_MOTOR_ID = 23;
 
         /** Idle revolutions-per-second to hold when robot is enabled but not actively shooting. */
-        public static final double IDLE_SHOOTER_RPS = 20.0;
+        public static final double IDLE_SHOOTER_RPS = 35.0;
 
         public static final double P = 0.5;
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.115;
-        public static final double A = 600.0;
+        public static final double A = 1000.0;
         public static final double S = 0.2;
 
         public static final boolean CURRENT_LIMIT_ENABLE = false;
@@ -626,11 +633,11 @@ public final class Constants {
 
         public static final int MOTOR_ID = 21;
 
-        public static final double P = 10000.0;
+        public static final double P = 14500.0;
         public static final double I = 0.0;
-        public static final double D = 145.0;
+        public static final double D = 170.0;
         public static final double V = 30.0;
-        public static final double S = 30.0;
+        public static final double S = 37.5;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
@@ -717,7 +724,7 @@ public final class Constants {
         
         public static final int MOTOR_ID = 18;
 
-        public static final double P = 50.0;
+        public static final double P = 60.0;
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.23073;
@@ -749,7 +756,7 @@ public final class Constants {
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
         public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
-            .withNeutralMode(NeutralModeValue.Coast);
+            .withNeutralMode(NeutralModeValue.Brake);
         
         public static final int LASER_ID = 0; 
         public static final double DETECTION_DISTANCE = 20.0;
@@ -762,7 +769,7 @@ public final class Constants {
         
         public static final int MOTOR_ID = 17;
 
-        public static final double P = 40.0;
+        public static final double P = 60.0;
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.22226;
@@ -795,7 +802,7 @@ public final class Constants {
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
         public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
-            .withNeutralMode(NeutralModeValue.Coast)
+            .withNeutralMode(NeutralModeValue.Brake)
             .withInverted(InvertedValue.Clockwise_Positive);
     }
 

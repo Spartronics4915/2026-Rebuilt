@@ -142,8 +142,8 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
     }
 
     public enum IntakeState {
-        INTAKE(22),
-        OUTTAKE(-22),
+        INTAKE(21),
+        OUTTAKE(-21),
         OFF(0);
 
         double rps;

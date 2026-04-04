@@ -262,7 +262,7 @@ public class PhotonProcessor implements ProcessorInterface {
 
     private static double calculateAmbiguity(List<PhotonTrackedTarget> targets) {
         if (targets.size() == 1) return targets.get(0).getPoseAmbiguity();
-        double min = 0.15;
+        double min = 0.0;
         for (PhotonTrackedTarget t : targets) {
             double a = t.getPoseAmbiguity();
             if (a >= 0 && a < min) min = a;
@@ -311,9 +311,9 @@ public class PhotonProcessor implements ProcessorInterface {
 
     @Override
     public void drainResultQueue(List<ResultInterface> destination) {
-        ResultInterface r;
-        while ((r = resultQueue.poll()) != null) {
-            destination.add(r);
+        ResultInterface result;
+        while ((result = resultQueue.poll()) != null) {
+            destination.add(result);
             queueSize.decrementAndGet();
         }
     }

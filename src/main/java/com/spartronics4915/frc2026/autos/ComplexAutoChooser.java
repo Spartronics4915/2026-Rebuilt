@@ -240,6 +240,8 @@ public class ComplexAutoChooser {
                     break;
                 case PAUSE:
                     commands.add(Commands.deadline(
+                        // Commands.waitUntil(feederLaserCan trigger thing)
+                        // If it can have a max then set max to the set shootWaitTime
                         Commands.waitSeconds(shootWaitTime),
                         preAlignmentFactory.generateCommand(prevSegment, futureSegment)
                     ));

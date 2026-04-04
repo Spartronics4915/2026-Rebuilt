@@ -15,6 +15,7 @@ import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonF
 
 import au.grapplerobotics.LaserCan;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.units.measure.Voltage;
@@ -22,6 +23,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
@@ -74,6 +76,9 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         motor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
 
+        new Trigger(() -> isBallDetected())
+            .debounce(0.2, DebounceType.kFalling);
+
         SmartDashboard.putData("Feeder Quasistatic Forward", sysIdQuasistatic(Direction.kForward));
         SmartDashboard.putData("Feeder Quasistatic Reverse", sysIdQuasistatic(Direction.kReverse));
         SmartDashboard.putData("Feeder Dynamic Forward", sysIdDynamic(Direction.kForward));
@@ -86,14 +91,14 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     private double getCanOutput(){
         LaserCan.Measurement measurement = laserCan.getMeasurement();
-        if(measurement == null){
+        if (measurement == null) {
             return -1;
         } else{
             return measurement.distance_mm;
         }
     }
 
-    private boolean isBallDetected(){
+    private boolean isBallDetected() {
         return getCanOutput() <= DETECTION_DISTANCE;
     };
     
@@ -122,7 +127,7 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
         double deltaTime = currentTime - lastTime;
         lastTime = currentTime;
 
-        ballDetectedPercent *= (1-deltaTime);
+        ballDetectedPercent *= (1 - deltaTime);
         if(isBallDetected()){
             ballDetectedPercent += deltaTime;
         }

@@ -8,7 +8,9 @@ import java.util.function.Supplier;
 import org.photonvision.PhotonCamera;
 import org.photonvision.simulation.VisionSystemSim;
 
+import com.spartronics4915.frc2026.Constants.SuperstructureConstants;
 import com.spartronics4915.frc2026.Constants.VisionConstants;
+import com.spartronics4915.frc2026.Constants.VisionConstants.CameraConstants;
 import com.spartronics4915.frc2026.Constants.VisionConstants.FilterConstants;
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
@@ -27,6 +29,8 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.networktables.BooleanPublisher;
@@ -37,6 +41,20 @@ import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
+// sim.enableDrawWireframe(false);
+//                    sim.enableProcessedStream(false);
+//                    sim.enableRawStream(false);
+//                });
+//            }
+//        }
+//
+//        new Trigger(swerve::isFlatDebounced)
+//            .onTrue(Commands.runOnce(() -> {
+//                if (hasValidPose) {
+//                    swerve.resetPose(fusedPose);
+//                }
+//            }).withName("Relocalize On Flat"));
 
 /**
  * Manages all vision cameras and feeds fused pose estimates to the drive-train's
@@ -73,15 +91,21 @@ public class VisionSubsystem extends SubsystemBase {
 
     private final StructPublisher<Pose2d> posePublisher = table.getStructTopic("Vision Pose", Pose2d.struct).publish();
 
-    private final DoublePublisher transStdDevPublisher = table.getDoubleTopic("XY Std Devs").publish();
-    private final DoublePublisher rotStdDevPublisher = table.getDoubleTopic("Theta Std Devs").publish();
-    private final DoublePublisher avgAmbiguityPublisher = table.getDoubleTopic("Avg Ambiguity").publish();
-    private final DoublePublisher avgAreaPublisher = table.getDoubleTopic("Avg Area").publish();
+    private final DoublePublisher xyStdDevPublisher = table.getDoubleTopic("XY Std Devs").publish();
+    private final DoublePublisher thetaStdDevPublisher = table.getDoubleTopic("Theta Std Devs").publish();
+    private final DoublePublisher ambiguityPublisher = table.getDoubleTopic("Avg Ambiguity").publish();
+    private final DoublePublisher areaPublisher = table.getDoubleTopic("Avg Area").publish();
     private final DoublePublisher latencyPublisher = table.getDoubleTopic("Latency").publish();
     private final DoublePublisher targetCountPublisher = table.getDoubleTopic("Target Count").publish();
 
-    private final StructArrayPublisher<Pose3d> trackedApriltagsPublisher = table.getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
+    private final StructArrayPublisher<Pose3d> trackedTagsPublisher = table.getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
     private final BooleanPublisher hasValidPosePublisher = table.getBooleanTopic("Has Valid Pose").publish();
+    private final BooleanPublisher currentPipelinePublisher = table.getBooleanTopic("Is Primary").publish();
+
+    // Debug please remove
+    private final StructPublisher<Pose3d> debugRobotPublisher = table.getStructTopic("Debug: Robot", Pose3d.struct).publish();
+    private final StructPublisher<Translation3d> debugTurretPublisher = table.getStructTopic("Debug: Turret", Translation3d.struct).publish();
+    private final StructPublisher<Transform3d> debugCameraPublisher = table.getStructTopic("Debug: Camera", Transform3d.struct).publish();
 
     public VisionSubsystem(
         AprilTagFieldLayout fieldLayout,
@@ -126,10 +150,13 @@ public class VisionSubsystem extends SubsystemBase {
     private void startCamera(ProcessorInterface cam) {
         cam.start();
         if (isSimulation) {
-            cam.getCameraSim().ifPresent(sim ->
-                visionSystemSim.addCamera(sim, cam.getCameraTransform())
-            );
-        }
+            cam.getCameraSim().ifPresent(sim -> {
+                visionSystemSim.addCamera(sim, cam.getCameraTransform());
+                    sim.enableDrawWireframe(false);
+                    sim.enableProcessedStream(false);
+                    sim.enableRawStream(false);
+                });
+            }
     }
 
     @Override
@@ -153,22 +180,29 @@ public class VisionSubsystem extends SubsystemBase {
         if (primaryValid) {
             hasValidPose = true;
             hasValidPosePublisher.accept(true);
+            currentPipelinePublisher.accept(true);
             publishDiagnostics(primaryFused);
         } else if (!fallbackCameras.isEmpty()) {
             boolean fallbackValid = processCameraPipeline(fallbackCameras, fallbackFilter, fallbackRaw, fallbackFused);
             hasValidPose = fallbackValid;
             hasValidPosePublisher.accept(fallbackValid);
+            currentPipelinePublisher.accept(false);
             if (fallbackValid) {
                 publishDiagnostics(fallbackFused);
             }
         } else {
             hasValidPose = false;
             hasValidPosePublisher.accept(false);
+            currentPipelinePublisher.accept(false);
         }
 
         if (isSimulation && swerve != null) {
             visionSystemSim.update(swerve.getPose());
         }
+
+        debugRobotPublisher.accept(new Pose3d());
+        debugCameraPublisher.accept(CameraConstants.frontTowerCamTransform);
+        debugTurretPublisher.accept(SuperstructureConstants.shooterBaseTranslation);
     }
 
     private boolean processCameraPipeline(
@@ -228,8 +262,11 @@ public class VisionSubsystem extends SubsystemBase {
             filter.add(new ResultFilters.AmbiguityFilter(FilterConstants.maxAmbiguity));
             filter.add(new ResultFilters.AreaFilter(FilterConstants.minArea, FilterConstants.maxArea));
         if (FilterConstants.maxOdometryDeviationMeters < Double.MAX_VALUE) {
-            filter.add(new ResultFilters.OdometryOutlierFilter(
-                swerve::getPose, FilterConstants.maxOdometryDeviationMeters));
+            filter.add(
+                new ResultFilters.OdometryOutlierFilter(
+                    swerve::getPose, FilterConstants.maxOdometryDeviationMeters
+                )
+            );
         }
         return new PipelineFilter(filter);
     }
@@ -237,12 +274,15 @@ public class VisionSubsystem extends SubsystemBase {
     @SuppressWarnings("unused")
     private static PipelineFilter buildFallbackFilter(SwerveSubsystem swerve) {
         List<FilterInterface> filter = new ArrayList<>();
-            filter.add(new ResultFilters.LatencyFilter(FilterConstants.maxLatencyMs * 1.5));
+            filter.add(new ResultFilters.LatencyFilter(FilterConstants.maxLatencyMs));
             filter.add(new ResultFilters.AmbiguityFilter(FilterConstants.maxAmbiguity));
             filter.add(new ResultFilters.AreaFilter(FilterConstants.minArea, FilterConstants.maxArea));
         if (FilterConstants.maxOdometryDeviationMeters < Double.MAX_VALUE) {
-            filter.add(new ResultFilters.OdometryOutlierFilter(
-                swerve::getPose, FilterConstants.maxOdometryDeviationMeters));
+            filter.add(
+                new ResultFilters.OdometryOutlierFilter(
+                    swerve::getPose, FilterConstants.maxOdometryDeviationMeters
+                )
+            );
         }
         return new PipelineFilter(filter);
     }
@@ -255,20 +295,20 @@ public class VisionSubsystem extends SubsystemBase {
 
         visionPose = latest.getPose();
         posePublisher.set(latest.getPose());
-        transStdDevPublisher.set(latest.getStdDevs().get(0, 0));
-        rotStdDevPublisher.set(latest.getStdDevs().get(2, 0));
-        avgAreaPublisher.set(latest.getAverageArea());
-        avgAmbiguityPublisher.set(latest.getAmbiguity());
+        xyStdDevPublisher.set(latest.getStdDevs().get(0, 0));
+        thetaStdDevPublisher.set(latest.getStdDevs().get(2, 0));
+        ambiguityPublisher.set(latest.getAmbiguity());
+        areaPublisher.accept(latest.getAverageArea());
         latencyPublisher.set(latest.getLatencyMs());
         targetCountPublisher.set(latest.getTargetCount());
-        trackedApriltagsPublisher.accept(getTargetPoses(latest.getTrackedTags()));
+        trackedTagsPublisher.accept(getTargetPoses(latest.getTrackedTags()));
     }
 
     public Pose3d[] getTargetPoses(List<TrackedTag> tags) {
         int count = 0;
         for (TrackedTag tag : tags) {
-            var p = VisionConstants.apriltagFieldLayout.getTagPose(tag.fiducialId);
-            if (p.isPresent()) tagPoseScratch[count++] = p.get();
+            Optional<Pose3d> pose = VisionConstants.apriltagFieldLayout.getTagPose(tag.fiducialId);
+            if (pose.isPresent()) tagPoseScratch[count++] = pose.get();
         }
         Pose3d[] result = new Pose3d[count];
         System.arraycopy(tagPoseScratch, 0, result, 0, count);
