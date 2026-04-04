@@ -213,7 +213,7 @@ public class AutoAimController extends SubsystemBase {
             fieldAccelerations,
             target,
             RPSToMPS(flywheelFilter.calculate(Robot.isSimulation() ? shooter.getCurrentSetpoint() : shooter.getCurrentRPS())),
-            0.09 // Dynamic processing compensation can be supplied here
+            0.08 // Dynamic processing compensation can be supplied here
         );
     }
 

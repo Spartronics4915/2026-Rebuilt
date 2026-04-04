@@ -400,18 +400,18 @@ public final class Constants {
         public static final double turretHistorySeconds = 0.5;
 
         public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.37;
-            public static final double baseThetaStdDev = 0.71;
-            public static final double ambiguityWeight = 0.3;
-            public static final double areaWeight = 0.8;
-            public static final double latencyWeight = 0.7;
+            public static final double baseXYStdDev = 0.40;
+            public static final double baseThetaStdDev = 0.75;
+            public static final double ambiguityWeight = 0.2;
+            public static final double areaWeight = 0.9;
+            public static final double latencyWeight = 0.8;
         }
 
         public static final class FilterConstants {
             public static final double maxLatencyMs = 100.0;
             public static final double maxSingleTagDistanceMeters = 5.0;
             public static final double maxMultiTagDistanceMeters = 7.0;
-            public static final double maxAmbiguity = 0.14;
+            public static final double maxAmbiguity = 0.13;
             public static final double minArea = 0.05;
             public static final double maxArea = 0.70;
 
@@ -545,7 +545,7 @@ public final class Constants {
         public static final double TRENCH_LOOKAHEAD_SEC = 0.5;
 
         public static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
-        public static final double PIVOT_JOSTLE_FREQUENCY = 4.0; // Hz
+        public static final double PIVOT_JOSTLE_FREQUENCY = 0.5; // Hz
 
         public static final double percentLoss = 0.108; // Percent loss on shooter to ball transfer, 0.85
 
