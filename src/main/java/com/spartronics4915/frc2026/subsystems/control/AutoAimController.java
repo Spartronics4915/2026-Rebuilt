@@ -95,7 +95,7 @@ public class AutoAimController extends SubsystemBase {
     private final LinearFilter accelFilterY = LinearFilter.movingAverage(10);
     private final LinearFilter accelFilterOmega = LinearFilter.movingAverage(10);
 
-    private final LinearFilter flywheelFilter = LinearFilter.movingAverage(10);
+    private final LinearFilter flywheelFilter = LinearFilter.movingAverage(15);
 
     private final BooleanPublisher isAimEnabledPublisher =
         NetworkTableInstance.getDefault()
