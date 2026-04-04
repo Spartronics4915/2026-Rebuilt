@@ -57,7 +57,7 @@ public final class Autos {
     }
 
     public static Command build(Path path) {
-        return build(path, false);
+        return build(path, null, null);
     }
 
     public static Path.PathConstraints generatePathConstraintZone(Path.PathConstraints constraints, int start, int end) {
@@ -68,11 +68,16 @@ public final class Autos {
             .setMaxAccelerationDegPerSec2(new Path.RangedConstraint(constraints.getMaxAccelerationDegPerSec2().get().get(0).value(), start, end));
     }
 
-    public static Command build(Path path, boolean endWithSpeed) {
-        if (endWithSpeed) {
+    public static Command build(Path path, Rotation2d endWithSpeedDirection) {
+        return build(path, endWithSpeedDirection, null);
+    }
+
+    public static Command build(Path path, Rotation2d endWithSpeedDirection, SwerveSubsystem swerve) {
+        Translation2d overshootTarget = null;
+        
+        if (endWithSpeedDirection != null) {
             List<Pair<PathElement, PathElementConstraint>> waypoints = path.getPathElementsWithConstraintsNoWaypoints();
             Translation2d finalWaypoint = null;
-            Translation2d secondFinalWaypoint = null;
 
             for (int i = waypoints.size() - 1; i >= 0; i--) {
                 Path.PathElement element = waypoints.get(i).getFirst();
@@ -81,30 +86,48 @@ public final class Autos {
                     continue;
                 }
     
+                Translation2d translation = null;
                 if (element instanceof Path.TranslationTarget) {
-                    Translation2d translation = ((Path.TranslationTarget) element).translation();
-                    if (finalWaypoint == null) {
-                        finalWaypoint = translation;
-                    } else if (secondFinalWaypoint == null) {
-                        secondFinalWaypoint = translation;
-                        break;
-                    }
+                    translation = ((Path.TranslationTarget) element).translation();
+                }
+
+                if (translation != null) {
+                    finalWaypoint = translation;
+                    break;
                 }
             }
 
-            if (finalWaypoint != null && secondFinalWaypoint != null) {
-                Rotation2d finalDirection = finalWaypoint.minus(secondFinalWaypoint).getAngle();
-                Translation2d overshootTarget = new Translation2d(velocityEndingDistance.in(Meters), 0).rotateBy(finalDirection).plus(finalWaypoint);
+            if (finalWaypoint != null) {
+                overshootTarget = new Translation2d(velocityEndingDistance.in(Meters), 0).rotateBy(endWithSpeedDirection).plus(finalWaypoint);
     
                 path.addPathElement(new Path.TranslationTarget(overshootTarget));
-                path.setPathConstraints(
-                    new Path.PathConstraints()
-                        .setEndTranslationToleranceMeters(velocityEndingDistance.in(Meters))
-                        .setEndRotationToleranceDeg(10)
-                );
+                
+                Path.PathConstraints constraints = path.getPathConstraints();
+                if (constraints == null) {
+                    constraints = new Path.PathConstraints();
+                    path.setPathConstraints(constraints);
+                }
+                constraints.setEndTranslationToleranceMeters(velocityEndingDistance.in(Meters))
+                           .setEndRotationToleranceDeg(10);
             }
         }
-        return pathBuilder.build(path);
+        
+        Command pathCommand = pathBuilder.build(path);
+        
+        // If swerve is provided and we have an overshoot target, use race to cancel when within distance
+        if (swerve != null && overshootTarget != null) {
+            final Translation2d overshoot = overshootTarget;
+            return Commands.race(
+                pathCommand,
+                Commands.waitUntil(() -> {
+                    double dist = swerve.getRelativePose().getTranslation().minus(overshoot).getNorm();
+                    // System.out.println(dist);
+                    return dist <= velocityEndingDistance.in(Meters);
+                })
+            );
+        }
+        
+        return pathCommand;
     }
 
     public static void removePastPoses(SwerveSubsystem swerve, List<Path.PathElement> waypoints, boolean toNeutralZone) {

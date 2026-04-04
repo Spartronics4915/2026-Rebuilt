@@ -47,11 +47,11 @@ public class NeutralZoneAutos {
             ));
 
             Path path = new Path(
-                pathElements, 
+                pathElements,
                 Autos.generatePathConstraintZone(intakePathConstraints, 1, 2)
             );
-            
-            return Autos.build(path, endWithSpeed);
+
+            return Autos.build(path, endWithSpeed ? quadrantEnd.getTranslation().minus(intakeStart.getTranslation()).getAngle() : null, swerve);
         }, Set.of(swerve));
     }
 
@@ -83,7 +83,7 @@ public class NeutralZoneAutos {
                 Autos.generatePathConstraintZone(intakePathConstraints, 1, 2)
             );
 
-            return Autos.build(path, endWithSpeed);
+            return Autos.build(path, endWithSpeed ? fuelEnd.getTranslation().minus(fuelStart.getTranslation()).getAngle() : null, swerve);
         }, Set.of(swerve));
-    }   
+    }
 }

@@ -85,7 +85,7 @@ public class ZoneTransition {
         Path path = new Path(pathElements, Autos.generatePathConstraintZone(bumpPathConstraints, 1, 2));
 
         return Commands.race(
-            Autos.build(path),
+            Autos.build(path, bumpApproachAngle.rotateBy(IOFlip), swerve),
             Commands.sequence(
                 Commands.waitUntil(() -> {
                     return swerve.getRelativePose().getMeasureX().in(Meters) > hubPose.getX() ^ !toNeutralZone 
@@ -126,6 +126,6 @@ public class ZoneTransition {
 
         Path path = new Path(pathElements, Autos.generatePathConstraintZone(trenchPathConstraints, 1, 2));
 
-        return Autos.build(path);
+        return Autos.build(path, trenchApproachAngle.rotateBy(IOFlip), swerve);
     }
 }

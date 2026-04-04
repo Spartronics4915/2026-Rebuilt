@@ -248,7 +248,7 @@ public final class Constants {
             public static final Distance positionTolerance = Centimeter.of(1.5);
             public static final LinearVelocity speedTolerance = InchesPerSecond.of(2);
 
-            public static final Distance velocityEndingDistance = Meters.of(5);
+            public static final Distance velocityEndingDistance = Meters.of(1);
 
             public static final Translation2d towerPose = new Translation2d(1.061, 3.745);
             public static final Translation2d centerPose = new Translation2d(8.271, 4.035);
