@@ -10,6 +10,7 @@ import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfiguration
 import com.spartronics4915.frc2026.autos.ComplexAutoChooser;
 import com.spartronics4915.frc2026.autos.DriveToPOI;
 import com.spartronics4915.frc2026.autos.NeutralZoneAutos;
+import com.spartronics4915.frc2026.autos.PreAlignment;
 import com.spartronics4915.frc2026.autos.DriveToPOI.POI;
 import com.spartronics4915.frc2026.autos.ZoneTransition;
 import com.spartronics4915.frc2026.Constants.VisionConstants;
@@ -23,6 +24,7 @@ import com.spartronics4915.frc2026.commands.DriveCommand;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands.PipelineState;
 import com.spartronics4915.frc2026.subsystems.control.AutoAimController;
+import com.spartronics4915.frc2026.subsystems.control.AutoAimController.ManualOverride;
 import com.spartronics4915.frc2026.subsystems.control.Superstructure;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem;
@@ -79,8 +81,9 @@ public class RobotContainer {
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
     private final DriveToPOI POIFactory = new DriveToPOI(swerveSubsystem, climberSubsystem);
     private final NeutralZoneAutos neutralZoneFactory = new NeutralZoneAutos(swerveSubsystem);
+    private final PreAlignment preAlignmentFactory = new PreAlignment(swerveSubsystem);
 
-    private final ComplexAutoChooser autoChooser = new ComplexAutoChooser(transitionFactory, POIFactory, neutralZoneFactory, 15);
+    private final ComplexAutoChooser autoChooser = new ComplexAutoChooser(transitionFactory, POIFactory, neutralZoneFactory, preAlignmentFactory, 15);
     private final AutoAimController autoAimController = new AutoAimController(hoodSubsystem, turretSubsystem, swerveSubsystem, shooterSubsystem);
 
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
@@ -102,8 +105,11 @@ public class RobotContainer {
 
     public final Superstructure superstructure = new Superstructure(
         swerveSubsystem, 
+        shooterSubsystem,
         autoAimController, 
-        superstructureCommands
+        superstructureCommands,
+        driveCommand,
+        visionSubsystem
     );
 
     public RobotContainer() {
@@ -114,6 +120,9 @@ public class RobotContainer {
         SmartDashboard.putData("Reset Dynamics", superstructureCommands.resetDynamics());
         SmartDashboard.putData("Pipeline On", superstructureCommands.setPipelineState(PipelineState.ON));
         SmartDashboard.putData("Pipeline Off", superstructureCommands.setPipelineState(PipelineState.OFF));
+        SmartDashboard.putData("Reset Odometry", Commands.runOnce(
+            () -> swerveSubsystem.resetPose(visionSubsystem.getFusedPose())
+        ));
     }
 
     /**
@@ -206,32 +215,42 @@ public class RobotContainer {
             .withName("X Brake Swerve")
         );
 
+        driverController.start().onTrue(
+            Commands.runOnce(
+                () -> swerveSubsystem.resetPose(visionSubsystem.getFusedPose())
+            )
+        );
+
         //#endregion
         //#region Operator Controller
 
         operatorController.povUp().whileTrue(
             Commands.run(() -> {
-                hoodSubsystem.setSetpoint(hoodSubsystem.getCurrentSetpoint().plus(Rotation2d.fromDegrees(0.5 * 3)));
+                pivotSubsystem.deltaSetpoint(Rotation2d.fromDegrees(1.5));
             })
         );
 
         operatorController.povLeft().whileTrue(
-            Commands.run(() -> {
-                turretSubsystem.setSetpoint(Rotation2d.fromDegrees(turretSubsystem.getCurrentSetpoint().getDegrees() + 0.75 * 3));
-            })
+            autoAimController.setManualOverride(ManualOverride.LEFT)
         );
 
         operatorController.povRight().whileTrue(
-            Commands.run(() -> {
-                turretSubsystem.setSetpoint(Rotation2d.fromDegrees(turretSubsystem.getCurrentSetpoint().getDegrees() - 0.75 * 3));
-            })
+            autoAimController.setManualOverride(ManualOverride.RIGHT)
         );
 
         operatorController.povDown().whileTrue(
             Commands.run(() -> {
-                hoodSubsystem.setSetpoint(hoodSubsystem.getCurrentSetpoint().minus(Rotation2d.fromDegrees(0.5 * 3)));
+                pivotSubsystem.deltaSetpoint(Rotation2d.fromDegrees(-1.5));
             })
         );
+
+        operatorController.leftStick().onTrue(
+            Commands.runOnce(() -> {
+                pivotSubsystem.resetMechanism(Rotation2d.kZero);
+            })
+        );
+
+        SmartDashboard.putData("Pivot Reset", Commands.runOnce(() -> pivotSubsystem.resetMechanism(Rotation2d.kZero)));
 
         operatorController.leftTrigger().onTrue(
             Commands.parallel(

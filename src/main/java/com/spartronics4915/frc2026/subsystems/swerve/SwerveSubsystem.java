@@ -96,8 +96,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     private Pose2d smoothedPose = new Pose2d();
 
-    private final MovingAveragePose poseFilter =
-        new MovingAveragePose(0.30); // previously 0.20
+    private final MovingAveragePose poseFilter = new MovingAveragePose(0.30); // previously 0.20
 
     public static Pose3d pose3d = new Pose3d();
     private final BumpSim bumpSim;
@@ -108,6 +107,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     private final Debouncer flatDebouncer = new Debouncer(tiltDebounce);
     private boolean isFlatDebouncedValue = false;
+    private volatile double lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
 
     private final SwerveTelemetry telemetry = new SwerveTelemetry();
 
@@ -127,7 +127,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
         if (Robot.isSimulation()) {
             drivetrain.resetPose(
-                new Pose2d(new Translation2d(14.0, 5.0), Rotation2d.fromDegrees(0))
+                new Pose2d(new Translation2d(14.0, 5.0), Rotation2d.fromDegrees(180))
             );
             Pose2d[] modulePoses = new Pose2d[] {
                 new Pose2d(config.modules[0].LocationX, config.modules[0].LocationY, Rotation2d.kZero),
@@ -187,6 +187,11 @@ public class SwerveSubsystem extends SubsystemBase {
             }
         }
 
+        if ((now - lastDriveCommandTimestamp) > staleCommandTimeout) {
+            drivetrain.setControl(autoRequest.withSpeeds(new ChassisSpeeds(0.0, 0.0, 0.0)));
+            lastDriveCommandTimestamp = now;
+        }
+
         telemetry.publish(drivetrain.getState(), this);
     }
  
@@ -196,6 +201,7 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public void driveFieldCentric(double vX, double vY, double omega) {
+        lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
         drivetrain.setControl(
             fieldCentricRequest
                 .withVelocityX(vX)
@@ -205,6 +211,7 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public void driveFieldCentricFacingAngle(double vX, double vY, Rotation2d targetHeading) {
+        lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
         drivetrain.setControl(
             headingLockRequest
                 .withVelocityX(vX)
@@ -215,6 +222,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     /** Robot-centric drive (used when field-relative is toggled off). */
     public void driveRobotCentric(double vX, double vY, double omega) {
+        lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
         drivetrain.setControl(
             robotCentricRequest
                 .withVelocityX(vX)
@@ -228,6 +236,7 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public void drive(ChassisSpeeds chassisSpeeds) {
+        lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
         drivetrain.setControl(autoRequest.withSpeeds(chassisSpeeds));
     }
 
@@ -259,6 +268,7 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public void resetPose(Pose2d pose) {
+        if (pose == null) return;
         drivetrain.resetPose(pose);
         poseFilter.reset(pose);
     }
@@ -347,12 +357,12 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public Rotation2d getHeadingOffset() {
-        return teleopHeadingOffset;
+        return teleopHeadingOffset.plus(Autos.shouldFlip() ? Rotation2d.kPi : Rotation2d.kZero);
     }
 
     /** Snaps the driver's forward perspective to the robot's current heading. */
     public void resetHeadingOffset() {
-        teleopHeadingOffset = getPose().getRotation();
+        teleopHeadingOffset = getRelativePose().getRotation();
     }
 
     public double getMovementOverride() {
@@ -533,18 +543,18 @@ public class SwerveSubsystem extends SubsystemBase {
                 driveVelMPS[i].set(state.ModuleStates[i].speedMetersPerSecond);
                 driveTargetMPS[i].set(state.ModuleTargets[i].speedMetersPerSecond);
                 drivePositionM[i].set(state.ModulePositions[i].distanceMeters);
-                driveCurrentA[i].set(drive.getStatorCurrent(false).getValueAsDouble());
-                driveVoltageV[i].set(drive.getMotorVoltage(false).getValueAsDouble());
-                driveTempC[i].set(drive.getDeviceTemp(false).getValueAsDouble());
-                driveCLError[i].set(drive.getClosedLoopError(false).getValueAsDouble());
-                driveClosedLoopRef[i].set(drive.getClosedLoopReference(false).getValueAsDouble());
- 
+                driveCurrentA[i].set(drive.getStatorCurrent().getValueAsDouble());
+                driveVoltageV[i].set(drive.getMotorVoltage().getValueAsDouble());
+                driveTempC[i].set(drive.getDeviceTemp().getValueAsDouble());
+                driveCLError[i].set(drive.getClosedLoopError().getValueAsDouble());
+                driveClosedLoopRef[i].set(drive.getClosedLoopReference().getValueAsDouble());
+
                 steerAngleDeg[i].set(state.ModuleStates[i].angle.getDegrees());
                 steerTargetDeg[i].set(state.ModuleTargets[i].angle.getDegrees());
-                steerCurrentA[i].set(steer.getStatorCurrent(false).getValueAsDouble());
-                steerVoltageV[i].set(steer.getMotorVoltage(false).getValueAsDouble());
-                steerTempC[i].set(steer.getDeviceTemp(false).getValueAsDouble());
-                steerCLError[i].set(steer.getClosedLoopError(false).getValueAsDouble());
+                steerCurrentA[i].set(steer.getStatorCurrent().getValueAsDouble());
+                steerVoltageV[i].set(steer.getMotorVoltage().getValueAsDouble());
+                steerTempC[i].set(steer.getDeviceTemp().getValueAsDouble());
+                steerCLError[i].set(steer.getClosedLoopError().getValueAsDouble());
             }
         }
     }

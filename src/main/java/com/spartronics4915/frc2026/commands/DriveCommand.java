@@ -8,6 +8,7 @@ import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -32,6 +33,11 @@ public class DriveCommand extends Command {
     private static final double maxAngularRate = maxAngularSpeed.in(RadiansPerSecond);
 
     private Rotation2d lockedHeading = null;
+
+    private boolean limitChassisSpeeds = false;
+    private SlewRateLimiter xRateLimiter = new SlewRateLimiter(maxSpeedWhenShooting / timeUntilLimitedMaxSpeed);
+    private SlewRateLimiter yRateLimiter = new SlewRateLimiter(maxSpeedWhenShooting / timeUntilLimitedMaxSpeed);
+    private SlewRateLimiter omegaRateLimiter = new SlewRateLimiter(maxOmegaWhenShooting / timeUntilLimitedMaxSpeed);
 
     private final TrapezoidProfile trapezoidProfile = new TrapezoidProfile(trenchAlignConstraints);
     private final TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
@@ -60,8 +66,8 @@ public class DriveCommand extends Command {
     public void execute() {
         XboxController hid = resolveController();
 
-        double vX = applyResponseCurve(MathUtil.applyDeadband(-hid.getLeftY(),  stickDeadband)) * maxSpeed;
-        double vY = applyResponseCurve(MathUtil.applyDeadband(-hid.getLeftX(),  stickDeadband)) * maxSpeed;
+        double vX = applyResponseCurve(MathUtil.applyDeadband(-hid.getLeftY(), stickDeadband)) * maxSpeed;
+        double vY = applyResponseCurve(MathUtil.applyDeadband(-hid.getLeftX(), stickDeadband)) * maxSpeed;
         double omega = applyResponseCurve(MathUtil.applyDeadband(-hid.getRightX(), stickDeadband)) * maxAngularRate;
 
         double override = swerve.getMovementOverride();
@@ -71,6 +77,20 @@ public class DriveCommand extends Command {
             wasOverriding = false;
             yState.position = swerve.getRelativePose().getY();
             yState.velocity = swerve.getFieldVelocity().vyMetersPerSecond;
+        }
+
+        if (limitChassisSpeeds) {
+            vX = Math.min(Math.abs(vX), maxSpeedWhenShooting) * Math.signum(vX);
+            vY = Math.min(Math.abs(vY), maxSpeedWhenShooting) * Math.signum(vY);
+            omega = Math.min(Math.abs(omega), maxOmegaWhenShooting) * Math.signum(omega);
+            
+            vX = xRateLimiter.calculate(vX);
+            vY = yRateLimiter.calculate(vY);
+            omega = omegaRateLimiter.calculate(omega);
+        } else {
+            xRateLimiter.reset(vX);
+            yRateLimiter.reset(vY);
+            omegaRateLimiter.reset(omega);
         }
 
         if (!swerve.isFieldRelative()) {
@@ -93,8 +113,8 @@ public class DriveCommand extends Command {
             wasAligning = false;
         }
 
-        double rotationBreakThreshold = (lockedHeading != null) ? maxAngularRate * 0.12 : maxAngularRate * 0.05;
-        boolean driverIsRotating = Math.abs(omega) > rotationBreakThreshold;
+        //double rotationBreakThreshold = (lockedHeading != null) ? maxAngularRate * 0.03 : maxAngularRate * 0.03;
+        boolean driverIsRotating = true /*Math.abs(omega) > rotationBreakThreshold*/;
         boolean driverIsTranslating = Math.hypot(vX, vY) > maxSpeed * 0.05;
 
         if (driverIsRotating) {
@@ -144,6 +164,10 @@ public class DriveCommand extends Command {
                robotTarget.vyMetersPerSecond * cosTheta;
     }
 
+    public void setSpeedLimit(boolean isLimited) {
+        limitChassisSpeeds = isLimited;
+    }
+
     @Override
     public void end(boolean interrupted) {
         wasOverriding = false;
@@ -171,9 +195,10 @@ public class DriveCommand extends Command {
     }
 
     private static double applyResponseCurve(double x) {
-        double ax = Math.abs(x);
-        double linearWeight = 0.60;
-        double shaped = linearWeight * ax + (1.0 - linearWeight) * (ax * ax);
-        return Math.signum(x) * shaped;
+        //double ax = Math.abs(x);
+        //double linearWeight = 0.60;
+        //double shaped = linearWeight * ax + (1.0 - linearWeight) * (ax * ax);
+        //return Math.signum(x) * shaped;
+        return Math.signum(x) * Math.pow(Math.abs(x), 1.5);
     }
 }

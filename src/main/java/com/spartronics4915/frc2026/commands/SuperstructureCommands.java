@@ -14,6 +14,8 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem.Tu
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.*;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem.ShooterClamp;
 
+import java.util.Set;
+
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -76,23 +78,20 @@ public class SuperstructureCommands {
 
     //#region Controls
 
-    // Issue #8: Update currentPipelineState when setting pipeline state
     public Command setPipelineState(PipelineState state) {
         this.currentPipelineState = state;
-        
-        if (state == PipelineState.OFF) {
-            return Commands.parallel(
+
+        return Commands.defer(() -> {
+            Command command = Commands.parallel(
                 indexer.setStateCommand(state.indexerState),
                 feeder.setStateCommand(state.feederState)
             );
-        }
-        return Commands.sequence(
-            Commands.waitUntil(this::isShooterReady),
-            Commands.parallel(
-                indexer.setStateCommand(state.indexerState),
-                feeder.setStateCommand(state.feederState)
-            )
-        );
+
+            // If it's NOT off, wait for the shooter first; otherwise, just run the action
+            return (state == PipelineState.OFF) ? command : command.beforeStarting(
+                Commands.waitUntil(this::isShooterReady)
+            );
+        }, Set.of(indexer, feeder));
     }
 
     public Command setClimberState(ClimberState state) {
@@ -200,11 +199,11 @@ public class SuperstructureCommands {
     public Command traversal() {
         return Commands.sequence(
             Commands.parallel(
+                conditionalPivotReady(),
                 conditionalAutoAimOn(),
                 conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
-                conditionalPivotReady(),
                 climber.setStateCommand(ClimberState.DOWN)),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
@@ -217,11 +216,11 @@ public class SuperstructureCommands {
     public Command trench() {
         return Commands.sequence(
             Commands.parallel(
+                conditionalPivotReady(),
                 conditionalAutoAimOn(),
                 conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.RESTRICTED),
                 shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
-                conditionalPivotReady(),
                 climber.setStateCommand(ClimberState.DOWN)),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
@@ -234,11 +233,11 @@ public class SuperstructureCommands {
     public Command tower() {
         return Commands.sequence(
             Commands.parallel(
+                conditionalPivotReady(),
                 conditionalAutoAimOn(),
                 conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.RESTRICTED),
-                conditionalPivotReady(),
                 climber.setStateCommand(ClimberState.DOWN)),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
@@ -251,11 +250,11 @@ public class SuperstructureCommands {
     public Command cruise() {
         return Commands.sequence(
             Commands.parallel(
+                conditionalPivotReady(),
                 conditionalAutoAimOn(),
                 conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
-                conditionalPivotReady(),
                 climber.setStateCommand(ClimberState.DOWN)),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
@@ -342,6 +341,7 @@ public class SuperstructureCommands {
         return (Robot.isReal() ? pivot.getPosition() : pivot.getSetpoint()).getDegrees() <= pivotSafeThreshold.getDegrees();
     }
 
+    // TODO: Make this work the same as the turret ready check in AutoAimController
     private boolean isTurretSafe() {
         double degrees = turret.getPosition().getDegrees();
         return degrees >= turretMinSafeThreshold.getDegrees() 

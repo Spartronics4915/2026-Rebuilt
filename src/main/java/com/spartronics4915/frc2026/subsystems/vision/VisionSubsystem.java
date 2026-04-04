@@ -34,7 +34,9 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 public class VisionSubsystem extends SubsystemBase {
 
@@ -50,12 +52,13 @@ public class VisionSubsystem extends SubsystemBase {
 
     private final SwerveSubsystem swerve;
 
-    private final List<ResultInterface> combinedResults = new ArrayList<>(16);
-    private final List<ApriltagResult> combinedApriltagResults = new ArrayList<>(16);
+    private final List<ResultInterface> combinedResults = new ArrayList<>(4);
+    private final List<ApriltagResult> combinedApriltagResults = new ArrayList<>(4);
 
     private final Pose3d[] tagPoseScratch = new Pose3d[33];
 
     private volatile boolean hasValidPose;
+    private Pose2d fusedPose;
 
     private static final NetworkTable table = NetworkTableInstance.getDefault().getTable("vision");
 
@@ -108,13 +111,21 @@ public class VisionSubsystem extends SubsystemBase {
                 });
             }
         }
+
+        new Trigger(swerve::isFlatDebounced)
+            .onTrue(Commands.sequence(
+                Commands.waitUntil(() -> hasValidPose),
+                Commands.runOnce(() -> {
+                    swerve.resetPose(fusedPose);
+                }
+            )).withName("Re-localize On Flat"));
     }
 
     private static List<FilterInterface> buildFilterList(VisionConfiguration config, SwerveSubsystem swerve) {
         List<FilterInterface> filters = new ArrayList<>();
-        filters.add(new ResultFilters.LatencyFilter(config.maxLatencyMs));
-        filters.add(new ResultFilters.AmbiguityFilter(config.maxAmbiguityScore));
-        filters.add(new ResultFilters.AreaFilter(config.minArea, config.maxArea));
+            filters.add(new ResultFilters.LatencyFilter(config.maxLatencyMs));
+            filters.add(new ResultFilters.AmbiguityFilter(config.maxAmbiguityScore));
+            filters.add(new ResultFilters.AreaFilter(config.minArea, config.maxArea));
 
         if (config.maxOdometryDeviationMeters < Double.MAX_VALUE) {
             filters.add(new ResultFilters.OdometryOutlierFilter(
@@ -177,10 +188,11 @@ public class VisionSubsystem extends SubsystemBase {
         }
 
         ApriltagResult fusedResult = fusedResultOpt.get();
+        fusedPose = fusedResult.getPose();
 
         if (swerve != null && swerve.isFlatDebounced()) {
             poseConsumer.accept(
-                fusedResult.getPose(),
+                fusedPose,
                 fusedResult.getTimestampSeconds(),
                 fusedResult.getStdDevs()
             );
@@ -203,6 +215,7 @@ public class VisionSubsystem extends SubsystemBase {
         targetCountPublisher.set(fusedResult.getTargetCount());
 
         trackedApriltagsPublisher.accept(getTargetPoses(fusedResult.getTrackedTags()));
+        hasValidPosePublisher.accept(hasValidPose);
     }
 
     /**
@@ -218,6 +231,11 @@ public class VisionSubsystem extends SubsystemBase {
         Pose3d[] result = new Pose3d[count];
         System.arraycopy(tagPoseScratch, 0, result, 0, count);
         return result;
+    }
+
+    public Pose2d getFusedPose() {
+        if (hasValidPose == false) return null;
+        return fusedPose;
     }
 
     public boolean hasValidPose() { 

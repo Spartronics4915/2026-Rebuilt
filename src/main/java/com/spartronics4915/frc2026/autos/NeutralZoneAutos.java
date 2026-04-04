@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -25,13 +26,13 @@ public class NeutralZoneAutos {
         this.swerve = swerve;
     }
 
-    public Command generateQuadrantCommand(boolean isRightSide, boolean endWithSpeed) {
+    public Command generateQuadrantCommand(boolean isRightSide) {
         return Commands.defer(() -> {
             double sideMultiplier = isRightSide ? -1 : 1;
             Rotation2d rotation = Rotation2d.fromDegrees(isRightSide ? 90 : -90);
 
             Translation2d offsetFromCenter = new Translation2d(
-                -robotWidth.in(Meters) / 2 - centerPadding.in(Meters),
+                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters),
                 (robotLength.in(Meters) / 2 + intakeLength.in(Meters)) * sideMultiplier
             );
 
@@ -39,7 +40,15 @@ public class NeutralZoneAutos {
                 centerPose.plus(offsetFromCenter).plus(fuelIntakeTransform.times(sideMultiplier)),
                 rotation
             );
-            Pose2d quadrantEnd = new Pose2d(centerPose.plus(offsetFromCenter), rotation);
+            Pose2d quadrantEnd = new Pose2d(
+                centerPose.plus(offsetFromCenter).plus(
+                    new Translation2d(
+                        0, 
+                        paddingFromCenter.in(Meters)
+                    ).times(sideMultiplier)
+                ), 
+                rotation
+            );
 
             List<PathElement> pathElements = new ArrayList<>(List.of(
                 new Path.Waypoint(intakeStart),
@@ -51,7 +60,40 @@ public class NeutralZoneAutos {
                 Autos.generatePathConstraintZone(intakePathConstraints, 1, 2)
             );
 
-            return Autos.build(path, endWithSpeed ? quadrantEnd.getTranslation().minus(intakeStart.getTranslation()).getAngle() : null, swerve);
+            return Autos.build(path, quadrantEnd.getTranslation().minus(intakeStart.getTranslation()).getAngle(), swerve);
+        }, Set.of(swerve));
+    }
+
+    public Command generateInvertedQuadrantCommand(boolean toRightSide) {
+        return Commands.defer(() -> {
+            double sideMultiplier = toRightSide ? 1 : -1;
+            Rotation2d rotation = Rotation2d.fromDegrees(toRightSide ? -90 : 90);
+
+            Translation2d offsetFromCenter = new Translation2d(
+                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters),
+                (robotLength.in(Meters) / 2 + intakeLength.in(Meters)) * sideMultiplier
+            );
+
+            Pose2d quadrantEnd = new Pose2d(
+                centerPose.plus(offsetFromCenter).plus(fuelIntakeTransform.times(-sideMultiplier)),
+                rotation
+            );
+            Pose2d intakeStart = new Pose2d(
+                centerPose.plus(offsetFromCenter), 
+                rotation
+            );
+
+            List<PathElement> pathElements = new ArrayList<>(List.of(
+                new Path.Waypoint(intakeStart),
+                new Path.Waypoint(quadrantEnd)
+            ));
+
+            Path path = new Path(
+                pathElements,
+                Autos.generatePathConstraintZone(intakePathConstraints, 1, 2)
+            );
+
+            return Autos.build(path, quadrantEnd.getTranslation().minus(intakeStart.getTranslation()).getAngle(), swerve);
         }, Set.of(swerve));
     }
 
@@ -61,12 +103,12 @@ public class NeutralZoneAutos {
             Rotation2d rotation = Rotation2d.fromDegrees(isRightSide ? 90 : -90);
 
             Translation2d startOffset = new Translation2d(
-                -robotWidth.in(Meters) / 2 - centerPadding.in(Meters),
+                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters),
                 (robotLength.in(Meters) / 2 + intakeLength.in(Meters)) * sideMultiplier
             ).plus(fuelIntakeTransform.times(sideMultiplier));
 
             Translation2d endOffset = new Translation2d(
-                -robotWidth.in(Meters) / 2 - centerPadding.in(Meters),
+                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters),
                 0
             ).plus(fuelIntakeTransform.times(-sideMultiplier));
 
