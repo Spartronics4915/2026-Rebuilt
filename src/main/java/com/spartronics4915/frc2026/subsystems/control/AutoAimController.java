@@ -217,7 +217,9 @@ public class AutoAimController extends SubsystemBase {
         boolean shouldShoot = isAutoShootingEnabled && shouldAutoShoot(result);
         boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
 
-        if (hasValidSpeed && (shootOverride || (isUnrestricted && shouldShoot))) {
+        boolean readyToShoot = hasValidSpeed && (shootOverride || (isUnrestricted && shouldShoot));
+
+        if (readyToShoot) {
             shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed()));
         } else {
             shooter.setSetpoint(0);
@@ -234,6 +236,10 @@ public class AutoAimController extends SubsystemBase {
             );
         } else {
             hood.setSetpoint(Rotation2d.kZero);
+        }
+
+        if (!readyToShoot) {
+            result = autoAim.calculateStaticAim(swerve.getSmoothedRelativePose(), BOTTOM_FUNNEL_POSITION, 0);
         }
 
         if (result.yaw() != null) {
