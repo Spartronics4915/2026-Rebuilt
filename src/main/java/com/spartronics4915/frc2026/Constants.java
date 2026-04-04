@@ -333,7 +333,7 @@ public final class Constants {
                 .setMaxVelocityDegPerSec(180)
                 .setMaxAccelerationDegPerSec2(180);
 
-            public static final Rotation2d trenchApproachAngle = Rotation2d.fromDegrees(90.0);
+            public static final Rotation2d trenchApproachAngle = Rotation2d.fromDegrees(0.0);
             public static final Rotation2d bumpApproachAngle = Rotation2d.fromDegrees(45.0);
 
             public enum PathplannerConfigs {
