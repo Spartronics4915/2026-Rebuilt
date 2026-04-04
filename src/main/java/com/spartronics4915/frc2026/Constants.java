@@ -297,7 +297,7 @@ public final class Constants {
                 720, // maxAccelerationDegPerSec2
                 0.03, // endTranslationToleranceMeters
                 2.0, // endRotationToleranceDeg
-                0.5 // intermediateHandoffRadiusMeters
+                0.4 // intermediateHandoffRadiusMeters
             );
 
             public static final Path.PathConstraints trenchPathConstraints = new Path.PathConstraints()
