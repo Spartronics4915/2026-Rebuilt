@@ -62,6 +62,10 @@ public class ZoneTransition {
         Rotation2d IOFlip = toNeutralZone ? Rotation2d.kZero : Rotation2d.k180deg; // In/Out flip
 
         List<PathElement> pathElements = new ArrayList<PathElement>(List.of(
+            new Path.RotationTarget(
+                bumpApproachAngle.times((isRightSide == toNeutralZone) ? 1 : -1).rotateBy(IOFlip), 
+                0.75
+            ),
             new Path.Waypoint(
                 hubPose.plus(
                     bumpTransform.rotateBy(LRFlip)
@@ -102,6 +106,10 @@ public class ZoneTransition {
         Rotation2d IOFlip = toNeutralZone ? Rotation2d.kZero : Rotation2d.k180deg; // In/Out flip
 
         List<PathElement> pathElements = new ArrayList<PathElement>(List.of(
+            new Path.RotationTarget(
+                trenchApproachAngle.rotateBy(LRFlip), 
+                0.75
+            ),
             new Path.Waypoint(
                 hubPose.plus(
                     trenchTransform.rotateBy(LRFlip)
