@@ -95,6 +95,8 @@ public class AutoAimController extends SubsystemBase {
     private final LinearFilter accelFilterY = LinearFilter.movingAverage(10);
     private final LinearFilter accelFilterOmega = LinearFilter.movingAverage(10);
 
+    private final LinearFilter flywheelFilter = LinearFilter.movingAverage(10);
+
     private final BooleanPublisher isAimEnabledPublisher =
         NetworkTableInstance.getDefault()
             .getBooleanTopic("superstructure/AutoAim/AimEnabled").publish();
@@ -160,6 +162,7 @@ public class AutoAimController extends SubsystemBase {
             lastResult = computeAimResult();
         } else {
             lastResult = null;
+            flywheelFilter.reset();
         }
 
         boolean hasResult = lastResult != null && lastResult.ToF() != -1;
@@ -209,7 +212,7 @@ public class AutoAimController extends SubsystemBase {
             lastFieldSpeeds,
             fieldAccelerations,
             target,
-            RPSToMPS(Robot.isSimulation() ? shooter.getCurrentSetpoint() : shooter.getCurrentRPS()),
+            flywheelFilter.calculate(Robot.isSimulation() ? shooter.getCurrentSetpoint() : shooter.getCurrentRPS()),
             0.09 // Dynamic processing compensation can be supplied here
         );
     }
