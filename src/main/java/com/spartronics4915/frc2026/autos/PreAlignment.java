@@ -31,6 +31,10 @@ public class PreAlignment {
                     return Commands.none();
                 }
 
+                if (prevMethod.isRightSide == nextMethod.isRightSide && prevMethod.isTrench == nextMethod.isTrench) {
+                    return Commands.none();
+                }
+
                 double LRFlip = nextMethod.isRightSide ? 0.0 : -180.0; // Left/Right flip
 
                 Translation2d trans = hubPose.plus(
