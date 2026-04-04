@@ -4,8 +4,6 @@
 
 package com.spartronics4915.frc2026;
 
-import com.pathplanner.lib.commands.FollowPathCommand;
-
 import edu.wpi.first.net.WebServer;
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
@@ -56,7 +54,6 @@ public class Robot extends TimedRobot {
     @Override
     public void robotInit() {
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
-        CommandScheduler.getInstance().schedule(FollowPathCommand.warmupCommand());
 
         DataLogManager.start();
         DriverStation.startDataLog(DataLogManager.getLog(), true);

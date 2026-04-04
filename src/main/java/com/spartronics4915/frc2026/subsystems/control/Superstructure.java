@@ -146,8 +146,8 @@ public class Superstructure extends SubsystemBase {
         // but won't turn off until isReadyToShoot has been false for the full duration.
         Trigger pipelineOn = new Trigger(controller::isReadyToShoot)
             .debounce(PIPELINE_RATE_LIMIT_SEC, DebounceType.kFalling)
-            .onTrue(superCommands.setPipelineState(PipelineState.ON))
-            .onFalse(superCommands.setPipelineState(PipelineState.OFF));
+            .onTrue(commands.setPipelineState(PipelineState.ON))
+            .onFalse(commands.setPipelineState(PipelineState.OFF));
 
         // In auto, jostle the pivot while the pipeline is active
         pipelineOn

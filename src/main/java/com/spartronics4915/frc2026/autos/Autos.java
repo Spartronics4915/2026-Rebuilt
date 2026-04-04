@@ -6,123 +6,173 @@ package com.spartronics4915.frc2026.autos;
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.robotLength;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.towerPose;
+import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.velocityEndingDistance;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.path.GoalEndState;
-import com.pathplanner.lib.path.IdealStartingState;
-import com.pathplanner.lib.path.PathConstraints;
-import com.pathplanner.lib.path.PathPlannerPath;
-import com.pathplanner.lib.path.Waypoint;
-import com.pathplanner.lib.util.FlippingUtil;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 
+import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.LinearVelocity;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.lib.BLine.FlippingUtil;
+import frc.robot.lib.BLine.FollowPath;
+import frc.robot.lib.BLine.Path;
+import frc.robot.lib.BLine.Path.PathElement;
+import frc.robot.lib.BLine.Path.PathElementConstraint;
 
 public final class Autos {
+    public static FollowPath.Builder pathBuilder;
+    
+    private static Optional<Alliance> cachedAlliance = DriverStation.getAlliance();
+    static {
+        new Trigger(
+            () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Blue
+        ).onChange(Commands.runOnce(() -> {
+            cachedAlliance = DriverStation.getAlliance();
+        }).ignoringDisable(true));
+    }
+
     public static Command nothingAuto() {
         return Commands.runOnce(() -> {
             System.out.println("Nothing Auto");
         });
     }
 
-    public static IdealStartingState generateStartingState(SwerveSubsystem swerve) {
-        LinearVelocity startingVel = MetersPerSecond.of(
-            Math.max(
-                getVelocityMagnitude(swerve.getFieldVelocity()).in(MetersPerSecond),
-                0.1
-            )
-        );
-
-        return new IdealStartingState(
-            startingVel,
-            swerve.getRelativePose().getRotation()
-        );
+    public static void setPathBuilder(FollowPath.Builder builder) {
+        pathBuilder = builder;
     }
 
-    public static Pose2d getStartingPose(SwerveSubsystem swerve, List<Pose2d> waypoints) {
-        return flipIfNeeded(
-            swerve,
-            new Pose2d(
-                swerve.getPose().getTranslation(), 
-                getPathVelocityHeading(swerve, waypoints.get(0))
-            )
-        );
+    public static Command build(Path path) {
+        return build(path, false);
     }
 
-    public static void addStartingPoseToPath(SwerveSubsystem swerve, List<Pose2d> waypoints) {
-
-        waypoints.add(0, getStartingPose(swerve, waypoints));
+    public static Path.PathConstraints generatePathConstraintZone(Path.PathConstraints constraints, int start, int end) {
+        return new Path.PathConstraints()
+            .setMaxVelocityMetersPerSec(new Path.RangedConstraint(constraints.getMaxVelocityMetersPerSec().get().get(0).value(), start, end))
+            .setMaxAccelerationMetersPerSec2(new Path.RangedConstraint(constraints.getMaxAccelerationMetersPerSec2().get().get(0).value(), start, end))
+            .setMaxVelocityDegPerSec(new Path.RangedConstraint(constraints.getMaxVelocityDegPerSec().get().get(0).value(), start, end))
+            .setMaxAccelerationDegPerSec2(new Path.RangedConstraint(constraints.getMaxAccelerationDegPerSec2().get().get(0).value(), start, end));
     }
 
-    public static void removePastPoses(SwerveSubsystem swerve, List<Pose2d> waypoints, boolean toNeutralZone) {
+    public static Command build(Path path, boolean endWithSpeed) {
+        if (endWithSpeed) {
+            List<Pair<PathElement, PathElementConstraint>> waypoints = path.getPathElementsWithConstraintsNoWaypoints();
+            Translation2d finalWaypoint = null;
+            Translation2d secondFinalWaypoint = null;
+
+            for (int i = waypoints.size() - 1; i >= 0; i--) {
+                Path.PathElement element = waypoints.get(i).getFirst();
+    
+                if (element instanceof Path.RotationTarget) {
+                    continue;
+                }
+    
+                if (element instanceof Path.TranslationTarget) {
+                    Translation2d translation = ((Path.TranslationTarget) element).translation();
+                    if (finalWaypoint == null) {
+                        finalWaypoint = translation;
+                    } else if (secondFinalWaypoint == null) {
+                        secondFinalWaypoint = translation;
+                        break;
+                    }
+                }
+            }
+
+            if (finalWaypoint != null && secondFinalWaypoint != null) {
+                Rotation2d finalDirection = finalWaypoint.minus(secondFinalWaypoint).getAngle();
+                Translation2d overshootTarget = new Translation2d(velocityEndingDistance.in(Meters), 0).rotateBy(finalDirection).plus(finalWaypoint);
+    
+                path.addPathElement(new Path.TranslationTarget(overshootTarget));
+                path.setPathConstraints(
+                    new Path.PathConstraints()
+                        .setEndTranslationToleranceMeters(velocityEndingDistance.in(Meters))
+                        .setEndRotationToleranceDeg(10)
+                );
+            }
+        }
+        return pathBuilder.build(path);
+    }
+
+    public static void removePastPoses(SwerveSubsystem swerve, List<Path.PathElement> waypoints, boolean toNeutralZone) {
         double x = swerve.getRelativePose().getX();
 
         for (int i = waypoints.size() - 1; i >= 0; i--) {
-            Pose2d p = waypoints.get(i);
+            Path.PathElement p = waypoints.get(i);
 
-            if ((p.getX() > x) ^ toNeutralZone) {
-                waypoints.remove(i);
-                waypoints.add(i, getStartingPose(swerve, waypoints));
+            if (p instanceof Path.RotationTarget) {
+                continue;
+            }
+
+            if (p instanceof Path.TranslationTarget) {
+                Path.TranslationTarget t = (Path.TranslationTarget) p;
+                if ((t.translation().getX() > x) ^ toNeutralZone) {
+                    waypoints.remove(i);
+                    waypoints.add(i, new Path.TranslationTarget(flipIfNeeded(swerve.getPose()).getTranslation()));
+                }
+            }
+
+            if (p instanceof Path.Waypoint) {
+                Path.Waypoint w = (Path.Waypoint) p;
+                if ((w.translationTarget().translation().getX() > x) ^ toNeutralZone) {
+                    waypoints.remove(i);
+                    waypoints.add(i, new Path.Waypoint(flipIfNeeded(swerve.getPose())));
+                }
             }
         }
     }
 
-    public static Command generatePathFromWaypoint(SwerveSubsystem swerve, Translation2d translation, Rotation2d endingHeading, Rotation2d endingVelocityHeading) {
-        return generatePathFromWaypoint(swerve, translation, endingHeading, endingVelocityHeading, AutoConstants.defaultPathConstraints);
+    public static Command generatePathFromWaypoint(SwerveSubsystem swerve, Translation2d translation, Rotation2d endingHeading) {
+        return generatePathFromWaypoint(swerve, translation, endingHeading, null);
     }
 
-    public static Command generatePathFromWaypoint(SwerveSubsystem swerve, Translation2d translation, Rotation2d endingHeading, Rotation2d endingVelocityHeading, PathConstraints pathConstraints) {
-        Pose2d waypoint = new Pose2d(translation, endingVelocityHeading);
-        List<Pose2d> poses = new ArrayList<>(List.of(waypoint));
+    public static Command generatePathFromWaypoint(SwerveSubsystem swerve, Translation2d translation, Rotation2d endingHeading, Path.PathConstraints pathConstraints) {
+        Pose2d waypoint = new Pose2d(translation, endingHeading);
+        List<PathElement> pathElements = new ArrayList<>(List.of(
+            new Path.Waypoint(waypoint)
+        ));
 
-        addStartingPoseToPath(swerve, poses);
-
-        List<Waypoint> waypoints = PathPlannerPath.waypointsFromPoses(poses);
-
-        PathPlannerPath path = new PathPlannerPath(
-            waypoints,
-            pathConstraints,
-            generateStartingState(swerve),
-            new GoalEndState(0.0, endingHeading)
-        );
-
-        return AutoBuilder.followPath(path);
-    }
-
-    public static Rotation2d getPathVelocityHeading(SwerveSubsystem swerve, Pose2d target) {
-        if (swerve.getRelativePose().getTranslation().getX() < towerPose.getX() + robotLength.in(Meters) / 2.0) {
-            return Rotation2d.fromDegrees(swerve.shouldFlip() ? 180.0 : 0.0);
+        Path path;
+        if (pathConstraints != null) {
+            path = new Path(
+                pathElements,
+                pathConstraints
+            );
+        } else {
+            path = new Path(
+                pathElements
+            );
         }
 
-        ChassisSpeeds cs = swerve.getFieldVelocity();
-        if (getVelocityMagnitude(cs).in(MetersPerSecond) < 0.25) {
-            Translation2d diff = flipIfNeeded(swerve, target).getTranslation().minus(swerve.getPose().getTranslation());
-            return (diff.getNorm() < 0.01) ? target.getRotation() : diff.getAngle();
-        }
-        return new Rotation2d(cs.vxMetersPerSecond, cs.vyMetersPerSecond);
+        return build(path);
     }
 
-    public static LinearVelocity getVelocityMagnitude(ChassisSpeeds cs) {
-        return MetersPerSecond.of(new Translation2d(cs.vxMetersPerSecond, cs.vyMetersPerSecond).getNorm());
-    }
-
-    public static Pose2d flipIfNeeded(SwerveSubsystem swerve, Pose2d pose) {
-        if (swerve.shouldFlip()) {
+    public static Pose2d flipIfNeeded(Pose2d pose) {
+        if (Autos.shouldFlip()) {
             return FlippingUtil.flipFieldPose(pose);
         } else {
             return pose;
         }
+    }
+
+    public static boolean shouldFlip() {
+        return cachedAlliance.isPresent() && cachedAlliance.get() == Alliance.Red;
+    }
+
+    public static void resetAlliance() {
+        cachedAlliance = Optional.empty();
     }
 }

@@ -37,6 +37,7 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
@@ -52,6 +53,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.units.measure.Time;
+import frc.robot.lib.BLine.Path;
 
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
@@ -225,12 +227,9 @@ public final class Constants {
 
         public static final class AutoConstants {
             
-            public static final PIDConstants translationPID = new PIDConstants(9,0,0.01);
-            public static final PIDConstants rotationPID = new PIDConstants(6.0,0,0.01);
-            public static final PPHolonomicDriveController driveController = new PPHolonomicDriveController(
-                AutoConstants.translationPID, 
-                AutoConstants.rotationPID
-            );
+            public static final PIDController translationPID = new PIDController(5.0, 0, 0);
+            public static final PIDController rotationPID    = new PIDController(3.0, 0, 0);
+            public static final PIDController crossTrackPID  = new PIDController(2.0, 0, 0);
 
             public static final PIDConstants alignTranslationPID = new PIDConstants(2.0,0,0);
             public static final PIDConstants alignRotationPID = new PIDConstants(2.0,0,0);
@@ -249,6 +248,8 @@ public final class Constants {
             public static final Distance positionTolerance = Centimeter.of(1.5);
             public static final LinearVelocity speedTolerance = InchesPerSecond.of(2);
 
+            public static final Distance velocityEndingDistance = Meters.of(5);
+
             public static final Translation2d towerPose = new Translation2d(1.061, 3.745);
             public static final Translation2d centerPose = new Translation2d(8.271, 4.035);
             public static final Translation2d hubPose = new Translation2d(4.625, 4.035);
@@ -259,7 +260,7 @@ public final class Constants {
             public static final Translation2d trenchTransform = new Translation2d(0, -3.4);
             public static final Translation2d bumpTransform = new Translation2d(0, -1.523);
             public static final Translation2d bumpTrenchDivTransform = new Translation2d(0, 2.604);
-            public static final Translation2d approachTransform = new Translation2d(-1.1, 0);
+            public static final Translation2d approachTransform = new Translation2d(-1.3, 0);
             public static final Translation2d trenchExitTransform = new Translation2d(1.5, 0);
             public static final Translation2d bumpExitTransform = new Translation2d((centerPose.getX() - hubPose.getX()) * 1.2, 0);
             public static final Translation2d fuelIntakeTransform = new Translation2d(0, 1.5);
@@ -272,40 +273,39 @@ public final class Constants {
             public static final Distance centerPadding = Inches.of(2); // Padding away from center so we don't hit opponent robots
             public static final Distance bumperThickness = Millimeters.of(72.7);
 
-            public static final PathConstraints defaultPathConstraints = new PathConstraints(
-                2.0,
-                3.0,
-                1.0 * Math.PI,
-                2.0 * Math.PI
+            public static final Path.DefaultGlobalConstraints defaultPathConstraints = new Path.DefaultGlobalConstraints(
+                3.0, // maxVelocityMetersPerSec
+                9.0, // maxAccelerationMetersPerSec2
+                360, // maxVelocityDegPerSec
+                360, // maxAccelerationDegPerSec2
+                0.03, // endTranslationToleranceMeters
+                2.0, // endRotationToleranceDeg
+                0.2 // intermediateHandoffRadiusMeters
             );
 
-            public static final PathConstraints trenchPathConstraints = new PathConstraints(
-                2.0,
-                2.0,
-                1.0 / 2.0 * Math.PI,
-                1.0 * Math.PI
-            );
+            public static final Path.PathConstraints trenchPathConstraints = new Path.PathConstraints()
+                .setMaxVelocityMetersPerSec(3.0)
+                .setMaxAccelerationMetersPerSec2(9.0)
+                .setMaxVelocityDegPerSec(360)
+                .setMaxAccelerationDegPerSec2(360);
 
-            public static final PathConstraints bumpPathConstraints = new PathConstraints(
-                2.0,
-                2.0,
-                1.0 * Math.PI,
-                2.0 * Math.PI
-            );
+            public static final Path.PathConstraints bumpPathConstraints = new Path.PathConstraints()
+                .setMaxVelocityMetersPerSec(3.0)
+                .setMaxAccelerationMetersPerSec2(9.0)
+                .setMaxVelocityDegPerSec(360)
+                .setMaxAccelerationDegPerSec2(360);
 
-            public static final PathConstraints intakePathConstraints = new PathConstraints(
-                2.0,
-                5.0,
-                2.0 * Math.PI,
-                1.0 * Math.PI
-            );
+            public static final Path.PathConstraints intakePathConstraints = new Path.PathConstraints()
+                .setMaxVelocityMetersPerSec(3.0)
+                .setMaxAccelerationMetersPerSec2(9.0)
+                .setMaxVelocityDegPerSec(360)
+                .setMaxAccelerationDegPerSec2(360);
 
-            public static final PathConstraints climbPathConstraints = new PathConstraints(
-                1.5,
-                2.0,
-                1.0 * Math.PI,
-                1.0 * Math.PI
-            );
+            public static final Path.PathConstraints climbPathConstraints = new Path.PathConstraints()
+                .setMaxVelocityMetersPerSec(3.0)
+                .setMaxAccelerationMetersPerSec2(9.0)
+                .setMaxVelocityDegPerSec(360)
+                .setMaxAccelerationDegPerSec2(360);
 
             public static final Rotation2d trenchApproachAngle = Rotation2d.fromDegrees(0.0);
             public static final Rotation2d bumpApproachAngle = Rotation2d.fromDegrees(45.0);

@@ -8,7 +8,6 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants;
-import com.spartronics4915.frc2026.commands.PositionPIDCommand;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem.ClimberState;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
@@ -76,20 +75,8 @@ public class DriveToPOI {
                                 swerve,
                                 climbApproachPose, 
                                 shouldFlip ? Rotation2d.fromDegrees(270.0) : Rotation2d.fromDegrees(90.0),
-                                shouldFlip ? Rotation2d.fromDegrees(90.0) : Rotation2d.fromDegrees(270.0),
                                 AutoConstants.climbPathConstraints
                             )
-                        ),
-                        PositionPIDCommand.generateCommand(
-                            swerve,
-                            Autos.flipIfNeeded(
-                                swerve,
-                                new Pose2d(
-                                    climbApproachPose,
-                                    shouldFlip ? Rotation2d.fromDegrees(270.0) : Rotation2d.fromDegrees(90.0)
-                                )
-                            ),
-                            Seconds.of(2.0)
                         ),
                         // This makes all climb operations beyond uncancelable so that climb isn't stopped halfway through (Currently removed)
                         // new ScheduleCommand(
@@ -98,16 +85,10 @@ public class DriveToPOI {
                                 Commands.waitUntil(
                                     () -> Math.abs(climber.getCurrentSetpoint() - climber.getPosition()) <= 0.05
                                 ),
-                                PositionPIDCommand.generateCommand(
-                                    swerve,
-                                    Autos.flipIfNeeded(
-                                        swerve,
-                                        new Pose2d(
-                                            climbPose,
-                                            shouldFlip ? Rotation2d.fromDegrees(270.0) : Rotation2d.fromDegrees(90.0)
-                                        )
-                                    ),  
-                                    Seconds.of(3.0)
+                                Autos.generatePathFromWaypoint(
+                                    swerve, 
+                                    climbPose,
+                                    shouldFlip ? Rotation2d.fromDegrees(270.0) : Rotation2d.fromDegrees(90.0)
                                 ),
                                 // Pull climber back down to move robot up
                                 climber.setStateCommand(ClimberState.DOWN)
@@ -126,7 +107,6 @@ public class DriveToPOI {
                         depotPose.plus(
                             new Translation2d(robotLength.in(Meters) / 2.0 + intakeLength.in(Meters), 0)
                         ),
-                        Rotation2d.fromDegrees(180.0),
                         Rotation2d.fromDegrees(180.0)
                     );
                 }
@@ -139,21 +119,7 @@ public class DriveToPOI {
                             ).plus(
                                 new Translation2d(outpostPadding.in(Meters), 0)
                             ),
-                            Rotation2d.fromDegrees(90.0),
-                            Rotation2d.fromDegrees(180.0)
-                        ),
-                        PositionPIDCommand.generateCommand(
-                            swerve,
-                            Autos.flipIfNeeded(
-                                swerve,
-                                new Pose2d(
-                                    outpostPose.plus(
-                                        new Translation2d(robotWidth.in(Meters) / 2.0, 0)
-                                    ),
-                                    Rotation2d.fromDegrees(90)
-                                )
-                            ),
-                            Seconds.of(2.0)
+                            Rotation2d.fromDegrees(90.0)
                         ),
                         Commands.runOnce(() -> swerve.lockModules()),
                         Commands.waitSeconds(outpostWaitTime)

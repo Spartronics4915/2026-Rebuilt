@@ -10,17 +10,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.path.ConstraintsZone;
-import com.pathplanner.lib.path.GoalEndState;
-import com.pathplanner.lib.path.PathPlannerPath;
-import com.pathplanner.lib.path.RotationTarget;
-import com.pathplanner.lib.path.Waypoint;
-
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.lib.BLine.Path;
+import frc.robot.lib.BLine.Path.PathElement;
 
 public class ZoneTransition {
     private final SwerveSubsystem swerve;
@@ -63,48 +58,34 @@ public class ZoneTransition {
     }
 
     public Command generateBumpCommand(boolean isRightSide, boolean toNeutralZone) {
-        double LRFlip = isRightSide ? 0.0 : -180.0; // Left/Right flip
-        double IOFlip = toNeutralZone ? 0.0 : -180.0; // In/Out flip
+        Rotation2d LRFlip = isRightSide ? Rotation2d.kZero : Rotation2d.k180deg; // Left/Right flip
+        Rotation2d IOFlip = toNeutralZone ? Rotation2d.kZero : Rotation2d.k180deg; // In/Out flip
 
-        List<Pose2d> poses = new ArrayList<>(List.of(
-            new Pose2d(
+        List<PathElement> pathElements = new ArrayList<PathElement>(List.of(
+            new Path.Waypoint(
                 hubPose.plus(
-                    bumpTransform.rotateBy(Rotation2d.fromDegrees(LRFlip))
+                    bumpTransform.rotateBy(LRFlip)
                 ).plus(
-                    approachTransform.rotateBy(Rotation2d.fromDegrees(IOFlip))
+                    approachTransform.rotateBy(IOFlip)
                 ),
-                Rotation2d.fromDegrees(IOFlip)
+                bumpApproachAngle.rotateBy(IOFlip)
             ),
-            new Pose2d(
+            new Path.Waypoint(
                 hubPose.plus( // Pose will be really wrong over the bump so set the setpoint *way* farther
-                    bumpExitTransform.rotateBy(Rotation2d.fromDegrees(IOFlip))
+                    bumpExitTransform.rotateBy(IOFlip)
                 ).plus(
-                    bumpTransform.rotateBy(Rotation2d.fromDegrees(LRFlip))
+                    bumpTransform.rotateBy(LRFlip)
                 ),
-                Rotation2d.fromDegrees(IOFlip)
+                bumpApproachAngle.rotateBy(IOFlip)
             )
         ));
 
-        Autos.removePastPoses(swerve, poses, toNeutralZone);
+        Autos.removePastPoses(swerve, pathElements, toNeutralZone);
 
-        Autos.addStartingPoseToPath(swerve, poses);
-
-        List<Waypoint> waypoints = PathPlannerPath.waypointsFromPoses(poses);
-
-        PathPlannerPath path = new PathPlannerPath(
-            waypoints,
-            List.of(new RotationTarget(1, bumpApproachAngle.rotateBy(Rotation2d.fromDegrees(IOFlip)))),
-            List.of(),
-            List.of(new ConstraintsZone(1, 2, bumpPathConstraints)),
-            List.of(),
-            defaultPathConstraints,
-            Autos.generateStartingState(swerve),
-            new GoalEndState(0.0, bumpApproachAngle.rotateBy(Rotation2d.fromDegrees(IOFlip))),
-            false
-        );
+        Path path = new Path(pathElements, Autos.generatePathConstraintZone(bumpPathConstraints, 1, 2));
 
         return Commands.race(
-            AutoBuilder.followPath(path),
+            Autos.build(path),
             Commands.sequence(
                 Commands.waitUntil(() -> {
                     return swerve.getRelativePose().getMeasureX().in(Meters) > hubPose.getX() ^ !toNeutralZone 
@@ -117,48 +98,34 @@ public class ZoneTransition {
     }
 
     public Command generateTrenchCommand(boolean isRightSide, boolean toNeutralZone) {
-        double LRFlip = isRightSide ? 0.0 : -180.0; // Left/Right flip
-        double IOFlip = toNeutralZone ? 0.0 : -180.0; // In/Out flip
+        Rotation2d LRFlip = isRightSide ? Rotation2d.kZero : Rotation2d.k180deg; // Left/Right flip
+        Rotation2d IOFlip = toNeutralZone ? Rotation2d.kZero : Rotation2d.k180deg; // In/Out flip
 
-        List<Pose2d> poses = new ArrayList<>(List.of(
-            new Pose2d(
+        List<PathElement> pathElements = new ArrayList<PathElement>(List.of(
+            new Path.Waypoint(
                 hubPose.plus(
-                    trenchTransform.rotateBy(Rotation2d.fromDegrees(LRFlip))
+                    trenchTransform.rotateBy(LRFlip)
                 ).plus(
-                    approachTransform.rotateBy(Rotation2d.fromDegrees(IOFlip))
+                    approachTransform.rotateBy(IOFlip)
                 ),
-                Rotation2d.fromDegrees(IOFlip)
+                trenchApproachAngle.rotateBy(IOFlip)
             ),
-            new Pose2d(
+            new Path.Waypoint(
                 hubPose.plus(
-                    trenchTransform.rotateBy(Rotation2d.fromDegrees(LRFlip))
+                    trenchTransform.rotateBy(LRFlip)
                 ).plus(
                     toNeutralZone
-                        ? approachTransform.rotateBy(Rotation2d.fromDegrees(IOFlip + 180.0))
-                        : trenchExitTransform.rotateBy(Rotation2d.fromDegrees(IOFlip))
+                        ? approachTransform.rotateBy(IOFlip.plus(Rotation2d.k180deg))
+                        : trenchExitTransform.rotateBy(IOFlip)
                 ),
-                Rotation2d.fromDegrees(IOFlip)
+                trenchApproachAngle.rotateBy(IOFlip)
             )
         ));
 
-        Autos.removePastPoses(swerve, poses, toNeutralZone);
+        Autos.removePastPoses(swerve, pathElements, toNeutralZone);
 
-        Autos.addStartingPoseToPath(swerve, poses);
+        Path path = new Path(pathElements, Autos.generatePathConstraintZone(trenchPathConstraints, 1, 2));
 
-        List<Waypoint> waypoints = PathPlannerPath.waypointsFromPoses(poses);
-
-        PathPlannerPath path = new PathPlannerPath(
-            waypoints,
-            List.of(new RotationTarget(1, trenchApproachAngle.rotateBy(Rotation2d.fromDegrees(IOFlip)))),
-            List.of(),
-            List.of(new ConstraintsZone(1, 2, trenchPathConstraints)),
-            List.of(),
-            defaultPathConstraints,
-            Autos.generateStartingState(swerve),
-            new GoalEndState(trenchPathConstraints.maxVelocityMPS(), trenchApproachAngle.rotateBy(Rotation2d.fromDegrees(IOFlip))),
-            false
-        );
-
-        return AutoBuilder.followPath(path);
+        return Autos.build(path);
     }
 }

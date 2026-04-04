@@ -8,13 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.path.ConstraintsZone;
-import com.pathplanner.lib.path.GoalEndState;
-import com.pathplanner.lib.path.PathPlannerPath;
-import com.pathplanner.lib.path.RotationTarget;
-import com.pathplanner.lib.path.Waypoint;
-
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -22,6 +15,8 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.lib.BLine.Path;
+import frc.robot.lib.BLine.Path.PathElement;
 
 public class NeutralZoneAutos {
     private final SwerveSubsystem swerve;
@@ -46,25 +41,17 @@ public class NeutralZoneAutos {
             );
             Pose2d quadrantEnd = new Pose2d(centerPose.plus(offsetFromCenter), rotation);
 
-            List<Pose2d> poses = new ArrayList<>(List.of(intakeStart, quadrantEnd));
+            List<PathElement> pathElements = new ArrayList<>(List.of(
+                new Path.Waypoint(intakeStart),
+                new Path.Waypoint(quadrantEnd)
+            ));
 
-            Autos.addStartingPoseToPath(swerve, poses);
-
-            List<Waypoint> waypoints = PathPlannerPath.waypointsFromPoses(poses);
-
-            PathPlannerPath path = new PathPlannerPath(
-                waypoints,
-                List.of(new RotationTarget(1, rotation)),
-                List.of(),
-                List.of(new ConstraintsZone(1, 2, intakePathConstraints)),
-                List.of(),
-                defaultPathConstraints,
-                Autos.generateStartingState(swerve),
-                new GoalEndState(endWithSpeed ? intakePathConstraints.maxVelocity() : MetersPerSecond.of(0), rotation),
-                false
+            Path path = new Path(
+                pathElements, 
+                Autos.generatePathConstraintZone(intakePathConstraints, 1, 2)
             );
             
-            return AutoBuilder.followPath(path);
+            return Autos.build(path, endWithSpeed);
         }, Set.of(swerve));
     }
 
@@ -86,25 +73,17 @@ public class NeutralZoneAutos {
             Pose2d fuelStart = new Pose2d(centerPose.plus(startOffset), rotation);
             Pose2d fuelEnd = new Pose2d(centerPose.plus(endOffset), rotation);
 
-            List<Pose2d> poses = new ArrayList<>(List.of(fuelStart, fuelEnd));
+            List<PathElement> pathElements = new ArrayList<>(List.of(
+                new Path.Waypoint(fuelStart),
+                new Path.Waypoint(fuelEnd)
+            ));
 
-            Autos.addStartingPoseToPath(swerve, poses);
-
-            List<Waypoint> waypoints = PathPlannerPath.waypointsFromPoses(poses);
-
-            PathPlannerPath path = new PathPlannerPath(
-                waypoints,
-                List.of(new RotationTarget(1, rotation)),
-                List.of(),
-                List.of(new ConstraintsZone(1, 2, intakePathConstraints)),
-                List.of(),
-                defaultPathConstraints,
-                Autos.generateStartingState(swerve),
-                new GoalEndState(endWithSpeed ? intakePathConstraints.maxVelocity() : MetersPerSecond.of(0), rotation),
-                false
+            Path path = new Path(
+                pathElements,
+                Autos.generatePathConstraintZone(intakePathConstraints, 1, 2)
             );
 
-            return AutoBuilder.followPath(path);
+            return Autos.build(path, endWithSpeed);
         }, Set.of(swerve));
     }   
 }
