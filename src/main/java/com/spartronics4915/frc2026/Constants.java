@@ -247,7 +247,7 @@ public final class Constants {
         public static final class AutoConstants {
             
             public static final PIDController translationPID = new PIDController(5.0, 0, 0);
-            public static final PIDController rotationPID    = new PIDController(3.0, 0, 0);
+            public static final PIDController rotationPID    = new PIDController(5.0, 0, 0);
             public static final PIDController crossTrackPID  = new PIDController(2.0, 0, 0);
 
             public static final PIDConstants alignTranslationPID = new PIDConstants(2.0,0,0);
