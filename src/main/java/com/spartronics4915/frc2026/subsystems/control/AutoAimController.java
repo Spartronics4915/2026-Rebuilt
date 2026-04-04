@@ -344,7 +344,8 @@ public class AutoAimController extends SubsystemBase {
     }
 
     public boolean isShotPossible() {
-        return lastResult != null && !lastResult.requiresIdealSpeed();
+        return lastResult != null && !lastResult.requiresIdealSpeed()
+            && isHoodReady();
     }
 
     public boolean isShotPossibleDebounced() {
@@ -369,7 +370,7 @@ public class AutoAimController extends SubsystemBase {
 
         // General case when auto-aim is enabled, it has to have a valid result and speed, and the turret and hood have to be near their setpoints
         if (hasValidResult() && isShotPossibleDebounced()
-            && isTurretReady() && isHoodReady()
+            && isTurretReady() // Hood moved to isShotPossible because it moves A LOT
             && readyToShoot(lastResult)
         ) {
             return true;
