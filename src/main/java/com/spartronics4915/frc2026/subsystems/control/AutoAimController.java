@@ -91,9 +91,9 @@ public class AutoAimController extends SubsystemBase {
     private ChassisSpeeds lastFieldSpeeds = new ChassisSpeeds();
     private ChassisSpeeds fieldAccelerations = new ChassisSpeeds();
     
-    private final LinearFilter accelFilterX = LinearFilter.movingAverage(10);
-    private final LinearFilter accelFilterY = LinearFilter.movingAverage(10);
-    private final LinearFilter accelFilterOmega = LinearFilter.movingAverage(10);
+    private final LinearFilter accelFilterX = LinearFilter.movingAverage(5);
+    private final LinearFilter accelFilterY = LinearFilter.movingAverage(5);
+    private final LinearFilter accelFilterOmega = LinearFilter.movingAverage(5);
 
     private final LinearFilter flywheelFilter = LinearFilter.movingAverage(15);
 
@@ -348,7 +348,8 @@ public class AutoAimController extends SubsystemBase {
 
     public boolean isShotPossible() {
         return lastResult != null && !lastResult.requiresIdealSpeed()
-            && isHoodReady();
+            && isHoodReady()
+            && isTurretReady();
     }
 
     public boolean isShotPossibleDebounced() {
@@ -373,7 +374,7 @@ public class AutoAimController extends SubsystemBase {
 
         // General case when auto-aim is enabled, it has to have a valid result and speed, and the turret and hood have to be near their setpoints
         if (hasValidResult() && isShotPossibleDebounced()
-            && isTurretReady() // Hood moved to isShotPossible because it moves A LOT
+            // Hood and turret moved to isShotPossible because they move A LOT
             && readyToShoot(lastResult)
         ) {
             return true;
