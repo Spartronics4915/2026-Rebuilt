@@ -12,8 +12,11 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.wpilibj.Notifier;
 
 /**
- * Common interface for all vision camera processors, regardless of the underlying
- * hardware or library (PhotonVision, Limelight, etc.).
+ * Common interface for all vision camera processors.
+ *
+ * <p>Fixed cameras implement the core methods and ignore {@link #updateTurretAngle}.
+ * Turreted cameras (any processor constructed with turret geometry) override
+ * {@link #updateTurretAngle} to keep their dynamic transform up to date.
  */
 public interface ProcessorInterface {
 
@@ -26,17 +29,20 @@ public interface ProcessorInterface {
     // ------ Identity & Geometry ------
 
     String getCameraName();
+
+    /**
+     * Returns the current robot-to-camera transform.
+     * For fixed cameras this is constant; for turreted cameras it reflects the
+     * latest known turret yaw.
+     */
     Transform3d getCameraTransform();
+
+    /** Returns {@code true} if this processor was constructed with turret geometry. */
+    default boolean isTurreted() { return false; }
 
     // ------ Result Queue ------
 
-    /**
-     * Drains all pending results into {@code destination}.
-     * Prefer this over {@link #getResultQueue()}
-     */
     void drainResultQueue(List<ResultInterface> destination);
-
-    /** Convenience wrapper; use {@link #drainResultQueue(List)} */
     List<ResultInterface> getResultQueue();
 
     // ------ Introspection ------
@@ -51,25 +57,20 @@ public interface ProcessorInterface {
     void setPipeline(int newPipelineIndex);
     void setCameraTransform(Transform3d newCameraTransform);
 
-    /**
-     * Returns the PhotonVision simulated camera, if this processor supports it.
-     */
+    /** Returns the PhotonVision simulated camera, if supported. */
     default Optional<PhotonCameraSim> getCameraSim() {
         return Optional.empty();
     }
 
     /**
-     * Supplies the current turret yaw and the FPGA timestamp at which it was
-     * measured. Called every loop by {@link com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem}
-     * when a turret angle supplier is configured.
+     * Records the current turret yaw and the FPGA timestamp at which it was measured.
      *
-     * <p>The default implementation is a no-op — fixed cameras ignore this.
-     * Override in {@link TurretedPhotonProcessor} (or any future turreted
-     * processor) to record the angle for use in per-frame pose correction.
+     * <p>Called every loop by {@link com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem}
+     * whenever a turret angle supplier is configured. Fixed cameras ignore this (default no-op).
+     * Turreted cameras store the sample in a time buffer for interpolation during processing.
      *
-     * @param turretAngle Robot-relative turret yaw (positive = CCW).
+     * @param turretAngle Robot-relative turret yaw (CCW positive).
      * @param timestamp   FPGA timestamp in seconds.
      */
     default void updateTurretAngle(Rotation2d turretAngle, double timestamp) {}
-
 }

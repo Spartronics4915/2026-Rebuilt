@@ -39,7 +39,6 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsyst
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsystem.IndexerState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
-import com.spartronics4915.frc2026.subsystems.vision.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -71,11 +70,12 @@ public class RobotContainer {
     
     public final SwerveSubsystem swerveSubsystem = new SwerveSubsystem(SwerveConfigurations.COMP_CHASSIS);
     public final VisionSubsystem visionSubsystem = new VisionSubsystem(
-        VisionConstants.CameraConstants.cameras, 
         VisionConstants.apriltagFieldLayout, 
-        new VisionConfiguration(), 
         swerveSubsystem::addVisionMeasurement, 
-        swerveSubsystem
+        swerveSubsystem, 
+        VisionConstants.CameraConstants.primaryCameras, 
+        VisionConstants.CameraConstants.fallbackCameras, 
+        turretSubsystem::getPosition
     );
     
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
@@ -121,7 +121,7 @@ public class RobotContainer {
         SmartDashboard.putData("Pipeline On", superstructureCommands.setPipelineState(PipelineState.ON));
         SmartDashboard.putData("Pipeline Off", superstructureCommands.setPipelineState(PipelineState.OFF));
         SmartDashboard.putData("Reset Odometry", Commands.runOnce(
-            () -> swerveSubsystem.resetPose(visionSubsystem.getFusedPose())
+            () -> swerveSubsystem.resetPose(visionSubsystem.getVisionPose())
         ));
     }
 
@@ -217,7 +217,7 @@ public class RobotContainer {
 
         driverController.start().onTrue(
             Commands.runOnce(
-                () -> swerveSubsystem.resetPose(visionSubsystem.getFusedPose())
+                () -> swerveSubsystem.resetPose(visionSubsystem.getVisionPose())
             )
         );
 

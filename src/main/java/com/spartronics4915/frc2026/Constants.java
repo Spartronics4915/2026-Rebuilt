@@ -5,6 +5,7 @@ package com.spartronics4915.frc2026;
 // the WPILib BSD license file in the root directory of this project.
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.hubPose;
+
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Centimeter;
 import static edu.wpi.first.units.Units.Inches;
@@ -20,14 +21,16 @@ import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
-import java.util.Map;
+import java.util.List;
 
 import org.photonvision.simulation.SimCameraProperties;
 
 import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.PathplannerConfigs;
+import com.spartronics4915.frc2026.subsystems.vision.cameras.LimelightProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.PhotonProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
 import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
+
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
@@ -384,7 +387,7 @@ public final class Constants {
 
     public static final class VisionConstants {
         public static final AprilTagFieldLayout apriltagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
-        
+
         public static final SimCameraProperties simCameraProperties = new SimCameraProperties();
             static {
                 simCameraProperties.setCalibration(1600, 1200, Rotation2d.fromDegrees(97.65));
@@ -394,96 +397,114 @@ public final class Constants {
                 simCameraProperties.setLatencyStdDevMs(0);
             }
 
+        public static final double turretHistorySeconds = 0.5;
+
         // TODO: Tune these values more (PLEASE!)
         public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.42;  // 0.18
-            public static final double baseThetaStdDev = 0.87;  // 0.5 — heading from vision is still less reliable
-            public static final double ambiguityWeight = 0.3;  // 0.6
-            public static final double areaWeight = 0.8;  // 0.6
-            public static final double latencyWeight = 0.9;  // 0.4
+            public static final double baseXYStdDev = 0.42;
+            public static final double baseThetaStdDev = 0.87;
+            public static final double ambiguityWeight = 0.3;
+            public static final double areaWeight = 0.8;
+            public static final double latencyWeight = 0.9;
+        }
+
+        public static final class FilterConstants {
+            public static final double maxLatencyMs = 110.0;
+            public static final double maxSingleTagDistanceMeters = 6.0;
+            public static final double maxMultiTagDistanceMeters = 8.0;
+            public static final double maxAmbiguity = 0.25;
+            public static final double minArea = 0.05;
+            public static final double maxArea = 0.70;
+
+            // Set < Double.MAX_VALUE to enable the odometry-outlier filter.
+            public static final double maxOdometryDeviationMeters = Double.MAX_VALUE;
+        }
+
+        public static final class FusionConstants {
+            /** Whether to fuse results from multiple cameras at all. */
+            public static final boolean enabled = true;
+
+            /**
+             * Maximum time difference (seconds) between two results for them
+             * to be considered "simultaneous" and eligible for fusion.
+             */
+            public static final double timestampThresholdSecs = 0.05;
+
+            /** Minimum number of cameras required to attempt fusion. */
+            public static final int minCameras = 2;
+
+            /**
+             * Results whose normalized distance from the group mean exceeds this
+             * number of sigma are rejected as outliers before fusion.
+             */
+            public static final double outlierSigma = 3.0;
         }
 
         public static final class CameraConstants {
 
-            /** Currently the transform of the evan camera */
+            /** evan — front tower camera */
             public static final Transform3d frontTowerCamTransform = new Transform3d(
+                new Translation3d(-0.119170, 0.310900, 0.520276),
+                new Rotation3d(Math.toRadians(0), Math.toRadians(-30), Math.toRadians(0))
+            );
+
+            /** daniil — RIO-mounted camera */
+            public static final Transform3d rioCamTransform = new Transform3d(
+                new Translation3d(-0.125205, -0.334776, 0.257945),
+                new Rotation3d(Math.toRadians(0), Math.toRadians(-26), Math.toRadians(-70))
+            );
+
+            /** val — back tower camera */
+            public static final Transform3d backTowerCamTransform = new Transform3d(
+                new Translation3d(-0.266691, 0.311499, 0.437110 + 0.0127),
+                new Rotation3d(Math.toRadians(0), Math.toRadians(-30), Math.toRadians(180))
+            );
+
+            /** gollum — swerve camera */
+            public static final Transform3d swerveCamTransform = new Transform3d(
+                new Translation3d(-0.2868215, -0.1771345, 0.2412915),
+                new Rotation3d(Math.toRadians(0), Math.toRadians(-23), Math.toRadians(180))
+            );
+
+            /** turret - turret camera */
+            public static final Transform3d turretToCamera = new Transform3d(
                 new Translation3d(
-                    -0.119170, 
-                    0.310900,
-                    0.520276
+                    Units.inchesToMeters(6.429),
+                    0.0,
+                    Units.inchesToMeters(8.649)
                 ),
                 new Rotation3d(
-                    Math.toRadians(0), 
-                    Math.toRadians(-30), 
-                    Math.toRadians(0)
+                    0.0,
+                    Math.toRadians(-28.0),
+                    0.0
                 )
             );
 
-            /** Currently the transform of the daniil camera */
-            public static final Transform3d rioCamTransform =  new Transform3d(
-                new Translation3d(
-                    -0.125205, 
-                    -0.334776, 
-                    0.257945
-                ),
-                new Rotation3d(
-                    Math.toRadians(0), 
-                    Math.toRadians(-26), 
-                    Math.toRadians(-70)
+            /**
+             * Primary cameras, always participate in pose fusion.
+             */
+            public static final List<ProcessorInterface> primaryCameras = List.of(
+                new LimelightProcessor(
+                    "argos",
+                    SuperstructureConstants.turretTranslation3D,
+                    turretToCamera,
+                    new StdDevCalculator(1.3),
+                    100
                 )
             );
 
-            /** Currently the transform of the val camera */
-            public static final Transform3d backTowerCamTransform =  new Transform3d(
-                new Translation3d(
-                    -0.266691, 
-                    0.311499, 
-                    0.437110 + 0.0127
+            /**
+             * Fallback cameras, used only when the primary pipeline produces no
+             * valid pose.
+             */
+            public static final List<ProcessorInterface> fallbackCameras = List.of(
+                new PhotonProcessor(
+                    "evan", apriltagFieldLayout, frontTowerCamTransform,
+                    new StdDevCalculator(1.3), simCameraProperties, 50.0
                 ),
-                new Rotation3d(
-                    Math.toRadians(0), 
-                    Math.toRadians(-30), 
-                    Math.toRadians(180)
-                )
-            );
-
-            /** Currently the transform of the gollum camera */
-            public static final Transform3d swerveCamTransform =  new Transform3d(
-                new Translation3d(
-                    -0.2868215, 
-                    -0.1771345, 
-                    0.2412915
-                ),
-                new Rotation3d(
-                    Math.toRadians(0), 
-                    Math.toRadians(-23), 
-                    Math.toRadians(180)
-                )
-            );
-
-            //-----------------------------------------------------
-
-            public static final Map<String, ProcessorInterface> cameras = Map.of(
-                "evan", new PhotonProcessor(
-                    "evan", 
-                    apriltagFieldLayout, 
-                    frontTowerCamTransform, 
-                    new StdDevCalculator(1.3), 
-                    simCameraProperties
-                ),
-                "daniil", new PhotonProcessor(
-                    "daniil", 
-                    apriltagFieldLayout, 
-                    rioCamTransform, 
-                    new StdDevCalculator(1.3), 
-                    simCameraProperties
-                ),
-                "val", new PhotonProcessor(
-                    "val", 
-                    apriltagFieldLayout, 
-                    backTowerCamTransform, 
-                    new StdDevCalculator(1.3), 
-                    simCameraProperties
+                new PhotonProcessor(
+                    "val", apriltagFieldLayout, backTowerCamTransform,
+                    new StdDevCalculator(1.3), simCameraProperties, 50.0
                 )
             );
         }

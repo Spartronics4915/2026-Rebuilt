@@ -90,7 +90,7 @@ public class ZoneTransition {
                 Commands.waitUntil(() -> {
                     return swerve.getRelativePose().getMeasureX().in(Meters) > hubPose.getX() ^ !toNeutralZone 
                         && swerve.isFlatDebounced()
-                        && vision.hasValidPose();
+                        && vision.hasAnyPose();
                 }),
                 Commands.waitSeconds(bumpDriveContinueTime)
             )

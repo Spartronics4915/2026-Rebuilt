@@ -5,8 +5,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
+import com.spartronics4915.frc2026.Constants.VisionConstants.FusionConstants;
 import com.spartronics4915.frc2026.Constants.VisionConstants.StdDevConstants;
-import com.spartronics4915.frc2026.subsystems.vision.VisionConfiguration;
 import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
 import com.spartronics4915.frc2026.subsystems.vision.results.TrackedTag;
 
@@ -31,19 +31,22 @@ public class PoseFusionEngine {
 
     private final StringBuilder nameBuilder = new StringBuilder(64);
 
-    public Optional<ApriltagResult> fusePoses(List<ApriltagResult> apriltagResults, VisionConfiguration config) {
+    /**
+     * Fuses pose estimates from multiple cameras into a single measurement.
+     * Filter/fusion parameters are read from {@link FusionConstants}.
+     */
+    public Optional<ApriltagResult> fusePoses(List<ApriltagResult> apriltagResults) {
         if (apriltagResults.size() == 1) {
             return Optional.of(apriltagResults.get(0));
         }
 
-        if (!config.enablePoseFusion || apriltagResults.size() < config.minCamerasForFusion) {
+        if (!FusionConstants.enabled || apriltagResults.size() < FusionConstants.minCameras) {
             return selectBestResult(apriltagResults);
         }
+        getLargestTimestampGroup(apriltagResults, FusionConstants.timestampThresholdSecs);
+        rejectOutliers(bestGroup, FusionConstants.outlierSigma);
 
-        getLargestTimestampGroup(apriltagResults, config.fusionTimestampThreshold);
-        rejectOutliers(bestGroup, config.fusionOutlierThresholdSigma);
-
-        if (filteredScratch.size() < config.minCamerasForFusion) {
+        if (filteredScratch.size() < FusionConstants.minCameras) {
             return selectBestResult(filteredScratch);
         }
 
@@ -131,8 +134,8 @@ public class PoseFusionEngine {
         double dx = pose1.getX() - pose2.getX();
         double dy = pose1.getY() - pose2.getY();
         double dtheta = Math.IEEEremainder(
-            pose1.getRotation().getRadians() 
-            - pose2.getRotation().getRadians(), 2 * Math.PI
+            pose1.getRotation().getRadians() - pose2.getRotation().getRadians(), 
+            2 * Math.PI
         );
 
         double distX = Math.abs(dx) / Math.max(stdDevs.get(0, 0), 0.001);
@@ -167,10 +170,18 @@ public class PoseFusionEngine {
             validScratch.add(result);
 
             Pose2d pose = result.getPose();
-            double sx = stdDevs.get(0, 0), sy = stdDevs.get(1, 0), st = stdDevs.get(2, 0);
-            double wX = 1.0 / (sx * sx), wY = 1.0 / (sy * sy), wT = 1.0 / (st * st);
 
-            totalWeightX += wX; totalWeightY += wY; totalWeightTheta += wT;
+            double sx = stdDevs.get(0, 0);
+            double sy = stdDevs.get(1, 0);
+            double st = stdDevs.get(2, 0);
+
+            double wX = 1.0 / (sx * sx);
+            double wY = 1.0 / (sy * sy);
+            double wT = 1.0 / (st * st);
+
+            totalWeightX += wX; 
+            totalWeightY += wY; 
+            totalWeightTheta += wT;
             weightedX += pose.getX() * wX;
             weightedY += pose.getY() * wY;
 
@@ -178,8 +189,7 @@ public class PoseFusionEngine {
             weightedSin += Math.sin(theta) * wT;
             weightedCos += Math.cos(theta) * wT;
 
-            if (result.getTimestampSeconds() > latestTimestamp)
-                latestTimestamp = result.getTimestampSeconds();
+            if (result.getTimestampSeconds() > latestTimestamp) latestTimestamp = result.getTimestampSeconds();
 
             sumLatency += result.getLatencyMs();
             sumAmbiguity += result.getAmbiguity();
@@ -247,7 +257,10 @@ public class PoseFusionEngine {
             double score = (2.0 * dev.get(0, 0) / StdDevConstants.baseXYStdDev)
                 + (dev.get(2, 0) / StdDevConstants.baseThetaStdDev);
 
-            if (score < bestScore) { bestScore = score; best = result; }
+            if (score < bestScore) {
+                bestScore = score; 
+                best = result; 
+            }
         }
         return Optional.ofNullable(best);
     }

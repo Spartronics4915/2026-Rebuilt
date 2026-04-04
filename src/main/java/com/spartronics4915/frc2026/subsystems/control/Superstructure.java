@@ -160,9 +160,9 @@ public class Superstructure extends SubsystemBase {
         
         if (pose != null) {
             if (pose.getX() < 0) {
-                swerve.resetPose(vision.getFusedPose());
+                swerve.resetPose(vision.getVisionPose());
             } else if (pose.getY() < 0.0 || pose.getY() > 8.1) {
-                swerve.resetPose(vision.getFusedPose());
+                swerve.resetPose(vision.getVisionPose());
             }
         }
     }
