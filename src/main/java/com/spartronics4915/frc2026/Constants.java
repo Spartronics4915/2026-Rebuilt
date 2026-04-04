@@ -481,20 +481,6 @@ public final class Constants {
              * Primary cameras, always participate in pose fusion.
              */
             public static final List<ProcessorInterface> primaryCameras = List.of(
-                new LimelightProcessor(
-                    "argos",
-                    SuperstructureConstants.shooterBaseTranslation,
-                    turretToCamera,
-                    new StdDevCalculator(1.0),
-                    80
-                )
-            );
-
-            /**
-             * Fallback cameras, used only when the primary pipeline produces no
-             * valid pose.
-             */
-            public static final List<ProcessorInterface> fallbackCameras = List.of(
                 new PhotonProcessor(
                     "evan", apriltagFieldLayout, frontTowerCamTransform,
                     new StdDevCalculator(1.2), simCameraProperties, 20.0
@@ -506,6 +492,20 @@ public final class Constants {
                 new PhotonProcessor(
                     "daniil", apriltagFieldLayout, rioCamTransform,
                     new StdDevCalculator(1.2), simCameraProperties, 20.0
+                )
+            );
+
+            /**
+             * Fallback cameras, used only when the primary pipeline produces no
+             * valid pose.
+             */
+            public static final List<ProcessorInterface> fallbackCameras = List.of(
+                new LimelightProcessor(
+                    "argos",
+                    SuperstructureConstants.shooterBaseTranslation,
+                    turretToCamera,
+                    new StdDevCalculator(1.0),
+                    80
                 )
             );
         }
@@ -593,7 +593,7 @@ public final class Constants {
         public static final int FOLLOWER_MOTOR_ID = 23;
 
         /** Idle revolutions-per-second to hold when robot is enabled but not actively shooting. */
-        public static final double IDLE_SHOOTER_RPS = 35.0;
+        public static final double IDLE_SHOOTER_RPS = 30.0;
 
         public static final double P = 0.5;
         public static final double I = 0.0;
@@ -724,7 +724,7 @@ public final class Constants {
         
         public static final int MOTOR_ID = 18;
 
-        public static final double P = 60.0;
+        public static final double P = 40.0;
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.23073;

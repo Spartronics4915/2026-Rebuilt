@@ -71,8 +71,8 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
         leadMotor = new LoggedTalonFX(LEAD_MOTOR_ID, CAN_BUS);   
         followerMotor = new LoggedTalonFX(FOLLOWER_MOTOR_ID, CAN_BUS);
 
-        leadMotor.getVelocity().setUpdateFrequency(200);
-        leadMotor.getDutyCycle().setUpdateFrequency(200);
+        leadMotor.getVelocity().setUpdateFrequency(300);
+        leadMotor.getDutyCycle().setUpdateFrequency(300);
 
         TalonFXConfigurator configurator = leadMotor.getConfigurator();
             configurator.apply(PID_CONFIG);
@@ -108,7 +108,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
         isShooting = currentSetpoint != 0;
 
         double workingSetpoint = currentSetpoint;
-        if (currentSetpoint == 0 && !Robot.isPureTeleop) {
+        if (currentSetpoint == 0 /*&& !Robot.isPureTeleop*/) {
             workingSetpoint = IDLE_SHOOTER_RPS;
         }
 
