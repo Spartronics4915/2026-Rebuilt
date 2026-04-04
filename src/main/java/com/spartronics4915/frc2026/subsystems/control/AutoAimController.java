@@ -15,6 +15,8 @@ import com.spartronics4915.frc2026.util.control.AutoAim.AutoAimResult;
 import com.spartronics4915.frc2026.util.control.TurretController;
 import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
 
+import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -55,6 +57,9 @@ public class AutoAimController extends SubsystemBase {
         this::collidesWithHub,
         this::collidesWithHubWithPadding
     );
+
+    private final Debouncer possibleDebouncer = new Debouncer(PIPELINE_RATE_LIMIT_SEC, DebounceType.kFalling);
+    private boolean isPossibleDebouncedValue = false;
 
     private final TurretController turretController;
 
@@ -132,6 +137,8 @@ public class AutoAimController extends SubsystemBase {
     public void periodic() {
         isAimEnabledPublisher.accept(isAimEnabled);
         isShootingEnabledPublisher.accept(isAutoShootingEnabled);
+
+        isPossibleDebouncedValue = possibleDebouncer.calculate(isShotPossible());
 
         double dt = Math.max(dtCalc.update(), 0.001); // Prevent division by zero
         ChassisSpeeds currentSpeeds = swerve.getFieldRelativeVelocity();
@@ -213,12 +220,7 @@ public class AutoAimController extends SubsystemBase {
      * uses to signal that the shot cannot land.
      */
     private void applyAimResult(AutoAimResult result) {
-        boolean hasValidSpeed = result.recommendedShotSpeed() != -1;
-        boolean shouldShoot = isAutoShootingEnabled && shouldAutoShoot(result);
-        boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
-
-        boolean readyToShoot = hasValidSpeed && (shootOverride || (isUnrestricted && shouldShoot));
-
+        boolean readyToShoot = readyToShoot(result);
         if (readyToShoot) {
             shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed()));
         } else {
@@ -341,6 +343,23 @@ public class AutoAimController extends SubsystemBase {
         return lastResult != null && lastResult.ToF() != -1;
     }
 
+    public boolean isShotPossible() {
+        return lastResult != null && !lastResult.requiresIdealSpeed();
+    }
+
+    public boolean isShotPossibleDebounced() {
+        return isPossibleDebouncedValue;
+    }
+
+    public boolean readyToShoot(AutoAimResult result) {
+        boolean hasValidSpeed = result.recommendedShotSpeed() != -1;
+        boolean shouldShoot = isAutoShootingEnabled && shouldAutoShoot(result);
+        boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
+
+        boolean readyToShoot = hasValidSpeed && (shootOverride || (isUnrestricted && shouldShoot));
+        return readyToShoot;
+    }
+
     /** True when the shot is solvable AND the current flywheel speed is sufficient. */
     public boolean isReadyToShoot() {
         // Check if the manual shooter is within the allowed leniency as well as that it's commanded to shoot (since we can't check with the auto-aim system if the shot is possible)
@@ -349,8 +368,10 @@ public class AutoAimController extends SubsystemBase {
         }
 
         // General case when auto-aim is enabled, it has to have a valid result and speed, and the turret and hood have to be near their setpoints
-        if (hasValidResult() && !lastResult.requiresIdealSpeed() 
-            && isTurretReady() && isHoodReady()) {
+        if (hasValidResult() && isShotPossibleDebounced()
+            && isTurretReady() && isHoodReady()
+            && readyToShoot(lastResult)
+        ) {
             return true;
         }
  
@@ -365,13 +386,13 @@ public class AutoAimController extends SubsystemBase {
                 turret.getPosition().getDegrees() 
                 - turretController.getLastSetpoint(), 360.0
             )
-        ) <= 4.0;
+        ) <= 6.0;
     }
 
     public boolean isHoodReady() {
         return Math.abs(
             hood.getPosition().minus(hood.getCurrentSetpoint()).getDegrees()
-        ) <= 3;
+        ) <= 5.0;
     }
 
     //#endregion
