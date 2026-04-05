@@ -414,8 +414,8 @@ public final class Constants {
             public static final double maxSingleTagDistanceMeters = 5.0;
             public static final double maxMultiTagDistanceMeters = 7.0;
             public static final double maxAmbiguity = 0.15;
-            public static final double minArea = 0.09;
-            public static final double maxArea = 0.70;
+            public static final double minArea = 0.07;
+            public static final double maxArea = 0.80;
 
             // Set < Double.MAX_VALUE to enable the odometry-outlier filter.
             public static final double maxOdometryDeviationMeters = Double.MAX_VALUE;
