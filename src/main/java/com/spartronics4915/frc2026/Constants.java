@@ -581,10 +581,10 @@ public final class Constants {
         public static final Distance HUB_SHOT_PADDING = Meters.of(0.1);
         public static final Distance HUB_IDEAL_SHOT_PADDING = Meters.of(0.5);
 
-        public static final double alliancePassOffset = 3.14;
+        public static final double alliancePassOffset = 2.135;
 
-        public static final Translation2d leftPassTarget2d = new Translation2d(2, hubPose.getY() + alliancePassOffset);
-        public static final Translation2d rightPassTarget2d = new Translation2d(2, hubPose.getY() - alliancePassOffset);
+        public static final Translation2d leftPassTarget2d = new Translation2d(1, hubPose.getY() + alliancePassOffset);
+        public static final Translation2d rightPassTarget2d = new Translation2d(1, hubPose.getY() - alliancePassOffset);
 
         public static final Translation3d leftPassTarget = new Translation3d(leftPassTarget2d.getX(), leftPassTarget2d.getY(), 0);
         public static final Translation3d rightPassTarget = new Translation3d(rightPassTarget2d.getX(), rightPassTarget2d.getY(), 0);
