@@ -7,6 +7,7 @@ import java.util.EnumSet;
 import java.util.function.Supplier;
 
 import com.spartronics4915.frc2026.autos.ZoneTransition.TraversalMethod;
+import com.spartronics4915.frc2026.subsystems.control.Superstructure;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.networktables.NetworkTable;
@@ -88,6 +89,7 @@ public class ComplexAutoChooser {
     private final DriveToPOI POIFactory;
     private final NeutralZoneAutos neutralZoneFactory;
     private final PreAlignment preAlignmentFactory;
+    private final Superstructure superstructure;
 
     private double shootWaitTime;
 
@@ -102,13 +104,15 @@ public class ComplexAutoChooser {
      * @param POIfactory Factory for generating drive-to-POI commands.
      * @param neutralZoneFactory Factory for generating neutral zone commands.
      * @param preAlignmentFactory Factory for generating pre-alignment (OP Tech) commands.
+     * @param superstructure Superstructure subsystem.
      * @param maxSegments Maximum number of auto segments.
      */
-    public ComplexAutoChooser(ZoneTransition transitionFactory, DriveToPOI POIFactory, NeutralZoneAutos neutralZoneFactory, PreAlignment preAlignmentFactory, int maxSegments) {
+    public ComplexAutoChooser(ZoneTransition transitionFactory, DriveToPOI POIFactory, NeutralZoneAutos neutralZoneFactory, PreAlignment preAlignmentFactory, Superstructure superstructure, int maxSegments) {
         this.transitionFactory = transitionFactory;
         this.POIFactory = POIFactory;
         this.neutralZoneFactory = neutralZoneFactory;
         this.preAlignmentFactory = preAlignmentFactory;
+        this.superstructure = superstructure;
 
         this.selectedSegments = new AutoSegment[maxSegments];
         this.segmentChoosers = (SendableChooser<AutoSegment>[]) new SendableChooser[maxSegments];
@@ -251,12 +255,20 @@ public class ComplexAutoChooser {
                     commands.add(POIFactory.generateCommand(DriveToPOI.POI.TOWER));
                     break;
                 case PAUSE:
-                    commands.add(Commands.deadline(
-                        // Commands.waitUntil(feederLaserCan trigger thing)
-                        // If it can have a max then set max to the set shootWaitTime
-                        Commands.waitSeconds(shootWaitTime),
-                        preAlignmentFactory.generateCommand(prevSegment, futureSegment)
-                    ));
+                    commands.add(
+                        // This is very hard to read, but it runs preAlignment along with a bunch of wait conditions.
+                        // The max limit is the shootWaitTime set by the user, otherwise it'll end earlier if no balls are detected after 0.3 seconds of waiting
+                        Commands.deadline(
+                            Commands.race(
+                                Commands.waitSeconds(shootWaitTime),
+                                Commands.sequence(
+                                    Commands.waitSeconds(0.3),
+                                    Commands.waitUntil(() -> !superstructure.isBallDetectedDebounced())
+                                )
+                            ),
+                            preAlignmentFactory.generateCommand(prevSegment, futureSegment)
+                        )
+                    );
                     break;
                 case UNUSED:
                     System.out.println("Chat what are we doing?");

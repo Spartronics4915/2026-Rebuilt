@@ -15,6 +15,9 @@ import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 import com.spartronics4915.frc2026.util.control.FieldRegion;
 import com.spartronics4915.frc2026.util.control.FieldZoneMap;
 
+import au.grapplerobotics.LaserCan;
+import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -50,6 +53,11 @@ public class Superstructure extends SubsystemBase {
     private final DriveCommand driveCommand;
     private final VisionSubsystem vision;
 
+    private final LaserCan laserCan;
+
+    private final Debouncer ballDebouncer = new Debouncer(noBallsDebounce, DebounceType.kFalling);
+    private boolean ballDetectedDebounced = false;
+
     private final FieldZoneMap<Zone> zoneMap;
     private Zone currentZone = Zone.UNKNOWN;
 
@@ -71,6 +79,15 @@ public class Superstructure extends SubsystemBase {
         this.driveCommand = driveCommand;
         this.vision = vision;
         this.zoneMap = buildZoneMap();
+
+        this.laserCan = new LaserCan(feederLC);
+        try {
+            laserCan.setRangingMode(LaserCan.RangingMode.SHORT);
+            laserCan.setRegionOfInterest(new LaserCan.RegionOfInterest(8, 8, 4, 4));
+            laserCan.setTimingBudget(LaserCan.TimingBudget.TIMING_BUDGET_33MS);
+        } catch (Exception e) {
+            System.err.println("Error initializing LaserCan: " + e.getMessage());
+        }
 
         configureTriggers();
     }
@@ -164,6 +181,21 @@ public class Superstructure extends SubsystemBase {
                 swerve.resetPose(vision.getVisionPose());
             }
         }
+
+        ballDetectedDebounced = ballDebouncer.calculate(ballDetect());
+    }
+
+    private boolean ballDetect(){
+        LaserCan.Measurement measurement = laserCan.getMeasurement();
+        if (measurement == null) {
+            return false;
+        } else{
+            return measurement.distance_mm < detectDist;
+        }
+    }
+
+    public boolean isBallDetectedDebounced() {
+        return ballDetectedDebounced;
     }
 
     // Triggers -----------------------------------------------------
