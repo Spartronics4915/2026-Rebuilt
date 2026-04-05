@@ -12,6 +12,7 @@ import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.units.measure.Voltage;
@@ -32,6 +33,8 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private LoggedTalonFX followerMotor;
 
     private double currentSetpoint;
+
+    private SlewRateLimiter rpsProfile = new SlewRateLimiter(9999, maxShooterDecel, 0);
 
     private final VelocityVoltage velocityVoltage = new VelocityVoltage(0.0).withSlot(0);
 
@@ -61,6 +64,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("applied out").publish();
     private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("rps").publish();
+    private final DoublePublisher desiredStatePublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("desired state").publish();
     private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("setpoint").publish();
 
     private final VoltageOut stopRequest = new VoltageOut(0.0);
@@ -112,9 +116,11 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
             workingSetpoint = IDLE_SHOOTER_RPS;
         }
 
+        double limitedSetpoint = rpsProfile.calculate(workingSetpoint);
+
         if (!isCharacterizing) {
-            if (workingSetpoint != 0) {
-                leadMotor.setControl(velocityVoltage.withVelocity(workingSetpoint));
+            if (limitedSetpoint != 0) {
+                leadMotor.setControl(velocityVoltage.withVelocity(limitedSetpoint));
             } else {
                 leadMotor.setControl(stopRequest);
             }
@@ -122,6 +128,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
         appliedOutPublisher.accept(leadMotor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPS());
+        desiredStatePublisher.accept(workingSetpoint);
         setpointPublisher.accept(workingSetpoint);
 
         SmartDashboard.putBoolean("Is Shooting", isShooting);
