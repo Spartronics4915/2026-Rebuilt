@@ -133,7 +133,7 @@ public class LimelightProcessor implements ProcessorInterface {
     public void start() {
         isRunning = true;
         if (turreted) {
-            initializeLimelightCameraPose();
+            initializeCameraPose();
         }
         processingNotifier.startPeriodic(1.0 / processingFrequencyHz);
     }
@@ -151,7 +151,7 @@ public class LimelightProcessor implements ProcessorInterface {
         if (!isRunning) return;
 
         if (turreted) {
-            processTurreted();
+            processRotating();
         } else {
             processFixed();
         }
@@ -164,7 +164,7 @@ public class LimelightProcessor implements ProcessorInterface {
      * Limelight returns camera-in-field pose. Per-frame turret angle correction
      * (in {@link #correctPoseForTurretAngle}) recovers the true robot pose.
      */
-    private void initializeLimelightCameraPose() {
+    private void initializeCameraPose() {
         double cameraZ = robotToTurret.getZ() + turretToCamera.getTranslation().getZ();
         Rotation3d camRotation = turretToCamera.getRotation();
 
@@ -194,7 +194,7 @@ public class LimelightProcessor implements ProcessorInterface {
         convertToQueue(estimate, estimate.pose);
     }
 
-    private void processTurreted() {
+    private void processRotating() {
         // For MegaTag2, pass effective heading = robot_heading + turret_yaw + camera_fixed_yaw
         // so Limelight derives correct camera orientation (even though stored yaw is zero)
         if (useMegaTag2) {
@@ -215,7 +215,7 @@ public class LimelightProcessor implements ProcessorInterface {
             : null;
 
         if (mt2 != null && mt2.tagCount > 0) {
-            Pose2d corrected = correctPoseForTurretAngle(mt2.pose, mt2.timestampSeconds);
+            Pose2d corrected = correctPoseForAngle(mt2.pose, mt2.timestampSeconds);
             convertToQueue(mt2, corrected);
             return;
         }
@@ -223,7 +223,7 @@ public class LimelightProcessor implements ProcessorInterface {
         // Fallback: MegaTag1 (full 6-DOF, useful with multiple tags)
         PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(name);
         if (mt1 != null && mt1.tagCount > 0) {
-            Pose2d corrected = correctPoseForTurretAngle(mt1.pose, mt1.timestampSeconds);
+            Pose2d corrected = correctPoseForAngle(mt1.pose, mt1.timestampSeconds);
             convertToQueue(mt1, corrected);
         }
     }
@@ -239,7 +239,7 @@ public class LimelightProcessor implements ProcessorInterface {
      * @param captureTimestamp FPGA capture timestamp to interpolate turret angle.
      * @return True robot pose in field coordinates.
      */
-    private Pose2d correctPoseForTurretAngle(Pose2d cameraPose, double captureTimestamp) {
+    private Pose2d correctPoseForAngle(Pose2d cameraPose, double captureTimestamp) {
         // Interpolate turret angle from buffer, fall back to latest if unavailable
         double turretYawRad = turretYawBuffer
             .getSample(captureTimestamp)

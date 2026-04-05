@@ -430,7 +430,7 @@ public final class Constants {
              */
             public static final double timestampThresholdSecs = 0.05;
 
-            public static final int minCameras = 1;
+            public static final int minCameras = 2;
 
             /**
              * Results whose normalized distance from the group mean exceeds this
