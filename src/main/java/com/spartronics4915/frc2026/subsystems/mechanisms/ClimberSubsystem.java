@@ -126,7 +126,7 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
  
     public enum ClimberState {
         DOWN(0),
-        JORBIT(2.7);
+        JORBIT(2.6);
 
         double position;
 

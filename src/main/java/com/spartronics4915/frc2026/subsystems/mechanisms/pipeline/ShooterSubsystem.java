@@ -173,7 +173,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     }
 
     public enum ShooterClamp {
-        RESTRICTED(20),
+        RESTRICTED(35),
         UNRESTRICTED(200);
 
         double maxRPS;

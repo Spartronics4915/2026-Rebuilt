@@ -75,7 +75,7 @@ public class DriveToPOI {
                                 swerve,
                                 climbApproachPose, 
                                 shouldFlip ? Rotation2d.fromDegrees(270.0) : Rotation2d.fromDegrees(90.0),
-                                AutoConstants.climbPathConstraints
+                                climbPathConstraints
                             )
                         ),
                         // This makes all climb operations beyond uncancelable so that climb isn't stopped halfway through (Currently removed)
@@ -88,7 +88,8 @@ public class DriveToPOI {
                                 Autos.generatePathFromWaypoint(
                                     swerve, 
                                     climbPose,
-                                    shouldFlip ? Rotation2d.fromDegrees(270.0) : Rotation2d.fromDegrees(90.0)
+                                    shouldFlip ? Rotation2d.fromDegrees(270.0) : Rotation2d.fromDegrees(90.0),
+                                    climbPathConstraints
                                 ),
                                 // Pull climber back down to move robot up
                                 climber.setStateCommand(ClimberState.DOWN)

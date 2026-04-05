@@ -269,13 +269,13 @@ public final class Constants {
 
             public static final Distance velocityEndingDistance = Meters.of(1);
 
-            public static final Translation2d towerPose = new Translation2d(1.061, 3.745);
+            public static final Translation2d towerPose = new Translation2d(1.061-6.1/1000, 3.745);
             public static final Translation2d centerPose = new Translation2d(8.271, 4.035);
             public static final Translation2d hubPose = new Translation2d(4.625, 4.035);
             public static final Translation2d outpostPose = new Translation2d(0.0, 0.666);
             public static final Translation2d depotPose = new Translation2d(0.0, 5.964);
 
-            public static final Translation2d towerTransform = new Translation2d(0.0, 0.49075);
+            public static final Translation2d towerTransform = new Translation2d(0.0, 0.49075-8/1000);
             public static final Translation2d trenchTransform = new Translation2d(0, -3.4);
             public static final Translation2d bumpTransform = new Translation2d(0, -1.523);
             public static final Translation2d bumpTrenchDivTransform = new Translation2d(0, 2.604);
@@ -304,7 +304,7 @@ public final class Constants {
             );
 
             public static final Path.PathConstraints trenchPathConstraints = new Path.PathConstraints()
-                .setMaxVelocityMetersPerSec(3.0)
+                .setMaxVelocityMetersPerSec(5.0)
                 .setMaxAccelerationMetersPerSec2(9.0)
                 .setMaxVelocityDegPerSec(360)
                 .setMaxAccelerationDegPerSec2(360);
@@ -316,7 +316,7 @@ public final class Constants {
                 .setMaxAccelerationDegPerSec2(360);
 
             public static final Path.PathConstraints intakePathConstraints = new Path.PathConstraints()
-                .setMaxVelocityMetersPerSec(3.0)
+                .setMaxVelocityMetersPerSec(4.0)
                 .setMaxAccelerationMetersPerSec2(9.0)
                 .setMaxVelocityDegPerSec(360)
                 .setMaxAccelerationDegPerSec2(360);
@@ -325,7 +325,9 @@ public final class Constants {
                 .setMaxVelocityMetersPerSec(1.5)
                 .setMaxAccelerationMetersPerSec2(5.0)
                 .setMaxVelocityDegPerSec(360)
-                .setMaxAccelerationDegPerSec2(360);
+                .setMaxAccelerationDegPerSec2(360)
+                .setEndTranslationToleranceMeters(0.01)
+                .setEndRotationToleranceDeg(0.5);
 
             public static final Path.PathConstraints alignPathConstraints = new Path.PathConstraints() // OP pre-alignment tech
                 .setMaxVelocityMetersPerSec(1.0)
@@ -411,8 +413,8 @@ public final class Constants {
             public static final double maxLatencyMs = 100.0;
             public static final double maxSingleTagDistanceMeters = 5.0;
             public static final double maxMultiTagDistanceMeters = 7.0;
-            public static final double maxAmbiguity = 0.13;
-            public static final double minArea = 0.05;
+            public static final double maxAmbiguity = 0.15;
+            public static final double minArea = 0.09;
             public static final double maxArea = 0.70;
 
             // Set < Double.MAX_VALUE to enable the odometry-outlier filter.
@@ -481,18 +483,7 @@ public final class Constants {
              * Primary cameras, always participate in pose fusion.
              */
             public static final List<ProcessorInterface> primaryCameras = List.of(
-                new PhotonProcessor(
-                    "evan", apriltagFieldLayout, frontTowerCamTransform,
-                    new StdDevCalculator(1.2), simCameraProperties, 20.0
-                ),
-                new PhotonProcessor(
-                    "val", apriltagFieldLayout, backTowerCamTransform,
-                    new StdDevCalculator(1.2), simCameraProperties, 20.0
-                ),
-                new PhotonProcessor(
-                    "daniil", apriltagFieldLayout, rioCamTransform,
-                    new StdDevCalculator(1.2), simCameraProperties, 20.0
-                )
+                
             );
 
             /**
@@ -500,12 +491,24 @@ public final class Constants {
              * valid pose.
              */
             public static final List<ProcessorInterface> fallbackCameras = List.of(
-                new LimelightProcessor(
-                    "argos",
-                    SuperstructureConstants.shooterBaseTranslation,
-                    turretToCamera,
-                    new StdDevCalculator(1.0),
-                    80
+                //new LimelightProcessor(
+                //    "argos",
+                //    SuperstructureConstants.shooterBaseTranslation,
+                //    turretToCamera,
+                //    new StdDevCalculator(1.0),
+                //    80
+                //)
+                new PhotonProcessor(
+                    "evan", apriltagFieldLayout, frontTowerCamTransform,
+                    new StdDevCalculator(1.1), simCameraProperties, 20.0
+                ),
+                new PhotonProcessor(
+                    "val", apriltagFieldLayout, backTowerCamTransform,
+                    new StdDevCalculator(1.1), simCameraProperties, 20.0
+                ),
+                new PhotonProcessor(
+                    "daniil", apriltagFieldLayout, rioCamTransform,
+                    new StdDevCalculator(1.1), simCameraProperties, 20.0
                 )
             );
         }
@@ -525,7 +528,7 @@ public final class Constants {
             Units.inchesToMeters(14.262838)
         );
 
-        public static final double shooterReadyThresholdRPS = 4.0;
+        public static final double shooterReadyThresholdRPS = 5.0;
         public static final Rotation2d pivotSafeThreshold = Rotation2d.fromDegrees(100);
         public static final Rotation2d turretMinSafeThreshold = Rotation2d.fromDegrees(-10);
         public static final Rotation2d turretMaxSafeThreshold = Rotation2d.fromDegrees(10);
@@ -547,7 +550,7 @@ public final class Constants {
         public static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
         public static final double PIVOT_JOSTLE_FREQUENCY = 0.5; // Hz
 
-        public static final double percentLoss = 0.108; // Percent loss on shooter to ball transfer, 0.85
+        public static final double percentLoss = 0.109; // Percent loss on shooter to ball transfer, 0.85
 
     }
 
@@ -724,11 +727,11 @@ public final class Constants {
         
         public static final int MOTOR_ID = 18;
 
-        public static final double P = 40.0;
+        public static final double P = 30.0;
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.23073;
-        public static final double A = 300.0303; // 1.0303
+        public static final double A = 100.0303; // 1.0303
 
         public static final double MAX_RPS = 100;
 
@@ -748,15 +751,15 @@ public final class Constants {
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
-            .withSupplyCurrentLimit(CURRENT_LIMIT)
-            .withSupplyCurrentLowerLimit(LOWER_LIMIT)
-            .withSupplyCurrentLowerTime(LOWER_TIME);
+            .withSupplyCurrentLimit(CURRENT_LIMIT);
+            //.withSupplyCurrentLowerLimit(LOWER_LIMIT)
+            //.withSupplyCurrentLowerTime(LOWER_TIME);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
         public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
-            .withNeutralMode(NeutralModeValue.Brake);
+            .withNeutralMode(NeutralModeValue.Coast);
         
         public static final int LASER_ID = 0; 
         public static final double DETECTION_DISTANCE = 20.0;
@@ -773,7 +776,7 @@ public final class Constants {
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.22226;
-        public static final double A = 100.0318; //0.70318
+        public static final double A = 7.0318; //0.70318
         public static final double S = 0.23135;
 
         public static final double MAX_RPS = 20.0; // 13.238
@@ -783,7 +786,7 @@ public final class Constants {
         public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 1;
-        public static final double MOTOR_MECHANISM_RATIO = 4;
+        public static final double MOTOR_MECHANISM_RATIO = 5;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
@@ -794,15 +797,15 @@ public final class Constants {
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
-            .withSupplyCurrentLimit(CURRENT_LIMIT)
-            .withSupplyCurrentLowerLimit(LOWER_LIMIT)
-            .withSupplyCurrentLowerTime(LOWER_TIME);
+            .withSupplyCurrentLimit(CURRENT_LIMIT);
+            //.withSupplyCurrentLowerLimit(LOWER_LIMIT)
+            //.withSupplyCurrentLowerTime(LOWER_TIME);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
 
         public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
-            .withNeutralMode(NeutralModeValue.Brake)
+            .withNeutralMode(NeutralModeValue.Coast)
             .withInverted(InvertedValue.Clockwise_Positive);
     }
 
@@ -899,12 +902,12 @@ public final class Constants {
 
         public static final int MOTOR_ID = 24;
 
-        public static final double P = 35.0;
+        public static final double P = 45.0;
         public static final double I = 0.0;
         public static final double D = 0.0;
 
-        public static final double MAX_VELOCITY = 4.0;
-        public static final double MAX_ACCELERATION = 4.0;
+        public static final double MAX_VELOCITY = 10.0;
+        public static final double MAX_ACCELERATION = 10.0;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 60;
