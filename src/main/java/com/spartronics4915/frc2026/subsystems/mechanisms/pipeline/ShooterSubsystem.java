@@ -128,7 +128,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
         appliedOutPublisher.accept(leadMotor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPS());
-        desiredStatePublisher.accept(workingSetpoint);
+        desiredStatePublisher.accept(limitedSetpoint);
         setpointPublisher.accept(workingSetpoint);
 
         SmartDashboard.putBoolean("Is Shooting", isShooting);
