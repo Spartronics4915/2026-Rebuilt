@@ -14,7 +14,6 @@ import com.spartronics4915.frc2026.Constants.VisionConstants.CameraConstants;
 import com.spartronics4915.frc2026.Constants.VisionConstants.FilterConstants;
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
-import com.spartronics4915.frc2026.subsystems.vision.cameras.LimelightProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
 import com.spartronics4915.frc2026.subsystems.vision.filters.FilterInterface;
 import com.spartronics4915.frc2026.subsystems.vision.filters.PipelineFilter;
@@ -165,8 +164,8 @@ public class VisionSubsystem extends SubsystemBase {
 
         if (swerve != null) {
             double headingDeg = swerve.getGyroRotation3d().toRotation2d().getDegrees();
-            pushHeading(primaryCameras, headingDeg);
-            pushHeading(fallbackCameras, headingDeg);
+            pushHeading(primaryCameras, headingDeg, fpgaTimestamp);
+            pushHeading(fallbackCameras, headingDeg, fpgaTimestamp);
         }
 
         if (turretAngleSupplier != null) {
@@ -239,11 +238,10 @@ public class VisionSubsystem extends SubsystemBase {
         return true;
     }
 
-    private static void pushHeading(List<ProcessorInterface> cameras, double headingDeg) {
+    private static void pushHeading(List<ProcessorInterface> cameras, double headingDeg, double timestamp) {
+        Rotation2d headingRot = Rotation2d.fromDegrees(headingDeg);
         for (ProcessorInterface cam : cameras) {
-            if (cam instanceof LimelightProcessor ll) {
-                ll.updateHeading(headingDeg);
-            }
+            cam.updateHeading(headingRot, timestamp);
         }
     }
 
@@ -252,7 +250,7 @@ public class VisionSubsystem extends SubsystemBase {
         Rotation2d angle, 
         double timestamp
     ) {
-        for (ProcessorInterface cam : cameras) cam.updateTurretAngle(angle, timestamp);
+        for (ProcessorInterface cam : cameras) cam.updateHeading(angle, timestamp);
     }
 
     @SuppressWarnings("unused")

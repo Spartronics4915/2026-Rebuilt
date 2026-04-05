@@ -361,7 +361,7 @@ public class PhotonProcessor implements ProcessorInterface {
      * In fixed mode, this is a no-op.
      */
     @Override
-    public void updateTurretAngle(Rotation2d turretAngle, double timestamp) {
+    public void updateHeading(Rotation2d turretAngle, double timestamp) {
         if (!turreted) return;
         double rad = turretAngle.getRadians();
         latestTurretYawRad.set(rad);

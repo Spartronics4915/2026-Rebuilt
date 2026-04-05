@@ -72,5 +72,5 @@ public interface ProcessorInterface {
      * @param turretAngle Robot-relative turret yaw (CCW positive).
      * @param timestamp   FPGA timestamp in seconds.
      */
-    default void updateTurretAngle(Rotation2d turretAngle, double timestamp) {}
+    default void updateHeading(Rotation2d turretAngle, double timestamp) {}
 }

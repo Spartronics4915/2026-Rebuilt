@@ -30,58 +30,50 @@ import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Notifier;
 
 /**
- * A processor backed by a Limelight camera using the LimelightHelpers NT API.
+ * Processes Limelight AprilTag detections and converts them to pose estimates.
+ * Supports both fixed-mount and turreted configurations with MegaTag2/MegaTag1 fusion.
  */
 public class LimelightProcessor implements ProcessorInterface {
 
-    private final String limelightName;
+    private final String name;
     private final double processingFrequencyHz;
     private final int maxQueueSize;
 
-    // Fixed-camera fields (null when turreted)
+    // Fixed configuration (null if turreted)
     private final Transform3d fixedCameraTransform;
 
-    // Turreted-camera fields (null when fixed)
-    private final Translation3d robotToTurretPivot;
+    // Turreted configuration (null if fixed)
+    private final Translation3d robotToTurret;
     private final Transform3d turretToCamera;
     private final boolean turreted;
 
     private final StdDevCalculator stdDevCalculator;
 
-    /** Robot heading written by the main thread, read by the Notifier thread. */
-    private volatile double cachedHeadingDegrees = 0.0;
-
-    /** MegaTag2 enabled flag — disable only when gyro is unreliable. */
+    // Main-thread state (synchronized via volatile)
+    private volatile double robotHeadingDegrees = 0.0;
     private volatile boolean useMegaTag2 = true;
 
-    /** Turret yaw history for per-frame interpolation (turreted mode only). */
+    // Turreted-only state: capture timestamps for per-frame interpolation
     private final ConcurrentTimeBuffer<Double> turretYawBuffer;
-
-    /** Latest turret yaw — fast fallback when buffer is empty (turreted mode only). */
     private final AtomicReference<Double> latestTurretYawRad;
 
-    /**
-     * The static camera transform pushed to the Limelight once at {@link #start()}.
-     */
-    private Transform3d startupCameraTransform = null;
-
+    // Result queue (Notifier → Main thread)
     private final ConcurrentLinkedQueue<ResultInterface> resultQueue = new ConcurrentLinkedQueue<>();
     private final AtomicInteger queueSize = new AtomicInteger(0);
 
     private final Notifier processingNotifier;
     private volatile boolean isRunning = false;
 
-    /** Scratch list reused on the Notifier thread only. */
+    // Scratch objects (Notifier thread only)
     private final List<TrackedTag> tagScratch = new ArrayList<>(8);
 
     /**
      * Fixed-camera constructor.
      *
-     * @param limelightName    NT table name (e.g. {@code "limelight-front"}).
-     * @param cameraTransform  Static robot-to-camera transform.
-     * @param calculator       Per-camera std-dev calculator; must not be shared.
-     * @param frequencyHz      Processing rate (Hz).  Typical: 30-50 for fixed
-     *                         cameras; up to 100 for a Limelight 4.
+     * @param limelightName   NetworkTables table name (e.g. "limelight-front").
+     * @param cameraTransform Static robot-to-camera transform.
+     * @param calculator      Per-camera std-dev calculator; must not be shared.
+     * @param frequencyHz     Processing rate in Hz (typical: 30-50).
      */
     public LimelightProcessor(
         String limelightName,
@@ -89,13 +81,13 @@ public class LimelightProcessor implements ProcessorInterface {
         StdDevCalculator calculator,
         double frequencyHz
     ) {
-        this.limelightName = limelightName;
+        this.name = limelightName;
         this.fixedCameraTransform = cameraTransform;
         this.stdDevCalculator = calculator;
         this.processingFrequencyHz = frequencyHz;
         this.maxQueueSize = computeMaxQueueSize(frequencyHz);
 
-        this.robotToTurretPivot = null;
+        this.robotToTurret = null;
         this.turretToCamera = null;
         this.turreted = false;
         this.turretYawBuffer = null;
@@ -108,12 +100,11 @@ public class LimelightProcessor implements ProcessorInterface {
     /**
      * Turreted-camera constructor.
      *
-     * @param limelightName      NT table name (e.g. {@code "limelight-turret"}).
-     * @param robotToTurretPivot Translation from robot centre to the turret rotation axis.
-     * @param turretToCamera     Static transform from the turret pivot to the camera
-     *                           lens, expressed in the turret's local frame.
+     * @param limelightName      NetworkTables table name.
+     * @param robotToTurretPivot Translation from robot center to turret rotation axis.
+     * @param turretToCamera     Static transform from turret pivot to camera (turret frame).
      * @param calculator         Per-camera std-dev calculator; must not be shared.
-     * @param frequencyHz        Processing rate (Hz). Use 100 for a Limelight 4.
+     * @param frequencyHz        Processing rate in Hz (typical: 100 for Limelight 4).
      */
     public LimelightProcessor(
         String limelightName,
@@ -122,8 +113,8 @@ public class LimelightProcessor implements ProcessorInterface {
         StdDevCalculator calculator,
         double frequencyHz
     ) {
-        this.limelightName = limelightName;
-        this.robotToTurretPivot = robotToTurretPivot;
+        this.name = limelightName;
+        this.robotToTurret = robotToTurretPivot;
         this.turretToCamera = turretToCamera;
         this.stdDevCalculator = calculator;
         this.processingFrequencyHz = frequencyHz;
@@ -132,7 +123,7 @@ public class LimelightProcessor implements ProcessorInterface {
         this.fixedCameraTransform = null;
         this.turreted = true;
         this.turretYawBuffer = ConcurrentTimeBuffer.createDoubleBuffer(turretHistorySeconds);
-        this.latestTurretYawRad   = new AtomicReference<>(0.0);
+        this.latestTurretYawRad = new AtomicReference<>(0.0);
 
         this.processingNotifier = new Notifier(this::process);
         this.processingNotifier.setName("LimelightTurret-" + limelightName);
@@ -167,27 +158,18 @@ public class LimelightProcessor implements ProcessorInterface {
     }
 
     /**
-     * Configures the Limelight once at startup with the camera's static geometry.
+     * Initialize Limelight camera geometry (turreted only).
      *
-     * <p>Only the Z height (turret pivot Z + camera Z offset) and the camera's fixed
-     * pitch and roll are pushed.  X, Y, and yaw are left at zero — "based on the
-     * robot's centre" — so the Limelight's returned robot-pose is equivalent to the
-     * camera's pose in field coordinates.  The true robot pose is recovered per-frame
-     * in {@link #correctPoseForTurretAngle}.
+     * <p>Pushes only Z-height and fixed pitch/roll; X, Y, yaw are zero so the
+     * Limelight returns camera-in-field pose. Per-frame turret angle correction
+     * (in {@link #correctPoseForTurretAngle}) recovers the true robot pose.
      */
     private void initializeLimelightCameraPose() {
-        double cameraZ = robotToTurretPivot.getZ() + turretToCamera.getTranslation().getZ();
+        double cameraZ = robotToTurret.getZ() + turretToCamera.getTranslation().getZ();
         Rotation3d camRotation = turretToCamera.getRotation();
 
-        // Mirror exactly what is pushed to the Limelight so the correction math
-        // in correctPoseForTurretAngle uses the same reference frame.
-        startupCameraTransform = new Transform3d(
-            new Translation3d(0.0, 0.0, cameraZ),
-            new Rotation3d(camRotation.getX(), camRotation.getY(), 0.0)
-        );
-
         LimelightHelpers.setCameraPose_RobotSpace(
-            limelightName,
+            name,
             0.0, 0.0, cameraZ,
             Math.toDegrees(camRotation.getX()),
             Math.toDegrees(camRotation.getY()),
@@ -198,39 +180,38 @@ public class LimelightProcessor implements ProcessorInterface {
     private void processFixed() {
         if (useMegaTag2) {
             LimelightHelpers.SetRobotOrientation_NoFlush(
-                limelightName, 
-                cachedHeadingDegrees, 
+                name, 
+                robotHeadingDegrees, 
                 0, 0, 0, 0, 0
             );
         }
 
         PoseEstimate estimate = useMegaTag2
-            ? LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelightName)
-            : LimelightHelpers.getBotPoseEstimate_wpiBlue(limelightName);
+            ? LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(name)
+            : LimelightHelpers.getBotPoseEstimate_wpiBlue(name);
 
         if (estimate == null || estimate.tagCount == 0) return;
         convertToQueue(estimate, estimate.pose);
     }
 
     private void processTurreted() {
-        // By passing (robot_heading + turret_yaw + cam_fixed_yaw) as the "robot
-        // heading", MegaTag2 derives the correct camera orientation even though the
-        // stored camera-in-robot yaw is zero.
+        // For MegaTag2, pass effective heading = robot_heading + turret_yaw + camera_fixed_yaw
+        // so Limelight derives correct camera orientation (even though stored yaw is zero)
         if (useMegaTag2) {
             double currentTurretYaw = latestTurretYawRad.get();
             double camFixedYaw = turretToCamera.getRotation().getZ();
-            double effectiveHeadingDeg = cachedHeadingDegrees
+            double effectiveHeadingDeg = robotHeadingDegrees
                 + Math.toDegrees(currentTurretYaw + camFixedYaw);
             LimelightHelpers.SetRobotOrientation_NoFlush(
-                limelightName,
+                name,
                 effectiveHeadingDeg,
                 0, 0, 0, 0, 0
             );
         }
 
-        // Primary: MegaTag2 (zero ambiguity, gyro-constrained).
+        // Primary: MegaTag2 (zero ambiguity, gyro-constrained)
         PoseEstimate mt2 = useMegaTag2
-            ? LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelightName)
+            ? LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(name)
             : null;
 
         if (mt2 != null && mt2.tagCount > 0) {
@@ -239,8 +220,8 @@ public class LimelightProcessor implements ProcessorInterface {
             return;
         }
 
-        // Fallback: MegaTag1 (full 6-DOF, useful with multiple tags).
-        PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelightName);
+        // Fallback: MegaTag1 (full 6-DOF, useful with multiple tags)
+        PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(name);
         if (mt1 != null && mt1.tagCount > 0) {
             Pose2d corrected = correctPoseForTurretAngle(mt1.pose, mt1.timestampSeconds);
             convertToQueue(mt1, corrected);
@@ -248,38 +229,31 @@ public class LimelightProcessor implements ProcessorInterface {
     }
 
     /**
-     * Recovers the true robot pose from the Limelight's estimate.
+     * Recover true robot pose from Limelight's camera-in-field estimate.
      *
-     * <p>Because the Limelight was initialized with X = 0, Y = 0, yaw = 0 (the
-     * camera treated as being at the robot centre), its robot-pose output equals
-     * the camera's pose in field coordinates (X/Y/heading). This method applies
-     * the inverse of the full robot-to-camera transform built by chaining the
-     * robot-to-turret translation and the turret-to-camera transform at the
-     * turret angle interpolated back to the exact capture timestamp. To convert
-     * from camera-in-field back to robot-in-field.
+     * <p>Limelight is initialized with X = 0, Y = 0, yaw = 0, so it returns the camera's
+     * pose in field coordinates. Apply the inverse of the full robot-to-camera
+     * transform (which depends on turret angle) to recover the true robot pose.
      *
-     * @param cameraPose    Pose returned by the Limelight (treated as camera global pose).
-     * @param captureTimestamp FPGA capture timestamp in seconds.
-     * @return True robot pose in WPILib blue-origin field coordinates.
+     * @param cameraPose       Pose returned by Limelight (camera-in-field).
+     * @param captureTimestamp FPGA capture timestamp to interpolate turret angle.
+     * @return True robot pose in field coordinates.
      */
     private Pose2d correctPoseForTurretAngle(Pose2d cameraPose, double captureTimestamp) {
-        // Use the turret angle that was active when the frame was captured.
-        // Falls back to the latest known angle if the buffer doesn't reach that far.
+        // Interpolate turret angle from buffer, fall back to latest if unavailable
         double turretYawRad = turretYawBuffer
             .getSample(captureTimestamp)
             .orElse(latestTurretYawRad.get());
 
         Transform2d robotToCamera2d = computeRobotToCamera(turretYawRad);
-
-        // limelightPose ~= camera world pose. Applying the inverse recovers robot pose.
         return cameraPose.transformBy(robotToCamera2d.inverse());
     }
 
     /**
-     * Builds the 2-D robot-to-camera transform for the given turret yaw.
-
-     * <p>Only X, Y, and yaw are computed, Z is irrelevant for pose correction
-     * and is handled exclusively in {@link #initializeLimelightCameraPose}.
+     * Build 2D robot-to-camera transform for the given turret yaw.
+     *
+     * <p>Computes the camera's position and orientation relative to the robot center
+     * when the turret is at the specified angle. Z-height is ignored (handled in init).
      *
      * @param turretYawRadians Robot-relative turret yaw (CCW positive).
      */
@@ -289,56 +263,44 @@ public class LimelightProcessor implements ProcessorInterface {
         double camLocalX = turretToCamera.getTranslation().getX();
         double camLocalY = turretToCamera.getTranslation().getY();
         return new Transform2d(
-            robotToTurretPivot.getX() + camLocalX * cosYaw - camLocalY * sinYaw,
-            robotToTurretPivot.getY() + camLocalX * sinYaw + camLocalY * cosYaw,
+            robotToTurret.getX() + camLocalX * cosYaw - camLocalY * sinYaw,
+            robotToTurret.getY() + camLocalX * sinYaw + camLocalY * cosYaw,
             new Rotation2d(turretYawRadians + turretToCamera.getRotation().getZ())
         );
     }
 
     /**
-     * Builds the full 3-D robot-to-camera transform for the given turret yaw.
-     *
-     * <p>Only used by {@link #getCameraTransform()} to satisfy the
-     * {@link ProcessorInterface} contract. All internal pose-correction logic
-     * uses the 2-D overload {@link #computeRobotToCamera(double)} instead.
+     * Build full 3D robot-to-camera transform (for {@link #getCameraTransform()}).
+     * Internal pose correction uses the 2D overload instead.
      *
      * @param turretYawRadians Robot-relative turret yaw (CCW positive).
      */
     private Transform3d computeRobotToCamera3d(double turretYawRadians) {
-        Rotation3d turretYaw3d = new Rotation3d(0, 0, turretYawRadians);
-        Translation3d cameraOffset = turretToCamera.getTranslation().rotateBy(turretYaw3d);
+        Rotation3d yaw3d = new Rotation3d(0, 0, turretYawRadians);
+        Translation3d offset = turretToCamera.getTranslation().rotateBy(yaw3d);
         return new Transform3d(
-            robotToTurretPivot.plus(cameraOffset),
-            turretYaw3d.plus(turretToCamera.getRotation())
+            robotToTurret.plus(offset),
+            yaw3d.plus(turretToCamera.getRotation())
         );
     }
 
     /**
-     * Converts a Limelight {@link PoseEstimate} into an {@link ApriltagResult} and
-     * enqueues it.
+     * Convert Limelight PoseEstimate to ApriltagResult and enqueue.
      *
-     * @param estimate      Raw Limelight estimate supplying metadata (timestamp,
-     *                      latency, area, fiducials).
-     * @param correctedPose The true robot pose after turret-angle correction has been
-     *                      applied (for fixed cameras this is {@code estimate.pose}
-     *                      unchanged).
+     * @param estimate      Raw Limelight result (metadata: timestamp, latency, tags).
+     * @param correctedPose True robot pose after turret correction (or estimate.pose if fixed).
      */
     private void convertToQueue(PoseEstimate estimate, Pose2d correctedPose) {
         double avgAreaFraction = estimate.avgTagArea / 100.0;
         double avgAmbiguity = calculateAmbiguity(estimate);
         double latencyMs = estimate.latency;
 
+        // Extract tracked tags from raw fiducials
         tagScratch.clear();
         RawFiducial[] fiducials = estimate.rawFiducials;
         if (fiducials != null) {
             for (RawFiducial fiducial : fiducials) {
-                tagScratch.add(
-                    new TrackedTag(
-                        fiducial.id, 
-                        avgAreaFraction, 
-                        fiducial.ambiguity
-                    )
-                );
+                tagScratch.add(new TrackedTag(fiducial.id, avgAreaFraction, fiducial.ambiguity));
             }
         }
 
@@ -347,35 +309,31 @@ public class LimelightProcessor implements ProcessorInterface {
         Matrix<N3, N1> stdDevs = stdDevCalculator.calculate(
             avgAmbiguity, avgAreaFraction, latencyMs, estimate.tagCount);
 
+        // Scale down multi-tag std devs in turreted mode
         if (turreted && estimate.tagCount >= 2) {
             stdDevs = scaleMultiTagStdDevs(stdDevs, estimate.tagCount);
         }
 
         enqueue(new ApriltagResult(
-            limelightName,
-            estimate.timestampSeconds,
-            latencyMs,
-            correctedPose,
-            stdDevs,
-            tagScratch,
-            avgAmbiguity,
-            avgAreaFraction
+            name, estimate.timestampSeconds, latencyMs,
+            correctedPose, stdDevs, tagScratch, 
+            avgAmbiguity, avgAreaFraction
         ));
     }
 
     private static double calculateAmbiguity(PoseEstimate estimate) {
         if (estimate.isMegaTag2) return 0.0;
 
-        RawFiducial[] fiducial = estimate.rawFiducials;
-        if (fiducial == null || fiducial.length == 0) return 0.0;
-        if (fiducial.length == 1) return fiducial[0].ambiguity;
+        RawFiducial[] fiducials = estimate.rawFiducials;
+        if (fiducials == null || fiducials.length == 0) return 0.0;
+        if (fiducials.length == 1) return fiducials[0].ambiguity;
 
         double sum = 0.0;
-        for (RawFiducial raw : fiducial) sum += raw.ambiguity;
-        return (sum / fiducial.length) / Math.sqrt(fiducial.length);
+        for (RawFiducial fiducial : fiducials) sum += fiducial.ambiguity;
+        return (sum / fiducials.length) / Math.sqrt(fiducials.length);
     }
 
-    /** Scales std devs down by 1/sqrt(n) for multi-tag turreted observations. */
+    /** Scale std devs down by 1/√n for multi-tag turreted observations. */
     private static Matrix<N3, N1> scaleMultiTagStdDevs(Matrix<N3, N1> std, int n) {
         double s = 1.0 / Math.sqrt(n);
         return VecBuilder.fill(
@@ -386,6 +344,7 @@ public class LimelightProcessor implements ProcessorInterface {
     }
 
     private void enqueue(ApriltagResult result) {
+        // Drop oldest result if queue is full
         while (queueSize.get() >= maxQueueSize) {
             if (resultQueue.poll() != null) queueSize.decrementAndGet();
         }
@@ -393,16 +352,18 @@ public class LimelightProcessor implements ProcessorInterface {
         queueSize.incrementAndGet();
     }
 
-    /** Queue size scales with frequency so we don't drop fast bursts. */
+    /** Queue size scales with frequency to handle bursts without dropping. */
     private static int computeMaxQueueSize(double hz) {
         return Math.max(4, (int) Math.ceil(hz / 15.0));
     }
 
-    @Override public String getCameraName() { 
-        return limelightName; 
+    @Override
+    public String getCameraName() { 
+        return name; 
     }
 
-    @Override public boolean isTurreted() { 
+    @Override
+    public boolean isTurreted() { 
         return turreted; 
     }
 
@@ -428,59 +389,55 @@ public class LimelightProcessor implements ProcessorInterface {
         return out;
     }
 
-    @Override public int getMaxQueueSize() { 
+    @Override
+    public int getMaxQueueSize() { 
         return maxQueueSize; 
     }
 
-    @Override public Notifier getNotifier() { 
+    @Override
+    public Notifier getNotifier() { 
         return processingNotifier; 
     }
 
-    @Override public double getFrequency() { 
+    @Override
+    public double getFrequency() { 
         return processingFrequencyHz; 
     }
 
-    @Override public boolean isRunning() { 
+    @Override
+    public boolean isRunning() { 
         return isRunning; 
     }
 
     @Override
     public void setPipeline(int idx) {
-        LimelightHelpers.setPipelineIndex(limelightName, idx);
+        LimelightHelpers.setPipelineIndex(name, idx);
     }
 
     @Override
     public void setCameraTransform(Transform3d t) {
-        if (turreted) throw new UnsupportedOperationException(
-            "LimelightProcessor (turreted): transform is dynamic; adjust turretToCamera at construction."
-        );
-    }
-
-    /**
-     * Pushes the current robot heading for MegaTag2 gyro-constraint.
-     *
-     * @param degrees Gyro yaw in degrees (CCW positive, WPILib convention).
-     */
-    public void updateHeading(double degrees) {
-        this.cachedHeadingDegrees = degrees;
+        if (turreted) {
+            throw new UnsupportedOperationException(
+                "LimelightProcessor (turreted): transform is dynamic; adjust turretToCamera at construction."
+            );
+        }
     }
 
     /**
      * {@inheritDoc}
      *
-     * <p>In turreted mode this records the sample in the {@link ConcurrentTimeBuffer}
-     * so the Notifier thread can interpolate the angle back to each frame's exact
-     * capture timestamp.  In fixed mode this is a no-op.
+     * <p>In turreted mode, records the sample for per-frame interpolation.
+     * In fixed mode, this is a no-op.
      */
     @Override
-    public void updateTurretAngle(Rotation2d turretAngle, double timestamp) {
+    public void updateHeading(Rotation2d turretAngle, double timestamp) {
         if (!turreted) return;
         double rad = turretAngle.getRadians();
         latestTurretYawRad.set(rad);
         turretYawBuffer.addSample(timestamp, rad);
     }
 
-    /** Enables or disables MegaTag2 gyro-constrained localization. */
+    /** Enable/disable MegaTag2 gyro-constrained localization. */
     public void setUseMegaTag2(boolean use) { 
         this.useMegaTag2 = use; 
     }
