@@ -246,9 +246,9 @@ public final class Constants {
 
         public static final class AutoConstants {
             
-            public static final PIDController translationPID = new PIDController(5.0, 0, 0);
-            public static final PIDController rotationPID    = new PIDController(5.0, 0, 0);
-            public static final PIDController crossTrackPID  = new PIDController(2.0, 0, 0);
+            public static final PIDController translationPID = new PIDController(5.0, 0, 0.08);
+            public static final PIDController rotationPID    = new PIDController(7.5, 0, 0.2);
+            public static final PIDController crossTrackPID  = new PIDController(4, 0, 0.075);
 
             public static final PIDConstants alignTranslationPID = new PIDConstants(2.0,0,0);
             public static final PIDConstants alignRotationPID = new PIDConstants(2.0,0,0);
@@ -294,32 +294,32 @@ public final class Constants {
             public static final Distance bumperThickness = Millimeters.of(72.7);
 
             public static final Path.DefaultGlobalConstraints defaultPathConstraints = new Path.DefaultGlobalConstraints(
-                3.0, // maxVelocityMetersPerSec
-                9.0, // maxAccelerationMetersPerSec2
-                720, // maxVelocityDegPerSec
-                720, // maxAccelerationDegPerSec2
+                5, // maxVelocityMetersPerSec
+                16.0, // maxAccelerationMetersPerSec2
+                360*5, // 2 maxVelocityDegPerSec
+                360*5, // 4 maxAccelerationDegPerSec2
                 0.05, // endTranslationToleranceMeters
                 2.0, // endRotationToleranceDeg
                 0.4 // intermediateHandoffRadiusMeters
             );
 
             public static final Path.PathConstraints trenchPathConstraints = new Path.PathConstraints()
-                .setMaxVelocityMetersPerSec(5.0)
-                .setMaxAccelerationMetersPerSec2(9.0)
-                .setMaxVelocityDegPerSec(360)
-                .setMaxAccelerationDegPerSec2(360);
+                .setMaxVelocityMetersPerSec(4)
+                .setMaxAccelerationMetersPerSec2(16.0);
+                // .setMaxVelocityDegPerSec(360)
+                // .setMaxAccelerationDegPerSec2(360);
 
             public static final Path.PathConstraints bumpPathConstraints = new Path.PathConstraints()
-                .setMaxVelocityMetersPerSec(3.0)
+                .setMaxVelocityMetersPerSec(4.0)
                 .setMaxAccelerationMetersPerSec2(9.0)
                 .setMaxVelocityDegPerSec(360)
                 .setMaxAccelerationDegPerSec2(360);
 
             public static final Path.PathConstraints intakePathConstraints = new Path.PathConstraints()
-                .setMaxVelocityMetersPerSec(4.0)
-                .setMaxAccelerationMetersPerSec2(9.0)
-                .setMaxVelocityDegPerSec(360)
-                .setMaxAccelerationDegPerSec2(360);
+                .setMaxVelocityMetersPerSec(3.0)
+                .setMaxAccelerationMetersPerSec2(9.0);
+                // .setMaxVelocityDegPerSec(360)
+                // .setMaxAccelerationDegPerSec2(360);
 
             public static final Path.PathConstraints climbPathConstraints = new Path.PathConstraints()
                 .setMaxVelocityMetersPerSec(1.5)
