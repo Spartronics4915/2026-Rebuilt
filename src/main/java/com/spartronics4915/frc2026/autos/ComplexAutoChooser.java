@@ -92,6 +92,7 @@ public class ComplexAutoChooser {
 
     private AutoSegment[] selectedSegments;
     private SendableChooser<AutoSegment>[] segmentChoosers;
+    private AutoSegment[] segmentSources;
 
     @SuppressWarnings("unchecked")
     /**
@@ -110,6 +111,7 @@ public class ComplexAutoChooser {
 
         this.selectedSegments = new AutoSegment[maxSegments];
         this.segmentChoosers = (SendableChooser<AutoSegment>[]) new SendableChooser[maxSegments];
+        this.segmentSources = new AutoSegment[maxSegments];
         for (int i = 0; i < maxSegments; i++) {
             selectedSegments[i] = UNUSED;
         }
@@ -130,13 +132,17 @@ public class ComplexAutoChooser {
      */
     public void resolveSteps() {
         AutoSegment lastSegment = L_TRENCH_TO_ALLIANCE; // Default starting segment, since the robot starts on alliance side of the trench
-        if (segmentChoosers[0] != null) {
-            for (int i = 0; i < selectedSegments.length; i++) {
-                segmentChoosers[i].close();
-            }
-        }
 
         for (int i = 0; i < selectedSegments.length; i++) {
+            if (segmentSources[i] == lastSegment) {
+                lastSegment = selectedSegments[i] != null ? selectedSegments[i] : UNUSED;
+                continue;
+            }
+
+            if (segmentChoosers[i] != null) {
+                segmentChoosers[i].close();
+            }
+
             SendableChooser<AutoSegment> segment = new SendableChooser<>();
 
             if (lastSegment.getAllowedTransitions().length == 0) {
@@ -161,6 +167,7 @@ public class ComplexAutoChooser {
             SmartDashboard.putData("Auto Chooser/Step " + i, segment);
             
             segmentChoosers[i] = segment;
+            segmentSources[i] = lastSegment;
             lastSegment = selectedSegments[i] != null ? selectedSegments[i] : UNUSED;
         }
     }
