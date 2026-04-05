@@ -594,7 +594,6 @@ public final class Constants {
 
         /** Idle revolutions-per-second to hold when robot is enabled but not actively shooting. */
         public static final double IDLE_SHOOTER_RPS = 30.0;
-        public static final double maxShooterDecel = 12.0;
 
         public static final double P = 0.5;
         public static final double I = 0.0;
