@@ -298,7 +298,7 @@ public final class Constants {
                 9.0, // maxAccelerationMetersPerSec2
                 720, // maxVelocityDegPerSec
                 720, // maxAccelerationDegPerSec2
-                0.03, // endTranslationToleranceMeters
+                0.05, // endTranslationToleranceMeters
                 2.0, // endRotationToleranceDeg
                 0.4 // intermediateHandoffRadiusMeters
             );
@@ -322,8 +322,8 @@ public final class Constants {
                 .setMaxAccelerationDegPerSec2(360);
 
             public static final Path.PathConstraints climbPathConstraints = new Path.PathConstraints()
-                .setMaxVelocityMetersPerSec(3.0)
-                .setMaxAccelerationMetersPerSec2(9.0)
+                .setMaxVelocityMetersPerSec(1.5)
+                .setMaxAccelerationMetersPerSec2(5.0)
                 .setMaxVelocityDegPerSec(360)
                 .setMaxAccelerationDegPerSec2(360);
 
