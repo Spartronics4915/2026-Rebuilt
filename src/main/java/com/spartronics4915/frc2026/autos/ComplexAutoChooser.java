@@ -34,6 +34,7 @@ public class ComplexAutoChooser {
 
         INTAKE_QUARTER("Intake Quarter", WITHIN_NEUTRAL),
         INTAKE_HALF("Intake Half", WITHIN_NEUTRAL),
+        INTAKE_HAIRPIN("Intake Quarter (w/ Hairpin)", WITHIN_NEUTRAL),
 
         L_TRENCH_TO_ALLIANCE("LT -> A", WITHIN_ALLIANCE),
         L_BUMP_TO_ALLIANCE("LB -> A", WITHIN_ALLIANCE),
@@ -63,7 +64,7 @@ public class ComplexAutoChooser {
      * Enum used to shorten (and remove enum loop) of the AutoSegment enum.
      */
     public enum AllowedTransitions {
-        READY_TO_INTAKE(() -> new AutoSegment[]{INTAKE_QUARTER, INTAKE_HALF}),
+        READY_TO_INTAKE(() -> new AutoSegment[]{INTAKE_QUARTER, INTAKE_HALF, INTAKE_HAIRPIN}),
         WITHIN_NEUTRAL(() -> new AutoSegment[]{L_TRENCH_TO_ALLIANCE, L_BUMP_TO_ALLIANCE, R_TRENCH_TO_ALLIANCE, R_BUMP_TO_ALLIANCE}),
         WITHIN_ALLIANCE(() -> new AutoSegment[]{L_TRENCH_TO_NEUTRAL, L_BUMP_TO_NEUTRAL, R_TRENCH_TO_NEUTRAL, R_BUMP_TO_NEUTRAL, DEPOT, OUTPOST, TOWER, PAUSE}),
         NONE(() -> new AutoSegment[]{});
@@ -221,6 +222,10 @@ public class ComplexAutoChooser {
                 case INTAKE_QUARTER:
                 case INTAKE_HALF:
                     commands.add(addNeutralZoneCommand(currentSegment, isRight(prevSegment), isRight(futureSegment)));
+                    break;
+
+                case INTAKE_HAIRPIN:
+                    commands.add(neutralZoneFactory.generateHairpinCommand(isRight(prevSegment)));
                     break;
 
                 case L_TRENCH_TO_ALLIANCE:

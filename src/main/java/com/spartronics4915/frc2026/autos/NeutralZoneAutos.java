@@ -13,6 +13,7 @@ import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -53,6 +54,53 @@ public class NeutralZoneAutos {
             List<PathElement> pathElements = new ArrayList<>(List.of(
                 new Path.Waypoint(intakeStart, 0.75),
                 new Path.Waypoint(quadrantEnd)
+            ));
+
+            Path path = new Path(
+                pathElements,
+                Autos.generatePathConstraintZone(intakePathConstraints, 1, 2)
+            );
+
+            return Autos.build(path, quadrantEnd.getTranslation().minus(intakeStart.getTranslation()).getAngle(), swerve);
+        }, Set.of(swerve));
+    }
+
+    public Command generateHairpinCommand(boolean isRightSide) {
+        return Commands.defer(() -> {
+            double sideMultiplier = isRightSide ? -1 : 1;
+            Rotation2d rotation = Rotation2d.fromDegrees(isRightSide ? 90 : -90);
+
+            Translation2d offsetFromCenter = new Translation2d(
+                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters),
+                (robotLength.in(Meters) / 2 + intakeLength.in(Meters)) * sideMultiplier
+            );
+
+            Pose2d intakeStart = new Pose2d(
+                centerPose.plus(offsetFromCenter).plus(fuelIntakeTransform.times(sideMultiplier)),
+                rotation
+            );
+            Pose2d quadrantEnd = new Pose2d(
+                centerPose.plus(offsetFromCenter).plus(
+                    new Translation2d(
+                        0, 
+                        paddingFromCenter.in(Meters)
+                    ).times(sideMultiplier)
+                ), 
+                rotation
+            );
+
+            Pose2d quadrantTurnAround = new Pose2d(
+                quadrantEnd.getTranslation().plus(
+                    new Translation2d(-1.4, 0)
+                ),
+                quadrantEnd.getRotation().rotateBy(Rotation2d.k180deg)
+            );
+
+            List<PathElement> pathElements = new ArrayList<>(List.of(
+                new Path.Waypoint(intakeStart, 0.75),
+                new Path.Waypoint(quadrantEnd),
+                new Path.RotationTarget(Rotation2d.k180deg, 0.5),
+                new Path.Waypoint(quadrantTurnAround, 0.1)
             ));
 
             Path path = new Path(
