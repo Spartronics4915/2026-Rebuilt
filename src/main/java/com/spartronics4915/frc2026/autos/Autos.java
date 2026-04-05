@@ -57,11 +57,22 @@ public final class Autos {
     }
 
     public static Path.PathConstraints generatePathConstraintZone(Path.PathConstraints constraints, int start, int end) {
-        return new Path.PathConstraints()
-            .setMaxVelocityMetersPerSec(new Path.RangedConstraint(constraints.getMaxVelocityMetersPerSec().get().get(0).value(), start, end))
-            .setMaxAccelerationMetersPerSec2(new Path.RangedConstraint(constraints.getMaxAccelerationMetersPerSec2().get().get(0).value(), start, end))
-            .setMaxVelocityDegPerSec(new Path.RangedConstraint(constraints.getMaxVelocityDegPerSec().get().get(0).value(), start, end))
-            .setMaxAccelerationDegPerSec2(new Path.RangedConstraint(constraints.getMaxAccelerationDegPerSec2().get().get(0).value(), start, end));
+        Path.PathConstraints limitedConstraints = new Path.PathConstraints();
+
+        if (constraints.getMaxVelocityMetersPerSec().isPresent()) {
+            limitedConstraints = limitedConstraints.setMaxVelocityMetersPerSec(new Path.RangedConstraint(constraints.getMaxVelocityMetersPerSec().get().get(0).value(), start, end));
+        }
+        if (constraints.getMaxAccelerationMetersPerSec2().isPresent()) {
+            limitedConstraints = limitedConstraints.setMaxAccelerationMetersPerSec2(new Path.RangedConstraint(constraints.getMaxAccelerationMetersPerSec2().get().get(0).value(), start, end));
+        }
+        if (constraints.getMaxVelocityDegPerSec().isPresent()) {
+            limitedConstraints = limitedConstraints.setMaxVelocityDegPerSec(new Path.RangedConstraint(constraints.getMaxVelocityDegPerSec().get().get(0).value(), start, end));
+        }
+        if (constraints.getMaxAccelerationDegPerSec2().isPresent()) {
+            limitedConstraints = limitedConstraints.setMaxAccelerationDegPerSec2(new Path.RangedConstraint(constraints.getMaxAccelerationDegPerSec2().get().get(0).value(), start, end));
+        }
+        
+        return limitedConstraints;
     }
 
     public static Command build(Path path) {
