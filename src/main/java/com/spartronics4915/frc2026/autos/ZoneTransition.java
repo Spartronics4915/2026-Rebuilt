@@ -61,10 +61,16 @@ public class ZoneTransition {
         Rotation2d LRFlip = isRightSide ? Rotation2d.kZero : Rotation2d.k180deg; // Left/Right flip
         Rotation2d IOFlip = toNeutralZone ? Rotation2d.kZero : Rotation2d.k180deg; // In/Out flip
 
+        Rotation2d bumpAngle = bumpApproachAngle.times((isRightSide == toNeutralZone) ? 1 : -1).rotateBy(IOFlip);
+        
+        if (!toNeutralZone) {
+            bumpAngle = bumpAngle.plus(Rotation2d.k180deg);
+        }
+
         List<PathElement> pathElements = new ArrayList<PathElement>(List.of(
             new Path.Waypoint(swerve.getRelativePose()),
             new Path.RotationTarget(
-                bumpApproachAngle.times((isRightSide == toNeutralZone) ? 1 : -1).rotateBy(IOFlip), 
+                bumpAngle, 
                 0.75
             ),
             new Path.Waypoint(
@@ -73,7 +79,7 @@ public class ZoneTransition {
                 ).plus(
                     approachTransform.rotateBy(IOFlip)
                 ),
-                bumpApproachAngle.times((isRightSide == toNeutralZone) ? 1 : -1).rotateBy(IOFlip)
+                bumpAngle
             ),
             new Path.Waypoint(
                 hubPose.plus( // Pose will be really wrong over the bump so set the setpoint *way* farther
@@ -81,7 +87,7 @@ public class ZoneTransition {
                 ).plus(
                     bumpTransform.rotateBy(LRFlip)
                 ),
-                bumpApproachAngle.times((isRightSide == toNeutralZone) ? 1 : -1).rotateBy(IOFlip)
+                bumpAngle
             )
         ));
 
@@ -106,10 +112,12 @@ public class ZoneTransition {
         Rotation2d LRFlip = isRightSide ? Rotation2d.kZero : Rotation2d.k180deg; // Left/Right flip
         Rotation2d IOFlip = toNeutralZone ? Rotation2d.kZero : Rotation2d.k180deg; // In/Out flip
 
+        Rotation2d trenchAngle = trenchApproachAngle;
+
         List<PathElement> pathElements = new ArrayList<PathElement>(List.of(
             new Path.Waypoint(swerve.getRelativePose()),
             new Path.RotationTarget(
-                trenchApproachAngle.rotateBy(LRFlip), 
+                trenchAngle, 
                 0.75
             ),
             new Path.Waypoint(
@@ -118,7 +126,7 @@ public class ZoneTransition {
                 ).plus(
                     approachTransform.rotateBy(IOFlip)
                 ),
-                trenchApproachAngle.rotateBy(LRFlip)
+                trenchAngle
             ),
             new Path.Waypoint(
                 hubPose.plus(
@@ -128,7 +136,7 @@ public class ZoneTransition {
                         ? approachTransform.rotateBy(IOFlip.plus(Rotation2d.k180deg))
                         : trenchExitTransform.rotateBy(IOFlip)
                 ),
-                trenchApproachAngle.rotateBy(LRFlip)
+                trenchAngle
             )
         ));
 
