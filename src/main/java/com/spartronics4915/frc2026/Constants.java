@@ -26,7 +26,6 @@ import java.util.List;
 import org.photonvision.simulation.SimCameraProperties;
 
 import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.PathplannerConfigs;
-import com.spartronics4915.frc2026.subsystems.vision.cameras.LimelightProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.PhotonProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
 import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
@@ -34,7 +33,6 @@ import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
-import com.pathplanner.lib.path.PathConstraints;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
@@ -99,8 +97,8 @@ public final class Constants {
 
     public static final class SwerveConstants {
 
-        public static final double maxSpeed = 7.12; // 5.12
-        public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(8); // 6
+        public static final double maxSpeed = 7.12; // 5.12, should probably increase
+        public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(8); // 6, should probably increase
 
         public static final double maxSpeedWhenShooting = maxSpeed * 0.35;
         public static final double maxOmegaWhenShooting = maxAngularSpeed.in(RadiansPerSecond) * 0.35;
@@ -118,10 +116,6 @@ public final class Constants {
         public static final double odomUpdateFrequency = 250.0; // 250.0
         public static final double staleCommandTimeout = 0.1;
 
-        // Odometry process noise — how much we trust wheel/gyro odometry each loop.
-        // These must be loose enough that vision measurements can compete. 254 uses
-        // 0.3 m / 0.2 rad; at 0.05 m / 0.005 rad vision would contribute < 2% weight
-        // at typical FRC tag distances and the robot pose would never update from vision.
         public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.1, 0.1, 0.05); // 0.3, 0.3, 0.2
         public static final Matrix<N3, N1> slipStdDevs = VecBuilder.fill(2.0, 2.0, 0.5);
 
@@ -406,6 +400,8 @@ public final class Constants {
             }
 
         public static final double turretHistorySeconds = 0.5;
+        public static final int maxTagsPerFrame = 8;
+        public static final double yawRecomputeThreshold = 1e-4;
 
         public static final class StdDevConstants {
             public static final double baseXYStdDev = 0.43;
@@ -550,7 +546,7 @@ public final class Constants {
         public static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
         public static final double PIVOT_JOSTLE_FREQUENCY = 0.5; // Hz
 
-        public static final double percentLoss = 0.109; // Percent loss on shooter to ball transfer, 0.85
+        public static final double percentLoss = 0.107; // Percent loss on shooter to ball transfer, 0.85
 
         public static final int feederLC = 42;
         public static final double detectDist = 90.0;
@@ -696,7 +692,7 @@ public final class Constants {
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 50.625;
 
-        public static final double MAGNET_OFFSET = -0.149658;
+        public static final double MAGNET_OFFSET = -0.140625;
         public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.Clockwise_Positive;
 
         public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(-2);
@@ -833,7 +829,7 @@ public final class Constants {
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 1.0 / ((12.0/38.0) * (18.0/38.0) * (11.0/84.0));
         public static final double ENCODER_MECHANISM_RATIO = 11.0 / 84.0;
-        public static final double MAGNET_OFFSET = 0.030029;
+        public static final double MAGNET_OFFSET = 0.430664;
 
         public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.Clockwise_Positive;
 

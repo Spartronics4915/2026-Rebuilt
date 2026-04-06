@@ -19,6 +19,7 @@ import edu.wpi.first.math.numbers.N3;
 
 /**
  * Fuses pose estimates from multiple cameras into a single, more accurate measurement.
+ * Optimized for zero-allocation performance during periodic execution.
  */
 public class PoseFusionEngine {
 
@@ -31,11 +32,18 @@ public class PoseFusionEngine {
 
     private final StringBuilder nameBuilder = new StringBuilder(64);
 
+    private final ApriltagResult fusedResult = new ApriltagResult();
+    private final Matrix<N3, N1> fusedStdDevScratch = VecBuilder.fill(0.0, 0.0, 0.0);
+    private final boolean[] tagPresenceBitset = new boolean[33];
+
     /**
      * Fuses pose estimates from multiple cameras into a single measurement.
-     * Filter/fusion parameters are read from {@link FusionConstants}.
      */
     public Optional<ApriltagResult> fusePoses(List<ApriltagResult> apriltagResults) {
+        if (apriltagResults.isEmpty()) {
+            return Optional.empty();
+        }
+
         if (apriltagResults.size() == 1) {
             return Optional.of(apriltagResults.get(0));
         }
@@ -43,6 +51,7 @@ public class PoseFusionEngine {
         if (!FusionConstants.enabled || apriltagResults.size() < FusionConstants.minCameras) {
             return selectBestResult(apriltagResults);
         }
+
         getLargestTimestampGroup(apriltagResults, FusionConstants.timestampThresholdSecs);
         rejectOutliers(bestGroup, FusionConstants.outlierSigma);
 
@@ -146,20 +155,10 @@ public class PoseFusionEngine {
     }
 
     private Optional<ApriltagResult> performWeightedFusion(List<ApriltagResult> results) {
-        double totalWeightX = 0;
-        double totalWeightY = 0;
-        double totalWeightTheta = 0;
-
-        double weightedX = 0;
-        double weightedY = 0;
-        double weightedSin = 0;
-        double weightedCos = 0;
-
+        double totalWeightX = 0, totalWeightY = 0, totalWeightTheta = 0;
+        double weightedX = 0, weightedY = 0, weightedSin = 0, weightedCos = 0;
         double latestTimestamp = Double.NEGATIVE_INFINITY;
-
-        double sumLatency = 0;
-        double sumAmbiguity = 0;
-        double sumArea = 0;
+        double sumLatency = 0, sumAmbiguity = 0, sumArea = 0;
 
         validScratch.clear();
 
@@ -170,14 +169,9 @@ public class PoseFusionEngine {
             validScratch.add(result);
 
             Pose2d pose = result.getPose();
-
-            double sx = stdDevs.get(0, 0);
-            double sy = stdDevs.get(1, 0);
-            double st = stdDevs.get(2, 0);
-
-            double wX = 1.0 / (sx * sx);
-            double wY = 1.0 / (sy * sy);
-            double wT = 1.0 / (st * st);
+            double wX = 1.0 / Math.max(1e-6, Math.pow(stdDevs.get(0, 0), 2));
+            double wY = 1.0 / Math.max(1e-6, Math.pow(stdDevs.get(1, 0), 2));
+            double wT = 1.0 / Math.max(1e-6, Math.pow(stdDevs.get(2, 0), 2));
 
             totalWeightX += wX; 
             totalWeightY += wY; 
@@ -200,31 +194,26 @@ public class PoseFusionEngine {
 
         double invN = 1.0 / validScratch.size();
 
+        fusedStdDevScratch.set(0, 0, Math.sqrt(1.0 / totalWeightX));
+        fusedStdDevScratch.set(1, 0, Math.sqrt(1.0 / totalWeightY));
+        fusedStdDevScratch.set(2, 0, Math.sqrt(1.0 / totalWeightTheta));
+
         Pose2d fusedPose = new Pose2d(
             weightedX / totalWeightX,
             weightedY / totalWeightY,
             new Rotation2d(Math.atan2(weightedSin / totalWeightTheta, weightedCos / totalWeightTheta))
         );
 
-        Matrix<N3, N1> fusedStdDevs = VecBuilder.fill(
-            Math.sqrt(1.0 / totalWeightX),
-            Math.sqrt(1.0 / totalWeightY),
-            Math.sqrt(1.0 / totalWeightTheta)
-        );
-
         tagScratch.clear();
+        for (int i = 0; i < tagPresenceBitset.length; i++) tagPresenceBitset[i] = false;
+
         for (int i = 0; i < validScratch.size(); i++) {
             List<TrackedTag> tags = validScratch.get(i).getTrackedTags();
             for (int j = 0; j < tags.size(); j++) {
                 TrackedTag t = tags.get(j);
-                boolean found = false;
-                for (int k = 0; k < tagScratch.size(); k++) {
-                    if (tagScratch.get(k).fiducialId == t.fiducialId) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
+                int id = t.getFiducialId();
+                if (id >= 0 && id < tagPresenceBitset.length && !tagPresenceBitset[id]) {
+                    tagPresenceBitset[id] = true;
                     tagScratch.add(t);
                 }
             }
@@ -238,11 +227,18 @@ public class PoseFusionEngine {
         }
         nameBuilder.append(']');
 
-        return Optional.of(new ApriltagResult(
-            nameBuilder.toString(), latestTimestamp,
-            sumLatency * invN, fusedPose, fusedStdDevs,
-            tagScratch, sumAmbiguity * invN, sumArea * invN
-        ));
+        fusedResult.set(
+            nameBuilder.toString(), 
+            latestTimestamp,
+            sumLatency * invN, 
+            fusedPose, 
+            fusedStdDevScratch,
+            tagScratch, 
+            sumAmbiguity * invN, 
+            sumArea * invN
+        );
+
+        return Optional.of(fusedResult);
     }
 
     private static Optional<ApriltagResult> selectBestResult(List<ApriltagResult> results) {

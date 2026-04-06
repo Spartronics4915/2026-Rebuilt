@@ -28,6 +28,7 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.numbers.N1;
@@ -164,14 +165,14 @@ public class VisionSubsystem extends SubsystemBase {
 
         if (swerve != null) {
             double headingDeg = swerve.getGyroRotation3d().toRotation2d().getDegrees();
-            pushHeading(primaryCameras, headingDeg, fpgaTimestamp);
-            pushHeading(fallbackCameras, headingDeg, fpgaTimestamp);
+            primaryCameras.forEach(cam -> cam.setRobotOrientation(headingDeg));
+            fallbackCameras.forEach(cam -> cam.setRobotOrientation(headingDeg));
         }
 
         if (turretAngleSupplier != null) {
             Rotation2d turretAngle = turretAngleSupplier.get();
-            pushTurretAngle(primaryCameras, turretAngle, fpgaTimestamp);
-            pushTurretAngle(fallbackCameras, turretAngle, fpgaTimestamp);
+            primaryCameras.forEach(cam -> cam.updateTurretAngle(turretAngle, fpgaTimestamp));
+            fallbackCameras.forEach(cam -> cam.updateTurretAngle(turretAngle, fpgaTimestamp));
         }
 
         boolean primaryValid = processCameraPipeline(primaryCameras, primaryFilter, primaryRaw, primaryFused);
@@ -238,21 +239,6 @@ public class VisionSubsystem extends SubsystemBase {
         return true;
     }
 
-    private static void pushHeading(List<ProcessorInterface> cameras, double headingDeg, double timestamp) {
-        Rotation2d headingRot = Rotation2d.fromDegrees(headingDeg);
-        for (ProcessorInterface cam : cameras) {
-            cam.updateHeading(headingRot, timestamp);
-        }
-    }
-
-    private static void pushTurretAngle(
-        List<ProcessorInterface> cameras, 
-        Rotation2d angle, 
-        double timestamp
-    ) {
-        for (ProcessorInterface cam : cameras) cam.updateHeading(angle, timestamp);
-    }
-
     @SuppressWarnings("unused")
     private static PipelineFilter buildPrimaryFilter(SwerveSubsystem swerve) {
         List<FilterInterface> filter = new ArrayList<>();
@@ -285,11 +271,24 @@ public class VisionSubsystem extends SubsystemBase {
         return new PipelineFilter(filter);
     }
 
+    private void updateTagPublishScratch(List<TrackedTag> tags) {
+        for (int i = 0; i < tags.size() && i < tagPoseScratch.length; i++) {
+            Optional<Pose3d> pose = VisionConstants.apriltagFieldLayout.getTagPose(tags.get(i).getFiducialId());
+            tagPoseScratch[i] = pose.orElse(new Pose3d());
+        }
+
+        for (int i = tags.size(); i < tagPoseScratch.length; i++) {
+            tagPoseScratch[i] = new Pose3d(0, 0, 0, new Rotation3d(0, 0, 0));
+        }
+    }
+
     private void publishDiagnostics(List<ApriltagResult> results) {
         if (results.isEmpty()) return;
         ApriltagResult latest = results.stream()
             .max((a, b) -> Double.compare(a.getTimestampSeconds(), b.getTimestampSeconds()))
             .orElse(results.get(0));
+
+        updateTagPublishScratch(latest.getTrackedTags());
 
         visionPose = latest.getPose();
         posePublisher.set(latest.getPose());
@@ -299,13 +298,13 @@ public class VisionSubsystem extends SubsystemBase {
         areaPublisher.accept(latest.getAverageArea());
         latencyPublisher.set(latest.getLatencyMs());
         targetCountPublisher.set(latest.getTargetCount());
-        trackedTagsPublisher.accept(getTargetPoses(latest.getTrackedTags()));
+        trackedTagsPublisher.set(tagPoseScratch);
     }
 
     public Pose3d[] getTargetPoses(List<TrackedTag> tags) {
         int count = 0;
         for (TrackedTag tag : tags) {
-            Optional<Pose3d> pose = VisionConstants.apriltagFieldLayout.getTagPose(tag.fiducialId);
+            Optional<Pose3d> pose = VisionConstants.apriltagFieldLayout.getTagPose(tag.getFiducialId());
             if (pose.isPresent()) tagPoseScratch[count++] = pose.get();
         }
         Pose3d[] result = new Pose3d[count];

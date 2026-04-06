@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
@@ -28,6 +27,7 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
@@ -60,7 +60,7 @@ public class PhotonProcessor implements ProcessorInterface {
     private final boolean turreted;
 
     private final ConcurrentTimeBuffer<Double> turretYawBuffer;
-    private final AtomicReference<Double> latestTurretYawRad;
+    private volatile double latestTurretYawRad = 0.0; 
 
     private final ConcurrentLinkedQueue<ResultInterface> resultQueue = new ConcurrentLinkedQueue<>();
     private final AtomicInteger queueSize = new AtomicInteger(0);
@@ -68,18 +68,22 @@ public class PhotonProcessor implements ProcessorInterface {
     private final Notifier processingNotifier;
     private volatile boolean isRunning = false;
 
-    private final List<TrackedTag> tagScratch = new ArrayList<>(8);
+    private Pose2d resultPose = new Pose2d();
 
-    /**
-     * Fixed-camera constructor.
-     *
-     * @param name          PhotonVision camera name.
-     * @param layout        AprilTag field layout.
-     * @param transform     Static robot-to-camera transform.
-     * @param calculator    Per-camera std-dev calculator; must not be shared.
-     * @param simProperties Sim camera properties ({@code null} disables sim).
-     * @param frequencyHz   Processing rate (Hz).
-     */
+    private final List<TrackedTag> tagScratch = new ArrayList<>(maxTagsPerFrame);
+    private final TrackedTag[][] tagCache;
+    private final ApriltagResult[] resultCache;
+
+    private int resultCacheIndex = 0;
+
+    private final Matrix<N3, N1> stdDevScratch = VecBuilder.fill(0.0, 0.0, 0.0);
+    private final Matrix<N3, N1> scaledStdDevScratch = VecBuilder.fill(0.0, 0.0, 0.0);
+
+    private double cachedYaw = Double.NaN;
+    private volatile double robotHeadingDegrees = 0.0;
+    private Transform3d cachedRobotToCamera = new Transform3d();
+
+    /** Fixed-camera constructor. */
     public PhotonProcessor(
         String name,
         AprilTagFieldLayout layout,
@@ -97,34 +101,24 @@ public class PhotonProcessor implements ProcessorInterface {
         this.maxQueueSize = computeMaxQueueSize(frequencyHz);
 
         this.poseEstimator = new PhotonPoseEstimator(fieldLayout, transform);
-        this.cameraSim = (simProperties != null) 
-            ? new PhotonCameraSim(photonCamera, simProperties) 
+        this.cameraSim = (simProperties != null)
+            ? new PhotonCameraSim(photonCamera, simProperties)
             : null;
 
         this.robotToTurretPivot = null;
         this.turretToCamera = null;
         this.turreted = false;
         this.turretYawBuffer = null;
-        this.latestTurretYawRad = null;
+
+        this.resultCache = allocateResultPool(maxQueueSize);
+        this.tagCache = new TrackedTag[maxQueueSize][maxTagsPerFrame];
+        initTagCache();
 
         this.processingNotifier = new Notifier(this::process);
         this.processingNotifier.setName("Photon-" + cameraName);
     }
 
-    /**
-     * Turreted-camera constructor.
-     *
-     * <p>{@link PhotonPoseEstimator#setRobotToCameraTransform} is updated before
-     * every estimation call using the turret angle interpolated from a time buffer.
-     *
-     * @param name               PhotonVision camera name.
-     * @param layout             AprilTag field layout.
-     * @param robotToTurretPivot Translation from robot centre to turret pivot.
-     * @param turretToCamera     Static transform from turret pivot to camera (turret frame).
-     * @param calculator         Per-camera std-dev calculator; must not be shared.
-     * @param simProperties      Sim camera properties ({@code null} disables sim).
-     * @param frequencyHz        Processing rate (Hz).
-     */
+    /** Turreted-camera constructor. */
     public PhotonProcessor(
         String name,
         AprilTagFieldLayout layout,
@@ -143,19 +137,37 @@ public class PhotonProcessor implements ProcessorInterface {
         this.processingFrequencyHz = frequencyHz;
         this.maxQueueSize = computeMaxQueueSize(frequencyHz);
 
-        // Initialize with identity; updated dynamically each frame.
         this.poseEstimator = new PhotonPoseEstimator(fieldLayout, computeRobotToCamera(0.0));
-        this.cameraSim = (simProperties != null) 
-            ? new PhotonCameraSim(photonCamera, simProperties) 
+        this.cameraSim = (simProperties != null)
+            ? new PhotonCameraSim(photonCamera, simProperties)
             : null;
 
         this.fixedCameraTransform = null;
         this.turreted = true;
         this.turretYawBuffer = ConcurrentTimeBuffer.createDoubleBuffer(turretHistorySeconds);
-        this.latestTurretYawRad = new AtomicReference<>(0.0);
+
+        this.resultCache = allocateResultPool(maxQueueSize);
+        this.tagCache = new TrackedTag[maxQueueSize][maxTagsPerFrame];
+        initTagCache();
 
         this.processingNotifier = new Notifier(this::process);
         this.processingNotifier.setName("PhotonTurret-" + cameraName);
+    }
+
+    private static ApriltagResult[] allocateResultPool(int size) {
+        ApriltagResult[] pool = new ApriltagResult[size];
+        for (int i = 0; i < size; i++) {
+            pool[i] = new ApriltagResult(); 
+        }
+        return pool;
+    }
+
+    private void initTagCache() {
+        for (int i = 0; i < maxQueueSize; i++) {
+            for (int j = 0; j < maxTagsPerFrame; j++) {
+                tagCache[i][j] = new TrackedTag(0, 0.0, 0.0); 
+            }
+        }
     }
 
     @Override
@@ -178,31 +190,30 @@ public class PhotonProcessor implements ProcessorInterface {
 
         List<PhotonPipelineResult> rawResults = photonCamera.getAllUnreadResults();
 
-        for (PhotonPipelineResult rawResult : rawResults) {
-            // In turreted mode, update the pose estimator's transform to match
-            // the turret angle at this frame's exact capture timestamp.
+        for (int i = 0, n = rawResults.size(); i < n; i++) {
+            PhotonPipelineResult rawResult = rawResults.get(i);
+
             if (turreted) {
-                double captureTs = rawResult.getTimestampSeconds();
-                double yawRad = turretYawBuffer
-                    .getSample(captureTs)
-                    .orElse(latestTurretYawRad.get());
-                poseEstimator.setRobotToCameraTransform(computeRobotToCamera(yawRad));
+                double captureTimestamp = rawResult.getTimestampSeconds();
+                double yaw = turretYawBuffer
+                    .getSample(captureTimestamp)
+                    .orElse(latestTurretYawRad);
+                poseEstimator.setRobotToCameraTransform(computeRobotToCamera(yaw));
             }
 
-            processApriltagResult(rawResult).ifPresent(
-                result -> {
-                    while (queueSize.get() >= maxQueueSize) {
-                        if (resultQueue.poll() != null) queueSize.decrementAndGet();
-                    }
-                    resultQueue.add(result);
-                    queueSize.incrementAndGet();
+            ApriltagResult result = processApriltagResult(rawResult);
+            if (result != null) {
+                while (queueSize.get() >= maxQueueSize) {
+                    if (resultQueue.poll() != null) queueSize.decrementAndGet();
                 }
-            );
+                resultQueue.add(result);
+                queueSize.incrementAndGet();
+            }
         }
     }
 
-    private Optional<ApriltagResult> processApriltagResult(PhotonPipelineResult rawResult) {
-        if (!rawResult.hasTargets()) return Optional.empty();
+    private ApriltagResult processApriltagResult(PhotonPipelineResult rawResult) {
+        if (!rawResult.hasTargets()) return null;
 
         List<PhotonTrackedTarget> targets = rawResult.getTargets();
         int targetCount = targets.size();
@@ -213,58 +224,87 @@ public class PhotonProcessor implements ProcessorInterface {
             ? poseEstimator.estimateCoprocMultiTagPose(rawResult)
             : poseEstimator.estimateLowestAmbiguityPose(rawResult);
 
-        if (poseOpt.isEmpty()) return Optional.empty();
+        if (poseOpt.isEmpty()) return null;
 
         EstimatedRobotPose estPose = poseOpt.get();
-        Pose2d resultPose = estPose.estimatedPose.toPose2d();
+
+        Pose3d estPose3d = estPose.estimatedPose;
+        resultPose = new Pose2d(
+            estPose3d.getX(),
+            estPose3d.getY(),
+            estPose3d.getRotation().toRotation2d()
+        );
+
         double timestamp = Utils.fpgaToCurrentTime(estPose.timestampSeconds);
         double latency = rawResult.metadata.getLatencyMillis();
 
-        Matrix<N3, N1> stdDevs = stdDevCalculator.calculate(avgAmbiguity, avgArea, latency, targetCount);
-
-        if (turreted && targetCount >= 2) {
-            stdDevs = scaleMultiTagStdDevs(stdDevs, targetCount);
-        }
-
-        tagScratch.clear();
-        for (PhotonTrackedTarget target : targets) {
-            tagScratch.add(
-                new TrackedTag(
-                    target.fiducialId, 
-                    target.getArea(), 
-                    target.getPoseAmbiguity()
-                )
-            );
-        }
-
-        return Optional.of(
-            new ApriltagResult(
-                cameraName, 
-                timestamp, 
-                latency,
-                resultPose, 
-                stdDevs,
-                tagScratch, 
-                avgAmbiguity, 
-                avgArea
-            )
+        Matrix<N3, N1> calculatedValues = stdDevCalculator.calculate(
+            avgAmbiguity, avgArea, latency, targetCount
         );
+
+        for (int i = 0; i < 3; i++) {
+            stdDevScratch.set(i, 0, calculatedValues.get(i, 0));
+        }
+
+        Matrix<N3, N1> finalStdDevs;
+        if (turreted && targetCount >= 2) {
+            fillScaledMultiTagStdDevs(stdDevScratch, scaledStdDevScratch, targetCount);
+            finalStdDevs = scaledStdDevScratch;
+        } else {
+            finalStdDevs = stdDevScratch;
+        }
+
+        TrackedTag[] currentFrameTagCache = tagCache[resultCacheIndex];
+        tagScratch.clear();
+        int tagsToProcess = Math.min(targetCount, maxTagsPerFrame);
+
+        for (int i = 0; i < tagsToProcess; i++) {
+            PhotonTrackedTarget target = targets.get(i);
+            currentFrameTagCache[i].set(
+                target.getFiducialId(), 
+                target.getArea(),
+                target.getPoseAmbiguity()
+            );
+            tagScratch.add(currentFrameTagCache[i]);
+        }
+
+        ApriltagResult result = resultCache[resultCacheIndex];
+        resultCacheIndex = (resultCacheIndex + 1) % maxQueueSize;
+
+        result.set(
+            cameraName, 
+            timestamp, 
+            latency, 
+            resultPose,
+            finalStdDevs, 
+            tagScratch, 
+            avgAmbiguity, 
+            avgArea
+        );
+
+        return result;
     }
 
     private Transform3d computeRobotToCamera(double turretYawRadians) {
+        if (!Double.isNaN(cachedYaw) && Math.abs(turretYawRadians - cachedYaw) < yawRecomputeThreshold) {
+            return cachedRobotToCamera;
+        }
+
         Rotation3d yaw3d = new Rotation3d(0, 0, turretYawRadians);
         Translation3d offset = turretToCamera.getTranslation().rotateBy(yaw3d);
-        return new Transform3d(
+        cachedRobotToCamera = new Transform3d(
             robotToTurretPivot.plus(offset),
             yaw3d.plus(turretToCamera.getRotation())
         );
+        cachedYaw = turretYawRadians;
+        return cachedRobotToCamera;
     }
 
     private static double calculateAmbiguity(List<PhotonTrackedTarget> targets) {
         if (targets.size() == 1) return targets.get(0).getPoseAmbiguity();
         double min = 0.01;
-        for (PhotonTrackedTarget t : targets) {
-            double a = t.getPoseAmbiguity();
+        for (int i = 0, n = targets.size(); i < n; i++) {
+            double a = targets.get(i).getPoseAmbiguity();
             if (a >= 0 && a < min) min = a;
         }
         return min / Math.sqrt(targets.size());
@@ -273,17 +313,19 @@ public class PhotonProcessor implements ProcessorInterface {
     private static double calculateAverageArea(List<PhotonTrackedTarget> targets) {
         if (targets.isEmpty()) return 0.0;
         double sum = 0.0;
-        for (PhotonTrackedTarget t : targets) sum += t.getArea();
+        for (int i = 0, n = targets.size(); i < n; i++) sum += targets.get(i).getArea();
         return sum / targets.size();
     }
 
-    private static Matrix<N3, N1> scaleMultiTagStdDevs(Matrix<N3, N1> std, int n) {
+    private static void fillScaledMultiTagStdDevs(
+        Matrix<N3, N1> source,
+        Matrix<N3, N1> destination,
+        int n
+    ) {
         double s = 1.0 / Math.sqrt(n);
-        return VecBuilder.fill(
-            std.get(0, 0) * s, 
-            std.get(1, 0) * s, 
-            std.get(2, 0) * s
-        );
+        destination.set(0, 0, source.get(0, 0) * s);
+        destination.set(1, 0, source.get(1, 0) * s);
+        destination.set(2, 0, source.get(2, 0) * s);
     }
 
     private static int computeMaxQueueSize(double hz) {
@@ -298,15 +340,30 @@ public class PhotonProcessor implements ProcessorInterface {
         return turreted; 
     }
 
-    @Override
-    public Transform3d getCameraTransform() {
-        if (!turreted) return fixedCameraTransform;
-        return computeRobotToCamera(latestTurretYawRad.get());
+    @Override public Optional<PhotonCameraSim> getCameraSim() { 
+        return Optional.ofNullable(cameraSim); 
+    }
+
+    @Override public int getMaxQueueSize() { 
+        return maxQueueSize; 
+    }
+
+    @Override public Notifier getNotifier() { 
+        return processingNotifier; 
+    }
+
+    @Override public double getFrequency() { 
+        return processingFrequencyHz; 
+    }
+
+    @Override public boolean isRunning() { 
+        return isRunning; 
     }
 
     @Override
-    public Optional<PhotonCameraSim> getCameraSim() {
-        return Optional.ofNullable(cameraSim);
+    public Transform3d getCameraTransform() {
+        if (!turreted) return fixedCameraTransform;
+        return computeRobotToCamera(latestTurretYawRad);
     }
 
     @Override
@@ -325,24 +382,8 @@ public class PhotonProcessor implements ProcessorInterface {
         return out;
     }
 
-    @Override public int getMaxQueueSize() { 
-        return maxQueueSize; 
-    }
-
-    @Override public Notifier getNotifier() { 
-        return processingNotifier; 
-    }
-
-    @Override public double getFrequency() { 
-        return processingFrequencyHz; 
-    }
-
-    @Override public boolean isRunning() {
-        return isRunning; 
-    }
-
     @Override
-    public void setPipeline(int index) { 
+    public void setPipeline(int index) {
         photonCamera.setPipelineIndex(index);
     }
 
@@ -354,18 +395,22 @@ public class PhotonProcessor implements ProcessorInterface {
         poseEstimator.setRobotToCameraTransform(t);
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * In turreted mode, records the sample for per-frame interpolation.
-     * In fixed mode, this is a no-op.
-     */
     @Override
-    public void updateHeading(Rotation2d turretAngle, double timestamp) {
-        if (!turreted) return;
-        double rad = turretAngle.getRadians();
-        latestTurretYawRad.set(rad);
-        turretYawBuffer.addSample(timestamp, rad);
+    public void setRobotOrientation(double headingDegrees) {
+        this.robotHeadingDegrees = headingDegrees;
     }
 
+    @Override
+    public void updateTurretAngle(Rotation2d turretAngle, double timestamp) {
+        if (!turreted) return;
+        double rad = turretAngle.getRadians();
+        this.latestTurretYawRad = rad;
+        this.turretYawBuffer.addSample(timestamp, rad);
+    }
+
+    @Override
+    public void updateHeading(Rotation2d turretAngle, double timestamp) {
+        updateTurretAngle(turretAngle, timestamp);
+    }
+    
 }
