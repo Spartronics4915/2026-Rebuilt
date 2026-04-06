@@ -444,29 +444,23 @@ public final class Constants {
 
             /** evan — front tower camera */
             public static final Transform3d frontTowerCamTransform = new Transform3d(
-                new Translation3d(-0.119170, 0.310900, 0.520276),
+                new Translation3d(-0.11767, 0.310900, 0.520276),
                 new Rotation3d(Math.toRadians(0), Math.toRadians(-30), Math.toRadians(0))
+            );
+
+            /** val — back tower camera */
+            public static final Transform3d backTowerCamTransform = new Transform3d(
+                new Translation3d(-0.268191, 0.311499, 0.437110 + 0.0127),
+                new Rotation3d(Math.toRadians(0), Math.toRadians(-30), Math.toRadians(180))
             );
 
             /** daniil — RIO-mounted camera */
             public static final Transform3d rioCamTransform = new Transform3d(
                 new Translation3d(-0.125205, -0.334776, 0.257945),
-                new Rotation3d(Math.toRadians(0), Math.toRadians(-26), Math.toRadians(-70))
+                new Rotation3d(Math.toRadians(0), Math.toRadians(-26), Math.toRadians(290))
             );
 
-            /** val — back tower camera */
-            public static final Transform3d backTowerCamTransform = new Transform3d(
-                new Translation3d(-0.266691, 0.311499, 0.437110 + 0.0127),
-                new Rotation3d(Math.toRadians(0), Math.toRadians(-30), Math.toRadians(180))
-            );
-
-            /** gollum — swerve camera */
-            public static final Transform3d swerveCamTransform = new Transform3d(
-                new Translation3d(-0.2868215, -0.1771345, 0.2412915),
-                new Rotation3d(Math.toRadians(0), Math.toRadians(-23), Math.toRadians(180))
-            );
-
-            /** turret - turret camera */
+            /** argos - turret camera */
             public static final Transform3d turretToCamera = new Transform3d(
                 new Translation3d(
                     Units.inchesToMeters(-5.55878),
@@ -499,10 +493,10 @@ public final class Constants {
                 //    new StdDevCalculator(1.0),
                 //    80
                 //)
-                //new PhotonProcessor(
-                //    "evan", apriltagFieldLayout, frontTowerCamTransform,
-                //    new StdDevCalculator(1.3), simCameraProperties, 20.0
-                //),
+                new PhotonProcessor(
+                    "evan", apriltagFieldLayout, frontTowerCamTransform,
+                    new StdDevCalculator(1.3), simCameraProperties, 20.0
+                ),
                 new PhotonProcessor(
                     "val", apriltagFieldLayout, backTowerCamTransform,
                     new StdDevCalculator(1.3), simCameraProperties, 20.0
