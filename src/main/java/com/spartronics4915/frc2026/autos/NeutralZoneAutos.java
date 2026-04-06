@@ -104,7 +104,7 @@ public class NeutralZoneAutos {
 
             Pose2d quadrantTurnAround = new Pose2d(
                 quadrantEnd.getTranslation().plus(
-                    new Translation2d(-1.5, 0)
+                    new Translation2d(-1.25, 0)
                 ),
                 quadrantEnd.getRotation().rotateBy(Rotation2d.k180deg)
             );

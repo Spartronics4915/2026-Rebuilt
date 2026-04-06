@@ -113,10 +113,10 @@ public final class Constants {
 
         public static final Constraints trenchAlignConstraints = new Constraints(3, 3);
 
-        public static final double odomUpdateFrequency = 250.0; // 250.0
+        public static final double odomUpdateFrequency = 100.0; // 250.0
         public static final double staleCommandTimeout = 0.1;
 
-        public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.1, 0.1, 0.05); // 0.3, 0.3, 0.2
+        public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.2, 0.2, 0.1); // 0.3, 0.3, 0.2
         public static final Matrix<N3, N1> slipStdDevs = VecBuilder.fill(2.0, 2.0, 0.5);
 
         public static final double slipRecoverySeconds = 0.1;
@@ -275,7 +275,7 @@ public final class Constants {
             public static final Translation2d bumpTrenchDivTransform = new Translation2d(0, 2.604);
             public static final Translation2d approachTransform = new Translation2d(-1.4, 0);
             public static final Translation2d exitTransform = new Translation2d((centerPose.getX() - hubPose.getX()) * 1.2, 0);
-            public static final Translation2d trenchExitTransform = new Translation2d(0.6, 0);
+            public static final Translation2d trenchExitTransform = new Translation2d(0.8, 0);
             public static final Translation2d fuelIntakeTransform = new Translation2d(0, 1.75);
 
             public static final Distance robotLength = Millimeters.of(818.5);
@@ -530,7 +530,7 @@ public final class Constants {
         public static final Rotation2d turretMaxSafeThreshold = Rotation2d.fromDegrees(10);
 
         public static final Distance bumpLength = Inches.of(48.93);
-        public static final Distance trenchLength = Inches.of(60);
+        public static final Distance trenchLength = Inches.of(32);
 
         public static final double towerXTransform = 0.5305;
         public static final double towerYTransform = 0.49075;
