@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain.SwerveDriveState;
@@ -118,9 +119,11 @@ public class SwerveSubsystem extends SubsystemBase {
             odomUpdateFrequency,
             config.modules[0], config.modules[1], config.modules[2], config.modules[3]
         );
+
         activeConfig = config;
 
         drivetrain.setStateStdDevs(normalStdDevs);
+        drivetrain.configNeutralMode(NeutralModeValue.Brake);
 
         headingLockRequest.HeadingController.setPID(headingLockKP, 0, headingLockKD);
         headingLockRequest.HeadingController.enableContinuousInput(-Math.PI, Math.PI);

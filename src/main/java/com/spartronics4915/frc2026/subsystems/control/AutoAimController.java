@@ -46,8 +46,8 @@ public class AutoAimController extends SubsystemBase {
     private final SwerveSubsystem swerve;
 
     private final AutoAim autoAim = new AutoAim(
-        30, // 30
-        60, // 100
+        20, // 30
+        50, // 100
         0.001,
         turretTranslation3D,
         Rotation2d.fromDegrees(50),
@@ -227,7 +227,7 @@ public class AutoAimController extends SubsystemBase {
         if (readyToShoot) {
             Translation3d target = (targetOverride != null) ? targetOverride : getDefaultTarget();
 
-            shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed() + (target != BOTTOM_FUNNEL_POSITION ? 3 : 0)));
+            shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed() * (target != BOTTOM_FUNNEL_POSITION ? 1.01 : 1)));
         } else {
             shooter.setSetpoint(0);
         }
@@ -393,7 +393,7 @@ public class AutoAimController extends SubsystemBase {
                 turret.getPosition().getDegrees() 
                 - turretController.getLastSetpoint(), 360.0
             )
-        ) <= 6.0;
+        ) <= 4.0;
     }
 
     public boolean isHoodReady() {

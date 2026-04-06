@@ -115,20 +115,20 @@ public final class Constants {
 
         public static final Constraints trenchAlignConstraints = new Constraints(3, 3);
 
-        public static final double odomUpdateFrequency = 50.0; // 250.0
+        public static final double odomUpdateFrequency = 250.0; // 250.0
         public static final double staleCommandTimeout = 0.1;
 
         // Odometry process noise — how much we trust wheel/gyro odometry each loop.
         // These must be loose enough that vision measurements can compete. 254 uses
         // 0.3 m / 0.2 rad; at 0.05 m / 0.005 rad vision would contribute < 2% weight
         // at typical FRC tag distances and the robot pose would never update from vision.
-        public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.3, 0.3, 0.2);
+        public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.1, 0.1, 0.05); // 0.3, 0.3, 0.2
         public static final Matrix<N3, N1> slipStdDevs = VecBuilder.fill(2.0, 2.0, 0.5);
 
-        public static final double slipRecoverySeconds = 0.5;
-        public static final double slipThresholdRPS = 1.0;
+        public static final double slipRecoverySeconds = 0.1;
+        public static final double slipThresholdRPS = 1.5;
         public static final double minSpeedDetectMPS = 0.5;
-        public static final int slipDebounceCycles = 3;
+        public static final int slipDebounceCycles = 2;
 
         public static final double headingLockKP = 7.0;
         public static final double headingLockKD = 0.0;
@@ -298,8 +298,8 @@ public final class Constants {
                 16.0, // maxAccelerationMetersPerSec2
                 360*5, // 2 maxVelocityDegPerSec
                 360*5, // 4 maxAccelerationDegPerSec2
-                0.05, // endTranslationToleranceMeters
-                2.0, // endRotationToleranceDeg
+                0.1, // endTranslationToleranceMeters
+                5.0, // endRotationToleranceDeg
                 0.4 // intermediateHandoffRadiusMeters
             );
 
@@ -402,20 +402,20 @@ public final class Constants {
         public static final double turretHistorySeconds = 0.5;
 
         public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.40;
-            public static final double baseThetaStdDev = 0.75;
-            public static final double ambiguityWeight = 0.2;
+            public static final double baseXYStdDev = 0.43;
+            public static final double baseThetaStdDev = 0.85;
+            public static final double ambiguityWeight = 0.1;
             public static final double areaWeight = 0.9;
-            public static final double latencyWeight = 0.8;
+            public static final double latencyWeight = 1.0;
         }
 
         public static final class FilterConstants {
             public static final double maxLatencyMs = 100.0;
-            public static final double maxSingleTagDistanceMeters = 5.0;
+            public static final double maxSingleTagDistanceMeters = 4.0;
             public static final double maxMultiTagDistanceMeters = 7.0;
-            public static final double maxAmbiguity = 0.15;
-            public static final double minArea = 0.07;
-            public static final double maxArea = 0.80;
+            public static final double maxAmbiguity = 0.12;
+            public static final double minArea = 0.06;
+            public static final double maxArea = 0.90;
 
             // Set < Double.MAX_VALUE to enable the odometry-outlier filter.
             public static final double maxOdometryDeviationMeters = Double.MAX_VALUE;
@@ -498,17 +498,17 @@ public final class Constants {
                 //    new StdDevCalculator(1.0),
                 //    80
                 //)
-                new PhotonProcessor(
-                    "evan", apriltagFieldLayout, frontTowerCamTransform,
-                    new StdDevCalculator(1.1), simCameraProperties, 20.0
-                ),
+                //new PhotonProcessor(
+                //    "evan", apriltagFieldLayout, frontTowerCamTransform,
+                //    new StdDevCalculator(1.3), simCameraProperties, 20.0
+                //),
                 new PhotonProcessor(
                     "val", apriltagFieldLayout, backTowerCamTransform,
-                    new StdDevCalculator(1.1), simCameraProperties, 20.0
+                    new StdDevCalculator(1.3), simCameraProperties, 20.0
                 ),
                 new PhotonProcessor(
                     "daniil", apriltagFieldLayout, rioCamTransform,
-                    new StdDevCalculator(1.1), simCameraProperties, 20.0
+                    new StdDevCalculator(1.3), simCameraProperties, 20.0
                 )
             );
         }
@@ -552,8 +552,8 @@ public final class Constants {
 
         public static final double percentLoss = 0.109; // Percent loss on shooter to ball transfer, 0.85
 
-        public static final int feederLC = 1690;
-        public static final double detectDist = 20.0;
+        public static final int feederLC = 42;
+        public static final double detectDist = 90.0;
         public static final double noBallsDebounce = 0.5;
     }
 
@@ -602,7 +602,7 @@ public final class Constants {
         public static final double IDLE_SHOOTER_RPS = 30.0;
         public static final double maxShooterDecel = -12.0;
 
-        public static final double P = 0.5;
+        public static final double P = 0.4;
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.115;
@@ -776,11 +776,11 @@ public final class Constants {
         
         public static final int MOTOR_ID = 17;
 
-        public static final double P = 60.0;
+        public static final double P = 80.0;
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.22226;
-        public static final double A = 7.0318; //0.70318
+        public static final double A = 17.0318; //0.70318
         public static final double S = 0.23135;
 
         public static final double MAX_RPS = 20.0; // 13.238

@@ -4,6 +4,7 @@
 
 package com.spartronics4915.frc2026;
 
+import au.grapplerobotics.CanBridge;
 import edu.wpi.first.net.WebServer;
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
@@ -49,6 +50,7 @@ public class Robot extends TimedRobot {
         // Instantiate our RobotContainer. This will perform all our button bindings, and put our
         // autonomous chooser on the dashboard.
         robotContainer = new RobotContainer();
+        CanBridge.runTCP();
     }
 
     @Override

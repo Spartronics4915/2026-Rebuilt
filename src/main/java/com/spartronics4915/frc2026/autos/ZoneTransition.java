@@ -121,12 +121,15 @@ public class ZoneTransition {
                 0.75
             ),
             new Path.Waypoint(
-                hubPose.plus(
-                    trenchTransform.rotateBy(LRFlip)
-                ).plus(
-                    approachTransform.rotateBy(IOFlip)
+                new Pose2d(
+                    hubPose.plus(
+                        trenchTransform.rotateBy(LRFlip)
+                    ).plus(
+                        approachTransform.rotateBy(IOFlip)
+                    ),
+                    trenchAngle
                 ),
-                trenchAngle
+                0.6
             ),
             new Path.Waypoint(
                 hubPose.plus(

@@ -262,7 +262,7 @@ public class ComplexAutoChooser {
                             Commands.race(
                                 Commands.waitSeconds(shootWaitTime),
                                 Commands.sequence(
-                                    Commands.waitSeconds(0.3),
+                                    Commands.waitSeconds(0.6),
                                     Commands.waitUntil(() -> !superstructure.isBallDetectedDebounced())
                                 )
                             ),

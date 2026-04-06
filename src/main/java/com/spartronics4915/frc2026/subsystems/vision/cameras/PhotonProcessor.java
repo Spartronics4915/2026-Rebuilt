@@ -262,7 +262,7 @@ public class PhotonProcessor implements ProcessorInterface {
 
     private static double calculateAmbiguity(List<PhotonTrackedTarget> targets) {
         if (targets.size() == 1) return targets.get(0).getPoseAmbiguity();
-        double min = 0.0;
+        double min = 0.01;
         for (PhotonTrackedTarget t : targets) {
             double a = t.getPoseAmbiguity();
             if (a >= 0 && a < min) min = a;

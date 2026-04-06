@@ -188,7 +188,7 @@ public class Superstructure extends SubsystemBase {
     private boolean ballDetect(){
         LaserCan.Measurement measurement = laserCan.getMeasurement();
         if (measurement == null) {
-            return false;
+            return true;
         } else{
             return measurement.distance_mm < detectDist;
         }
