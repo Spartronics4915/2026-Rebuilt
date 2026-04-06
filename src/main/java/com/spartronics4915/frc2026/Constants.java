@@ -246,9 +246,9 @@ public final class Constants {
 
         public static final class AutoConstants {
             
-            public static final PIDController translationPID = new PIDController(5.0, 0, 0.08);
-            public static final PIDController rotationPID    = new PIDController(7.5, 0, 0.2);
-            public static final PIDController crossTrackPID  = new PIDController(4, 0, 0.075);
+            public static final PIDController translationPID = new PIDController(6.0, 0, 0.08);
+            public static final PIDController rotationPID    = new PIDController(10, 0, 1);
+            public static final PIDController crossTrackPID  = new PIDController(2, 0, 0.075);
 
             public static final PIDConstants alignTranslationPID = new PIDConstants(2.0,0,0);
             public static final PIDConstants alignRotationPID = new PIDConstants(2.0,0,0);
@@ -310,6 +310,10 @@ public final class Constants {
                 // .setMaxVelocityDegPerSec(360)
                 // .setMaxAccelerationDegPerSec2(360);
 
+            public static final Path.PathConstraints startingTrenchPathConstraints = new Path.PathConstraints()
+                .setMaxVelocityMetersPerSec(8)
+                .setMaxAccelerationMetersPerSec2(16.0);
+
             public static final Path.PathConstraints bumpPathConstraints = new Path.PathConstraints()
                 .setMaxVelocityMetersPerSec(4.0)
                 .setMaxAccelerationMetersPerSec2(9.0)
@@ -318,7 +322,7 @@ public final class Constants {
 
             public static final Path.PathConstraints intakePathConstraints = new Path.PathConstraints()
                 .setMaxVelocityMetersPerSec(3.0)
-                .setMaxAccelerationMetersPerSec2(9.0);
+                .setMaxAccelerationMetersPerSec2(16.0);
                 // .setMaxVelocityDegPerSec(360)
                 // .setMaxAccelerationDegPerSec2(360);
 
@@ -337,6 +341,7 @@ public final class Constants {
                 .setMaxAccelerationDegPerSec2(180);
 
             public static final Rotation2d trenchApproachAngle = Rotation2d.fromDegrees(0.0);
+            public static final Rotation2d startingTrenchApproachAngle = Rotation2d.fromDegrees(90.0);
             public static final Rotation2d bumpApproachAngle = Rotation2d.fromDegrees(45.0);
 
             public enum PathplannerConfigs {

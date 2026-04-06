@@ -153,4 +153,43 @@ public class ZoneTransition {
 
         return Autos.build(path, endWithSpeed ? Rotation2d.kZero.rotateBy(IOFlip) : null, swerve);
     }
+    
+    public Command generateStartingTrenchCommand(boolean isRightSide) {
+        Rotation2d LRFlip = isRightSide ? Rotation2d.kZero : Rotation2d.k180deg; // Left/Right flip
+
+        Rotation2d trenchAngle = startingTrenchApproachAngle.times(isRightSide ? 1 : -1);
+
+        List<PathElement> pathElements = new ArrayList<PathElement>(List.of(
+            new Path.Waypoint(swerve.getRelativePose()),
+            new Path.RotationTarget(
+                trenchAngle, 
+                0.75
+            ),
+            new Path.Waypoint(
+                new Pose2d(
+                    hubPose.plus(
+                        trenchTransform.rotateBy(LRFlip)
+                    ).plus(
+                        approachTransform
+                    ),
+                    trenchAngle
+                ),
+                0.6
+            ),
+            new Path.Waypoint(
+                hubPose.plus(
+                    trenchTransform.rotateBy(LRFlip)
+                ).plus(
+                    approachTransform.rotateBy(Rotation2d.k180deg)
+                ),
+                trenchAngle
+            )
+        ));
+
+        Autos.removePastPoses(swerve, pathElements, true);
+
+        Path path = new Path(pathElements, startingTrenchPathConstraints);
+
+        return Autos.build(path, Rotation2d.kZero, swerve);
+    }
 }

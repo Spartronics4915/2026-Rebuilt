@@ -75,6 +75,29 @@ public final class Autos {
         return limitedConstraints;
     }
 
+    public static Path.PathConstraints combineConstraints(Path.PathConstraints... constraintsList) {
+        Path.PathConstraints combined = new Path.PathConstraints();
+        
+        java.util.List<Path.RangedConstraint> vel = new java.util.ArrayList<>();
+        java.util.List<Path.RangedConstraint> acc = new java.util.ArrayList<>();
+        java.util.List<Path.RangedConstraint> velDeg = new java.util.ArrayList<>();
+        java.util.List<Path.RangedConstraint> accDeg = new java.util.ArrayList<>();
+        
+        for (Path.PathConstraints c : constraintsList) {
+            if (c.getMaxVelocityMetersPerSec().isPresent()) vel.addAll(c.getMaxVelocityMetersPerSec().get());
+            if (c.getMaxAccelerationMetersPerSec2().isPresent()) acc.addAll(c.getMaxAccelerationMetersPerSec2().get());
+            if (c.getMaxVelocityDegPerSec().isPresent()) velDeg.addAll(c.getMaxVelocityDegPerSec().get());
+            if (c.getMaxAccelerationDegPerSec2().isPresent()) accDeg.addAll(c.getMaxAccelerationDegPerSec2().get());
+        }
+        
+        if (!vel.isEmpty()) combined = combined.setMaxVelocityMetersPerSec(vel.toArray(new Path.RangedConstraint[0]));
+        if (!acc.isEmpty()) combined = combined.setMaxAccelerationMetersPerSec2(acc.toArray(new Path.RangedConstraint[0]));
+        if (!velDeg.isEmpty()) combined = combined.setMaxVelocityDegPerSec(velDeg.toArray(new Path.RangedConstraint[0]));
+        if (!accDeg.isEmpty()) combined = combined.setMaxAccelerationDegPerSec2(accDeg.toArray(new Path.RangedConstraint[0]));
+        
+        return combined;
+    }
+
     public static Command build(Path path) {
         return build(path, null, null);
     }
@@ -129,6 +152,10 @@ public final class Autos {
     }
 
     public static void removePastPoses(SwerveSubsystem swerve, List<Path.PathElement> waypoints, boolean toNeutralZone) {
+        if (!toNeutralZone) {
+            return;
+        }
+
         double x = swerve.getRelativePose().getX();
 
         for (int i = waypoints.size() - 1; i >= 0; i--) {

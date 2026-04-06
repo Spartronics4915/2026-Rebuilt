@@ -27,7 +27,7 @@ public class NeutralZoneAutos {
         this.swerve = swerve;
     }
 
-    public Command generateQuadrantCommand(boolean isRightSide) {
+    public Command generateQuadrantCommand(boolean isRightSide, boolean useStartingConstraints) {
         return Commands.defer(() -> {
             double sideMultiplier = isRightSide ? -1 : 1;
             Rotation2d rotation = Rotation2d.fromDegrees(isRightSide ? 90 : -90);
@@ -57,20 +57,28 @@ public class NeutralZoneAutos {
                     intakeStart.getRotation(), 
                     0.75
                 ),
-                new Path.Waypoint(intakeStart, 0.75),
+                new Path.Waypoint(intakeStart, 1.5),
                 new Path.Waypoint(quadrantEnd)
             ));
 
+            Path.PathConstraints constraints = Autos.generatePathConstraintZone(intakePathConstraints, 1, 2);
+            if (useStartingConstraints) {
+                constraints = Autos.combineConstraints(
+                    Autos.generatePathConstraintZone(startingTrenchPathConstraints, 0, 1),
+                    constraints
+                );
+            }
+
             Path path = new Path(
                 pathElements,
-                Autos.generatePathConstraintZone(intakePathConstraints, 1, 2)
+                constraints
             );
 
             return Autos.build(path, quadrantEnd.getTranslation().minus(intakeStart.getTranslation()).getAngle(), swerve);
         }, Set.of(swerve));
     }
 
-    public Command generateHairpinCommand(boolean isRightSide) {
+    public Command generateHairpinCommand(boolean isRightSide, boolean useStartingConstraints) {
         return Commands.defer(() -> {
             double sideMultiplier = isRightSide ? -1 : 1;
             Rotation2d rotation = Rotation2d.fromDegrees(isRightSide ? 90 : -90);
@@ -96,7 +104,7 @@ public class NeutralZoneAutos {
 
             Pose2d quadrantTurnAround = new Pose2d(
                 quadrantEnd.getTranslation().plus(
-                    new Translation2d(-1.4, 0)
+                    new Translation2d(-1.5, 0)
                 ),
                 quadrantEnd.getRotation().rotateBy(Rotation2d.k180deg)
             );
@@ -107,22 +115,30 @@ public class NeutralZoneAutos {
                     intakeStart.getRotation(), 
                     0.75
                 ),
-                new Path.Waypoint(intakeStart, 0.75),
-                new Path.Waypoint(quadrantEnd),
-                new Path.RotationTarget(Rotation2d.k180deg, 0.5),
+                new Path.Waypoint(intakeStart, 0.9),
+                new Path.Waypoint(quadrantEnd, 1),
+                new Path.RotationTarget(quadrantTurnAround.getRotation(), 0.6),
                 new Path.Waypoint(quadrantTurnAround, 0.1)
             ));
 
+            Path.PathConstraints constraints = Autos.generatePathConstraintZone(intakePathConstraints, 1, 2);
+            if (useStartingConstraints) {
+                constraints = Autos.combineConstraints(
+                    Autos.generatePathConstraintZone(startingTrenchPathConstraints, 0, 1),
+                    constraints
+                );
+            }
+
             Path path = new Path(
                 pathElements,
-                Autos.generatePathConstraintZone(intakePathConstraints, 1, 2)
+                constraints
             );
 
             return Autos.build(path, quadrantEnd.getTranslation().minus(intakeStart.getTranslation()).getAngle(), swerve);
         }, Set.of(swerve));
     }
 
-    public Command generateInvertedQuadrantCommand(boolean toRightSide) {
+    public Command generateInvertedQuadrantCommand(boolean toRightSide, boolean useStartingConstraints) {
         return Commands.defer(() -> {
             double sideMultiplier = toRightSide ? 1 : -1;
             Rotation2d rotation = Rotation2d.fromDegrees(toRightSide ? -90 : 90);
@@ -147,20 +163,28 @@ public class NeutralZoneAutos {
                     intakeStart.getRotation(), 
                     0.75
                 ),
-                new Path.Waypoint(intakeStart, 0.75),
+                new Path.Waypoint(intakeStart, 0.9),
                 new Path.Waypoint(quadrantEnd)
             ));
 
+            Path.PathConstraints constraints = Autos.generatePathConstraintZone(intakePathConstraints, 1, 2);
+            if (useStartingConstraints) {
+                constraints = Autos.combineConstraints(
+                    Autos.generatePathConstraintZone(startingTrenchPathConstraints, 0, 1),
+                    constraints
+                );
+            }
+
             Path path = new Path(
                 pathElements,
-                Autos.generatePathConstraintZone(intakePathConstraints, 1, 2)
+                constraints
             );
 
             return Autos.build(path, quadrantEnd.getTranslation().minus(intakeStart.getTranslation()).getAngle(), swerve);
         }, Set.of(swerve));
     }
 
-    public Command generateHalfCommand(boolean isRightSide, boolean endWithSpeed) {
+    public Command generateHalfCommand(boolean isRightSide, boolean endWithSpeed, boolean useStartingConstraints) {
         return Commands.defer(() -> {
             double sideMultiplier = isRightSide ? -1 : 1;
             Rotation2d rotation = Rotation2d.fromDegrees(isRightSide ? 90 : -90);
@@ -184,13 +208,21 @@ public class NeutralZoneAutos {
                     fuelStart.getRotation(), 
                     0.75
                 ),
-                new Path.Waypoint(fuelStart, 0.75),
+                new Path.Waypoint(fuelStart, 0.9),
                 new Path.Waypoint(fuelEnd)
             ));
 
+            Path.PathConstraints constraints = Autos.generatePathConstraintZone(intakePathConstraints, 1, 2);
+            if (useStartingConstraints) {
+                constraints = Autos.combineConstraints(
+                    Autos.generatePathConstraintZone(startingTrenchPathConstraints, 0, 1),
+                    constraints
+                );
+            }
+
             Path path = new Path(
                 pathElements,
-                Autos.generatePathConstraintZone(intakePathConstraints, 1, 2)
+                constraints
             );
 
             return Autos.build(path, endWithSpeed ? fuelEnd.getTranslation().minus(fuelStart.getTranslation()).getAngle() : null, swerve);
