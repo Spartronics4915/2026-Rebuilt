@@ -194,6 +194,15 @@ public class ComplexAutoChooser {
         return segment.userFacingName.charAt(0) == 'R';
     }
 
+    private AutoSegment getNextNonPauseSegment(int currentIndex) {
+        for (int i = currentIndex + 1; i < selectedSegments.length; i++) {
+            if (selectedSegments[i] != PAUSE) {
+                return selectedSegments[i] != null ? selectedSegments[i] : UNUSED;
+            }
+        }
+        return UNUSED;
+    }
+
     /**
      * Generates the auto command based on the currently selected segments.
      * @return The command representing the selected autonomous routine.
@@ -233,13 +242,13 @@ public class ComplexAutoChooser {
                     break;
 
                 case L_TRENCH_TO_ALLIANCE:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, futureSegment != PAUSE && futureSegment != UNUSED));
+                    commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, futureSegment != PAUSE && futureSegment != UNUSED, getNextNonPauseSegment(i) == L_TRENCH_TO_NEUTRAL));
                     break;
                 case L_BUMP_TO_ALLIANCE:
                     commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP, futureSegment != PAUSE && futureSegment != UNUSED));
                     break;
                 case R_TRENCH_TO_ALLIANCE:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, futureSegment != PAUSE && futureSegment != UNUSED));
+                    commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, futureSegment != PAUSE && futureSegment != UNUSED, getNextNonPauseSegment(i) == R_TRENCH_TO_NEUTRAL));
                     break;
                 case R_BUMP_TO_ALLIANCE:
                     commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, futureSegment != PAUSE && futureSegment != UNUSED));

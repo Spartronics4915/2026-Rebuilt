@@ -48,9 +48,13 @@ public class ZoneTransition {
     }
 
     public Command generateCommand(TraversalMethod method, boolean toNeutralZone, boolean endWithSpeed) {
+        return generateCommand(method, toNeutralZone, endWithSpeed, false);
+    }
+
+    public Command generateCommand(TraversalMethod method, boolean toNeutralZone, boolean endWithSpeed, boolean endInTrench) {
         return Commands.defer(() -> {
             if (method.isTrench) {
-                return generateTrenchCommand(method.isRightSide, toNeutralZone, endWithSpeed);
+                return generateTrenchCommand(method.isRightSide, toNeutralZone, endWithSpeed, endInTrench);
             } else {
                 return generateBumpCommand(method.isRightSide, toNeutralZone, endWithSpeed);
             }
@@ -108,7 +112,7 @@ public class ZoneTransition {
         );
     }
 
-    public Command generateTrenchCommand(boolean isRightSide, boolean toNeutralZone, boolean endWithSpeed) {
+    public Command generateTrenchCommand(boolean isRightSide, boolean toNeutralZone, boolean endWithSpeed, boolean endInTrench) {
         Rotation2d LRFlip = isRightSide ? Rotation2d.kZero : Rotation2d.k180deg; // Left/Right flip
         Rotation2d IOFlip = toNeutralZone ? Rotation2d.kZero : Rotation2d.k180deg; // In/Out flip
 
@@ -135,9 +139,9 @@ public class ZoneTransition {
                 hubPose.plus(
                     trenchTransform.rotateBy(LRFlip)
                 ).plus(
-                    toNeutralZone
-                        ? approachTransform.rotateBy(IOFlip.plus(Rotation2d.k180deg))
-                        : trenchExitTransform.rotateBy(IOFlip)
+                    endInTrench
+                        ? trenchExitTransform.rotateBy(IOFlip)
+                        : approachTransform.rotateBy(IOFlip.plus(Rotation2d.k180deg))
                 ),
                 trenchAngle
             )
