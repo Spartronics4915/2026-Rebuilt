@@ -21,6 +21,7 @@ import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -63,6 +64,8 @@ public class Superstructure extends SubsystemBase {
 
     private final StringPublisher zonePublisher =
         NetworkTableInstance.getDefault().getStringTopic("superstructure/Current Zone").publish();
+    private final BooleanPublisher ballDetectedPublisher =
+        NetworkTableInstance.getDefault().getBooleanTopic("superstructure/Ball Detect").publish();
 
     public Superstructure(
         SwerveSubsystem swerve,
@@ -183,6 +186,7 @@ public class Superstructure extends SubsystemBase {
         }
 
         ballDetectedDebounced = ballDebouncer.calculate(ballDetect());
+        ballDetectedPublisher.set(ballDetectedDebounced);
     }
 
     private boolean ballDetect(){
