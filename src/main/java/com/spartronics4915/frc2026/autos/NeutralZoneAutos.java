@@ -52,6 +52,11 @@ public class NeutralZoneAutos {
             );
 
             List<PathElement> pathElements = new ArrayList<>(List.of(
+                new Path.Waypoint(swerve.getRelativePose()),
+                new Path.RotationTarget(
+                    intakeStart.getRotation(), 
+                    0.75
+                ),
                 new Path.Waypoint(intakeStart, 0.75),
                 new Path.Waypoint(quadrantEnd)
             ));
@@ -97,6 +102,11 @@ public class NeutralZoneAutos {
             );
 
             List<PathElement> pathElements = new ArrayList<>(List.of(
+                new Path.Waypoint(swerve.getRelativePose()),
+                new Path.RotationTarget(
+                    intakeStart.getRotation(), 
+                    0.75
+                ),
                 new Path.Waypoint(intakeStart, 0.75),
                 new Path.Waypoint(quadrantEnd),
                 new Path.RotationTarget(Rotation2d.k180deg, 0.5),
@@ -132,6 +142,11 @@ public class NeutralZoneAutos {
             );
 
             List<PathElement> pathElements = new ArrayList<>(List.of(
+                new Path.Waypoint(swerve.getRelativePose()),
+                new Path.RotationTarget(
+                    intakeStart.getRotation(), 
+                    0.75
+                ),
                 new Path.Waypoint(intakeStart, 0.75),
                 new Path.Waypoint(quadrantEnd)
             ));
@@ -164,6 +179,11 @@ public class NeutralZoneAutos {
             Pose2d fuelEnd = new Pose2d(centerPose.plus(endOffset), rotation);
 
             List<PathElement> pathElements = new ArrayList<>(List.of(
+                new Path.Waypoint(swerve.getRelativePose()),
+                new Path.RotationTarget(
+                    fuelStart.getRotation(), 
+                    0.75
+                ),
                 new Path.Waypoint(fuelStart, 0.75),
                 new Path.Waypoint(fuelEnd)
             ));
