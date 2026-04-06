@@ -226,7 +226,6 @@ public class AutoAimController extends SubsystemBase {
         boolean readyToShoot = readyToShoot(result);
         if (readyToShoot) {
             Translation3d target = (targetOverride != null) ? targetOverride : getDefaultTarget();
-
             shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed() * (target != BOTTOM_FUNNEL_POSITION ? 1.01 : 1)));
         } else {
             shooter.setSetpoint(0);
@@ -274,8 +273,6 @@ public class AutoAimController extends SubsystemBase {
     private boolean checkHubCollision(Rotation2d pitch, double shotSpeed, boolean usePadding) {
         if (cachedCollisionDist == null) return false;
         double collisionDist = cachedCollisionDist;
-        Translation2d robotPos2d = swerve.getSmoothedRelativePose().getTranslation()
-            .plus(turretTranslation2D.rotateBy(swerve.getRelativePose().getRotation()));
 
         if (collisionDist <= 0) return true;
 
