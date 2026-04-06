@@ -287,7 +287,8 @@ public final class Constants {
             public static final Distance robotLength = Millimeters.of(818.5);
             public static final Distance robotWidth = Millimeters.of(875.65);
             public static final Distance intakeLength = Millimeters.of(213.05);
-            public static final Distance towerPadding = Inches.of(10);
+            public static final Distance towerPadding = Inches.of(7);
+            public static final Distance towerSidePadding = Inches.of(3);
             public static final Distance outpostPadding = Inches.of(6);
             public static final Distance paddingFromOp = Inches.of(3); // Padding away from center so we don't hit opponent robots
             public static final Distance paddingFromCenter = Meters.of(0.25); // Padding from center so we don't hit friendly robots (and implement u-turn movement)
