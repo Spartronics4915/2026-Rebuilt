@@ -26,6 +26,7 @@ import java.util.List;
 import org.photonvision.simulation.SimCameraProperties;
 
 import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.PathplannerConfigs;
+import com.spartronics4915.frc2026.subsystems.vision.cameras.LimelightProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.PhotonProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
 import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
@@ -480,7 +481,13 @@ public final class Constants {
              * Primary cameras, always participate in pose fusion.
              */
             public static final List<ProcessorInterface> primaryCameras = List.of(
-                
+            new LimelightProcessor(
+                    "argos",
+                    SuperstructureConstants.shooterBaseTranslation,
+                    turretToCamera,
+                    new StdDevCalculator(1.0),
+                    80
+                )
             );
 
             /**
@@ -488,13 +495,6 @@ public final class Constants {
              * valid pose.
              */
             public static final List<ProcessorInterface> fallbackCameras = List.of(
-                //new LimelightProcessor(
-                //    "argos",
-                //    SuperstructureConstants.shooterBaseTranslation,
-                //    turretToCamera,
-                //    new StdDevCalculator(1.0),
-                //    80
-                //)
                 new PhotonProcessor(
                     "evan", apriltagFieldLayout, frontTowerCamTransform,
                     new StdDevCalculator(1.3), simCameraProperties, 20.0
