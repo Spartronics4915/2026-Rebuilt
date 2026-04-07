@@ -25,14 +25,12 @@ import java.util.List;
 
 import org.photonvision.simulation.SimCameraProperties;
 
-import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.PathplannerConfigs;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.LimelightProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.PhotonProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
 import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
 
 import com.pathplanner.lib.config.PIDConstants;
-import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
@@ -140,7 +138,6 @@ public final class Constants {
                 new SwerveDrivetrainConstants()
                     .withCANBusName("Hydra")
                     .withPigeon2Id(13),
-                AutoConstants.PathplannerConfigs.COMP_CHASSIS,
                 compChassisFactory(),
                 // Front Left
                 new ModuleConfig(1, 2, 3,
@@ -165,18 +162,15 @@ public final class Constants {
             );
 
             public final SwerveDrivetrainConstants drivetrainConstants;
-            public final PathplannerConfigs pathplannerConfig;
             public final SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>[] modules;
 
             @SuppressWarnings("unchecked")
             private SwerveConfigurations(
                 SwerveDrivetrainConstants drivetrainConstants,
-                PathplannerConfigs pathplannerConfig,
                 SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration> factory,
                 ModuleConfig fl, ModuleConfig fr, ModuleConfig bl, ModuleConfig br
             ) {
                 this.drivetrainConstants = drivetrainConstants;
-                this.pathplannerConfig = pathplannerConfig;
                 this.modules = new SwerveModuleConstants[]{
                     factory.createModuleConstants(
                         fl.steerMotorId(), fl.driveMotorId(), fl.encoderId(),
@@ -333,49 +327,6 @@ public final class Constants {
             public static final Rotation2d trenchApproachAngle = Rotation2d.fromDegrees(0.0);
             public static final Rotation2d startingTrenchApproachAngle = Rotation2d.fromDegrees(90.0);
             public static final Rotation2d bumpApproachAngle = Rotation2d.fromDegrees(45.0);
-
-            public enum PathplannerConfigs {
-                TEST_CHASSIS(new RobotConfig(
-                    Pounds.of(15),
-                    KilogramSquareMeters.of(3),
-                    new com.pathplanner.lib.config.ModuleConfig(
-                        Inches.of(2),
-                        MetersPerSecond.of(5.4),
-                        1.916,
-                        DCMotor.getKrakenX60(1),
-                        6.75,
-                        Amps.of(40),
-                        1
-                    ),
-                    new Translation2d(Inches.of(12.634).in(Meter), Inches.of(12.280).in(Meter)), // Front left
-                    new Translation2d(Inches.of(12.634).in(Meter), Inches.of(-12.280).in(Meter)), // Front right
-                    new Translation2d(Inches.of(-12.634).in(Meter), Inches.of(12.280).in(Meter)), // Back left
-                    new Translation2d(Inches.of(-12.634).in(Meter), Inches.of(-12.280).in(Meter))  // Back right
-                )),
-                COMP_CHASSIS(new RobotConfig(
-                    Pounds.of(160),
-                    KilogramSquareMeters.of(2),
-                    new com.pathplanner.lib.config.ModuleConfig(
-                        Inches.of(2.0),
-                        MetersPerSecond.of(5.12),
-                        2.255,
-                        DCMotor.getKrakenX60Foc(1),
-                        6.026785714285714,
-                        Amps.of(120),
-                        1
-                    ),
-                    new Translation2d(Inches.of(9.585892).in(Meter),  Inches.of(12.1640885).in(Meter)),  // Front left
-                    new Translation2d(Inches.of(9.585892).in(Meter),  Inches.of(-12.1640885).in(Meter)), // Front right
-                    new Translation2d(Inches.of(-9.585892).in(Meter), Inches.of(12.1640885).in(Meter)),  // Back left
-                    new Translation2d(Inches.of(-9.585892).in(Meter), Inches.of(-12.1640885).in(Meter))  // Back right
-                ));
-
-                public com.pathplanner.lib.config.RobotConfig config;
-
-                private PathplannerConfigs(RobotConfig config) {
-                    this.config = config;
-                }
-            }
         }
         //#endregion
     }
