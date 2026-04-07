@@ -30,8 +30,6 @@ public class PoseFusionEngine {
     private final List<ApriltagResult> validScratch = new ArrayList<>(8);
     private final List<TrackedTag> tagScratch = new ArrayList<>(16);
 
-    private final StringBuilder nameBuilder = new StringBuilder(64);
-
     private final ApriltagResult fusedResult = new ApriltagResult();
     private final Matrix<N3, N1> fusedStdDevScratch = VecBuilder.fill(0.0, 0.0, 0.0);
     private final boolean[] tagPresenceBitset = new boolean[33];
@@ -52,7 +50,7 @@ public class PoseFusionEngine {
             return selectBestResult(apriltagResults);
         }
 
-        getLargestTimestampGroup(apriltagResults, FusionConstants.timestampThresholdSecs);
+        getLargestGroup(apriltagResults, FusionConstants.timestampThresholdSecs);
         rejectOutliers(bestGroup, FusionConstants.outlierSigma);
 
         if (filteredScratch.size() < FusionConstants.minCameras) {
@@ -62,31 +60,32 @@ public class PoseFusionEngine {
         return performWeightedFusion(filteredScratch);
     }
 
-    private void getLargestTimestampGroup(List<ApriltagResult> results, double timestampThreshold) {
+    private void getLargestGroup(List<ApriltagResult> results, double timestampThreshold) {
+        bestGroup.clear();
+        currentGroup.clear();
         sortedScratch.clear();
+
+        if (results.isEmpty()) return;
+
         sortedScratch.addAll(results);
         sortedScratch.sort(Comparator.comparingDouble(ApriltagResult::getTimestampSeconds));
 
-        bestGroup.clear();
-        currentGroup.clear();
-        double groupStart = -1;
+        double groupStart = sortedScratch.get(0).getTimestampSeconds();
+        currentGroup.add(sortedScratch.get(0));
 
-        for (int i = 0; i < sortedScratch.size(); i++) {
+        for (int i = 1; i < sortedScratch.size(); i++) {
             ApriltagResult result = sortedScratch.get(i);
-            double ts = result.getTimestampSeconds();
+            double timestamp = result.getTimestampSeconds();
 
-            if (groupStart < 0 || Math.abs(ts - groupStart) <= timestampThreshold) {
-                if (groupStart < 0) groupStart = ts;
-                currentGroup.add(result);
-            } else {
+            if (Math.abs(timestamp - groupStart) > timestampThreshold) {
                 if (currentGroup.size() >= bestGroup.size()) {
                     bestGroup.clear();
                     bestGroup.addAll(currentGroup);
                 }
                 currentGroup.clear();
-                currentGroup.add(result);
-                groupStart = ts;
+                groupStart = timestamp;
             }
+            currentGroup.add(result);
         }
 
         if (currentGroup.size() >= bestGroup.size()) {
@@ -124,9 +123,9 @@ public class PoseFusionEngine {
             Pose2d pose = results.get(i).getPose();
             sumX += pose.getX();
             sumY += pose.getY();
-            double rad = pose.getRotation().getRadians();
-            sumSin += Math.sin(rad);
-            sumCos += Math.cos(rad);
+            double radians = pose.getRotation().getRadians();
+            sumSin += Math.sin(radians);
+            sumCos += Math.cos(radians);
         }
 
         double invN = 1.0 / results.size();
@@ -155,27 +154,27 @@ public class PoseFusionEngine {
     }
 
     private Optional<ApriltagResult> performWeightedFusion(List<ApriltagResult> results) {
-        double totalWeightX = 0, totalWeightY = 0, totalWeightTheta = 0;
+        double totalWX = 0, totalWY = 0, totalWT = 0;
         double weightedX = 0, weightedY = 0, weightedSin = 0, weightedCos = 0;
         double latestTimestamp = Double.NEGATIVE_INFINITY;
         double sumLatency = 0, sumAmbiguity = 0, sumArea = 0;
 
         validScratch.clear();
+        tagScratch.clear();
+        java.util.Arrays.fill(tagPresenceBitset, false);
 
-        for (int i = 0; i < results.size(); i++) {
-            ApriltagResult result = results.get(i);
-            Matrix<N3, N1> stdDevs = result.getStdDevs();
-            if (stdDevs == null) continue;
+        for (ApriltagResult result : results) {
+            Matrix<N3, N1> std = result.getStdDevs();
+            if (std == null) continue;
             validScratch.add(result);
 
-            Pose2d pose = result.getPose();
-            double wX = 1.0 / Math.max(1e-6, Math.pow(stdDevs.get(0, 0), 2));
-            double wY = 1.0 / Math.max(1e-6, Math.pow(stdDevs.get(1, 0), 2));
-            double wT = 1.0 / Math.max(1e-6, Math.pow(stdDevs.get(2, 0), 2));
+            // Calculate weights (1/variance)
+            double wX = 1.0 / Math.max(1e-6, std.get(0, 0) * std.get(0, 0));
+            double wY = 1.0 / Math.max(1e-6, std.get(1, 0) * std.get(1, 0));
+            double wT = 1.0 / Math.max(1e-6, std.get(2, 0) * std.get(2, 0));
 
-            totalWeightX += wX; 
-            totalWeightY += wY; 
-            totalWeightTheta += wT;
+            Pose2d pose = result.getPose();
+            totalWX += wX; totalWY += wY; totalWT += wT;
             weightedX += pose.getX() * wX;
             weightedY += pose.getY() * wY;
 
@@ -183,58 +182,37 @@ public class PoseFusionEngine {
             weightedSin += Math.sin(theta) * wT;
             weightedCos += Math.cos(theta) * wT;
 
-            if (result.getTimestampSeconds() > latestTimestamp) latestTimestamp = result.getTimestampSeconds();
-
+            latestTimestamp = Math.max(latestTimestamp, result.getTimestampSeconds());
             sumLatency += result.getLatencyMs();
             sumAmbiguity += result.getAmbiguity();
             sumArea += result.getAverageArea();
+
+            // Merge unique tags
+            for (TrackedTag tag : result.getTrackedTags()) {
+                int id = tag.getFiducialId();
+                if (id >= 0 && id < tagPresenceBitset.length && !tagPresenceBitset[id]) {
+                    tagPresenceBitset[id] = true;
+                    tagScratch.add(tag);
+                }
+            }
         }
 
         if (validScratch.isEmpty()) return selectBestResult(results);
 
         double invN = 1.0 / validScratch.size();
-
-        fusedStdDevScratch.set(0, 0, Math.sqrt(1.0 / totalWeightX));
-        fusedStdDevScratch.set(1, 0, Math.sqrt(1.0 / totalWeightY));
-        fusedStdDevScratch.set(2, 0, Math.sqrt(1.0 / totalWeightTheta));
-
-        Pose2d fusedPose = new Pose2d(
-            weightedX / totalWeightX,
-            weightedY / totalWeightY,
-            new Rotation2d(Math.atan2(weightedSin / totalWeightTheta, weightedCos / totalWeightTheta))
-        );
-
-        tagScratch.clear();
-        for (int i = 0; i < tagPresenceBitset.length; i++) tagPresenceBitset[i] = false;
-
-        for (int i = 0; i < validScratch.size(); i++) {
-            List<TrackedTag> tags = validScratch.get(i).getTrackedTags();
-            for (int j = 0; j < tags.size(); j++) {
-                TrackedTag t = tags.get(j);
-                int id = t.getFiducialId();
-                if (id >= 0 && id < tagPresenceBitset.length && !tagPresenceBitset[id]) {
-                    tagPresenceBitset[id] = true;
-                    tagScratch.add(t);
-                }
-            }
-        }
-
-        nameBuilder.setLength(0);
-        nameBuilder.append("fused[");
-        for (int i = 0; i < validScratch.size(); i++) {
-            if (i > 0) nameBuilder.append(',');
-            nameBuilder.append(validScratch.get(i).getSourceName());
-        }
-        nameBuilder.append(']');
+        fusedStdDevScratch.set(0, 0, Math.sqrt(1.0 / totalWX));
+        fusedStdDevScratch.set(1, 0, Math.sqrt(1.0 / totalWY));
+        fusedStdDevScratch.set(2, 0, Math.sqrt(1.0 / totalWT));
 
         fusedResult.set(
-            nameBuilder.toString(), 
+            "Fused", // Simplified naming
             latestTimestamp,
-            sumLatency * invN, 
-            fusedPose, 
+            sumLatency * invN,
+            new Pose2d(weightedX / totalWX, weightedY / totalWY, 
+                new Rotation2d(Math.atan2(weightedSin, weightedCos))),
             fusedStdDevScratch,
-            tagScratch, 
-            sumAmbiguity * invN, 
+            tagScratch,
+            sumAmbiguity * invN,
             sumArea * invN
         );
 

@@ -39,7 +39,7 @@ public interface ProcessorInterface {
         return Optional.empty();
     }
 
-    void setRobotOrientation(double headingDegrees);
+    void setRobotHeading(double headingDegrees);
     void updateTurretAngle(Rotation2d turretAngle, double timestamp);
     default void updateHeading(Rotation2d angle, double timestamp) {
         updateTurretAngle(angle, timestamp);

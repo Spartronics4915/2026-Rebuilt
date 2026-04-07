@@ -27,7 +27,6 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
@@ -68,20 +67,16 @@ public class PhotonProcessor implements ProcessorInterface {
     private final Notifier processingNotifier;
     private volatile boolean isRunning = false;
 
-    private Pose2d resultPose = new Pose2d();
-
-    private final List<TrackedTag> tagScratch = new ArrayList<>(maxTagsPerFrame);
+    private final List<TrackedTag> tagList = new ArrayList<>(maxTagsPerFrame);
     private final TrackedTag[][] tagCache;
     private final ApriltagResult[] resultCache;
-
     private int resultCacheIndex = 0;
 
-    private final Matrix<N3, N1> stdDevScratch = VecBuilder.fill(0.0, 0.0, 0.0);
+    private final Matrix<N3, N1> stdDevs = VecBuilder.fill(0.0, 0.0, 0.0);
     private final Matrix<N3, N1> scaledStdDevScratch = VecBuilder.fill(0.0, 0.0, 0.0);
 
     private double cachedYaw = Double.NaN;
-    private volatile double robotHeadingDegrees = 0.0;
-    private Transform3d cachedRobotToCamera = new Transform3d();
+    private Transform3d robotToCamera = new Transform3d();
 
     /** Fixed-camera constructor. */
     public PhotonProcessor(
@@ -110,7 +105,7 @@ public class PhotonProcessor implements ProcessorInterface {
         this.turreted = false;
         this.turretYawBuffer = null;
 
-        this.resultCache = allocateResultPool(maxQueueSize);
+        this.resultCache = initResultCache(maxQueueSize);
         this.tagCache = new TrackedTag[maxQueueSize][maxTagsPerFrame];
         initTagCache();
 
@@ -146,7 +141,7 @@ public class PhotonProcessor implements ProcessorInterface {
         this.turreted = true;
         this.turretYawBuffer = ConcurrentTimeBuffer.createDoubleBuffer(turretHistorySeconds);
 
-        this.resultCache = allocateResultPool(maxQueueSize);
+        this.resultCache = initResultCache(maxQueueSize);
         this.tagCache = new TrackedTag[maxQueueSize][maxTagsPerFrame];
         initTagCache();
 
@@ -154,12 +149,12 @@ public class PhotonProcessor implements ProcessorInterface {
         this.processingNotifier.setName("PhotonTurret-" + cameraName);
     }
 
-    private static ApriltagResult[] allocateResultPool(int size) {
-        ApriltagResult[] pool = new ApriltagResult[size];
+    private static ApriltagResult[] initResultCache(int size) {
+        ApriltagResult[] cache = new ApriltagResult[size];
         for (int i = 0; i < size; i++) {
-            pool[i] = new ApriltagResult(); 
+            cache[i] = new ApriltagResult(); 
         }
-        return pool;
+        return cache;
     }
 
     private void initTagCache() {
@@ -226,16 +221,14 @@ public class PhotonProcessor implements ProcessorInterface {
 
         if (poseOpt.isEmpty()) return null;
 
-        EstimatedRobotPose estPose = poseOpt.get();
+        EstimatedRobotPose estimatedRobotPose = poseOpt.get();
 
-        Pose3d estPose3d = estPose.estimatedPose;
-        resultPose = new Pose2d(
-            estPose3d.getX(),
-            estPose3d.getY(),
-            estPose3d.getRotation().toRotation2d()
-        );
 
-        double timestamp = Utils.fpgaToCurrentTime(estPose.timestampSeconds);
+        Pose2d poseEstimate = estimatedRobotPose
+            .estimatedPose
+            .toPose2d();
+
+        double timestamp = Utils.fpgaToCurrentTime(estimatedRobotPose.timestampSeconds);
         double latency = rawResult.metadata.getLatencyMillis();
 
         Matrix<N3, N1> calculatedValues = stdDevCalculator.calculate(
@@ -243,29 +236,26 @@ public class PhotonProcessor implements ProcessorInterface {
         );
 
         for (int i = 0; i < 3; i++) {
-            stdDevScratch.set(i, 0, calculatedValues.get(i, 0));
+            stdDevs.set(i, 0, calculatedValues.get(i, 0));
         }
 
-        Matrix<N3, N1> finalStdDevs;
+        Matrix<N3, N1> finalStdDevs = stdDevs;
         if (turreted && targetCount >= 2) {
-            fillScaledMultiTagStdDevs(stdDevScratch, scaledStdDevScratch, targetCount);
+            fillScaledMultiTagStdDevs(stdDevs, scaledStdDevScratch, targetCount);
             finalStdDevs = scaledStdDevScratch;
-        } else {
-            finalStdDevs = stdDevScratch;
         }
 
         TrackedTag[] currentFrameTagCache = tagCache[resultCacheIndex];
-        tagScratch.clear();
-        int tagsToProcess = Math.min(targetCount, maxTagsPerFrame);
+            tagList.clear();
 
-        for (int i = 0; i < tagsToProcess; i++) {
+        for (int i = 0; i < Math.min(targetCount, maxTagsPerFrame); i++) {
             PhotonTrackedTarget target = targets.get(i);
             currentFrameTagCache[i].set(
                 target.getFiducialId(), 
                 target.getArea(),
                 target.getPoseAmbiguity()
             );
-            tagScratch.add(currentFrameTagCache[i]);
+            tagList.add(currentFrameTagCache[i]);
         }
 
         ApriltagResult result = resultCache[resultCacheIndex];
@@ -275,9 +265,9 @@ public class PhotonProcessor implements ProcessorInterface {
             cameraName, 
             timestamp, 
             latency, 
-            resultPose,
+            poseEstimate,
             finalStdDevs, 
-            tagScratch, 
+            tagList, 
             avgAmbiguity, 
             avgArea
         );
@@ -287,17 +277,20 @@ public class PhotonProcessor implements ProcessorInterface {
 
     private Transform3d computeRobotToCamera(double turretYawRadians) {
         if (!Double.isNaN(cachedYaw) && Math.abs(turretYawRadians - cachedYaw) < yawRecomputeThreshold) {
-            return cachedRobotToCamera;
+            return robotToCamera;
         }
 
-        Rotation3d yaw3d = new Rotation3d(0, 0, turretYawRadians);
-        Translation3d offset = turretToCamera.getTranslation().rotateBy(yaw3d);
-        cachedRobotToCamera = new Transform3d(
+        Rotation3d yaw = new Rotation3d(0, 0, turretYawRadians);
+        Translation3d offset = turretToCamera.getTranslation().rotateBy(
+            yaw
+        );
+
+        robotToCamera = new Transform3d(
             robotToTurretPivot.plus(offset),
-            yaw3d.plus(turretToCamera.getRotation())
+            yaw.plus(turretToCamera.getRotation())
         );
         cachedYaw = turretYawRadians;
-        return cachedRobotToCamera;
+        return robotToCamera;
     }
 
     private static double calculateAmbiguity(List<PhotonTrackedTarget> targets) {
@@ -396,8 +389,10 @@ public class PhotonProcessor implements ProcessorInterface {
     }
 
     @Override
-    public void setRobotOrientation(double headingDegrees) {
-        this.robotHeadingDegrees = headingDegrees;
+    public void setRobotHeading(double headingDegrees) {
+        throw new UnsupportedOperationException(
+            "PhotonProcessor does not support adding the robot's current heading"
+        );
     }
 
     @Override

@@ -143,8 +143,16 @@ public class LimelightProcessor implements ProcessorInterface {
     private void initializeCameraPose() {
         double cameraZ = robotToTurret.getZ() + turretToCamera.getTranslation().getZ();
         Rotation3d camRotation = turretToCamera.getRotation();
-        LimelightHelpers.setCameraPose_RobotSpace(name, 0, 0, cameraZ, 
-            Math.toDegrees(camRotation.getX()), Math.toDegrees(camRotation.getY()), 0);
+
+        LimelightHelpers.setCameraPose_RobotSpace(
+            name, 
+            0.0, 
+            0.0, 
+            cameraZ, 
+            Math.toDegrees(camRotation.getX()), 
+            Math.toDegrees(camRotation.getY()), 
+            Math.toDegrees(camRotation.getZ())
+        );
     }
 
     private void processFixed() {
@@ -158,9 +166,7 @@ public class LimelightProcessor implements ProcessorInterface {
 
     private void processRotating() {
         if (useMegaTag2) {
-            double camFixedYaw = turretToCamera.getRotation().getZ();
-            double effectiveHeadingDeg = robotHeadingDegrees + Math.toDegrees(latestYawRad + camFixedYaw);
-            LimelightHelpers.SetRobotOrientation_NoFlush(name, effectiveHeadingDeg, 0, 0, 0, 0, 0);
+            LimelightHelpers.SetRobotOrientation_NoFlush(name, robotHeadingDegrees, 0, 0, 0, 0, 0);
         }
 
         PoseEstimate mt2 = useMegaTag2 ? LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(name) : null;
@@ -336,7 +342,7 @@ public class LimelightProcessor implements ProcessorInterface {
     }
 
     @Override
-    public void setRobotOrientation(double headingDegrees) {
+    public void setRobotHeading(double headingDegrees) {
         this.robotHeadingDegrees = headingDegrees;
     }
 
@@ -346,10 +352,6 @@ public class LimelightProcessor implements ProcessorInterface {
         double rad = turretAngle.getRadians();
         latestYawRad = rad;
         yawBuffer.addSample(timestamp, rad);
-    }
-
-    public void setRobotHeading(double headingDeg) { 
-        this.robotHeadingDegrees = headingDeg; 
     }
 
     public void setUseMegaTag2(boolean use) { 
