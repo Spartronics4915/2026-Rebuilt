@@ -86,7 +86,7 @@ public class Superstructure extends SubsystemBase {
         this.laserCan = new LaserCan(feederLC);
         try {
             laserCan.setRangingMode(LaserCan.RangingMode.SHORT);
-            laserCan.setRegionOfInterest(new LaserCan.RegionOfInterest(8, 8, 4, 4));
+            laserCan.setRegionOfInterest(new LaserCan.RegionOfInterest(8, 8, 16, 16));
             laserCan.setTimingBudget(LaserCan.TimingBudget.TIMING_BUDGET_33MS);
         } catch (Exception e) {
             System.err.println("Error initializing LaserCan: " + e.getMessage());
@@ -191,7 +191,7 @@ public class Superstructure extends SubsystemBase {
 
     private boolean ballDetect(){
         LaserCan.Measurement measurement = laserCan.getMeasurement();
-        if (measurement == null) {
+        if (measurement == null || measurement.status != LaserCan.LASERCAN_STATUS_VALID_MEASUREMENT) {
             return true;
         } else{
             return measurement.distance_mm < detectDist;

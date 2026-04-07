@@ -549,7 +549,7 @@ public final class Constants {
         public static final double percentLoss = 0.107; // Percent loss on shooter to ball transfer, 0.85
 
         public static final int feederLC = 42;
-        public static final double detectDist = 90.0;
+        public static final double detectDist = 140.0;
         public static final double noBallsDebounce = 0.5;
     }
 
