@@ -228,4 +228,33 @@ public class NeutralZoneAutos {
             return Autos.build(path, endWithSpeed ? fuelEnd.getTranslation().minus(fuelStart.getTranslation()).getAngle() : null, swerve);
         }, Set.of(swerve));
     }
+
+    public Command generateMiddleCommand() { // Sota Bots tech
+        return Commands.defer(() -> {
+            Translation2d endOffset = new Translation2d(
+                -(robotLength.in(Meters) / 2 + intakeLength.in(Meters)),
+                0
+            );
+
+            Pose2d intakeStart = new Pose2d(
+                centerPose.plus(endOffset).plus(middleIntakeTransform), 
+                Rotation2d.kZero
+            );
+            Pose2d intakeEnd = new Pose2d(
+                centerPose.plus(endOffset), 
+                Rotation2d.kZero
+            );
+
+            List<PathElement> pathElements = new ArrayList<>(List.of(
+                new Path.Waypoint(intakeStart),
+                new Path.Waypoint(intakeEnd),
+                new Path.Waypoint(intakeStart)
+            ));
+
+            Path.PathConstraints constraints = Autos.generatePathConstraintZone(intakePathConstraints, 1, 3);
+            Path path = new Path(pathElements, constraints);
+
+            return Autos.build(path);
+        }, Set.of(swerve));
+    }
 }
