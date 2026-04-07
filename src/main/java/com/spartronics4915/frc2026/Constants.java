@@ -430,7 +430,7 @@ public final class Constants {
                     "argos",
                     SuperstructureConstants.shooterBaseTranslation,
                     turretToCamera,
-                    new StdDevCalculator(1.0),
+                    new StdDevCalculator(),
                     80
                 )
             );
@@ -442,15 +442,15 @@ public final class Constants {
             public static final List<ProcessorInterface> fallbackCameras = List.of(
                 new PhotonProcessor(
                     "evan", apriltagFieldLayout, frontTowerCamTransform,
-                    new StdDevCalculator(1.3), simCameraProperties, 20.0
+                    new StdDevCalculator(), simCameraProperties, 20.0
                 ),
                 new PhotonProcessor(
                     "val", apriltagFieldLayout, backTowerCamTransform,
-                    new StdDevCalculator(1.3), simCameraProperties, 20.0
+                    new StdDevCalculator(), simCameraProperties, 20.0
                 ),
                 new PhotonProcessor(
                     "daniil", apriltagFieldLayout, rioCamTransform,
-                    new StdDevCalculator(1.3), simCameraProperties, 20.0
+                    new StdDevCalculator(), simCameraProperties, 20.0
                 )
             );
         }
