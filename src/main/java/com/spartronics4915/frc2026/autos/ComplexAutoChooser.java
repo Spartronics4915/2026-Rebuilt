@@ -178,15 +178,15 @@ public class ComplexAutoChooser {
         }
     }
 
-    private Command addNeutralZoneCommand(AutoSegment segment, boolean inRight, boolean outRight, boolean useStartingConstraints) {
+    private Command addNeutralZoneCommand(AutoSegment segment, boolean inRight, boolean outRight) {
         if (segment == INTAKE_QUARTER) {
             if (inRight ^ outRight) {
-                return neutralZoneFactory.generateInvertedQuadrantCommand(outRight, useStartingConstraints);
+                return neutralZoneFactory.generateInvertedQuadrantCommand(outRight);
             } else {
-                return neutralZoneFactory.generateQuadrantCommand(inRight, useStartingConstraints);
+                return neutralZoneFactory.generateQuadrantCommand(inRight);
             }
         } else {
-            return neutralZoneFactory.generateHalfCommand(inRight, inRight ^ outRight, useStartingConstraints);
+            return neutralZoneFactory.generateHalfCommand(inRight, inRight ^ outRight);
         }
     }
 
@@ -245,11 +245,11 @@ public class ComplexAutoChooser {
 
                 case INTAKE_QUARTER:
                 case INTAKE_HALF:
-                    commands.add(addNeutralZoneCommand(currentSegment, isRight(prevSegment), isRight(futureSegment), useStartingConstraints));
+                    commands.add(addNeutralZoneCommand(currentSegment, isRight(prevSegment), isRight(futureSegment)));
                     break;
 
                 case INTAKE_HAIRPIN:
-                    commands.add(neutralZoneFactory.generateHairpinCommand(isRight(prevSegment), useStartingConstraints));
+                    commands.add(neutralZoneFactory.generateHairpinCommand(isRight(prevSegment)));
                     break;
 
                 case INTAKE_MIDDLE:

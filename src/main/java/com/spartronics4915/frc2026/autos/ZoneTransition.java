@@ -133,7 +133,7 @@ public class ZoneTransition {
                     ),
                     trenchAngle
                 ),
-                0.6
+                0.7
             ),
             new Path.Waypoint(
                 hubPose.plus(
@@ -149,7 +149,12 @@ public class ZoneTransition {
 
         Autos.removePastPoses(swerve, pathElements, toNeutralZone);
 
-        Path path = new Path(pathElements, Autos.generatePathConstraintZone(trenchPathConstraints, 1, 2));
+        Path path;
+        if (toNeutralZone) {
+            path = new Path(pathElements, Autos.generatePathConstraintZone(driveToCenterConstraints, 1, 2));
+        } else {
+            path = new Path(pathElements);
+        }
 
         return Autos.build(path, endWithSpeed ? Rotation2d.kZero.rotateBy(IOFlip) : null, swerve);
     }
@@ -188,7 +193,7 @@ public class ZoneTransition {
 
         Autos.removePastPoses(swerve, pathElements, true);
 
-        Path path = new Path(pathElements, startingTrenchPathConstraints);
+        Path path = new Path(pathElements, driveToCenterConstraints);
 
         return Autos.build(path, Rotation2d.kZero, swerve);
     }
