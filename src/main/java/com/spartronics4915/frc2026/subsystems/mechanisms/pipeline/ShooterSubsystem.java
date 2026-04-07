@@ -104,6 +104,8 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
         SmartDashboard.putData("Shooter Dynamic Reverse", sysIdDynamic(Direction.kReverse));
         SmartDashboard.putData("Shooter On", setSetpointCommand(55));
         SmartDashboard.putData("Shooter Off", setSetpointCommand(0));
+        SmartDashboard.putData("Shooter Motor", leadMotor);
+        SmartDashboard.putData("Follower Shooter Motor", followerMotor);
     }
 
     @Override
