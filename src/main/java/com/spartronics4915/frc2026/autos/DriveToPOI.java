@@ -7,7 +7,6 @@ import static edu.wpi.first.units.Units.Seconds;
 import java.util.EnumSet;
 import java.util.Set;
 
-import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem.ClimberState;
@@ -68,16 +67,13 @@ public class DriveToPOI {
                     Translation2d climbApproachPose = climbPose.plus(
                         new Translation2d(0, towerPadding.in(Meters)).times(shouldFlip ? -1 : 1)
                     );
-                    Translation2d climbSideApproachPose = climbApproachPose.plus(
-                        new Translation2d(towerSidePadding.in(Meters), 0)
-                    );
 
                     return Commands.sequence(
                         Commands.parallel(
                             climber.setStateCommand(ClimberState.JORBIT),
                             Autos.generatePathFromWaypoint(
                                 swerve,
-                                climbSideApproachPose, 
+                                climbApproachPose, 
                                 shouldFlip ? Rotation2d.fromDegrees(270.0) : Rotation2d.fromDegrees(90.0),
                                 climbPathConstraints
                             )
@@ -87,13 +83,7 @@ public class DriveToPOI {
                             Commands.sequence(
                                 // Make sure / wait for climber to be fully extended,
                                 Commands.waitUntil(
-                                    () -> Math.abs(climber.getCurrentSetpoint() - climber.getPosition()) <= 0.05 || Robot.isSimulation()
-                                ),
-                                Autos.generatePathFromWaypoint(
-                                    swerve, 
-                                    climbApproachPose, 
-                                    shouldFlip ? Rotation2d.fromDegrees(270.0) : Rotation2d.fromDegrees(90.0), 
-                                    climbPathConstraints
+                                    () -> Math.abs(climber.getCurrentSetpoint() - climber.getPosition()) <= 0.05
                                 ),
                                 Autos.generatePathFromWaypoint(
                                     swerve, 
