@@ -284,11 +284,11 @@ public class ComplexAutoChooser {
                         // The max limit is the shootWaitTime set by the user, otherwise it'll end earlier if no balls are detected after 0.3 seconds of waiting
                         Commands.deadline(
                             Commands.race(
-                                Commands.waitSeconds(shootWaitTime)
-                                // Commands.sequence(
-                                //     Commands.waitSeconds(0.6),
-                                //     Commands.waitUntil(() -> !superstructure.isBallDetectedDebounced())
-                                // )
+                                Commands.waitSeconds(shootWaitTime),
+                                Commands.sequence(
+                                    Commands.waitSeconds(0.75),
+                                    Commands.waitUntil(() -> !superstructure.isBallDetectedDebounced())
+                                )
                             ),
                             preAlignmentFactory.generateCommand(prevSegment, futureSegment)
                         )
