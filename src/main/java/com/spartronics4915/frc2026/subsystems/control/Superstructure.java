@@ -194,7 +194,7 @@ public class Superstructure extends SubsystemBase {
         if (measurement == null || measurement.status != LaserCan.LASERCAN_STATUS_VALID_MEASUREMENT) {
             return true;
         } else{
-            return measurement.distance_mm < detectDist;
+            return measurement.distance_mm < detectDistance;
         }
     }
 

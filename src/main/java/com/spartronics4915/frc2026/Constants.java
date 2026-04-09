@@ -482,7 +482,7 @@ public final class Constants {
         public static final double percentLoss = 0.107; // Percent loss on shooter to ball transfer, 0.85
 
         public static final int feederLC = 42;
-        public static final double detectDist = 140.0;
+        public static final double detectDistance = 140.0;
         public static final double noBallsDebounce = 0.5;
     }
 
@@ -799,7 +799,7 @@ public final class Constants {
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.23273; // Maybe increase this?
-        public static final double A = 0.7305;
+        public static final double A = 73.05; // 0.7305
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
