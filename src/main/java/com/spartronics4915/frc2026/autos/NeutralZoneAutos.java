@@ -239,9 +239,9 @@ public class NeutralZoneAutos {
             );
 
             List<PathElement> pathElements = new ArrayList<>(List.of(
-                new Path.Waypoint(intakeStart),
+                new Path.Waypoint(intakeStart, 0.7),
                 new Path.Waypoint(intakeEnd),
-                new Path.Waypoint(intakeStart)
+                new Path.Waypoint(intakeStart, 1)
             ));
 
             Path.PathConstraints constraints = Autos.generatePathConstraintZone(intakePathConstraints, 1, 3);

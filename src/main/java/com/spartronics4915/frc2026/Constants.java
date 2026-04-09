@@ -108,7 +108,7 @@ public final class Constants {
 
         public static final double stickDeadband = 0.0;
         public static final double tiltThresholdDegrees = 1.0;
-        public static final double tiltDebounce = 0.1;
+        public static final double tiltDebounce = 0.07;
 
         public static final Constraints trenchAlignConstraints = new Constraints(3, 3);
 
@@ -249,7 +249,7 @@ public final class Constants {
 
             public static final double defaultOutpostWaitTime = 3.0;
             public static final double defaultShootWaitTime = 3.0;
-            public static final double bumpDriveContinueTime = 0.2;
+            public static final double bumpDriveContinueTime = 0.05;
 
             public static final Time endTriggerDebounce = Seconds.of(0.04);
             public static final Rotation2d rotationTolerance = Rotation2d.fromDegrees(3.0);

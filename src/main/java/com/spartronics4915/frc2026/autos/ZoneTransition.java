@@ -78,12 +78,15 @@ public class ZoneTransition {
                 0.75
             ),
             new Path.Waypoint(
-                hubPose.plus(
-                    bumpTransform.rotateBy(LRFlip)
-                ).plus(
-                    approachTransform.rotateBy(IOFlip)
+                new Pose2d(
+                    hubPose.plus(
+                        bumpTransform.rotateBy(LRFlip)
+                    ).plus(
+                        approachTransform.rotateBy(IOFlip)
+                    ),
+                    bumpAngle
                 ),
-                bumpAngle
+                0.9
             ),
             new Path.Waypoint(
                 hubPose.plus( // Pose will be really wrong over the bump so set the setpoint *way* farther
@@ -133,7 +136,18 @@ public class ZoneTransition {
                     ),
                     trenchAngle
                 ),
-                0.85
+                0.9
+            ),
+            new Path.Waypoint(
+                new Pose2d(
+                    hubPose.plus(
+                        trenchTransform.rotateBy(LRFlip)
+                    ).plus(
+                        approachTransform.rotateBy(IOFlip).times(0.4)
+                    ),
+                    trenchAngle
+                ),
+                0.2
             ),
             new Path.Waypoint(
                 hubPose.plus(
