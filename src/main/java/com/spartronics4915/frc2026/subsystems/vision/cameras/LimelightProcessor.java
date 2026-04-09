@@ -48,7 +48,7 @@ public class LimelightProcessor implements ProcessorInterface {
     private volatile boolean useMegaTag2 = true;
 
     private final ConcurrentTimeBuffer<Double> yawBuffer;
-    private volatile double latestYawRad = 0.0;
+    private volatile double latestYaw = 0.0;
 
     private final ConcurrentLinkedQueue<ResultInterface> resultQueue = new ConcurrentLinkedQueue<>();
     private final AtomicInteger queueSize = new AtomicInteger(0);
@@ -182,7 +182,7 @@ public class LimelightProcessor implements ProcessorInterface {
     }
 
     private Pose2d correctPoseForAngle(Pose2d cameraPose, double captureTimestamp) {
-        double turretYawRad = yawBuffer.getSample(captureTimestamp).orElse(latestYawRad);
+        double turretYawRad = yawBuffer.getSample(captureTimestamp).orElse(latestYaw);
         return cameraPose.transformBy(computeRobotToCamera(turretYawRad).inverse());
     }
 
@@ -301,7 +301,7 @@ public class LimelightProcessor implements ProcessorInterface {
     @Override
     public Transform3d getCameraTransform() {
         if (!turreted) return fixedCameraTransform;
-        return computeRobotToCamera3d(latestYawRad);
+        return computeRobotToCamera3d(latestYaw);
     }
 
     private Transform3d computeRobotToCamera3d(double turretYawRadians) {
@@ -337,7 +337,7 @@ public class LimelightProcessor implements ProcessorInterface {
     public void updateHeading(Rotation2d turretAngle, double timestamp) {
         if (!turreted) return;
         double rad = turretAngle.getRadians();
-        latestYawRad = rad;
+        latestYaw = rad;
         yawBuffer.addSample(timestamp, rad);
     }
 
@@ -350,7 +350,7 @@ public class LimelightProcessor implements ProcessorInterface {
     public void updateTurretAngle(Rotation2d turretAngle, double timestamp) {
         if (!turreted) return;
         double rad = turretAngle.getRadians();
-        latestYawRad = rad;
+        latestYaw = rad;
         yawBuffer.addSample(timestamp, rad);
     }
 

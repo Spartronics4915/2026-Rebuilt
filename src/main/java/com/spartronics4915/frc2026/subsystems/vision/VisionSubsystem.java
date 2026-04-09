@@ -59,6 +59,8 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  */
 public class VisionSubsystem extends SubsystemBase {
 
+    // TODO: Maybe make it so if its single tag have a lower ambiguity threshold
+
     private final List<ProcessorInterface> primaryCameras;
     private final List<ProcessorInterface> fallbackCameras;
     private final List<ProcessorInterface> cameras;
