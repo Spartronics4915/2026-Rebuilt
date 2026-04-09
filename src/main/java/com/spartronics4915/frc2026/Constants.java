@@ -361,7 +361,7 @@ public final class Constants {
             public static final double maxLatencyMs = 100.0;
             public static final double maxSingleTagDistanceMeters = 4.0;
             public static final double maxMultiTagDistanceMeters = 7.0;
-            public static final double maxAmbiguity = 0.06; // TODO: Change back to 0.12 if no vision
+            public static final double maxAmbiguity = 0.12; // TODO: Change back to 0.12 if no vision
             public static final double minArea = 0.06;
             public static final double maxArea = 0.90;
 

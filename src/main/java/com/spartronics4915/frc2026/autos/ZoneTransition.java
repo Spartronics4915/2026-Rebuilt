@@ -133,7 +133,7 @@ public class ZoneTransition {
                     ),
                     trenchAngle
                 ),
-                0.7
+                0.85
             ),
             new Path.Waypoint(
                 hubPose.plus(
