@@ -245,7 +245,14 @@ public class AutoAimController extends SubsystemBase {
         }
 
         if (!readyToShoot) {
-            result = autoAim.calculateStaticAim(swerve.getSmoothedRelativePose(), BOTTOM_FUNNEL_POSITION, 0);
+            result = autoAim.calculateDynamicAim(
+                swerve.getSmoothedRelativePose(),
+                new ChassisSpeeds(0.0, 0.0, lastFieldSpeeds.omegaRadiansPerSecond),
+                new ChassisSpeeds(0.0, 0.0, fieldAccelerations.omegaRadiansPerSecond),
+                BOTTOM_FUNNEL_POSITION,
+                0.0,
+                0.08
+            );
         }
 
         if (result.yaw() != null) {
