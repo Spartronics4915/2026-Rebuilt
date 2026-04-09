@@ -371,13 +371,7 @@ public final class Constants {
 
         public static final class FusionConstants {
             public static final boolean enabled = true;
-
-            /**
-             * Maximum time difference (seconds) between two results for them
-             * to be considered "simultaneous" and eligible for fusion.
-             */
             public static final double timestampThresholdSecs = 0.05;
-
             public static final int minCameras = 2;
 
             /**
@@ -425,20 +419,6 @@ public final class Constants {
              * Primary cameras, always participate in pose fusion.
              */
             public static final List<ProcessorInterface> primaryCameras = List.of(
-            new LimelightProcessor(
-                    "argos",
-                    SuperstructureConstants.shooterBaseTranslation,
-                    turretToCamera,
-                    new StdDevCalculator(),
-                    80
-                )
-            );
-
-            /**
-             * Fallback cameras, used only when the primary pipeline produces no
-             * valid pose.
-             */
-            public static final List<ProcessorInterface> fallbackCameras = List.of(
                 new PhotonProcessor(
                     "evan", apriltagFieldLayout, frontTowerCamTransform,
                     new StdDevCalculator(), simCameraProperties, 20.0
@@ -451,6 +431,14 @@ public final class Constants {
                     "daniil", apriltagFieldLayout, rioCamTransform,
                     new StdDevCalculator(), simCameraProperties, 20.0
                 )
+            );
+
+            /**
+             * Fallback cameras, used only when the primary pipeline produces no
+             * valid pose.
+             */
+            public static final List<ProcessorInterface> fallbackCameras = List.of(
+                
             );
         }
     }
