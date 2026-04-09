@@ -74,7 +74,6 @@ public class VisionSubsystem extends SubsystemBase {
     private final List<ResultInterface> fallbackRaw = new ArrayList<>(8);
     private final List<ApriltagResult> fallbackFused = new ArrayList<>(8);
 
-    
     private volatile boolean hasValidPose = false;
     private Pose2d visionPose;
 
@@ -118,8 +117,11 @@ public class VisionSubsystem extends SubsystemBase {
         this.swerve = swerve;
         this.primaryCameras = List.copyOf(primaryCameras);
         this.fallbackCameras = List.copyOf(fallbackCameras);
-        this.cameras = List.copyOf(primaryCameras);
-             cameras.addAll(fallbackCameras);
+
+        List<ProcessorInterface> combined = new ArrayList<>(primaryCameras);
+        combined.addAll(fallbackCameras);
+
+        this.cameras = List.copyOf(combined);
         this.turretAngleSupplier = turretAngleSupplier;
 
         this.fusionEngine = new PoseFusionEngine();
@@ -145,16 +147,16 @@ public class VisionSubsystem extends SubsystemBase {
         this(fieldLayout, poseConsumer, swerve, primaryCameras, List.of(), null);
     }
 
-    private void startCamera(ProcessorInterface cam) {
-        cam.start();
+    private void startCamera(ProcessorInterface camera) {
+        camera.start();
         if (isSimulation) {
-            cam.getCameraSim().ifPresent(sim -> {
-                visionSystemSim.addCamera(sim, cam.getCameraTransform());
-                    sim.enableDrawWireframe(false);
-                    sim.enableProcessedStream(false);
-                    sim.enableRawStream(false);
-                });
-            }
+            camera.getCameraSim().ifPresent(sim -> {
+                visionSystemSim.addCamera(sim, camera.getCameraTransform());
+                sim.enableDrawWireframe(false);
+                sim.enableProcessedStream(false);
+                sim.enableRawStream(false);
+            });
+        }
     }
 
     @Override
