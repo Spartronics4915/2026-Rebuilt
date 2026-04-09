@@ -50,6 +50,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.lib.BLine.FlippingUtil;
@@ -96,6 +97,8 @@ public class SwerveSubsystem extends SubsystemBase {
     private double prevYawTimestamp = Double.NaN;
 
     private Pose2d smoothedPose = new Pose2d();
+
+    private Field2d field = new Field2d();
 
     private final MovingAveragePose poseFilter = new MovingAveragePose(0.30); // previously 0.20
 
@@ -145,6 +148,8 @@ public class SwerveSubsystem extends SubsystemBase {
 
         drivetrain.registerTelemetry(this::updateOdometry);
         configureBLine();
+
+        SmartDashboard.putData(field);
     }
 
     private void updateOdometry(SwerveDriveState state) {
@@ -196,6 +201,8 @@ public class SwerveSubsystem extends SubsystemBase {
         }
 
         telemetry.publish(drivetrain.getState(), this);
+
+        field.setRobotPose(getPose());
     }
  
     @Override
