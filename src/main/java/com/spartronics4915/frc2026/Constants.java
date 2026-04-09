@@ -398,7 +398,7 @@ public final class Constants {
             /** daniil — RIO-mounted camera */
             public static final Transform3d rioCamTransform = new Transform3d(
                 new Translation3d(-0.125205, -0.334776, 0.257945),
-                new Rotation3d(Math.toRadians(0), Math.toRadians(-26), Math.toRadians(290))
+                new Rotation3d(Math.toRadians(0), Math.toRadians(-26), Math.toRadians(295))
             );
 
             /** argos - turret camera */
@@ -479,7 +479,7 @@ public final class Constants {
         public static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
         public static final double PIVOT_JOSTLE_FREQUENCY = 1.0; // Hz
 
-        public static final double percentLoss = 0.107; // Percent loss on shooter to ball transfer, 0.85
+        public static final double percentLoss = 0.1071; // Percent loss on shooter to ball transfer, 0.85
 
         public static final int feederLC = 42;
         public static final double detectDistance = 140.0;
@@ -795,7 +795,7 @@ public final class Constants {
 
         public static final double MAX_RPS = 100;
 
-        public static final double P = 20.0;
+        public static final double P = 25.0;
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.23273; // Maybe increase this?
