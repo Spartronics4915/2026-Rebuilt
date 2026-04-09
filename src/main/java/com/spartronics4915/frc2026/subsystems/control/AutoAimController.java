@@ -353,7 +353,15 @@ public class AutoAimController extends SubsystemBase {
     }
 
     public boolean isShotPossible() {
-        return lastResult != null && !lastResult.requiresIdealSpeed()
+        boolean possibleSpeed;
+        if (getDefaultTarget() == BOTTOM_FUNNEL_POSITION) {
+            possibleSpeed = !lastResult.requiresIdealSpeed();
+        } else {
+            double recommendedRPS = MPSToRPS(lastResult.recommendedShotSpeed());
+            possibleSpeed = shooter.getCurrentRPS() - recommendedRPS > -3 || !lastResult.requiresIdealSpeed();
+        }
+
+        return possibleSpeed
             && isHoodReady()
             && isTurretReady();
     }
