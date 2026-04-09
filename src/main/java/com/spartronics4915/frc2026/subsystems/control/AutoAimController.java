@@ -353,6 +353,10 @@ public class AutoAimController extends SubsystemBase {
     }
 
     public boolean isShotPossible() {
+        if (lastResult == null) {
+            return false;
+        }
+
         boolean possibleSpeed;
         if (getDefaultTarget() == BOTTOM_FUNNEL_POSITION) {
             possibleSpeed = !lastResult.requiresIdealSpeed();
