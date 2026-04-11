@@ -112,15 +112,15 @@ public final class Constants {
 
         public static final Constraints trenchAlignConstraints = new Constraints(3, 3);
 
-        public static final double odomUpdateFrequency = 100.0; // 250.0
+        public static final double odomUpdateFrequency = 120.0; // 250.0
         public static final double staleCommandTimeout = 0.1;
 
-        public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.2, 0.2, 0.1); // 0.3, 0.3, 0.2
-        public static final Matrix<N3, N1> slipStdDevs = VecBuilder.fill(2.0, 2.0, 0.5);
+        public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.18, 0.18, 0.05); // 0.3, 0.3, 0.2
+        public static final Matrix<N3, N1> slipStdDevs = VecBuilder.fill(2.0, 2.0, 1.0);
 
-        public static final double slipRecoverySeconds = 0.1;
+        public static final double slipRecoverySeconds = 0.2;
         public static final double slipThresholdRPS = 1.5;
-        public static final double minSpeedDetectMPS = 0.5;
+        public static final double minSpeedDetectMPS = 0.7;
         public static final int slipDebounceCycles = 2;
 
         public static final double headingLockKP = 7.0;
@@ -350,7 +350,7 @@ public final class Constants {
         public static final double yawRecomputeThreshold = 1e-4;
 
         public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.43;
+            public static final double baseXYStdDev = 0.42;
             public static final double baseThetaStdDev = 0.85;
             public static final double ambiguityWeight = 0.1;
             public static final double areaWeight = 0.9;
@@ -359,10 +359,10 @@ public final class Constants {
 
         public static final class FilterConstants {
             public static final double maxLatencyMs = 100.0;
-            public static final double maxSingleTagDistanceMeters = 4.0;
-            public static final double maxMultiTagDistanceMeters = 7.0;
+            public static final double maxSingleTagDistanceMeters = 7.0;
+            public static final double maxMultiTagDistanceMeters = 10.0;
             public static final double maxAmbiguity = 0.12; // TODO: Change back to 0.12 if no vision
-            public static final double minArea = 0.06;
+            public static final double minArea = 0.05;
             public static final double maxArea = 0.90;
 
             // Set < Double.MAX_VALUE to enable the odometry-outlier filter.
@@ -398,7 +398,7 @@ public final class Constants {
             /** daniil — RIO-mounted camera */
             public static final Transform3d rioCamTransform = new Transform3d(
                 new Translation3d(-0.125205, -0.334776, 0.257945),
-                new Rotation3d(Math.toRadians(0), Math.toRadians(-26), Math.toRadians(295))
+                new Rotation3d(Math.toRadians(0), Math.toRadians(-26), Math.toRadians(297))
             );
 
             /** argos - turret camera */
@@ -457,7 +457,7 @@ public final class Constants {
             Units.inchesToMeters(14.262838)
         );
 
-        public static final double shooterReadyThresholdRPS = 5.0;
+        public static final double shooterReadyThresholdRPS = 4.0;
         public static final Rotation2d pivotSafeThreshold = Rotation2d.fromDegrees(100);
         public static final Rotation2d turretMinSafeThreshold = Rotation2d.fromDegrees(-10);
         public static final Rotation2d turretMaxSafeThreshold = Rotation2d.fromDegrees(10);
@@ -479,7 +479,7 @@ public final class Constants {
         public static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
         public static final double PIVOT_JOSTLE_FREQUENCY = 1.0; // Hz
 
-        public static final double percentLoss = 0.1071; // Percent loss on shooter to ball transfer, 0.85
+        public static final double percentLoss = 0.1070; // Percent loss on shooter to ball transfer, 0.1071
 
         public static final int feederLC = 42;
         public static final double detectDistance = 140.0;
@@ -619,13 +619,13 @@ public final class Constants {
         public static final double MAX_ACCELERATION = 100;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 40;
+        public static final double CURRENT_LIMIT = 45;
         public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 50.625;
 
-        public static final double MAGNET_OFFSET = -0.140625;
+        public static final double MAGNET_OFFSET = -0.145264;
         public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.Clockwise_Positive;
 
         public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(-2);
@@ -638,9 +638,9 @@ public final class Constants {
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
-            .withSupplyCurrentLimit(CURRENT_LIMIT)
-            .withSupplyCurrentLowerLimit(LOWER_LIMIT)
-            .withSupplyCurrentLowerTime(LOWER_TIME);
+            .withSupplyCurrentLimit(CURRENT_LIMIT);
+            //.withSupplyCurrentLowerLimit(LOWER_LIMIT)
+            //.withSupplyCurrentLowerTime(LOWER_TIME);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withFeedbackSensorSource(FeedbackSensorSourceValue.FusedCANcoder)
@@ -669,7 +669,7 @@ public final class Constants {
         public static final double MAX_RPS = 100;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 40;
+        public static final double CURRENT_LIMIT = 60;
         public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 2;
@@ -715,7 +715,7 @@ public final class Constants {
         public static final double MAX_RPS = 20.0; // 13.238
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 40;
+        public static final double CURRENT_LIMIT = 60;
         public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 1;
@@ -750,10 +750,10 @@ public final class Constants {
         public static final int MOTOR_ID = 19;
         public static final int ENCODER_ID = 20;
 
-        public static final double P = 3000.0;
+        public static final double P = 3010.0;
         public static final double I = 0.0;
         public static final double D = 95.0;
-        public static final double V = 0.5;
+        public static final double V = 0.7;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;

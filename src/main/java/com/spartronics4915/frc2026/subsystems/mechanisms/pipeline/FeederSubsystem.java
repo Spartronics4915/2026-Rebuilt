@@ -174,8 +174,8 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
     }
 
     public enum FeederState{
-        FORWARD(19.3),
-        REVERSE(-19.3),
+        FORWARD(19.4),
+        REVERSE(-19.4),
         OFF(0);
 
         double rps;

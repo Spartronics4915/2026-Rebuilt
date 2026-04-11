@@ -136,7 +136,7 @@ public class ZoneTransition {
                     ),
                     trenchAngle
                 ),
-                1.2
+                1.4
             ),
             new Path.Waypoint(
                 new Pose2d(
