@@ -108,16 +108,16 @@ public final class Constants {
 
         public static final Constraints trenchAlignConstraints = new Constraints(3, 3);
 
-        public static final double odomUpdateFrequency = 120.0; // 250.0
+        public static final double odomUpdateFrequency = 100.0; // 250.0
         public static final double staleCommandTimeout = 0.1;
 
         public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.18, 0.18, 0.05); // 0.3, 0.3, 0.2
         public static final Matrix<N3, N1> slipStdDevs = VecBuilder.fill(2.0, 2.0, 1.0);
 
-        public static final double slipRecoverySeconds = 0.2;
-        public static final double slipThresholdRPS = 1.5;
+        public static final double slipRecoverySeconds = 0.3;
+        public static final double slipThresholdRPS = 2.0;
         public static final double minSpeedDetectMPS = 0.7;
-        public static final int slipDebounceCycles = 2;
+        public static final int slipDebounceCycles = 5;
 
         public static final double headingLockKP = 7.0;
         public static final double headingLockKD = 0.0;
@@ -199,7 +199,7 @@ public final class Constants {
                         .withKS(0.1).withKV(2.49).withKA(0)
                         .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseClosedLoopSign))
                     .withDriveMotorGains(new Slot0Configs()
-                        .withKP(7).withKI(0).withKD(0)
+                        .withKP(9).withKI(0).withKD(0)
                         .withKS(1).withKV(0.124))
                     .withSteerMotorClosedLoopOutput(ClosedLoopOutputType.Voltage)
                     .withDriveMotorClosedLoopOutput(ClosedLoopOutputType.TorqueCurrentFOC)
@@ -220,8 +220,8 @@ public final class Constants {
                         new TalonFXConfiguration()
                             .withCurrentLimits(
                                 new CurrentLimitsConfigs()
-                                    .withStatorCurrentLimit(Amps.of(80))
-                                    .withStatorCurrentLimitEnable(false)
+                                    .withStatorCurrentLimit(Amps.of(120))
+                                    .withStatorCurrentLimitEnable(true)
                             )
                     );
             }
