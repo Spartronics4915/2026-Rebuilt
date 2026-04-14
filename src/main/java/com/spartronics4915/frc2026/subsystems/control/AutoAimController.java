@@ -357,6 +357,13 @@ public class AutoAimController extends SubsystemBase {
         return lastResult;
     }
 
+    public double getDistanceToTarget() {
+        Translation3d target = (targetOverride != null) ? targetOverride : getDefaultTarget();
+        Translation2d robotPos2d = swerve.getSmoothedRelativePose().getTranslation()
+            .plus(turretTranslation2D.rotateBy(swerve.getRelativePose().getRotation()));
+        return robotPos2d.getDistance(target.toTranslation2d());
+    }
+
     //#endregion
     //#region Checks
 

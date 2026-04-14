@@ -40,6 +40,7 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
@@ -707,6 +708,16 @@ public final class Constants {
         
         public static final int LASER_ID = 0; 
         public static final double DETECTION_DISTANCE = 20.0;
+
+        public static final InterpolatingDoubleTreeMap feederSpeedMap = new InterpolatingDoubleTreeMap();
+            static {
+                feederSpeedMap.put(1.5,  18.0);
+                feederSpeedMap.put(2.5,  19.4);
+                feederSpeedMap.put(3.5,  21.0);
+                feederSpeedMap.put(4.5,  22.5);
+                feederSpeedMap.put(5.5,  24.0);
+                feederSpeedMap.put(7.0,  25.5);
+            }
     }
 
     //#endregion

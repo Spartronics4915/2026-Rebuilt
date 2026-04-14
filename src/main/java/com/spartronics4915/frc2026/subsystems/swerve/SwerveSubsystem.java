@@ -3,7 +3,6 @@ package com.spartronics4915.frc2026.subsystems.swerve;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.*;
 
-import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -46,8 +45,6 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
@@ -56,12 +53,10 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.lib.BLine.FlippingUtil;
 import frc.robot.lib.BLine.FollowPath;
 import frc.robot.lib.BLine.Path;
-import frc.robot.lib.BLine.Path.Waypoint;
 
 public class SwerveSubsystem extends SubsystemBase {
 
     private final SwerveDrivetrain<?, ?, ?> drivetrain;
-    private final SwerveConfigurations activeConfig;
 
     private final SwerveRequest.FieldCentric fieldCentricRequest =
         new SwerveRequest.FieldCentric()
@@ -122,8 +117,6 @@ public class SwerveSubsystem extends SubsystemBase {
             odomUpdateFrequency,
             config.modules[0], config.modules[1], config.modules[2], config.modules[3]
         );
-
-        activeConfig = config;
 
         drivetrain.setStateStdDevs(normalStdDevs);
         drivetrain.configNeutralMode(NeutralModeValue.Brake);

@@ -115,6 +115,8 @@ public class RobotContainer {
     public RobotContainer() {
         configureBindings();
 
+        feederSubsystem.setDistanceSupplier(autoAimController::getDistanceToTarget);
+
         SmartDashboard.putData("Auto-Aim Toggle", autoAimController.aimToggle());
         SmartDashboard.putData("Auto-Shoot Toggle", autoAimController.shootingToggle());
         SmartDashboard.putData("Reset Dynamics", superstructureCommands.resetDynamics());
