@@ -2,27 +2,34 @@ package com.spartronics4915.frc2026.subsystems.vision.results;
 
 /**
  * A camera-agnostic representation of a single tracked AprilTag.
+ * This class is mutable to allow for object pooling and zero-allocation updates.
  */
 public final class TrackedTag {
 
-    /** The AprilTag fiducial ID. */
-    public final int fiducialId;
-
-    /**
-     * Fraction of the camera frame covered by this tag (0.0 – 1.0).
-     */
-    public final double area;
-
-    /**
-     * Pose ambiguity score (0.0–1.0, lower is better).
-     * For multi-tag or MegaTag2 results this is typically 0.
-     */
-    public final double ambiguity;
+    private int fiducialId;
+    private double area;
+    private double ambiguity;
 
     public TrackedTag(int fiducialId, double area, double ambiguity) {
+        set(fiducialId, area, ambiguity);
+    }
+
+    public void set(int fiducialId, double area, double ambiguity) {
         this.fiducialId = fiducialId;
-        this.area       = area;
-        this.ambiguity  = ambiguity;
+        this.area = area;
+        this.ambiguity = ambiguity;
+    }
+
+    public int getFiducialId() {
+        return fiducialId;
+    }
+
+    public double getArea() {
+        return area;
+    }
+
+    public double getAmbiguity() {
+        return ambiguity;
     }
     
 }

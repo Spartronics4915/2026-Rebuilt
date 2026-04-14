@@ -7,6 +7,7 @@ import java.util.EnumSet;
 import java.util.function.Supplier;
 
 import com.spartronics4915.frc2026.autos.ZoneTransition.TraversalMethod;
+import com.spartronics4915.frc2026.subsystems.control.Superstructure;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.networktables.NetworkTable;
@@ -34,6 +35,8 @@ public class ComplexAutoChooser {
 
         INTAKE_QUARTER("Intake Quarter", WITHIN_NEUTRAL),
         INTAKE_HALF("Intake Half", WITHIN_NEUTRAL),
+        INTAKE_HAIRPIN("Intake Quarter (w/ Hairpin)", WITHIN_NEUTRAL),
+        INTAKE_MIDDLE("Intake Middle", WITHIN_NEUTRAL),
 
         L_TRENCH_TO_ALLIANCE("LT -> A", WITHIN_ALLIANCE),
         L_BUMP_TO_ALLIANCE("LB -> A", WITHIN_ALLIANCE),
@@ -63,7 +66,7 @@ public class ComplexAutoChooser {
      * Enum used to shorten (and remove enum loop) of the AutoSegment enum.
      */
     public enum AllowedTransitions {
-        READY_TO_INTAKE(() -> new AutoSegment[]{INTAKE_QUARTER, INTAKE_HALF}),
+        READY_TO_INTAKE(() -> new AutoSegment[]{INTAKE_QUARTER, INTAKE_HALF, INTAKE_HAIRPIN, INTAKE_MIDDLE}),
         WITHIN_NEUTRAL(() -> new AutoSegment[]{L_TRENCH_TO_ALLIANCE, L_BUMP_TO_ALLIANCE, R_TRENCH_TO_ALLIANCE, R_BUMP_TO_ALLIANCE}),
         WITHIN_ALLIANCE(() -> new AutoSegment[]{L_TRENCH_TO_NEUTRAL, L_BUMP_TO_NEUTRAL, R_TRENCH_TO_NEUTRAL, R_BUMP_TO_NEUTRAL, DEPOT, OUTPOST, TOWER, PAUSE}),
         NONE(() -> new AutoSegment[]{});
@@ -87,11 +90,13 @@ public class ComplexAutoChooser {
     private final DriveToPOI POIFactory;
     private final NeutralZoneAutos neutralZoneFactory;
     private final PreAlignment preAlignmentFactory;
+    private final Superstructure superstructure;
 
     private double shootWaitTime;
 
     private AutoSegment[] selectedSegments;
     private SendableChooser<AutoSegment>[] segmentChoosers;
+    private AutoSegment[] segmentSources;
 
     @SuppressWarnings("unchecked")
     /**
@@ -100,16 +105,19 @@ public class ComplexAutoChooser {
      * @param POIfactory Factory for generating drive-to-POI commands.
      * @param neutralZoneFactory Factory for generating neutral zone commands.
      * @param preAlignmentFactory Factory for generating pre-alignment (OP Tech) commands.
+     * @param superstructure Superstructure subsystem.
      * @param maxSegments Maximum number of auto segments.
      */
-    public ComplexAutoChooser(ZoneTransition transitionFactory, DriveToPOI POIFactory, NeutralZoneAutos neutralZoneFactory, PreAlignment preAlignmentFactory, int maxSegments) {
+    public ComplexAutoChooser(ZoneTransition transitionFactory, DriveToPOI POIFactory, NeutralZoneAutos neutralZoneFactory, PreAlignment preAlignmentFactory, Superstructure superstructure, int maxSegments) {
         this.transitionFactory = transitionFactory;
         this.POIFactory = POIFactory;
         this.neutralZoneFactory = neutralZoneFactory;
         this.preAlignmentFactory = preAlignmentFactory;
+        this.superstructure = superstructure;
 
         this.selectedSegments = new AutoSegment[maxSegments];
         this.segmentChoosers = (SendableChooser<AutoSegment>[]) new SendableChooser[maxSegments];
+        this.segmentSources = new AutoSegment[maxSegments];
         for (int i = 0; i < maxSegments; i++) {
             selectedSegments[i] = UNUSED;
         }
@@ -130,13 +138,17 @@ public class ComplexAutoChooser {
      */
     public void resolveSteps() {
         AutoSegment lastSegment = L_TRENCH_TO_ALLIANCE; // Default starting segment, since the robot starts on alliance side of the trench
-        if (segmentChoosers[0] != null) {
-            for (int i = 0; i < selectedSegments.length; i++) {
-                segmentChoosers[i].close();
-            }
-        }
 
         for (int i = 0; i < selectedSegments.length; i++) {
+            if (segmentSources[i] == lastSegment) {
+                lastSegment = selectedSegments[i] != null ? selectedSegments[i] : UNUSED;
+                continue;
+            }
+
+            if (segmentChoosers[i] != null) {
+                segmentChoosers[i].close();
+            }
+
             SendableChooser<AutoSegment> segment = new SendableChooser<>();
 
             if (lastSegment.getAllowedTransitions().length == 0) {
@@ -161,6 +173,7 @@ public class ComplexAutoChooser {
             SmartDashboard.putData("Auto Chooser/Step " + i, segment);
             
             segmentChoosers[i] = segment;
+            segmentSources[i] = lastSegment;
             lastSegment = selectedSegments[i] != null ? selectedSegments[i] : UNUSED;
         }
     }
@@ -182,6 +195,15 @@ public class ComplexAutoChooser {
         return segment.userFacingName.charAt(0) == 'R';
     }
 
+    private AutoSegment getNextNonPauseSegment(int currentIndex) {
+        for (int i = currentIndex + 1; i < selectedSegments.length; i++) {
+            if (selectedSegments[i] != PAUSE) {
+                return selectedSegments[i] != null ? selectedSegments[i] : UNUSED;
+            }
+        }
+        return UNUSED;
+    }
+
     /**
      * Generates the auto command based on the currently selected segments.
      * @return The command representing the selected autonomous routine.
@@ -196,16 +218,26 @@ public class ComplexAutoChooser {
             if (currentSegment == UNUSED) {
                 break;
             }
+            
+            boolean useStartingConstraints = (i == 1) && (prevSegment == L_TRENCH_TO_NEUTRAL || prevSegment == R_TRENCH_TO_NEUTRAL);
 
             switch (currentSegment) {
                 case L_TRENCH_TO_NEUTRAL:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, true));
+                    commands.add(
+                        prevSegment == UNUSED 
+                            ? transitionFactory.generateStartingTrenchCommand(false) 
+                            : transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, true)
+                    );
                     break;
                 case L_BUMP_TO_NEUTRAL:
                     commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP, true));
                     break;
                 case R_TRENCH_TO_NEUTRAL:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, true));
+                    commands.add(
+                        prevSegment == UNUSED 
+                            ? transitionFactory.generateStartingTrenchCommand(true) 
+                            : transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, true)
+                    );
                     break;
                 case R_BUMP_TO_NEUTRAL:
                     commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, true));
@@ -216,17 +248,25 @@ public class ComplexAutoChooser {
                     commands.add(addNeutralZoneCommand(currentSegment, isRight(prevSegment), isRight(futureSegment)));
                     break;
 
+                case INTAKE_HAIRPIN:
+                    commands.add(neutralZoneFactory.generateHairpinCommand(isRight(prevSegment)));
+                    break;
+
+                case INTAKE_MIDDLE:
+                    commands.add(neutralZoneFactory.generateMiddleCommand());
+                    break;
+
                 case L_TRENCH_TO_ALLIANCE:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, false));
+                    commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, false, futureSegment != PAUSE && futureSegment != UNUSED, getNextNonPauseSegment(i) == L_TRENCH_TO_NEUTRAL));
                     break;
                 case L_BUMP_TO_ALLIANCE:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP, false));
+                    commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP, futureSegment != PAUSE && futureSegment != UNUSED));
                     break;
                 case R_TRENCH_TO_ALLIANCE:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, false));
+                    commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, false, futureSegment != PAUSE && futureSegment != UNUSED, getNextNonPauseSegment(i) == R_TRENCH_TO_NEUTRAL));
                     break;
                 case R_BUMP_TO_ALLIANCE:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, false));
+                    commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, futureSegment != PAUSE && futureSegment != UNUSED));
                     break;
 
                 case DEPOT:
@@ -239,11 +279,20 @@ public class ComplexAutoChooser {
                     commands.add(POIFactory.generateCommand(DriveToPOI.POI.TOWER));
                     break;
                 case PAUSE:
-                    commands.add(Commands.deadline(
-                        Commands.waitSeconds(shootWaitTime),
-                        Commands.none()
-                        //preAlignmentFactory.generateCommand(prevSegment, futureSegment)
-                    ));
+                    commands.add(
+                        // This is very hard to read, but it runs preAlignment along with a bunch of wait conditions.
+                        // The max limit is the shootWaitTime set by the user, otherwise it'll end earlier if no balls are detected after 0.3 seconds of waiting
+                        Commands.deadline(
+                            Commands.race(
+                                Commands.waitSeconds(shootWaitTime)
+                                //Commands.sequence(
+                                //    Commands.waitSeconds(0.75),
+                                //    Commands.waitUntil(() -> !superstructure.isBallDetectedDebounced())
+                                //)
+                            ),
+                            preAlignmentFactory.generateCommand(prevSegment, futureSegment)
+                        )
+                    );
                     break;
                 case UNUSED:
                     System.out.println("Chat what are we doing?");

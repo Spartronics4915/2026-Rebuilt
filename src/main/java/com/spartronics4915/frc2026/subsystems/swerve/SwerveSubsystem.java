@@ -1,7 +1,7 @@
 package com.spartronics4915.frc2026.subsystems.swerve;
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
-import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.driveController;
+import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.*;
 
 import java.util.Optional;
 import java.util.OptionalDouble;
@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain.SwerveDriveState;
@@ -17,10 +18,9 @@ import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.util.FlippingUtil;
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
+import com.spartronics4915.frc2026.autos.Autos;
 import com.spartronics4915.frc2026.util.general.MovingAveragePose;
 import com.spartronics4915.frc2026.util.simulation.BumpSim;
 import com.spartronics4915.frc2026.util.swerve.SlipDetector;
@@ -50,7 +50,13 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.lib.BLine.FlippingUtil;
+import frc.robot.lib.BLine.FollowPath;
+import frc.robot.lib.BLine.Path;
+import frc.robot.lib.BLine.Path.Waypoint;
 
 public class SwerveSubsystem extends SubsystemBase {
 
@@ -92,6 +98,8 @@ public class SwerveSubsystem extends SubsystemBase {
 
     private Pose2d smoothedPose = new Pose2d();
 
+    private Field2d field = new Field2d();
+
     private final MovingAveragePose poseFilter = new MovingAveragePose(0.30); // previously 0.20
 
     public static Pose3d pose3d = new Pose3d();
@@ -100,9 +108,6 @@ public class SwerveSubsystem extends SubsystemBase {
     private double movementOverride = 0.0;
     private boolean isFieldRelativeState = defaultFieldRelative;
     private Rotation2d teleopHeadingOffset = Rotation2d.kZero;
-
-    private Optional<Alliance> cachedAlliance = Optional.empty();
-    private boolean hasCheckedAlliance = false;
 
     private final Debouncer flatDebouncer = new Debouncer(tiltDebounce);
     private boolean isFlatDebouncedValue = false;
@@ -117,9 +122,11 @@ public class SwerveSubsystem extends SubsystemBase {
             odomUpdateFrequency,
             config.modules[0], config.modules[1], config.modules[2], config.modules[3]
         );
+
         activeConfig = config;
 
         drivetrain.setStateStdDevs(normalStdDevs);
+        drivetrain.configNeutralMode(NeutralModeValue.Brake);
 
         headingLockRequest.HeadingController.setPID(headingLockKP, 0, headingLockKD);
         headingLockRequest.HeadingController.enableContinuousInput(-Math.PI, Math.PI);
@@ -140,7 +147,9 @@ public class SwerveSubsystem extends SubsystemBase {
         }
 
         drivetrain.registerTelemetry(this::updateOdometry);
-        configurePathPlanner();
+        configureBLine();
+
+        SmartDashboard.putData(field);
     }
 
     private void updateOdometry(SwerveDriveState state) {
@@ -192,6 +201,8 @@ public class SwerveSubsystem extends SubsystemBase {
         }
 
         telemetry.publish(drivetrain.getState(), this);
+
+        field.setRobotPose(getPose());
     }
  
     @Override
@@ -250,7 +261,7 @@ public class SwerveSubsystem extends SubsystemBase {
     /** Pose flipped to the current alliance's perspective. Use for all game logic. */
     public Pose2d getRelativePose() {
         Pose2d pose = getPose();
-        return shouldFlip() ? FlippingUtil.flipFieldPose(pose) : pose;
+        return Autos.shouldFlip() ? FlippingUtil.flipFieldPose(pose) : pose;
     }
 
     public Pose2d getPastVisionPose(double timestamp) {
@@ -282,7 +293,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public ChassisSpeeds getFieldRelativeVelocity() {
         ChassisSpeeds velocity = getFieldVelocity();
-        return shouldFlip() ? 
+        return Autos.shouldFlip() ? 
             FlippingUtil.flipFieldSpeeds(velocity) 
             : velocity;
     }
@@ -323,7 +334,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public Pose2d getSmoothedRelativePose() {
         Pose2d pose = getSmoothedPose();
-        return shouldFlip() ? FlippingUtil.flipFieldPose(pose) : pose;
+        return Autos.shouldFlip() ? FlippingUtil.flipFieldPose(pose) : pose;
     }
 
     public Pose2d getSmoothedPose() {
@@ -356,7 +367,7 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public Rotation2d getHeadingOffset() {
-        return teleopHeadingOffset.plus(shouldFlip() ? Rotation2d.kPi : Rotation2d.kZero);
+        return teleopHeadingOffset.plus(Autos.shouldFlip() ? Rotation2d.kPi : Rotation2d.kZero);
     }
 
     /** Snaps the driver's forward perspective to the robot's current heading. */
@@ -376,32 +387,48 @@ public class SwerveSubsystem extends SubsystemBase {
         return isInSlipRecovery;
     }
 
-    public boolean shouldFlip() {
-        if (!hasCheckedAlliance) {
-            cachedAlliance = DriverStation.getAlliance();
-            if (cachedAlliance.isPresent()) {
-                hasCheckedAlliance = true;
+    private void configureBLine() {
+        var targetPosePub = NetworkTableInstance.getDefault().getStructTopic("SmartDashboard/BLine/Target Pose", Pose2d.struct).publish();
+        var targetPathPub = NetworkTableInstance.getDefault().getStructArrayTopic("SmartDashboard/BLine/Target Path", Pose2d.struct).publish();
+
+        // Log numerical data (Velocity, Acceleration, etc.)
+        FollowPath.setDoubleLoggingConsumer(pair -> {
+            SmartDashboard.putNumber("BLine/" + pair.getFirst(), pair.getSecond());
+        });
+
+        // Log state flags
+        FollowPath.setBooleanLoggingConsumer(pair -> {
+            SmartDashboard.putBoolean("BLine/" + pair.getFirst(), pair.getSecond());
+        });
+
+        // Log the Target Pose (Where the robot wants to be)
+        FollowPath.setPoseLoggingConsumer(pair -> {
+            targetPosePub.set(pair.getSecond());
+        });
+
+        // Log the Trajectory Path
+        FollowPath.setTranslationListLoggingConsumer(pair -> {
+            Translation2d[] translations = pair.getSecond();
+            Pose2d[] poses = new Pose2d[translations.length];
+            for (int i = 0; i < translations.length; i++) {
+                poses[i] = new Pose2d(translations[i], new Rotation2d());
             }
-        }
-        return cachedAlliance.isPresent() && cachedAlliance.get() == Alliance.Red;
-    }
+            targetPathPub.set(poses);
+        });
 
-    public void resetAlliance() {
-        cachedAlliance = Optional.empty();
-        hasCheckedAlliance = false;
-    }
-
-    private void configurePathPlanner() {
-        AutoBuilder.configure(
+        FollowPath.Builder pathBuilder = new FollowPath.Builder(
+            this,
             this::getPose,
-            this::resetPose,
             this::getRobotVelocity,
-            (speeds, ff) -> drive(speeds),
-            driveController,
-            activeConfig.pathplannerConfig.config,
-            this::shouldFlip,
-            this
-        );
+            (speeds) -> drive(speeds),
+            translationPID,
+            rotationPID,
+            crossTrackPID
+        ).withDefaultShouldFlip();
+
+        Autos.setPathBuilder(pathBuilder);
+
+        Path.setDefaultGlobalConstraints(defaultPathConstraints);
     }
 
     public static ChassisSpeeds rotateLinearChassisSpeeds(ChassisSpeeds in, Rotation2d offset) {

@@ -2,14 +2,14 @@ package com.spartronics4915.frc2026.subsystems.vision;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.photonvision.PhotonCamera;
-import org.photonvision.simulation.PhotonCameraSim;
 import org.photonvision.simulation.VisionSystemSim;
 
 import com.spartronics4915.frc2026.Constants.VisionConstants;
+import com.spartronics4915.frc2026.Constants.VisionConstants.FilterConstants;
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.LimelightProcessor;
@@ -26,6 +26,8 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.networktables.BooleanPublisher;
@@ -34,199 +36,265 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+// sim.enableDrawWireframe(false);
+//                    sim.enableProcessedStream(false);
+//                    sim.enableRawStream(false);
+//                });
+//            }
+//        }
+//
+//        new Trigger(swerve::isFlatDebounced)
+//            .onTrue(Commands.runOnce(() -> {
+//                if (hasValidPose) {
+//                    swerve.resetPose(fusedPose);
+//                }
+//            }).withName("Relocalize On Flat"));
+
+/**
+ * Manages all vision cameras and feeds fused pose estimates to the drive-train's
+ * pose estimator.
+ */
 public class VisionSubsystem extends SubsystemBase {
 
-    private final Map<String, ProcessorInterface> cameras;
-    private final VisionConfiguration config;
+    // TODO: Maybe make it so if its single tag have a lower ambiguity threshold
+
+    private final List<ProcessorInterface> primaryCameras;
+    private final List<ProcessorInterface> fallbackCameras;
+    private final List<ProcessorInterface> cameras;
+
+    private final Supplier<Rotation2d> turretAngleSupplier;
+
     private final PoseFusionEngine fusionEngine;
+    private final PipelineFilter resultFilter;
+
+    private final List<ResultInterface> primaryRaw = new ArrayList<>(8);
+    private final List<ApriltagResult> primaryFused = new ArrayList<>(8);
+
+    private final List<ResultInterface> fallbackRaw = new ArrayList<>(8);
+    private final List<ApriltagResult> fallbackFused = new ArrayList<>(8);
+
+    private volatile boolean hasValidPose = false;
+    private Pose2d visionPose;
+
+    private final VisionPoseConsumer poseConsumer;
+    private final SwerveSubsystem swerve;
 
     private final VisionSystemSim visionSystemSim;
     private final boolean isSimulation;
 
-    private final PipelineFilter aprilTagFilter;
-    private final VisionPoseConsumer poseConsumer;
-
-    private final SwerveSubsystem swerve;
-
-    private final List<ResultInterface> combinedResults = new ArrayList<>(4);
-    private final List<ApriltagResult> combinedApriltagResults = new ArrayList<>(4);
-
     private final Pose3d[] tagPoseScratch = new Pose3d[33];
 
-    private volatile boolean hasValidPose;
-    private Pose2d fusedPose;
+    private static final NetworkTable table = NetworkTableInstance.getDefault().getTable("vision");
 
-    private static final NetworkTable NT = NetworkTableInstance.getDefault().getTable("vision");
+    private final StructPublisher<Pose2d> posePublisher = table.getStructTopic("Vision Pose", Pose2d.struct).publish();
 
-    private final StructPublisher<Pose2d> posePublisher = NT.getStructTopic("Vision Pose", Pose2d.struct).publish();
-    private final StructPublisher<Pose2d> usedPosePublisher = NT.getStructTopic("Used Vision Pose", Pose2d.struct).publish();
+    private final DoublePublisher xyStdDevPublisher = table.getDoubleTopic("XY Std Devs").publish();
+    private final DoublePublisher thetaStdDevPublisher = table.getDoubleTopic("Theta Std Devs").publish();
+    private final DoublePublisher ambiguityPublisher = table.getDoubleTopic("Avg Ambiguity").publish();
+    private final DoublePublisher areaPublisher = table.getDoubleTopic("Avg Area").publish();
+    private final DoublePublisher latencyPublisher = table.getDoubleTopic("Latency").publish();
+    private final DoublePublisher targetCountPublisher = table.getDoubleTopic("Target Count").publish();
 
-    private final DoublePublisher transStdDevPublisher = NT.getDoubleTopic("XY Std Devs").publish();
-    private final DoublePublisher rotStdDevPublisher = NT.getDoubleTopic("Theta Std Devs").publish();
-    private final DoublePublisher avgAmbiguityPublisher = NT.getDoubleTopic("Avg Ambiguity").publish();
-    private final DoublePublisher avgAreaPublisher = NT.getDoubleTopic("Avg Area").publish();
-    private final DoublePublisher latencyPublisher = NT.getDoubleTopic("Latency").publish();
-    private final DoublePublisher targetCountPublisher = NT.getDoubleTopic("Target Count").publish();
+    private final StructArrayPublisher<Pose3d> trackedTagsPublisher = table.getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
+    private final BooleanPublisher hasValidPosePublisher = table.getBooleanTopic("Has Valid Pose").publish();
+    private final BooleanPublisher currentPipelinePublisher = table.getBooleanTopic("Is Primary").publish();
 
-    private final StructArrayPublisher<Pose3d> trackedApriltagsPublisher = NT.getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
-    private final BooleanPublisher hasValidPosePublisher = NT.getBooleanTopic("Has Valid Pose").publish();
+    // Debug
+    // private final StructPublisher<Pose3d> debugRobotPublisher = table.getStructTopic("Debug: Robot", Pose3d.struct).publish();
+    // private final StructPublisher<Translation3d> debugTurretPublisher = table.getStructTopic("Debug: Turret", Translation3d.struct).publish();
+    // private final StructPublisher<Transform3d> debugCameraPublisher = table.getStructTopic("Debug: Camera", Transform3d.struct).publish();
 
     public VisionSubsystem(
-        Map<String, ProcessorInterface> cameras,
         AprilTagFieldLayout fieldLayout,
-        VisionConfiguration configuration,
         VisionPoseConsumer poseConsumer,
-        SwerveSubsystem swerveSubsystem
+        SwerveSubsystem swerve,
+        List<ProcessorInterface> primaryCameras,
+        List<ProcessorInterface> fallbackCameras,
+        Supplier<Rotation2d> turretAngleSupplier
     ) {
-        this.cameras = cameras;
-        this.fusionEngine = new PoseFusionEngine();
-        this.visionSystemSim = new VisionSystemSim("main");
         this.poseConsumer = poseConsumer;
-        this.config = configuration;
-        this.swerve = swerveSubsystem;
-        this.hasValidPose = false;
+        this.swerve = swerve;
+        this.primaryCameras = List.copyOf(primaryCameras);
+        this.fallbackCameras = List.copyOf(fallbackCameras);
 
-        this.aprilTagFilter = new PipelineFilter(buildFilterList(configuration, swerveSubsystem));
+        List<ProcessorInterface> combined = new ArrayList<>(primaryCameras);
+        combined.addAll(fallbackCameras);
 
-        isSimulation = Robot.isSimulation();
+        this.cameras = List.copyOf(combined);
+        this.turretAngleSupplier = turretAngleSupplier;
+
+        this.fusionEngine = new PoseFusionEngine();
+        this.resultFilter = buildFilter(swerve);
+
+        this.visionSystemSim = new VisionSystemSim("main");
+        this.isSimulation = Robot.isSimulation();
 
         if (isSimulation) {
             visionSystemSim.addAprilTags(fieldLayout);
             PhotonCamera.setVersionCheckEnabled(false);
         }
 
-        for (ProcessorInterface camera : cameras.values()) {
-            camera.start();
-        
-            if (isSimulation) {
-                Optional<PhotonCameraSim> cameraSim = camera.getCameraSim();
-                cameraSim.ifPresent(sim ->
-                    visionSystemSim.addCamera(sim, camera.getCameraTransform())
-                );
-            }
-        }
+        for (ProcessorInterface camera : this.cameras) startCamera(camera);
     }
 
-    private static List<FilterInterface> buildFilterList(VisionConfiguration config, SwerveSubsystem swerve) {
-        List<FilterInterface> filters = new ArrayList<>();
-        filters.add(new ResultFilters.LatencyFilter(config.maxLatencyMs));
-        filters.add(new ResultFilters.AmbiguityFilter(config.maxAmbiguityScore));
-        filters.add(new ResultFilters.AreaFilter(config.minArea, config.maxArea));
+    public VisionSubsystem(
+        AprilTagFieldLayout fieldLayout,
+        VisionPoseConsumer poseConsumer,
+        SwerveSubsystem swerve,
+        List<ProcessorInterface> primaryCameras
+    ) {
+        this(fieldLayout, poseConsumer, swerve, primaryCameras, List.of(), null);
+    }
 
-        if (config.maxOdometryDeviationMeters < Double.MAX_VALUE) {
-            filters.add(new ResultFilters.OdometryOutlierFilter(
-                swerve::getPose, config.maxOdometryDeviationMeters));
+    private void startCamera(ProcessorInterface camera) {
+        camera.start();
+        if (isSimulation) {
+            camera.getCameraSim().ifPresent(sim -> {
+                visionSystemSim.addCamera(sim, camera.getCameraTransform());
+                sim.enableDrawWireframe(false);
+                sim.enableProcessedStream(false);
+                sim.enableRawStream(false);
+            });
         }
-
-        return filters;
     }
 
     @Override
     public void periodic() {
+        double fpgaTimestamp = Timer.getFPGATimestamp();
+
         if (swerve != null) {
-            double headingDegrees = swerve.getGyroRotation3d().toRotation2d().getDegrees();
-            for (ProcessorInterface camera : cameras.values()) {
-                if (camera instanceof LimelightProcessor ll) {
-                    ll.updateHeading(headingDegrees);
-                }
-            }
+            double robotHeading = swerve.getGyroRotation3d().toRotation2d().getDegrees();
+            cameras.forEach(camera -> {
+                if (camera instanceof LimelightProcessor) camera.setRobotHeading(robotHeading);
+            });
         }
 
-        collectResults();
-        filterAndCollectApriltags();
-
-        if (!combinedApriltagResults.isEmpty()) {
-            processApriltags();
-        } else {
-            hasValidPose = false;
+        if (turretAngleSupplier != null) {
+            Rotation2d turretAngle = turretAngleSupplier.get();
+            cameras.forEach(camera -> {
+                if (camera.isTurreted()) camera.updateTurretAngle(turretAngle, fpgaTimestamp);
+            });
         }
 
-        if (isSimulation) {
+        boolean primaryValid = processCameraPipeline(primaryCameras, resultFilter, primaryRaw, primaryFused);
+        boolean fallbackValid = false;
+
+        if (!primaryValid && !fallbackCameras.isEmpty()) {
+            fallbackValid = processCameraPipeline(fallbackCameras, resultFilter, fallbackRaw, fallbackFused);
+        }
+
+        hasValidPose = primaryValid || fallbackValid;
+        hasValidPosePublisher.accept(hasValidPose);
+        currentPipelinePublisher.accept(primaryValid);
+
+        if (primaryValid) publishDiagnostics(primaryFused);
+        else if (fallbackValid) publishDiagnostics(fallbackFused);
+
+        if (isSimulation && swerve != null) {
             visionSystemSim.update(swerve.getPose());
         }
     }
 
-    private void collectResults() {
-        combinedResults.clear();
-        for (ProcessorInterface entry : cameras.values()) {
-            entry.drainResultQueue(combinedResults);
-        }
-    }
+    private boolean processCameraPipeline(
+        List<ProcessorInterface> cameras,
+        PipelineFilter filter,
+        List<ResultInterface> rawResults,
+        List<ApriltagResult> collectedTagList
+    ) {
+        rawResults.clear();
+        for (ProcessorInterface camera : cameras) camera.drainResultQueue(rawResults);
 
-    private void filterAndCollectApriltags() {
-        combinedApriltagResults.clear();
-        for (int i = 0; i < combinedResults.size(); i++) {
-            ResultInterface result = combinedResults.get(i);
-            if (result instanceof ApriltagResult ar
-                    && ar.getStdDevs() != null
-                    && aprilTagFilter.test(ar)
-            ) {
-                combinedApriltagResults.add(ar);
+        collectedTagList.clear();
+        for (ResultInterface result : rawResults) {
+            if (result instanceof ApriltagResult tagResult 
+                && tagResult.getStdDevs() != null 
+                && filter.test(tagResult)) {
+                collectedTagList.add(tagResult);
             }
         }
-    }
 
-    private void processApriltags() {
-        Optional<ApriltagResult> fusedResultOpt = fusionEngine.fusePoses(combinedApriltagResults, config);
-        if (fusedResultOpt.isEmpty()) {
-            hasValidPose = false;
-            return;
-        }
+        if (collectedTagList.isEmpty()) return false;
 
-        ApriltagResult fusedResult = fusedResultOpt.get();
-        fusedPose = fusedResult.getPose();
+        Optional<ApriltagResult> fused = fusionEngine.fusePoses(collectedTagList);
+        if (fused.isEmpty()) return false;
 
+        ApriltagResult result = fused.get();
         if (swerve != null && swerve.isFlatDebounced()) {
             poseConsumer.accept(
-                fusedPose,
-                fusedResult.getTimestampSeconds(),
-                fusedResult.getStdDevs()
+                result.getPose(),
+                result.getTimestampSeconds(),
+                result.getStdDevs()
             );
         }
-
-        hasValidPose = true;
-        publishPoseDiagnostics(fusedResult);
+        return true;
     }
 
-    private void publishPoseDiagnostics(ApriltagResult fusedResult) {
-        posePublisher.set(fusedResult.getPose());
-        usedPosePublisher.set(swerve.getPastVisionPose(fusedResult.getTimestampSeconds()));
-
-        transStdDevPublisher.set(fusedResult.getStdDevs().get(0, 0));
-        rotStdDevPublisher.set(fusedResult.getStdDevs().get(2, 0));
-
-        avgAmbiguityPublisher.set(fusedResult.getAmbiguity());
-        avgAreaPublisher.set(fusedResult.getAverageArea());
-        latencyPublisher.set(fusedResult.getLatencyMs());
-        targetCountPublisher.set(fusedResult.getTargetCount());
-
-        trackedApriltagsPublisher.accept(getTargetPoses(fusedResult.getTrackedTags()));
-        hasValidPosePublisher.accept(hasValidPose);
+    @SuppressWarnings("unused")
+    private static PipelineFilter buildFilter(SwerveSubsystem swerve) {
+        List<FilterInterface> filter = new ArrayList<>();
+            filter.add(new ResultFilters.LatencyFilter(FilterConstants.maxLatencyMs));
+            filter.add(new ResultFilters.AmbiguityFilter(FilterConstants.maxAmbiguity));
+            filter.add(new ResultFilters.AreaFilter(FilterConstants.minArea, FilterConstants.maxArea));
+        if (FilterConstants.maxOdometryDeviationMeters < Double.MAX_VALUE) {
+            filter.add(
+                new ResultFilters.OdometryOutlierFilter(
+                    swerve::getPose,
+                    FilterConstants.maxOdometryDeviationMeters
+                )
+            );
+        }
+        return new PipelineFilter(filter);
     }
 
-    /**
-     * Builds a {@link Pose3d} array for the given tags using the field layout.
-     */
-    public Pose3d[] getTargetPoses(List<TrackedTag> tags) {
-        int count = 0;
-        for (int i = 0; i < tags.size(); i++) {
-            var tagPose = VisionConstants.apriltagFieldLayout.getTagPose(tags.get(i).fiducialId);
-            if (tagPose.isPresent()) tagPoseScratch[count++] = tagPose.get();
+    private void updateTagPublishScratch(List<TrackedTag> tags) {
+        for (int i = 0; i < tags.size() && i < tagPoseScratch.length; i++) {
+            Optional<Pose3d> pose = VisionConstants.apriltagFieldLayout.getTagPose(tags.get(i).getFiducialId());
+            tagPoseScratch[i] = pose.orElse(new Pose3d());
         }
 
+        for (int i = tags.size(); i < tagPoseScratch.length; i++) {
+            tagPoseScratch[i] = new Pose3d(0, 0, 0, new Rotation3d(0, 0, 0));
+        }
+    }
+
+    private void publishDiagnostics(List<ApriltagResult> results) {
+        if (results.isEmpty()) return;
+        ApriltagResult latest = results.stream()
+            .max((a, b) -> Double.compare(a.getTimestampSeconds(), b.getTimestampSeconds()))
+            .orElse(results.get(0));
+
+        updateTagPublishScratch(latest.getTrackedTags());
+
+        visionPose = latest.getPose();
+        posePublisher.set(latest.getPose());
+        xyStdDevPublisher.set(latest.getStdDevs().get(0, 0));
+        thetaStdDevPublisher.set(latest.getStdDevs().get(2, 0));
+        ambiguityPublisher.set(latest.getAmbiguity());
+        areaPublisher.accept(latest.getAverageArea());
+        latencyPublisher.set(latest.getLatencyMs());
+        targetCountPublisher.set(latest.getTargetCount());
+        trackedTagsPublisher.set(tagPoseScratch);
+    }
+
+    public Pose3d[] getTargetPoses(List<TrackedTag> tags) {
+        int count = 0;
+        for (TrackedTag tag : tags) {
+            Optional<Pose3d> pose = VisionConstants.apriltagFieldLayout.getTagPose(tag.getFiducialId());
+            if (pose.isPresent()) tagPoseScratch[count++] = pose.get();
+        }
         Pose3d[] result = new Pose3d[count];
         System.arraycopy(tagPoseScratch, 0, result, 0, count);
         return result;
     }
 
-    public Pose2d getFusedPose() {
-        if (hasValidPose == false) return null;
-        return fusedPose;
+    public Pose2d getVisionPose() { 
+        return hasValidPose ? visionPose : null; 
     }
 
-    public boolean hasValidPose() { 
+    public boolean hasAnyPose() { 
         return hasValidPose; 
     }
 
@@ -234,5 +302,5 @@ public class VisionSubsystem extends SubsystemBase {
     public interface VisionPoseConsumer {
         void accept(Pose2d robotPose, double timestamp, Matrix<N3, N1> stdDevs);
     }
-
+    
 }

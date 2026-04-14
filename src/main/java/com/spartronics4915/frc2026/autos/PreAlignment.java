@@ -31,6 +31,10 @@ public class PreAlignment {
                     return Commands.none();
                 }
 
+                if (prevMethod.isRightSide == nextMethod.isRightSide && prevMethod.isTrench == nextMethod.isTrench) {
+                    return Commands.none();
+                }
+
                 double LRFlip = nextMethod.isRightSide ? 0.0 : -180.0; // Left/Right flip
 
                 Translation2d trans = hubPose.plus(
@@ -39,7 +43,14 @@ public class PreAlignment {
                     approachTransform
                 );
 
-                return Autos.generatePathFromWaypoint(swerveSubsystem, trans, Rotation2d.kZero, Rotation2d.kZero, alignPathConstraints);
+                Rotation2d rotation;
+                if (nextMethod.isTrench) {
+                    rotation = trenchApproachAngle.rotateBy(Rotation2d.fromDegrees(LRFlip));
+                } else {
+                    rotation = bumpApproachAngle.times((nextMethod.isRightSide) ? 1 : -1);
+                }
+
+                return Autos.generatePathFromWaypoint(swerveSubsystem, trans, rotation, alignPathConstraints);
             }, 
             Set.of(swerveSubsystem)
         );

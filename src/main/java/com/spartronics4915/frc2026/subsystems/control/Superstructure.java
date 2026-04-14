@@ -15,10 +15,13 @@ import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 import com.spartronics4915.frc2026.util.control.FieldRegion;
 import com.spartronics4915.frc2026.util.control.FieldZoneMap;
 
+import au.grapplerobotics.LaserCan;
+import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -51,11 +54,18 @@ public class Superstructure extends SubsystemBase {
     private final DriveCommand driveCommand;
     private final VisionSubsystem vision;
 
+    private final LaserCan laserCan;
+
+    private final Debouncer ballDebouncer = new Debouncer(noBallsDebounce, DebounceType.kFalling);
+    private boolean ballDetectedDebounced = false;
+
     private final FieldZoneMap<Zone> zoneMap;
     private Zone currentZone = Zone.UNKNOWN;
 
     private final StringPublisher zonePublisher =
         NetworkTableInstance.getDefault().getStringTopic("superstructure/Current Zone").publish();
+    private final BooleanPublisher ballDetectedPublisher =
+        NetworkTableInstance.getDefault().getBooleanTopic("superstructure/Ball Detect").publish();
 
     public Superstructure(
         SwerveSubsystem swerve,
@@ -72,6 +82,15 @@ public class Superstructure extends SubsystemBase {
         this.driveCommand = driveCommand;
         this.vision = vision;
         this.zoneMap = buildZoneMap();
+
+        this.laserCan = new LaserCan(feederLC);
+        try {
+            laserCan.setRangingMode(LaserCan.RangingMode.SHORT);
+            laserCan.setRegionOfInterest(new LaserCan.RegionOfInterest(8, 8, 16, 16));
+            laserCan.setTimingBudget(LaserCan.TimingBudget.TIMING_BUDGET_33MS);
+        } catch (Exception e) {
+            System.err.println("Error initializing LaserCan: " + e.getMessage());
+        }
 
         configureTriggers();
     }
@@ -160,11 +179,27 @@ public class Superstructure extends SubsystemBase {
         
         if (pose != null) {
             if (pose.getX() < 0) {
-                swerve.resetPose(vision.getFusedPose());
+                swerve.resetPose(vision.getVisionPose());
             } else if (pose.getY() < 0.0 || pose.getY() > 8.1) {
-                swerve.resetPose(vision.getFusedPose());
+                swerve.resetPose(vision.getVisionPose());
             }
         }
+
+        ballDetectedDebounced = ballDebouncer.calculate(ballDetect());
+        ballDetectedPublisher.set(ballDetectedDebounced);
+    }
+
+    private boolean ballDetect(){
+        LaserCan.Measurement measurement = laserCan.getMeasurement();
+        if (measurement == null || measurement.status != LaserCan.LASERCAN_STATUS_VALID_MEASUREMENT) {
+            return true;
+        } else{
+            return measurement.distance_mm < detectDistance;
+        }
+    }
+
+    public boolean isBallDetectedDebounced() {
+        return ballDetectedDebounced;
     }
 
     // Triggers -----------------------------------------------------
@@ -183,9 +218,6 @@ public class Superstructure extends SubsystemBase {
         // Pipeline triggers, falling edge debounced so the pipeline turns on instantly
         // but won't turn off until isReadyToShoot has been false for the full duration.
         Trigger pipelineOn = new Trigger(controller::isReadyToShoot)
-            .debounce(PIPELINE_RATE_LIMIT_SEC, DebounceType.kFalling);
-
-        pipelineOn
             .onTrue(superCommands.setPipelineState(PipelineState.ON))
             .onFalse(superCommands.setPipelineState(PipelineState.OFF));
 

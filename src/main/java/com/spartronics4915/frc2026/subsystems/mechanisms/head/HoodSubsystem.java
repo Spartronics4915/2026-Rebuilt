@@ -2,9 +2,14 @@ package com.spartronics4915.frc2026.subsystems.mechanisms.head;
 
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
+import static edu.wpi.first.units.Units.Volts;
+
+import static com.spartronics4915.frc2026.Constants.HoodConstants.*;
+import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
-import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
+import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -13,17 +18,17 @@ import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
 import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
 import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
-
-import static com.spartronics4915.frc2026.Constants.HoodConstants.*;
-import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
@@ -33,7 +38,29 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
 
     private State targetState = new State();
 
-    private final PositionVoltage positionVoltage = new PositionVoltage(0.0);
+    private final PositionTorqueCurrentFOC positionTorqueRequest = new PositionTorqueCurrentFOC(0.0);
+
+    private final TorqueCurrentFOC sysIdControl = new TorqueCurrentFOC(0.0);
+    private boolean isCharacterizing = false;
+    private final SysIdRoutine sysIdRoutine = new SysIdRoutine(
+        new SysIdRoutine.Config(
+            null,
+            Volts.of(4),
+            null, 
+            null
+        ),
+        new SysIdRoutine.Mechanism(
+            (Voltage volts) -> motor.setControl(sysIdControl.withOutput(volts.in(Volts))),
+            (log) -> {
+                log.motor("Hood")
+                    .voltage(Volts.of(motor.getTorqueCurrent().getValueAsDouble()))
+                    .angularPosition(motor.getPosition().getValue())
+                    .angularVelocity(motor.getVelocity().getValue())
+                    .angularAcceleration(motor.getAcceleration().getValue());
+            },
+            this
+        )
+    );
 
     private HoodClamp currentClamp;
     private Rotation2d minAngle;
@@ -59,12 +86,15 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
 
         motor.addSetpoint(() -> targetState.position, (setpoint) -> setSetpoint(Rotation2d.fromDegrees(setpoint)));
 
+        SmartDashboard.putData("Hood Quasistatic Forward", sysIdQuasistatic(Direction.kForward));
+        SmartDashboard.putData("Hood Quasistatic Reverse", sysIdQuasistatic(Direction.kReverse));
+        SmartDashboard.putData("Hood Dynamic Forward", sysIdDynamic(Direction.kForward));
+        SmartDashboard.putData("Hood Dynamic Reverse", sysIdDynamic(Direction.kReverse));
+
         SmartDashboard.putData("Hood Up", setSetpointCommand(Rotation2d.fromDegrees(19)));
         SmartDashboard.putData("Hood Down", setSetpointCommand(Rotation2d.fromDegrees(0)));
         SmartDashboard.putData("Hood Motor", motor);
     }
-
-    //#region Main Functionality
 
     @Override
     public void periodic(){
@@ -78,11 +108,13 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
             targetState.velocity = 0;
         }
         
-        positionVoltage.withEnableFOC(ENABLE_FOC)
+        positionTorqueRequest
             .withPosition(targetState.position)
             .withVelocity(targetState.velocity);
 
-        motor.setControl(positionVoltage);
+        if (!isCharacterizing) {
+            motor.setControl(positionTorqueRequest);
+        }
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         positionPublisher.accept(getPosition());
@@ -138,6 +170,18 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
     public Command setClampCommand(HoodClamp newClamp) {
         return this.runOnce(() -> setClamp(newClamp));
     }
+
+    public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
+        return sysIdRoutine.quasistatic(direction)
+            .beforeStarting(() -> isCharacterizing = true)
+            .finallyDo(() -> isCharacterizing = false);
+    }
+
+    public Command sysIdDynamic(SysIdRoutine.Direction direction) {
+        return sysIdRoutine.dynamic(direction)
+            .beforeStarting(() -> isCharacterizing = true)
+            .finallyDo(() -> isCharacterizing = false);
+    }
  
     public enum HoodClamp {
         RESTRICTED(Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
@@ -160,10 +204,10 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
 }
     // This is so awesome!
 
-    //   H   H  OOO   OOO  DDDD       CCC   OOO  DDDD  EEEEE   //
-    //   H   H O   O O   O D   D     C   C O   O D   D E       //
-    //   H   H O   O O   O D   D     C     O   O D   D E       //
-    //   HHHHH O   O O   O D   D     C     O   O D   D EEEE    //
-    //   H   H O   O O   O D   D     C     O   O D   D E       //
-    //   H   H O   O O   O D   D     C   C O   O D   D E       //
-    //   H   H  OOO   OOO  DDDD       CCC   OOO  DDDD  EEEEE   //
+    //  H   H  OOO   OOO  DDDD      CCC   OOO  DDDD  EEEEE   //
+    //  H   H O   O O   O D   D    C   C O   O D   D E       //
+    //  H   H O   O O   O D   D    C     O   O D   D E       //
+    //  HHHHH O   O O   O D   D    C     O   O D   D EEEE    //
+    //  H   H O   O O   O D   D    C     O   O D   D E       //
+    //  H   H O   O O   O D   D    C   C O   O D   D E       //
+    //  H   H  OOO   OOO  DDDD      CCC   OOO  DDDD  EEEEE   //

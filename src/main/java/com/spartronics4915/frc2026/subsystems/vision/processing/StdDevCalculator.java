@@ -9,29 +9,17 @@ import edu.wpi.first.math.numbers.N3;
 
 /**
  * Computes pose estimation standard deviations for a single camera.
+ * Uses raw measurement quality factors without temporal smoothing.
  */
 public class StdDevCalculator {
 
-    private final double alpha;
-
-    private double smoothedArea;
-    private double smoothedTagCount;
-
-    private int previousNumTags;
-    private boolean initialized;
-
-    public StdDevCalculator(double alpha) {
-        this.alpha = Math.max(0.0, Math.min(1.0, alpha));
-        this.smoothedArea = 0.1;
-        this.smoothedTagCount = 1;
-        this.previousNumTags = 0;
-        this.initialized = false;
+    public StdDevCalculator() {
+        // Constructor is now empty as there is no state to maintain
     }
 
     /**
      * Calculates pose estimation standard deviations based on measurement quality factors.
-     * Higher values indicate lower confidence. The result is used to weight this measurement
-     * against odometry in the pose estimator.
+     * Higher values indicate lower confidence.
      *
      * @param avgAmbiguity Average pose ambiguity, lower is better
      * @param avgArea Average tag area as fraction of frame, higher is better
@@ -45,27 +33,15 @@ public class StdDevCalculator {
         double latencyMs,
         int numTags
     ) {
-        // On first call or tag reacquisition, snap to current values instead of
-        // bleeding in slowly from stale defaults.
-        boolean reAcquired = (previousNumTags == 0 && numTags > 0);
-        if (!initialized || reAcquired) {
-            smoothedArea = avgArea;
-            smoothedTagCount = numTags;
-            initialized = true;
-        } else {
-            smoothedArea = alpha * avgArea + (1.0 - alpha) * smoothedArea;
-            smoothedTagCount = alpha * numTags + (1.0 - alpha) * smoothedTagCount;
-        }
-
-        previousNumTags = numTags;
-
         double latencySeconds = latencyMs / 1000.0;
 
-        double ambiguityFactor = (smoothedTagCount > 1) ? 1.0 : calculateAmbiguityFactor(avgAmbiguity);
-        double areaFactor = calculateAreaFactor(smoothedArea);
-        double tagCountFactor = calculateTagCountFactor(smoothedTagCount);
+        // Use raw numTags and avgArea directly instead of smoothed versions
+        double ambiguityFactor = (numTags > 1) ? 1.0 : calculateAmbiguityFactor(avgAmbiguity);
+        double areaFactor = calculateAreaFactor(avgArea);
+        double tagCountFactor = calculateTagCountFactor(numTags);
         double latencyFactor = calculateLatencyFactor(latencySeconds);
 
+        // Apply weights from Constants
         double xyMultiplier =
             Math.pow(ambiguityFactor, ambiguityWeight) *
             Math.pow(areaFactor, areaWeight) *
@@ -73,7 +49,6 @@ public class StdDevCalculator {
             tagCountFactor;
 
         // Theta is less sensitive to area (0.5x) but more sensitive to latency (1.5x)
-        // since rotation errors compound more with stale measurements.
         double thetaMultiplier =
             Math.pow(ambiguityFactor, ambiguityWeight) *
             Math.pow(areaFactor, areaWeight * 0.5) *
@@ -102,8 +77,8 @@ public class StdDevCalculator {
         return Math.min(1.0 + (latencySeconds * 5.0), 2.0);
     }
 
-    private static double calculateTagCountFactor(double smoothedTagCount) {
-        return (1.0 / Math.log(Math.max(smoothedTagCount, 1.0) + 1.0)) * 1.4;
+    private static double calculateTagCountFactor(double tagCount) {
+        return (1.0 / Math.log(Math.max(tagCount, 1.0) + 1.0)) * 1.4;
     }
 
 }

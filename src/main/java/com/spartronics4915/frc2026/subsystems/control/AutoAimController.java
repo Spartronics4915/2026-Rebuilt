@@ -15,6 +15,8 @@ import com.spartronics4915.frc2026.util.control.AutoAim.AutoAimResult;
 import com.spartronics4915.frc2026.util.control.TurretController;
 import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
 
+import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -35,18 +37,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 /**
  * Continuously calculates setpoints and applies them to the hood and turret.
- * Simulation projectile visualization is handled here as well.
- *
- * <p>Auto-aim can be toggled at any time, including while the robot is disabled,
- * via {@link #aimToggle()}. When disabled, the hood and turret retain their last
- * commanded setpoints.
- *
- * <p>The calculation pipeline each loop:
- * <ol>
- *   <li>Ask {@link AutoAim} for yaw, pitch, and time-of-flight.
- *   <li>Push yaw to the turret via {@link TurretController} and pitch to the hood.
- *   <li>If in simulation, spawn a {@link RebuiltFuelOnFly} projectile for visualization.
- * </ol>
  */
 public class AutoAimController extends SubsystemBase {
 
@@ -67,6 +57,9 @@ public class AutoAimController extends SubsystemBase {
         this::collidesWithHub,
         this::collidesWithHubWithPadding
     );
+
+    private final Debouncer possibleDebouncer = new Debouncer(PIPELINE_RATE_LIMIT_SEC, DebounceType.kFalling);
+    private boolean isPossibleDebouncedValue = false;
 
     private final TurretController turretController;
 
@@ -91,16 +84,18 @@ public class AutoAimController extends SubsystemBase {
         }
     }
     
-    private int manualOverrideIndex = 0;
+    //private int manualOverrideIndex = 0;
     private ManualOverride activeManualOverride = null;
     
     private final TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
     private ChassisSpeeds lastFieldSpeeds = new ChassisSpeeds();
     private ChassisSpeeds fieldAccelerations = new ChassisSpeeds();
     
-    private final LinearFilter accelFilterX = LinearFilter.movingAverage(10);
-    private final LinearFilter accelFilterY = LinearFilter.movingAverage(10);
-    private final LinearFilter accelFilterOmega = LinearFilter.movingAverage(10);
+    private final LinearFilter accelFilterX = LinearFilter.movingAverage(5);
+    private final LinearFilter accelFilterY = LinearFilter.movingAverage(5);
+    private final LinearFilter accelFilterOmega = LinearFilter.movingAverage(5);
+
+    private final LinearFilter flywheelFilter = LinearFilter.movingAverage(15);
 
     private final BooleanPublisher isAimEnabledPublisher =
         NetworkTableInstance.getDefault()
@@ -145,6 +140,8 @@ public class AutoAimController extends SubsystemBase {
         isAimEnabledPublisher.accept(isAimEnabled);
         isShootingEnabledPublisher.accept(isAutoShootingEnabled);
 
+        isPossibleDebouncedValue = possibleDebouncer.calculate(isShotPossible());
+
         double dt = Math.max(dtCalc.update(), 0.001); // Prevent division by zero
         ChassisSpeeds currentSpeeds = swerve.getFieldRelativeVelocity();
 
@@ -165,6 +162,7 @@ public class AutoAimController extends SubsystemBase {
             lastResult = computeAimResult();
         } else {
             lastResult = null;
+            flywheelFilter.reset();
         }
 
         boolean hasResult = lastResult != null && lastResult.ToF() != -1;
@@ -214,8 +212,8 @@ public class AutoAimController extends SubsystemBase {
             lastFieldSpeeds,
             fieldAccelerations,
             target,
-            RPSToMPS(Robot.isSimulation() ? shooter.getCurrentSetpoint() : shooter.getCurrentRPS()),
-            0.09 // Dynamic processing compensation can be supplied here
+            RPSToMPS(flywheelFilter.calculate(Robot.isSimulation() ? shooter.getCurrentSetpoint() : shooter.getCurrentRPS())),
+            0.08 // Dynamic processing compensation can be supplied here
         );
     }
 
@@ -225,12 +223,10 @@ public class AutoAimController extends SubsystemBase {
      * uses to signal that the shot cannot land.
      */
     private void applyAimResult(AutoAimResult result) {
-        boolean hasValidSpeed = result.recommendedShotSpeed() != -1;
-        boolean shouldShoot = isAutoShootingEnabled && shouldAutoShoot(result);
-        boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
-
-        if (hasValidSpeed && (shootOverride || (isUnrestricted && shouldShoot))) {
-            shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed()));
+        boolean readyToShoot = readyToShoot(result);
+        if (readyToShoot) {
+            Translation3d target = (targetOverride != null) ? targetOverride : getDefaultTarget();
+            shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed() * (!target.equals(BOTTOM_FUNNEL_POSITION) ? 1.01 : 1)));
         } else {
             shooter.setSetpoint(0);
         }
@@ -246,6 +242,17 @@ public class AutoAimController extends SubsystemBase {
             );
         } else {
             hood.setSetpoint(Rotation2d.kZero);
+        }
+
+        if (!readyToShoot) {
+            result = autoAim.calculateDynamicAim(
+                swerve.getSmoothedRelativePose(),
+                new ChassisSpeeds(0.0, 0.0, lastFieldSpeeds.omegaRadiansPerSecond),
+                new ChassisSpeeds(0.0, 0.0, fieldAccelerations.omegaRadiansPerSecond),
+                BOTTOM_FUNNEL_POSITION,
+                0.0,
+                0.08
+            );
         }
 
         if (result.yaw() != null) {
@@ -286,7 +293,7 @@ public class AutoAimController extends SubsystemBase {
         // Time to travel that horizontal distance
         double t = collisionDist / vXY;
 
-        // Height at that time: z = z0 + vz*t - 0.5*g*t^2
+        // Height at that time
         double zAtCollision = shooterZ + vZ * t - 0.5 * 9.81 * t * t;
 
         // Check if z is less than hub height. 
@@ -345,23 +352,52 @@ public class AutoAimController extends SubsystemBase {
         return lastResult != null && lastResult.ToF() != -1;
     }
 
-    /** True when the shot is solvable AND the current flywheel speed is sufficient. */
-    public boolean isReadyToShoot() {
-        // General case when auto-aim is enabled, it has to have a valid result and speed, and the turret and hood have to be near their setpoints
-        if (hasValidResult() && !lastResult.requiresIdealSpeed() 
-            && isTurretReady() && isHoodReady()) {
-            return true;
-        }
-
-        // General false case, don't shoot if operator isn't saying to shoot or if no manual controls are pressed, and if aim is enabled, it failed the above case
-        if (!shootOverride || isAimEnabled || activeManualOverride == null) {
+    public boolean isShotPossible() {
+        if (lastResult == null) {
             return false;
         }
 
-        // Check if the manual shooter is within the allowed leniency (since we can't check with the auto-aim system if the shot is possible)
-        if (shooter.getCurrentRPS() / shooter.getCurrentSetpoint() < 1 - manualShooterLeniency) {
+        boolean possibleSpeed;
+        if (getDefaultTarget().equals(BOTTOM_FUNNEL_POSITION)) {
+            possibleSpeed = !lastResult.requiresIdealSpeed();
+        } else {
+            double recommendedRPS = MPSToRPS(lastResult.recommendedShotSpeed());
+            possibleSpeed = shooter.getCurrentRPS() - recommendedRPS > -3 || !lastResult.requiresIdealSpeed();
+        }
+
+        return possibleSpeed
+            && isHoodReady()
+            && isTurretReady();
+    }
+
+    public boolean isShotPossibleDebounced() {
+        return isPossibleDebouncedValue;
+    }
+
+    public boolean readyToShoot(AutoAimResult result) {
+        boolean hasValidSpeed = result.recommendedShotSpeed() != -1;
+        boolean shouldShoot = isAutoShootingEnabled && shouldAutoShoot(result);
+        boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
+
+        boolean readyToShoot = hasValidSpeed && (shootOverride || (isUnrestricted && shouldShoot));
+        return readyToShoot;
+    }
+
+    /** True when the shot is solvable AND the current flywheel speed is sufficient. */
+    public boolean isReadyToShoot() {
+        // Check if the manual shooter is within the allowed leniency as well as that it's commanded to shoot (since we can't check with the auto-aim system if the shot is possible)
+        if (activeManualOverride != null && shootOverride) {
+            return shooter.getCurrentRPS() / shooter.getCurrentSetpoint() >= 1.0 - manualShooterLeniency;
+        }
+
+        // General case when auto-aim is enabled, it has to have a valid result and speed, and the turret and hood have to be near their setpoints
+        if (hasValidResult() && isShotPossibleDebounced()
+            // Hood and turret moved to isShotPossible because they move A LOT
+            && readyToShoot(lastResult)
+        ) {
             return true;
         }
+ 
         return false;
     }
 
@@ -379,7 +415,7 @@ public class AutoAimController extends SubsystemBase {
     public boolean isHoodReady() {
         return Math.abs(
             hood.getPosition().minus(hood.getCurrentSetpoint()).getDegrees()
-        ) <= 3;
+        ) <= 5.0;
     }
 
     //#endregion
@@ -448,4 +484,5 @@ public class AutoAimController extends SubsystemBase {
     private double MPSToRPS(double mps) {
         return MetersPerSecond.of(mps / (1 - percentLoss)).in(InchesPerSecond) / (Math.PI * 1.92);
     }
+    
 }

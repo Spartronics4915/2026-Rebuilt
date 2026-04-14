@@ -1,5 +1,8 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms;
 
+import static com.spartronics4915.frc2026.Constants.ClimberConstants.*;
+import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
+
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
@@ -16,9 +19,6 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-
-import static com.spartronics4915.frc2026.Constants.ClimberConstants.*;
-import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
 public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
@@ -56,8 +56,6 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
         SmartDashboard.putData("Climber Down", setStateCommand(ClimberState.DOWN));
         SmartDashboard.putData("Climber Motor", motor);
     }
-
-    //#region Main Functionality
 
     @Override
     public void periodic(){
@@ -128,7 +126,7 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
  
     public enum ClimberState {
         DOWN(0),
-        JORBIT(2.7);
+        JORBIT(2.6);
 
         double position;
 

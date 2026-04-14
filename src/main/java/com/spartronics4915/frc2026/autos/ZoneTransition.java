@@ -10,17 +10,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.path.ConstraintsZone;
-import com.pathplanner.lib.path.GoalEndState;
-import com.pathplanner.lib.path.PathPlannerPath;
-import com.pathplanner.lib.path.RotationTarget;
-import com.pathplanner.lib.path.Waypoint;
-
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.lib.BLine.Path;
+import frc.robot.lib.BLine.Path.PathElement;
 
 public class ZoneTransition {
     private final SwerveSubsystem swerve;
@@ -46,119 +41,174 @@ public class ZoneTransition {
         }
     }
 
-    public Command generateCommand(TraversalMethod method) {
+    public Command generateCommand(TraversalMethod method, boolean endWithSpeed) {
         return Commands.defer(() -> {
-            return generateCommand(method, swerve != null && swerve.getRelativePose().getX() < hubPose.getX());
+            return generateCommand(method, swerve != null && swerve.getRelativePose().getX() < hubPose.getX(), endWithSpeed);
         }, Set.of(swerve));
     }
 
-    public Command generateCommand(TraversalMethod method, boolean toNeutralZone) {
+    public Command generateCommand(TraversalMethod method, boolean toNeutralZone, boolean endWithSpeed) {
+        return generateCommand(method, toNeutralZone, endWithSpeed, false);
+    }
+
+    public Command generateCommand(TraversalMethod method, boolean toNeutralZone, boolean endWithSpeed, boolean endInTrench) {
         return Commands.defer(() -> {
             if (method.isTrench) {
-                return generateTrenchCommand(method.isRightSide, toNeutralZone);
+                return generateTrenchCommand(method.isRightSide, toNeutralZone, endWithSpeed, endInTrench);
             } else {
-                return generateBumpCommand(method.isRightSide, toNeutralZone);
+                return generateBumpCommand(method.isRightSide, toNeutralZone, endWithSpeed);
             }
         }, Set.of(swerve));
     }
 
-    public Command generateBumpCommand(boolean isRightSide, boolean toNeutralZone) {
-        double LRFlip = isRightSide ? 0.0 : -180.0; // Left/Right flip
-        double IOFlip = toNeutralZone ? 0.0 : -180.0; // In/Out flip
+    public Command generateBumpCommand(boolean isRightSide, boolean toNeutralZone, boolean endWithSpeed) {
+        Rotation2d LRFlip = isRightSide ? Rotation2d.kZero : Rotation2d.k180deg; // Left/Right flip
+        Rotation2d IOFlip = toNeutralZone ? Rotation2d.kZero : Rotation2d.k180deg; // In/Out flip
 
-        List<Pose2d> poses = new ArrayList<>(List.of(
-            new Pose2d(
-                hubPose.plus(
-                    bumpTransform.rotateBy(Rotation2d.fromDegrees(LRFlip))
-                ).plus(
-                    approachTransform.rotateBy(Rotation2d.fromDegrees(IOFlip))
-                ),
-                Rotation2d.fromDegrees(IOFlip)
+        Rotation2d bumpAngle = bumpApproachAngle.times((isRightSide == toNeutralZone) ? 1 : -1).rotateBy(IOFlip);
+        
+        if (!toNeutralZone) {
+            bumpAngle = bumpAngle.plus(Rotation2d.k180deg);
+        }
+
+        List<PathElement> pathElements = new ArrayList<PathElement>(List.of(
+            new Path.Waypoint(swerve.getRelativePose()),
+            new Path.RotationTarget(
+                bumpAngle, 
+                0.75
             ),
-            new Pose2d(
-                hubPose.plus( // Pose will be really wrong over the bump so set the setpoint *way* farther
-                    bumpExitTransform.rotateBy(Rotation2d.fromDegrees(IOFlip))
-                ).plus(
-                    bumpTransform.rotateBy(Rotation2d.fromDegrees(LRFlip))
+            new Path.Waypoint(
+                new Pose2d(
+                    hubPose.plus(
+                        bumpTransform.rotateBy(LRFlip)
+                    ).plus(
+                        approachTransform.rotateBy(IOFlip)
+                    ),
+                    bumpAngle
                 ),
-                Rotation2d.fromDegrees(IOFlip)
+                0.9
+            ),
+            new Path.Waypoint(
+                hubPose.plus( // Pose will be really wrong over the bump so set the setpoint *way* farther
+                    exitTransform.rotateBy(IOFlip)
+                ).plus(
+                    bumpTransform.rotateBy(LRFlip)
+                ),
+                bumpAngle
             )
         ));
 
-        Autos.removePastPoses(swerve, poses, toNeutralZone);
+        Autos.removePastPoses(swerve, pathElements, toNeutralZone);
 
-        Autos.addStartingPoseToPath(swerve, poses);
-
-        List<Waypoint> waypoints = PathPlannerPath.waypointsFromPoses(poses);
-
-        PathPlannerPath path = new PathPlannerPath(
-            waypoints,
-            List.of(new RotationTarget(1, bumpApproachAngle.rotateBy(Rotation2d.fromDegrees(IOFlip)))),
-            List.of(),
-            List.of(new ConstraintsZone(1, 2, bumpPathConstraints)),
-            List.of(),
-            defaultPathConstraints,
-            Autos.generateStartingState(swerve),
-            new GoalEndState(0.0, bumpApproachAngle.rotateBy(Rotation2d.fromDegrees(IOFlip))),
-            false
-        );
+        Path path = new Path(pathElements, Autos.generatePathConstraintZone(bumpPathConstraints, 1, 2));
 
         return Commands.race(
-            AutoBuilder.followPath(path),
+            Autos.build(path, endWithSpeed ? Rotation2d.kZero.rotateBy(IOFlip) : null, swerve),
             Commands.sequence(
                 Commands.waitUntil(() -> {
                     return swerve.getRelativePose().getMeasureX().in(Meters) > hubPose.getX() ^ !toNeutralZone 
                         && swerve.isFlatDebounced()
-                        && vision.hasValidPose();
+                        && vision.hasAnyPose();
                 }),
                 Commands.waitSeconds(bumpDriveContinueTime)
             )
         );
     }
 
-    public Command generateTrenchCommand(boolean isRightSide, boolean toNeutralZone) {
-        double LRFlip = isRightSide ? 0.0 : -180.0; // Left/Right flip
-        double IOFlip = toNeutralZone ? 0.0 : -180.0; // In/Out flip
+    public Command generateTrenchCommand(boolean isRightSide, boolean toNeutralZone, boolean endWithSpeed, boolean endInTrench) {
+        Rotation2d LRFlip = isRightSide ? Rotation2d.kZero : Rotation2d.k180deg; // Left/Right flip
+        Rotation2d IOFlip = toNeutralZone ? Rotation2d.kZero : Rotation2d.k180deg; // In/Out flip
 
-        List<Pose2d> poses = new ArrayList<>(List.of(
-            new Pose2d(
-                hubPose.plus(
-                    trenchTransform.rotateBy(Rotation2d.fromDegrees(LRFlip))
-                ).plus(
-                    approachTransform.rotateBy(Rotation2d.fromDegrees(IOFlip))
-                ),
-                Rotation2d.fromDegrees(IOFlip)
+        Rotation2d trenchAngle = trenchApproachAngle;
+
+        List<PathElement> pathElements = new ArrayList<PathElement>(List.of(
+            new Path.Waypoint(swerve.getRelativePose()),
+            new Path.RotationTarget(
+                trenchAngle, 
+                0.75
             ),
-            new Pose2d(
-                hubPose.plus(
-                    trenchTransform.rotateBy(Rotation2d.fromDegrees(LRFlip))
-                ).plus(
-                    toNeutralZone
-                        ? approachTransform.rotateBy(Rotation2d.fromDegrees(IOFlip + 180.0))
-                        : trenchExitTransform.rotateBy(Rotation2d.fromDegrees(IOFlip))
+            new Path.Waypoint(
+                new Pose2d(
+                    hubPose.plus(
+                        trenchTransform.rotateBy(LRFlip)
+                    ).plus(
+                        approachTransform.rotateBy(IOFlip)
+                    ),
+                    trenchAngle
                 ),
-                Rotation2d.fromDegrees(IOFlip)
+                1.4
+            ),
+            new Path.Waypoint(
+                new Pose2d(
+                    hubPose.plus(
+                        trenchTransform.rotateBy(LRFlip)
+                    ).plus(
+                        approachTransform.rotateBy(IOFlip).times(0.4)
+                    ),
+                    trenchAngle
+                ),
+                0.2
+            ),
+            new Path.Waypoint(
+                hubPose.plus(
+                    trenchTransform.rotateBy(LRFlip)
+                ).plus(
+                    endInTrench
+                        ? trenchExitTransform.rotateBy(IOFlip)
+                        : approachTransform.rotateBy(IOFlip.plus(Rotation2d.k180deg))
+                ),
+                trenchAngle
             )
         ));
 
-        Autos.removePastPoses(swerve, poses, toNeutralZone);
+        Autos.removePastPoses(swerve, pathElements, toNeutralZone);
 
-        Autos.addStartingPoseToPath(swerve, poses);
+        Path path;
+        if (toNeutralZone) {
+            path = new Path(pathElements, Autos.generatePathConstraintZone(driveToCenterConstraints, 1, 2));
+        } else {
+            path = new Path(pathElements);
+        }
 
-        List<Waypoint> waypoints = PathPlannerPath.waypointsFromPoses(poses);
+        return Autos.build(path, endWithSpeed ? Rotation2d.kZero.rotateBy(IOFlip) : null, swerve);
+    }
+    
+    public Command generateStartingTrenchCommand(boolean isRightSide) {
+        Rotation2d LRFlip = isRightSide ? Rotation2d.kZero : Rotation2d.k180deg; // Left/Right flip
 
-        PathPlannerPath path = new PathPlannerPath(
-            waypoints,
-            List.of(new RotationTarget(1, trenchApproachAngle.rotateBy(Rotation2d.fromDegrees(IOFlip)))),
-            List.of(),
-            List.of(new ConstraintsZone(1, 2, trenchPathConstraints)),
-            List.of(),
-            defaultPathConstraints,
-            Autos.generateStartingState(swerve),
-            new GoalEndState(trenchPathConstraints.maxVelocityMPS(), trenchApproachAngle.rotateBy(Rotation2d.fromDegrees(IOFlip))),
-            false
-        );
+        Rotation2d trenchAngle = startingTrenchApproachAngle.times(isRightSide ? 1 : -1);
 
-        return AutoBuilder.followPath(path);
+        List<PathElement> pathElements = new ArrayList<PathElement>(List.of(
+            new Path.Waypoint(swerve.getRelativePose()),
+            new Path.RotationTarget(
+                trenchAngle, 
+                0.75
+            ),
+            new Path.Waypoint(
+                new Pose2d(
+                    hubPose.plus(
+                        trenchTransform.rotateBy(LRFlip)
+                    ).plus(
+                        approachTransform
+                    ),
+                    trenchAngle
+                ),
+                0.6
+            ),
+            new Path.Waypoint(
+                hubPose.plus(
+                    trenchTransform.rotateBy(LRFlip)
+                ).plus(
+                    approachTransform.rotateBy(Rotation2d.k180deg)
+                ),
+                trenchAngle
+            )
+        ));
+
+        Autos.removePastPoses(swerve, pathElements, true);
+
+        Path path = new Path(pathElements, driveToCenterConstraints);
+
+        return Autos.build(path, Rotation2d.kZero, swerve);
     }
 }
