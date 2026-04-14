@@ -25,6 +25,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.DriverStation;
 
 import static edu.wpi.first.units.Units.InchesPerSecond;
 import static edu.wpi.first.units.Units.Meters;
@@ -140,7 +141,7 @@ public class AutoAimController extends SubsystemBase {
         isAimEnabledPublisher.accept(isAimEnabled);
         isShootingEnabledPublisher.accept(isAutoShootingEnabled);
 
-        isPossibleDebouncedValue = possibleDebouncer.calculate(isShotPossible());
+        isPossibleDebouncedValue = possibleDebouncer.calculate(isPhysicallyAligned());
 
         double dt = Math.max(dtCalc.update(), 0.001); // Prevent division by zero
         ChassisSpeeds currentSpeeds = swerve.getFieldRelativeVelocity();
@@ -201,7 +202,7 @@ public class AutoAimController extends SubsystemBase {
     private AutoAimResult computeAimResult() {
         Translation3d target = (targetOverride != null) ? targetOverride : getDefaultTarget();
         
-        if (target.equals(BOTTOM_FUNNEL_POSITION)) {
+        if (!isPassTarget()) {
             autoAim.setCollisionMap(this::collidesWithHub, this::collidesWithHubWithPadding);
         } else {
             autoAim.setCollisionMap(null, null);
@@ -223,10 +224,9 @@ public class AutoAimController extends SubsystemBase {
      * uses to signal that the shot cannot land.
      */
     private void applyAimResult(AutoAimResult result) {
-        boolean readyToShoot = readyToShoot(result);
+        boolean readyToShoot = meetsFiringConditions(result);
         if (readyToShoot) {
-            Translation3d target = (targetOverride != null) ? targetOverride : getDefaultTarget();
-            shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed() * (!target.equals(BOTTOM_FUNNEL_POSITION) ? 1.01 : 1)));
+            shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed() * (isPassTarget() ? 1.05 : 1)));
         } else {
             shooter.setSetpoint(0);
         }
@@ -256,11 +256,21 @@ public class AutoAimController extends SubsystemBase {
         }
 
         if (result.yaw() != null) {
+            Rotation2d recommendedAngle = null;
+            if (DriverStation.isAutonomous()) {
+                if (swerve.getRelativePose().getY() > hubPose.getY()) {
+                    recommendedAngle = Rotation2d.fromDegrees(-45);
+                } else {
+                    recommendedAngle = Rotation2d.fromDegrees(45);
+                }
+            }
+
             turret.setComplexSetpoint(
                 turretController.calculate(
                     result.yaw(),
                     swerve.getRelativePose().getRotation(),
-                    turret.getPosition()
+                    turret.getPosition(),
+                    recommendedAngle
                 ),
                 result.yawOmega() != null ? 
                     result.yawOmega() : 
@@ -329,6 +339,11 @@ public class AutoAimController extends SubsystemBase {
             && swerve.isFlatDebounced();
     }
 
+    public boolean isPassTarget() {
+        Translation3d target = (targetOverride != null) ? targetOverride : getDefaultTarget();
+        return !target.equals(BOTTOM_FUNNEL_POSITION);
+    }
+
     private Translation3d getDefaultTarget() {
         if (swerve.getRelativePose().getX() < hubPose.getX()) return BOTTOM_FUNNEL_POSITION;
         return swerve.getRelativePose().getY() < hubPose.getY()
@@ -352,29 +367,17 @@ public class AutoAimController extends SubsystemBase {
         return lastResult != null && lastResult.ToF() != -1;
     }
 
-    public boolean isShotPossible() {
-        if (lastResult == null) {
-            return false;
-        }
-
-        boolean possibleSpeed;
-        if (getDefaultTarget().equals(BOTTOM_FUNNEL_POSITION)) {
-            possibleSpeed = !lastResult.requiresIdealSpeed();
-        } else {
-            double recommendedRPS = MPSToRPS(lastResult.recommendedShotSpeed());
-            possibleSpeed = shooter.getCurrentRPS() - recommendedRPS > -3 || !lastResult.requiresIdealSpeed();
-        }
-
-        return possibleSpeed
+    public boolean isPhysicallyAligned() {
+        return lastResult != null && !lastResult.requiresIdealSpeed()
             && isHoodReady()
             && isTurretReady();
     }
 
-    public boolean isShotPossibleDebounced() {
+    public boolean isPhysicallyAlignedDebounced() {
         return isPossibleDebouncedValue;
     }
 
-    public boolean readyToShoot(AutoAimResult result) {
+    public boolean meetsFiringConditions(AutoAimResult result) {
         boolean hasValidSpeed = result.recommendedShotSpeed() != -1;
         boolean shouldShoot = isAutoShootingEnabled && shouldAutoShoot(result);
         boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
@@ -391,9 +394,10 @@ public class AutoAimController extends SubsystemBase {
         }
 
         // General case when auto-aim is enabled, it has to have a valid result and speed, and the turret and hood have to be near their setpoints
-        if (hasValidResult() && isShotPossibleDebounced()
-            // Hood and turret moved to isShotPossible because they move A LOT
-            && readyToShoot(lastResult)
+        if (hasValidResult() && isPhysicallyAlignedDebounced()
+            // Hood and turret moved to isPhysicallyAligned because they move A LOT
+            && !turretController.isWrapping()
+            && meetsFiringConditions(lastResult)
         ) {
             return true;
         }
@@ -404,18 +408,20 @@ public class AutoAimController extends SubsystemBase {
     // TODO: This could not be working
 
     public boolean isTurretReady() {
+        if (turretController.isWrapping()) return false;
+
         return Math.abs(
             Math.IEEEremainder( 
                 turret.getPosition().getDegrees() 
                 - turretController.getLastSetpoint(), 360.0
             )
-        ) <= 4.0;
+        ) <= (isPassTarget() ? 15.0 : 4.0);
     }
 
     public boolean isHoodReady() {
         return Math.abs(
             hood.getPosition().minus(hood.getCurrentSetpoint()).getDegrees()
-        ) <= 5.0;
+        ) <= (isPassTarget() ? 15.0 : 5.0);
     }
 
     //#endregion

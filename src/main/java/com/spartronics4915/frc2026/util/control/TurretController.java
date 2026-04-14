@@ -17,6 +17,7 @@ public class TurretController {
 
     private double lastSetpointDeg;
     private boolean onFlippedPath = false;
+    private boolean isWrapping = false;
 
     /**
      * @param minLimit Physical lower bound (degrees)
@@ -45,6 +46,7 @@ public class TurretController {
     public void reset(Rotation2d currentPosition) {
         this.lastSetpointDeg = currentPosition.getDegrees();
         this.onFlippedPath = false;
+        this.isWrapping = false;
     }
 
     /**
@@ -56,6 +58,19 @@ public class TurretController {
      * @return Optimal turret setpoint
      */
     public Rotation2d calculate(Rotation2d fieldYaw, Rotation2d robotHeading, Rotation2d currentPosition) {
+        return calculate(fieldYaw, robotHeading, currentPosition, null);
+    }
+
+    /**
+     * Computes the optimal turret setpoint with an optional recommended angle.
+     *
+     * @param fieldYaw Target heading in field coordinates
+     * @param robotHeading Current robot heading from odometry
+     * @param currentPosition Current turret encoder position
+     * @param recommendedAngle An optional angle to bias towards. This prevents wrapping later when the target angle is reached.
+     * @return Optimal turret setpoint
+     */
+    public Rotation2d calculate(Rotation2d fieldYaw, Rotation2d robotHeading, Rotation2d currentPosition, Rotation2d recommendedAngle) {
         // Calculate the ideal target relative to the robot chassis
         double targetDeg = fieldYaw.minus(robotHeading).minus(mountingOffset).getDegrees();
 
@@ -76,6 +91,21 @@ public class TurretController {
             // Both paths are physically possible; use hysteresis to decide
             double distToShortest = Math.abs(shortest - lastSetpointDeg);
             double distToFlipped = Math.abs(flipped - lastSetpointDeg);
+
+            // If we have a recommended angle, bias our decision towards the path that places
+            // the turret closer to the recommended angle to preemptively avoid future wrapping
+            if (recommendedAngle != null) {
+                double recommendedDeg = recommendedAngle.getDegrees();
+                double recommendDistShortest = Math.abs(shortest - recommendedDeg);
+                double recommendDistFlipped = Math.abs(flipped - recommendedDeg);
+                
+                // If the flipped path puts us much closer to the recommended angle for future shots, bias it
+                if (recommendDistShortest > recommendDistFlipped + flipDeadband) {
+                    distToShortest += 360; // Penalize shortest path
+                } else if (recommendDistFlipped > recommendDistShortest + flipDeadband) {
+                    distToFlipped += 360; // Penalize flipped path
+                }
+            }
 
             if (onFlippedPath) {
                 // Stay flipped unless the shortest path is significantly better
@@ -102,6 +132,11 @@ public class TurretController {
             candidate = MathUtil.clamp(onFlippedPath ? flipped : shortest, minLimit, maxLimit);
         }
 
+        // Determine if we are wrapping by checking if the candidate implies
+        // a large travel distance over a short time
+        boolean wrappingPath = Math.abs(candidate - currentDeg) > 180.0;
+        isWrapping = wrappingPath;
+
         // Apply Deadband to suppress micro-corrections
         if (Math.abs(candidate - lastSetpointDeg) < deadband) {
             return Rotation2d.fromDegrees(lastSetpointDeg);
@@ -117,6 +152,13 @@ public class TurretController {
 
     public boolean isOnFlippedPath() {
         return onFlippedPath;
+    }
+
+    /**
+     * @return true if the turret is currently wrapping across its physical limitations
+     */
+    public boolean isWrapping() {
+        return isWrapping;
     }
 
     private boolean isWithinLimits(double angle) {
