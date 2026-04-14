@@ -7,9 +7,9 @@ import static edu.wpi.first.units.Units.Meters;
 import java.util.Set;
 
 import com.spartronics4915.frc2026.commands.DriveCommand;
+import com.spartronics4915.frc2026.commands.DriveCommand.SpeedLimitMode;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands.PipelineState;
-import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 import com.spartronics4915.frc2026.util.control.FieldRegion;
@@ -48,7 +48,6 @@ public class Superstructure extends SubsystemBase {
     }
 
     private final SwerveSubsystem swerve;
-    private final ShooterSubsystem shooter;
     private final AutoAimController controller;
     private final SuperstructureCommands superCommands;
     private final DriveCommand driveCommand;
@@ -69,14 +68,12 @@ public class Superstructure extends SubsystemBase {
 
     public Superstructure(
         SwerveSubsystem swerve,
-        ShooterSubsystem shooter,
         AutoAimController controller,
         SuperstructureCommands superCommands,
         DriveCommand driveCommand,
         VisionSubsystem vision
     ) {
         this.swerve = swerve;
-        this.shooter = shooter;
         this.controller = controller;
         this.superCommands = superCommands;
         this.driveCommand = driveCommand;
@@ -119,12 +116,13 @@ public class Superstructure extends SubsystemBase {
             ChassisSpeeds vel = swerve.getFieldRelativeVelocity();
             Translation2d projected = pose.plus(
                 new Translation2d(vel.vxMetersPerSecond, vel.vyMetersPerSecond)
-                    .times(TRENCH_LOOKAHEAD_SEC));
+                    .times(TRENCH_LOOKAHEAD_SEC)
+            );
 
             double hubPos = hubDeltaX(pose);
             double hubProjected = hubDeltaX(projected);
 
-            boolean atPose =       inTrenchColumn(pose)      && Math.abs(hubPos)       < trenchLength.in(Meters) / 2.0;
+            boolean atPose = inTrenchColumn(pose) && Math.abs(hubPos) < trenchLength.in(Meters) / 2.0;
             boolean atFuturePose = inTrenchColumn(projected) && Math.abs(hubProjected) < trenchLength.in(Meters) / 2.0;
 
             boolean projectedValid = (hubPos * hubProjected) <= 0.0 && (inTrenchColumn(pose) || inTrenchColumn(projected));
@@ -169,10 +167,15 @@ public class Superstructure extends SubsystemBase {
             zonePublisher.accept(currentZone.name());
         }
 
-        if (currentZone == Zone.ALLIANCE_ZONE && shooter.getIsShooting()) {
-            driveCommand.setSpeedLimit(false);
+        // Apply a speed limit while ready-to-shoot to help the turret track cleanly.
+        if (controller.isReadyToShoot()) {
+            if (controller.isPassTarget()) {
+                driveCommand.setSpeedLimit(SpeedLimitMode.FERRY);
+            } else {
+                driveCommand.setSpeedLimit(SpeedLimitMode.HUB);
+            }
         } else {
-            driveCommand.setSpeedLimit(false);
+            driveCommand.setSpeedLimit(SpeedLimitMode.OFF);
         }
 
         Pose2d pose = swerve.getPose();
@@ -253,4 +256,5 @@ public class Superstructure extends SubsystemBase {
             }
         }, Set.of()).withName("Restore Zone State");
     }
+
 }

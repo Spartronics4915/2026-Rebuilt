@@ -98,6 +98,21 @@ public final class Constants {
         public static final double maxSpeedWhenShooting = maxSpeed * 0.35;
         public static final double maxOmegaWhenShooting = maxAngularSpeed.in(RadiansPerSecond) * 0.35;
 
+        /**
+         * Speed limits applied while shooting at the hub (tight precision required).
+         * Inspired by 6328's approach of using separate, tighter limits for hub shots
+         * vs. ferry/pass shots to stabilize the robot while the turret tracks.
+         */
+        public static final double maxSpeedWhenShootingHub = maxSpeed * 0.20;
+        public static final double maxOmegaWhenShootingHub = maxAngularSpeed.in(RadiansPerSecond) * 0.20;
+
+        /**
+         * Speed limits applied during ferry/pass shots (target is far, more robot
+         * movement can be tolerated).
+         */
+        public static final double maxSpeedWhenFerrying = maxSpeed * 0.50;
+        public static final double maxOmegaWhenFerrying = maxAngularSpeed.in(RadiansPerSecond) * 0.45;
+
         public static final double timeUntilLimitedMaxSpeed = 0.75;
 
         public static final boolean defaultFieldRelative = true;

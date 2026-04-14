@@ -104,7 +104,6 @@ public class RobotContainer {
 
     public final Superstructure superstructure = new Superstructure(
         swerveSubsystem, 
-        shooterSubsystem,
         autoAimController, 
         superstructureCommands,
         driveCommand,
