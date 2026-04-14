@@ -7,6 +7,7 @@ package com.spartronics4915.frc2026;
 import com.spartronics4915.frc2026.Constants.AutoAimConstants;
 import com.spartronics4915.frc2026.Constants.OperatorConstants;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
+import com.spartronics4915.frc2026.autos.Autos;
 import com.spartronics4915.frc2026.autos.ComplexAutoChooser;
 import com.spartronics4915.frc2026.autos.DriveToPOI;
 import com.spartronics4915.frc2026.autos.NeutralZoneAutos;
@@ -42,6 +43,7 @@ import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -124,6 +126,10 @@ public class RobotContainer {
         SmartDashboard.putData("Pipeline Off", superstructureCommands.setPipelineState(PipelineState.OFF));
         SmartDashboard.putData("Reset Odometry", Commands.runOnce(
             () -> swerveSubsystem.resetPose(visionSubsystem.getVisionPose())
+        ));
+        SmartDashboard.putData("Temp Waypoint", Commands.defer(
+            () -> Autos.generatePathFromWaypoint(swerveSubsystem, new Translation2d(2.5, 4.035), Rotation2d.kZero),
+            Set.of(swerveSubsystem)
         ));
     }
 
