@@ -5,10 +5,10 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstant
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
+import com.spartronics4915.frc2026.util.drive.ModeSpeedLimiter;
 import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -31,8 +31,8 @@ public class DriveCommand extends Command {
      * auto-aim is active.
      *
      * <ul>
-     *   <li>{@code OFF}   – no limit, full driver authority.</li>
-     *   <li>{@code HUB}   – tight limit for precise hub shots; inspired by 6328's
+     *   <li>{@code OFF} – no limit, full driver authority.</li>
+     *   <li>{@code HUB} – tight limit for precise hub shots; inspired by 6328's
      *       per-mode speed-capping approach where the robot must be nearly still
      *       to guarantee shot accuracy at close-to-mid range.</li>
      *   <li>{@code FERRY} – looser limit for pass/ferry shots; the target is far
@@ -57,16 +57,9 @@ public class DriveCommand extends Command {
     private SpeedLimitMode limitMode = SpeedLimitMode.OFF;
     private SpeedLimitMode lastLimitMode = SpeedLimitMode.OFF;
 
-    // Each mode gets its own slew rate limiters so that switching modes
-    // doesn't carry over an incorrect rate from the previous mode.
-    // Hub shots
-    private final SlewRateLimiter hubXLimiter = new SlewRateLimiter(maxSpeedWhenShootingHub / timeUntilLimitedMaxSpeed);
-    private final SlewRateLimiter hubYLimiter = new SlewRateLimiter(maxSpeedWhenShootingHub / timeUntilLimitedMaxSpeed);
-    private final SlewRateLimiter hubOmLimiter = new SlewRateLimiter(maxOmegaWhenShootingHub / timeUntilLimitedMaxSpeed);
-    // Ferrying
-    private final SlewRateLimiter ferryXLimiter = new SlewRateLimiter(maxSpeedWhenFerrying / timeUntilLimitedMaxSpeed);
-    private final SlewRateLimiter ferryYLimiter = new SlewRateLimiter(maxSpeedWhenFerrying / timeUntilLimitedMaxSpeed);
-    private final SlewRateLimiter ferryOmLimiter = new SlewRateLimiter(maxOmegaWhenFerrying / timeUntilLimitedMaxSpeed);
+    // Each mode gets its own speed limiter to avoid carrying over incorrect rate when switching
+    private final ModeSpeedLimiter hubLimiter = new ModeSpeedLimiter(maxSpeedWhenShootingHub, maxOmegaWhenShootingHub, timeUntilLimitedMaxSpeed);
+    private final ModeSpeedLimiter ferryLimiter = new ModeSpeedLimiter(maxSpeedWhenFerrying, maxOmegaWhenFerrying, timeUntilLimitedMaxSpeed);
 
     private final TrapezoidProfile trapezoidProfile = new TrapezoidProfile(trenchAlignConstraints);
     private final TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
@@ -112,42 +105,18 @@ public class DriveCommand extends Command {
             // If the mode just changed, reset the limiters for the new mode so we
             // don't snap to the wrong rate or carry over stale state.
             if (limitMode != lastLimitMode) {
-                hubXLimiter.reset(vX);   
-                hubYLimiter.reset(vY);
-                hubOmLimiter.reset(omega);
-
-                ferryXLimiter.reset(vX); 
-                ferryYLimiter.reset(vY); 
-                ferryOmLimiter.reset(omega);
+                getLimiterFromMode(limitMode).resetAll(vX, vY, omega);
             }
 
-            if (limitMode == SpeedLimitMode.HUB) {
-                vX = clampSymmetric(vX, maxSpeedWhenShootingHub);
-                vY = clampSymmetric(vY, maxSpeedWhenShootingHub);
-                omega = clampSymmetric(omega, maxOmegaWhenShootingHub);
-                
-                vX = hubXLimiter.calculate(vX);
-                vY = hubYLimiter.calculate(vY);
-                omega = hubOmLimiter.calculate(omega);
-            } else {
-                vX = clampSymmetric(vX, maxSpeedWhenFerrying);
-                vY = clampSymmetric(vY, maxSpeedWhenFerrying);
-                omega = clampSymmetric(omega, maxOmegaWhenFerrying);
-
-                vX = ferryXLimiter.calculate(vX);
-                vY = ferryYLimiter.calculate(vY);
-                omega = ferryOmLimiter.calculate(omega);
-            }
+            double[] limited = getLimiterFromMode(limitMode).limit(vX, vY, omega);
+            vX = limited[0];
+            vY = limited[1];
+            omega = limited[2];
         } else {
             // Reset both sets of limiters to current velocity so there is no
             // sudden lurch when a limit mode is first engaged.
-            hubXLimiter.reset(vX);   
-            hubYLimiter.reset(vY);   
-            hubOmLimiter.reset(omega);
-
-            ferryXLimiter.reset(vX); 
-            ferryYLimiter.reset(vY); 
-            ferryOmLimiter.reset(omega);
+            hubLimiter.resetAll(vX, vY, omega);
+            ferryLimiter.resetAll(vX, vY, omega);
         }
 
         lastLimitMode = limitMode;
@@ -173,7 +142,7 @@ public class DriveCommand extends Command {
         }
 
         //double rotationBreakThreshold = (lockedHeading != null) ? maxAngularRate * 0.03 : maxAngularRate * 0.03;
-        boolean driverIsRotating = true /*Math.abs(omega) > rotationBreakThreshold*/;
+        boolean driverIsRotating = true /* Math.abs(omega) > rotationBreakThreshold */;
         boolean driverIsTranslating = Math.hypot(vX, vY) > maxSpeed * 0.05;
 
         if (driverIsRotating) {
@@ -261,10 +230,6 @@ public class DriveCommand extends Command {
         return driverController.getHID();
     }
 
-    private static double clampSymmetric(double value, double limit) {
-        return MathUtil.clamp(value, -limit, limit);
-    }
-
     private static double applyResponseCurve(double x) {
         //double ax = Math.abs(x);
         //double linearWeight = 0.60;
@@ -272,4 +237,9 @@ public class DriveCommand extends Command {
         //return Math.signum(x) * shaped;
         return Math.signum(x) * Math.pow(Math.abs(x), 1.5);
     }
+
+    private ModeSpeedLimiter getLimiterFromMode(SpeedLimitMode mode) {
+        return mode == SpeedLimitMode.HUB ? hubLimiter : ferryLimiter;
+    }
+
 }

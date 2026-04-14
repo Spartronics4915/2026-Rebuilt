@@ -96,9 +96,6 @@ public final class Constants {
         public static final double maxSpeed = 7.12; // 5.12, should probably increase
         public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(8); // 6, should probably increase
 
-        public static final double maxSpeedWhenShooting = maxSpeed * 0.35;
-        public static final double maxOmegaWhenShooting = maxAngularSpeed.in(RadiansPerSecond) * 0.35;
-
         /**
          * Speed limits applied while shooting at the hub (tight precision required).
          * Inspired by 6328's approach of using separate, tighter limits for hub shots
