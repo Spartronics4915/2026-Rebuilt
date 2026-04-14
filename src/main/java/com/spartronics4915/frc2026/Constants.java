@@ -11,11 +11,9 @@ import static edu.wpi.first.units.Units.Centimeter;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.InchesPerSecond;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
-import static edu.wpi.first.units.Units.Meter;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Millimeters;
-import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Seconds;
@@ -25,7 +23,6 @@ import java.util.List;
 
 import org.photonvision.simulation.SimCameraProperties;
 
-import com.spartronics4915.frc2026.subsystems.vision.cameras.LimelightProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.PhotonProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
 import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
@@ -45,7 +42,6 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
@@ -192,11 +188,11 @@ public final class Constants {
                 return new SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>()
                     .withDriveMotorType(DriveMotorArrangement.TalonFX_Integrated)
                     .withSteerMotorType(SteerMotorArrangement.TalonFX_Integrated)
-                    .withDriveMotorGearRatio(6.026785714285714)
+                    .withDriveMotorGearRatio(7.03125)
                     .withSteerMotorGearRatio(26.09090909090909)
                     .withCouplingGearRatio(3.857142857142857)
                     .withWheelRadius(Inches.of(2.0))
-                    .withSpeedAt12Volts(MetersPerSecond.of(5.12))
+                    .withSpeedAt12Volts(MetersPerSecond.of(4.32))
                     .withSlipCurrent(Amps.of(120))
                     .withSteerMotorGains(new Slot0Configs()
                         .withKP(110).withKI(0).withKD(5.0)
@@ -225,7 +221,7 @@ public final class Constants {
                             .withCurrentLimits(
                                 new CurrentLimitsConfigs()
                                     .withStatorCurrentLimit(Amps.of(80))
-                                    .withStatorCurrentLimitEnable(true)
+                                    .withStatorCurrentLimitEnable(false)
                             )
                     );
             }
