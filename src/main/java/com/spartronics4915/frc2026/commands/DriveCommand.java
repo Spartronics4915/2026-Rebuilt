@@ -109,9 +109,9 @@ public class DriveCommand extends Command {
             }
 
             double[] limited = getLimiterFromMode(limitMode).limit(vX, vY, omega);
-            vX = limited[0];
-            vY = limited[1];
-            omega = limited[2];
+                vX = limited[0];
+                vY = limited[1];
+                omega = limited[2];
         } else {
             // Reset both sets of limiters to current velocity so there is no
             // sudden lurch when a limit mode is first engaged.
