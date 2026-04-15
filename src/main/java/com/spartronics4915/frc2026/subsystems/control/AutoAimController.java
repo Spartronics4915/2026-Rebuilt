@@ -186,7 +186,7 @@ public class AutoAimController extends SubsystemBase {
             return;
         }
 
-        if (!hasResult) return;
+        if (lastResult == null) return;
 
         applyAimResult(lastResult);
     }
