@@ -516,6 +516,8 @@ public final class Constants {
         // ik this is badly named but it basically defines how much below the setpoint in manual mode is still considered fine for the shot
         public static final double manualShooterLeniency = 0.1;
 
+        public static final double processingCompensation = 0.06;
+
         public static final Distance HUB_SHOT_PADDING = Meters.of(0.1);
         public static final Distance HUB_IDEAL_SHOT_PADDING = Meters.of(0.5);
 
