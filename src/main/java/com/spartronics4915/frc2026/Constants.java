@@ -19,25 +19,14 @@ import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
-import java.util.List;
-
-import org.photonvision.simulation.SimCameraProperties;
-
-import com.spartronics4915.frc2026.subsystems.vision.cameras.PhotonProcessor;
-import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
-import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
-
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
-import edu.wpi.first.apriltag.AprilTagFieldLayout;
-import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
@@ -342,114 +331,77 @@ public final class Constants {
     //#endregion
     //#region Vision
 
-    public static final class VisionConstants {
-        public static final AprilTagFieldLayout apriltagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+   public static final class VisionConstants {
 
-        public static final SimCameraProperties simCameraProperties = new SimCameraProperties();
-            static {
-                simCameraProperties.setCalibration(1600, 1200, Rotation2d.fromDegrees(97.65));
-                simCameraProperties.setCalibError(0.05, 0.005);
-                simCameraProperties.setFPS(50);
-                simCameraProperties.setAvgLatencyMs(20);
-                simCameraProperties.setLatencyStdDevMs(0);
-            }
+        // Large variance used to down-weight unreliable vision measurements
+        public static final double largeVariance = 1e6;
 
-        public static final double turretHistorySeconds = 0.5;
-        public static final int maxTagsPerFrame = 8;
-        public static final double yawRecomputeThreshold = 1e-4;
+        // Standard deviation constants
+        public static final int megatagXStdDevIndex = 0;
+        public static final int megatagYStdDevIndex = 1;
+        public static final int megatagYawStdDevIndex = 5;
 
-        public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.42;
-            public static final double baseThetaStdDev = 0.85;
-            public static final double ambiguityWeight = 0.1;
-            public static final double areaWeight = 0.9;
-            public static final double latencyWeight = 1.0;
-        }
+        // Validation constants
+        public static final int expectedStdDevLength = 12;
+        public static final int minFiducialCount = 1;
 
-        public static final class FilterConstants {
-            public static final double maxLatencyMs = 100.0;
-            public static final double maxSingleTagDistanceMeters = 7.0;
-            public static final double maxMultiTagDistanceMeters = 10.0;
-            public static final double maxAmbiguity = 0.12; // TODO: Change back to 0.12 if no vision
-            public static final double minArea = 0.05;
-            public static final double maxArea = 0.90;
-
-            // Set < Double.MAX_VALUE to enable the odometry-outlier filter.
-            public static final double maxOdometryDeviationMeters = Double.MAX_VALUE;
-        }
-
-        public static final class FusionConstants {
-            public static final boolean enabled = true;
-            public static final double timestampThresholdSecs = 0.05;
-            public static final int minCameras = 2;
-
-            /**
-             * Results whose normalized distance from the group mean exceeds this
-             * number of sigma are rejected as outliers before fusion.
-             */
-            public static final double outlierSigma = 3.0;
-        }
-
-        public static final class CameraConstants {
-
-            /** evan — front tower camera */
-            public static final Transform3d frontTowerCamTransform = new Transform3d(
-                new Translation3d(-0.11767, 0.310900, 0.520276),
-                new Rotation3d(Math.toRadians(0), Math.toRadians(-30), Math.toRadians(0))
+        // Camera A (front-tower Camera)
+        public static final double cameraAPitchDegrees = 20.0;
+        public static final double cameraAPitchRads = Units.degreesToRadians(cameraAPitchDegrees);
+        public static final double cameraAHeightOffGroundMeters = Units.inchesToMeters(8.3787);
+        public static final String cameraATableName = "photon-front";
+        public static final double robotToCameraAForward = Units.inchesToMeters(7.8757);
+        public static final double robotToCameraASide = Units.inchesToMeters(-11.9269);
+        public static final Rotation2d cameraAYawOffset = Rotation2d.fromDegrees(0.0);
+        public static final Transform2d robotToCameraA =
+            new Transform2d(
+                new Translation2d(robotToCameraAForward, robotToCameraASide), 
+                cameraAYawOffset
             );
 
-            /** val — back tower camera */
-            public static final Transform3d backTowerCamTransform = new Transform3d(
-                new Translation3d(-0.268191, 0.311499, 0.437110 + 0.0127),
-                new Rotation3d(Math.toRadians(0), Math.toRadians(-30), Math.toRadians(180))
+        // Camera B (back-tower Camera)
+        public static final double cameraBPitchDegrees = 20.0;
+        public static final double cameraBPitchRads = Units.degreesToRadians(cameraBPitchDegrees);
+        public static final double cameraBHeightOffGroundMeters = Units.inchesToMeters(8.3787);
+        public static final String cameraBTableName = "photon-back";
+        public static final double robotToCameraBForward = Units.inchesToMeters(7.8757);
+        public static final double robotToCameraBSide = Units.inchesToMeters(-11.9269);
+        public static final Rotation2d cameraBYawOffset = Rotation2d.fromDegrees(0.0);
+        public static final Transform2d robotToCameraB =
+            new Transform2d(
+                new Translation2d(robotToCameraAForward, robotToCameraASide), 
+                cameraAYawOffset
             );
 
-            /** daniil — RIO-mounted camera */
-            public static final Transform3d rioCamTransform = new Transform3d(
-                new Translation3d(-0.125205, -0.334776, 0.257945),
-                new Rotation3d(Math.toRadians(0), Math.toRadians(-26), Math.toRadians(297))
+        // Camera C (turret-spin Camera)
+        public static final double cameraCPitchDegrees = 20.0;
+        public static final double cameraCPitchRads = Units.degreesToRadians(cameraBPitchDegrees);
+        public static final double cameraCHeightOffGroundMeters = Units.inchesToMeters(8.3787);
+        public static final String cameraCTableName = "limelight-spin";
+        public static final double robotToCameraCForward = Units.inchesToMeters(7.8757);
+        public static final double robotToCameraCSide = Units.inchesToMeters(-11.9269);
+        public static final Rotation2d cameraCYawOffset = Rotation2d.fromDegrees(0.0);
+        public static final Transform2d robotToCameraC =
+            new Transform2d(
+                new Translation2d(robotToCameraAForward, robotToCameraASide), 
+                cameraAYawOffset
             );
 
-            /** argos - turret camera */
-            public static final Transform3d turretToCamera = new Transform3d(
-                new Translation3d(
-                    Units.inchesToMeters(-5.55878),
-                    Units.inchesToMeters(1.61053),
-                    Units.inchesToMeters(6.55698)
-                ),
-                new Rotation3d(
-                    0.0,
-                    Math.toRadians(-28.1),
-                    Math.toRadians(90.0)
-                )
-            );
+        // Vision processing constants
+        public static final double defaultAmbiguityThreshold = 0.19;
+        public static final double defaultYawDiffThreshold = 5.0;
+        public static final double tagAreaThresholdForYawCheck = 2.0;
+        public static final double tagMinAreaForSingleTagMegatag = 1.0;
+        public static final double defaultZThreshold = 0.2;
+        public static final double defaultNormThreshold = 1.0;
+        public static final double minAmbiguityToFlip = 0.08;
 
-            /**
-             * Primary cameras, always participate in pose fusion.
-             */
-            public static final List<ProcessorInterface> primaryCameras = List.of(
-                new PhotonProcessor(
-                    "evan", apriltagFieldLayout, frontTowerCamTransform,
-                    new StdDevCalculator(), simCameraProperties, 20.0
-                ),
-                new PhotonProcessor(
-                    "val", apriltagFieldLayout, backTowerCamTransform,
-                    new StdDevCalculator(), simCameraProperties, 20.0
-                ),
-                new PhotonProcessor(
-                    "daniil", apriltagFieldLayout, rioCamTransform,
-                    new StdDevCalculator(), simCameraProperties, 20.0
-                )
-            );
+        public static final double cameraHorizontalFOVDegrees = 81.0;
+        public static final double cameraVerticalFOVDegrees = 55.0;
+        public static final int cameraImageWidth = 1280;
+        public static final int cameraImageHeight = 800;
 
-            /**
-             * Fallback cameras, used only when the primary pipeline produces no
-             * valid pose.
-             */
-            public static final List<ProcessorInterface> fallbackCameras = List.of(
-                
-            );
-        }
+        public static final double scoringConfidenceThreshold = 0.7;
     }
 
     //#endregion
