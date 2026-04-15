@@ -112,8 +112,12 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
         // When dynamic speed is active, override the static setpoint with the
         // interpolated value from the distance→RPS lookup table.
         if (dynamicSpeedActive && distanceToTargetSupplier != null) {
-            currentSetpoint = feederSpeedMap.get(
-                distanceToTargetSupplier.getAsDouble()
+            //currentSetpoint = feederSpeedMap.get(
+            //    distanceToTargetSupplier.getAsDouble()
+            //);
+            currentSetpoint = 22.81879 / (1 + Math.pow(
+                Math.E, 
+                -(((0.729094 * distanceToTargetSupplier.getAsDouble()) - 1.26895)))
             );
         }
 
@@ -178,7 +182,7 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
     }
 
     public Command setStateCommand(FeederState state){
-        return setSetpointCommand(state.rps);
+        return this.runOnce(() -> setState(state));
     }
 
     public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {

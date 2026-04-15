@@ -233,7 +233,7 @@ public final class Constants {
                         new TalonFXConfiguration()
                             .withCurrentLimits(
                                 new CurrentLimitsConfigs()
-                                    .withStatorCurrentLimit(Amps.of(120))
+                                    .withStatorCurrentLimit(Amps.of(100))
                                     .withStatorCurrentLimitEnable(true)
                             )
                     );
@@ -488,7 +488,7 @@ public final class Constants {
         public static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
         public static final double PIVOT_JOSTLE_FREQUENCY = 1.0; // Hz
 
-        public static final double percentLoss = 0.1070; // Percent loss on shooter to ball transfer, 0.1071
+        public static final double percentLoss = 0.1071; // Percent loss on shooter to ball transfer, 0.1071
 
         public static final int feederLC = 42;
         public static final double detectDistance = 140.0;
@@ -516,10 +516,10 @@ public final class Constants {
         // ik this is badly named but it basically defines how much below the setpoint in manual mode is still considered fine for the shot
         public static final double manualShooterLeniency = 0.1;
 
-        public static final double processingCompensation = 0.06;
+        public static final double processingCompensation = 0.05;
 
-        public static final Distance HUB_SHOT_PADDING = Meters.of(0.1);
-        public static final Distance HUB_IDEAL_SHOT_PADDING = Meters.of(0.5);
+        public static final Distance HUB_SHOT_PADDING = Meters.of(0.05);
+        public static final Distance HUB_IDEAL_SHOT_PADDING = Meters.of(0.2);
 
         public static final double alliancePassOffset = 2.135;
 
@@ -710,6 +710,7 @@ public final class Constants {
 
         public static final InterpolatingDoubleTreeMap feederSpeedMap = new InterpolatingDoubleTreeMap();
             static {
+                feederSpeedMap.put(0.5, 10.0);
                 feederSpeedMap.put(1.5,  18.0);
                 feederSpeedMap.put(2.5,  19.4);
                 feederSpeedMap.put(3.5,  21.0);
