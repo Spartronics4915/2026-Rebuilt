@@ -22,6 +22,8 @@ import static edu.wpi.first.units.Units.Volts;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.PIDController;
@@ -331,77 +333,11 @@ public final class Constants {
     //#endregion
     //#region Vision
 
-   public static final class VisionConstants {
+    public static final class VisionConstants {
 
-        // Large variance used to down-weight unreliable vision measurements
-        public static final double largeVariance = 1e6;
+        public static final AprilTagFieldLayout aprilTagLayout = AprilTagFieldLayout
+            .loadField(AprilTagFields.k2026RebuiltWelded);
 
-        // Standard deviation constants
-        public static final int megatagXStdDevIndex = 0;
-        public static final int megatagYStdDevIndex = 1;
-        public static final int megatagYawStdDevIndex = 5;
-
-        // Validation constants
-        public static final int expectedStdDevLength = 12;
-        public static final int minFiducialCount = 1;
-
-        // Camera A (front-tower Camera)
-        public static final double cameraAPitchDegrees = 20.0;
-        public static final double cameraAPitchRads = Units.degreesToRadians(cameraAPitchDegrees);
-        public static final double cameraAHeightOffGroundMeters = Units.inchesToMeters(8.3787);
-        public static final String cameraATableName = "photon-front";
-        public static final double robotToCameraAForward = Units.inchesToMeters(7.8757);
-        public static final double robotToCameraASide = Units.inchesToMeters(-11.9269);
-        public static final Rotation2d cameraAYawOffset = Rotation2d.fromDegrees(0.0);
-        public static final Transform2d robotToCameraA =
-            new Transform2d(
-                new Translation2d(robotToCameraAForward, robotToCameraASide), 
-                cameraAYawOffset
-            );
-
-        // Camera B (back-tower Camera)
-        public static final double cameraBPitchDegrees = 20.0;
-        public static final double cameraBPitchRads = Units.degreesToRadians(cameraBPitchDegrees);
-        public static final double cameraBHeightOffGroundMeters = Units.inchesToMeters(8.3787);
-        public static final String cameraBTableName = "photon-back";
-        public static final double robotToCameraBForward = Units.inchesToMeters(7.8757);
-        public static final double robotToCameraBSide = Units.inchesToMeters(-11.9269);
-        public static final Rotation2d cameraBYawOffset = Rotation2d.fromDegrees(0.0);
-        public static final Transform2d robotToCameraB =
-            new Transform2d(
-                new Translation2d(robotToCameraAForward, robotToCameraASide), 
-                cameraAYawOffset
-            );
-
-        // Camera C (turret-spin Camera)
-        public static final double cameraCPitchDegrees = 20.0;
-        public static final double cameraCPitchRads = Units.degreesToRadians(cameraBPitchDegrees);
-        public static final double cameraCHeightOffGroundMeters = Units.inchesToMeters(8.3787);
-        public static final String cameraCTableName = "limelight-spin";
-        public static final double robotToCameraCForward = Units.inchesToMeters(7.8757);
-        public static final double robotToCameraCSide = Units.inchesToMeters(-11.9269);
-        public static final Rotation2d cameraCYawOffset = Rotation2d.fromDegrees(0.0);
-        public static final Transform2d robotToCameraC =
-            new Transform2d(
-                new Translation2d(robotToCameraAForward, robotToCameraASide), 
-                cameraAYawOffset
-            );
-
-        // Vision processing constants
-        public static final double defaultAmbiguityThreshold = 0.19;
-        public static final double defaultYawDiffThreshold = 5.0;
-        public static final double tagAreaThresholdForYawCheck = 2.0;
-        public static final double tagMinAreaForSingleTagMegatag = 1.0;
-        public static final double defaultZThreshold = 0.2;
-        public static final double defaultNormThreshold = 1.0;
-        public static final double minAmbiguityToFlip = 0.08;
-
-        public static final double cameraHorizontalFOVDegrees = 81.0;
-        public static final double cameraVerticalFOVDegrees = 55.0;
-        public static final int cameraImageWidth = 1280;
-        public static final int cameraImageHeight = 800;
-
-        public static final double scoringConfidenceThreshold = 0.7;
     }
 
     //#endregion
