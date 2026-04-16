@@ -45,7 +45,7 @@ public class LimelightProcessor implements ProcessorInterface {
     private final StdDevCalculator stdDevCalculator;
 
     private volatile double robotHeadingDegrees = 0.0;
-    private volatile boolean useMegaTag2 = true;
+    private volatile boolean useMegaTag2 = false;
 
     private final ConcurrentTimeBuffer<Double> yawBuffer;
     private volatile double latestYaw = 0.0;

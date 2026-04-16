@@ -1,5 +1,7 @@
 package com.spartronics4915.frc2026;
 
+import static com.spartronics4915.frc2026.Constants.SuperstructureConstants.shooterBaseTranslation;
+
 // Copyright (c) FIRST and other WPILib contributors.
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
@@ -23,6 +25,7 @@ import java.util.List;
 
 import org.photonvision.simulation.SimCameraProperties;
 
+import com.spartronics4915.frc2026.subsystems.vision.cameras.LimelightProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.PhotonProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
 import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
@@ -361,7 +364,7 @@ public final class Constants {
         public static final class StdDevConstants {
             public static final double baseXYStdDev = 0.42;
             public static final double baseThetaStdDev = 0.85;
-            public static final double ambiguityWeight = 0.1;
+            public static final double ambiguityWeight = 0.1; //0.1
             public static final double areaWeight = 0.9;
             public static final double latencyWeight = 1.0;
         }
@@ -420,7 +423,7 @@ public final class Constants {
                 new Rotation3d(
                     0.0,
                     Math.toRadians(-28.1),
-                    Math.toRadians(90.0)
+                    Math.toRadians(270.0)
                 )
             );
 
@@ -428,6 +431,20 @@ public final class Constants {
              * Primary cameras, always participate in pose fusion.
              */
             public static final List<ProcessorInterface> primaryCameras = List.of(
+                //new LimelightProcessor(
+                //    "limelight-argos", 
+                //    shooterBaseTranslation, 
+                //    turretToCamera, 
+                //    new StdDevCalculator(), 
+                //    30.0
+                //)
+            );
+
+            /**
+             * Fallback cameras, used only when the primary pipeline produces no
+             * valid pose.
+             */
+            public static final List<ProcessorInterface> fallbackCameras = List.of(
                 new PhotonProcessor(
                     "evan", apriltagFieldLayout, frontTowerCamTransform,
                     new StdDevCalculator(), simCameraProperties, 20.0
@@ -440,14 +457,6 @@ public final class Constants {
                     "daniil", apriltagFieldLayout, rioCamTransform,
                     new StdDevCalculator(), simCameraProperties, 20.0
                 )
-            );
-
-            /**
-             * Fallback cameras, used only when the primary pipeline produces no
-             * valid pose.
-             */
-            public static final List<ProcessorInterface> fallbackCameras = List.of(
-                
             );
         }
     }
