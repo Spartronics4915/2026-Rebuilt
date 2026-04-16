@@ -115,9 +115,9 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
             //currentSetpoint = feederSpeedMap.get(
             //    distanceToTargetSupplier.getAsDouble()
             //);
-            currentSetpoint = 22.81879 / (1 + Math.pow(
+            currentSetpoint = 22.01887 / (1 + Math.pow(
                 Math.E, 
-                -(((0.729094 * distanceToTargetSupplier.getAsDouble()) - 1.26895)))
+                -(((0.928997 * distanceToTargetSupplier.getAsDouble()) - 1.72251)))
             );
         }
 
@@ -198,8 +198,8 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
     }
 
     public enum FeederState{
-        FORWARD(19.4),
-        REVERSE(-19.4),
+        FORWARD(22.0),
+        REVERSE(-22.0),
         OFF(0);
 
         double rps;

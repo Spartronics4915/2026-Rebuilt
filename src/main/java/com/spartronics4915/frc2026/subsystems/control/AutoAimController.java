@@ -24,6 +24,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.BooleanPublisher;
+import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation;
 
@@ -98,18 +99,16 @@ public class AutoAimController extends SubsystemBase {
 
     private final LinearFilter flywheelFilter = LinearFilter.movingAverage(15);
 
-    private final BooleanPublisher isAimEnabledPublisher =
-        NetworkTableInstance.getDefault()
+    private final BooleanPublisher isAimEnabledPublisher = NetworkTableInstance.getDefault()
             .getBooleanTopic("superstructure/AutoAim/AimEnabled").publish();
-    private final BooleanPublisher isShootingEnabledPublisher =
-        NetworkTableInstance.getDefault()
+    private final BooleanPublisher isShootingEnabledPublisher = NetworkTableInstance.getDefault()
             .getBooleanTopic("superstructure/AutoAim/ShootingEnabled").publish();
-    private final BooleanPublisher hasValidResultPublisher =
-        NetworkTableInstance.getDefault()
+    private final BooleanPublisher hasValidResultPublisher = NetworkTableInstance.getDefault()
             .getBooleanTopic("superstructure/AutoAim/HasValidResult").publish();
-    private final BooleanPublisher requiresIdealSpeedPublisher =
-        NetworkTableInstance.getDefault()
+    private final BooleanPublisher requiresIdealSpeedPublisher = NetworkTableInstance.getDefault()
             .getBooleanTopic("superstructure/AutoAim/RequiresIdealSpeed").publish();
+    private final DoublePublisher distanceToTargetPublisher = NetworkTableInstance.getDefault()
+            .getDoubleTopic("superstructure/DistanceToTarget").publish();
 
     public AutoAimController(
         HoodSubsystem hood,
@@ -189,6 +188,8 @@ public class AutoAimController extends SubsystemBase {
         if (lastResult == null) return;
 
         applyAimResult(lastResult);
+
+        distanceToTargetPublisher.accept(getDistanceToTarget());
     }
 
     //#endregion
