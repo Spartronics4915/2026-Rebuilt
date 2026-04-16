@@ -76,8 +76,7 @@ public class RobotContainer {
         swerveSubsystem::addVisionMeasurement, 
         swerveSubsystem, 
         VisionConstants.CameraConstants.primaryCameras, 
-        VisionConstants.CameraConstants.fallbackCameras, 
-        turretSubsystem::getPosition
+        VisionConstants.CameraConstants.fallbackCameras
     );
     
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
@@ -116,6 +115,15 @@ public class RobotContainer {
 
     public RobotContainer() {
         configureBindings();
+
+        // Register vision observer with turret to ensure accurate turret angle timestamps
+        turretSubsystem.setVisionObserver((turretAngle, timestamp) -> {
+            visionSubsystem.getCameras().forEach(camera -> {
+                if (camera.isTurreted()) {
+                    camera.updateTurretAngle(turretAngle, timestamp);
+                }
+            });
+        });
 
         feederSubsystem.setDistanceSupplier(autoAimController::getDistanceToTarget);
 

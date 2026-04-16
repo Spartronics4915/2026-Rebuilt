@@ -26,11 +26,13 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
+import java.util.function.BiConsumer;
 
 public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
@@ -73,6 +75,9 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("turret").getDoubleTopic("applied out").publish();
     private final StructPublisher<Rotation2d> positionPublisher = NetworkTableInstance.getDefault().getTable("turret").getStructTopic("position", Rotation2d.struct).publish();
     private final StructPublisher<Rotation2d> setpointPublisher = NetworkTableInstance.getDefault().getTable("turret").getStructTopic("setpoint", Rotation2d.struct).publish();
+
+    // Vision observer: called during turret's periodic() with accurate timestamp
+    private BiConsumer<Rotation2d, Double> visionObserver;
     
     public TurretSubsystem() {
 
@@ -130,6 +135,11 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         positionPublisher.accept(getPosition());
         setpointPublisher.accept(Rotation2d.fromRotations(targetState.position));
+
+        // Notify vision of turret angle with accurate FPGA timestamp
+        if (visionObserver != null) {
+            visionObserver.accept(getPosition(), Timer.getFPGATimestamp());
+        }
     }
 
     public Rotation2d getPosition() {
@@ -177,6 +187,15 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     public void resetMechanism(Rotation2d angle){
         setSetpoint(angle);
+    }
+
+    /**
+     * Registers a vision observer to receive turret angle updates with accurate timestamps.
+     * Called by VisionSubsystem during initialization.
+     * @param observer BiConsumer that takes (turretAngle, fpgaTimestamp)
+     */
+    public void setVisionObserver(BiConsumer<Rotation2d, Double> observer) {
+        this.visionObserver = observer;
     }
 
     //#endregion

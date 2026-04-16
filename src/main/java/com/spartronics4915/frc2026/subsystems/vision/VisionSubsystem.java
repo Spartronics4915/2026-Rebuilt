@@ -3,7 +3,6 @@ package com.spartronics4915.frc2026.subsystems.vision;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import org.photonvision.PhotonCamera;
 import org.photonvision.simulation.VisionSystemSim;
@@ -65,8 +64,6 @@ public class VisionSubsystem extends SubsystemBase {
     private final List<ProcessorInterface> fallbackCameras;
     private final List<ProcessorInterface> cameras;
 
-    private final Supplier<Rotation2d> turretAngleSupplier;
-
     private final PoseFusionEngine fusionEngine;
     private final PipelineFilter resultFilter;
 
@@ -112,8 +109,7 @@ public class VisionSubsystem extends SubsystemBase {
         VisionPoseConsumer poseConsumer,
         SwerveSubsystem swerve,
         List<ProcessorInterface> primaryCameras,
-        List<ProcessorInterface> fallbackCameras,
-        Supplier<Rotation2d> turretAngleSupplier
+        List<ProcessorInterface> fallbackCameras
     ) {
         this.poseConsumer = poseConsumer;
         this.swerve = swerve;
@@ -124,7 +120,6 @@ public class VisionSubsystem extends SubsystemBase {
         combined.addAll(fallbackCameras);
 
         this.cameras = List.copyOf(combined);
-        this.turretAngleSupplier = turretAngleSupplier;
 
         this.fusionEngine = new PoseFusionEngine();
         this.resultFilter = buildFilter(swerve);
@@ -146,7 +141,7 @@ public class VisionSubsystem extends SubsystemBase {
         SwerveSubsystem swerve,
         List<ProcessorInterface> primaryCameras
     ) {
-        this(fieldLayout, poseConsumer, swerve, primaryCameras, List.of(), null);
+        this(fieldLayout, poseConsumer, swerve, primaryCameras, List.of());
     }
 
     private void startCamera(ProcessorInterface camera) {
@@ -169,13 +164,6 @@ public class VisionSubsystem extends SubsystemBase {
             double robotHeading = swerve.getGyroRotation3d().toRotation2d().getDegrees();
             cameras.forEach(camera -> {
                 if (camera instanceof LimelightProcessor) camera.setRobotHeading(robotHeading);
-            });
-        }
-
-        if (turretAngleSupplier != null) {
-            Rotation2d turretAngle = turretAngleSupplier.get();
-            cameras.forEach(camera -> {
-                if (camera.isTurreted()) camera.updateTurretAngle(turretAngle, fpgaTimestamp);
             });
         }
 
@@ -292,6 +280,10 @@ public class VisionSubsystem extends SubsystemBase {
 
     public Pose2d getVisionPose() { 
         return hasValidPose ? visionPose : null; 
+    }
+
+    public List<ProcessorInterface> getCameras() {
+        return cameras;
     }
 
     public boolean hasAnyPose() { 
