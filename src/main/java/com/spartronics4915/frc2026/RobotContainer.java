@@ -136,7 +136,7 @@ public class RobotContainer {
             () -> swerveSubsystem.resetPose(visionSubsystem.getVisionPose())
         ));
         SmartDashboard.putData("Temp Waypoint", Commands.defer(
-            () -> Autos.generatePathFromWaypoint(swerveSubsystem, new Translation2d(2.5, 4.035), Rotation2d.kZero),
+            () -> Autos.generatePathFromWaypoint(swerveSubsystem, new Translation2d(2.5, 2.0), Rotation2d.kZero),
             Set.of(swerveSubsystem)
         ));
     }

@@ -94,7 +94,7 @@ public class SwerveSubsystem extends SubsystemBase {
     private Pose2d smoothedPose = new Pose2d();
     private Field2d field = new Field2d();
 
-    private final MovingAveragePose poseFilter = new MovingAveragePose(1.80); // previously 0.30
+    private final MovingAveragePose poseFilter = new MovingAveragePose(1.60); // previously 0.30
 
     public static Pose3d pose3d = new Pose3d();
     private final BumpSim bumpSim;

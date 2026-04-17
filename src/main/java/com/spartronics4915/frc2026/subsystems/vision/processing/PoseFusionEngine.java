@@ -109,8 +109,6 @@ public class PoseFusionEngine {
             double distance = calculateNormalizedDistance(result.getPose(), meanPose, result.getStdDevs());
             if (distance < thresholdSigma) filteredScratch.add(result);
         }
-
-        if (filteredScratch.isEmpty()) filteredScratch.addAll(results);
     }
 
     private static Pose2d calculateMeanPose(List<ApriltagResult> results) {

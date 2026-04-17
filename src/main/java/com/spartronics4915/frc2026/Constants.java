@@ -96,15 +96,15 @@ public final class Constants {
 
     public static final class SwerveConstants {
 
-        public static final double maxSpeed = 7.12; // 5.12, should probably increase
-        public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(8); // 6, should probably increase
+        public static final double maxSpeed = 9.12; // 5.12, should probably increase
+        public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(10); // 6, should probably increase
 
         /**
          * Speed limits applied while shooting at the hub (tight precision required).
          * Inspired by 6328's approach of using separate, tighter limits for hub shots
          * vs. ferry/pass shots to stabilize the robot while the turret tracks.
          */
-        public static final double maxSpeedWhenShootingHub = maxSpeed * 0.20;
+        public static final double maxSpeedWhenShootingHub = maxSpeed * 0.15;
         public static final double maxOmegaWhenShootingHub = maxAngularSpeed.in(RadiansPerSecond) * 0.20;
 
         /**
@@ -114,7 +114,7 @@ public final class Constants {
         public static final double maxSpeedWhenFerrying = maxSpeed * 0.50;
         public static final double maxOmegaWhenFerrying = maxAngularSpeed.in(RadiansPerSecond) * 0.45;
 
-        public static final double timeUntilLimitedMaxSpeed = 0.75;
+        public static final double timeUntilLimitedMaxSpeed = 0.5; // 0.75
 
         public static final boolean defaultFieldRelative = true;
 
@@ -236,7 +236,7 @@ public final class Constants {
                         new TalonFXConfiguration()
                             .withCurrentLimits(
                                 new CurrentLimitsConfigs()
-                                    .withStatorCurrentLimit(Amps.of(100))
+                                    .withStatorCurrentLimit(Amps.of(120))
                                     .withStatorCurrentLimitEnable(true)
                             )
                     );
@@ -247,8 +247,8 @@ public final class Constants {
 
         public static final class AutoConstants {
             
-            public static final PIDController translationPID = new PIDController(6.0, 0, 0.08);
-            public static final PIDController rotationPID    = new PIDController(10, 0, 1);
+            public static final PIDController translationPID = new PIDController(6.0, 0, 0.4);
+            public static final PIDController rotationPID    = new PIDController(20, 0, 4.1);
             public static final PIDController crossTrackPID  = new PIDController(1.75, 0, 0);
 
             public static final PIDConstants alignTranslationPID = new PIDConstants(2.0,0,0);
@@ -362,18 +362,18 @@ public final class Constants {
         public static final double yawRecomputeThreshold = 1e-4;
 
         public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.42;
+            public static final double baseXYStdDev = 0.44;
             public static final double baseThetaStdDev = 0.85;
-            public static final double ambiguityWeight = 0.1; //0.1
+            public static final double ambiguityWeight = 0.3;
             public static final double areaWeight = 0.9;
             public static final double latencyWeight = 1.0;
         }
 
         public static final class FilterConstants {
             public static final double maxLatencyMs = 100.0;
-            public static final double maxSingleTagDistanceMeters = 7.0;
-            public static final double maxMultiTagDistanceMeters = 10.0;
-            public static final double maxAmbiguity = 0.12; // TODO: Change back to 0.12 if no vision
+            public static final double maxSingleTagDistanceMeters = 5.0;
+            public static final double maxMultiTagDistanceMeters = 9.0;
+            public static final double maxAmbiguity = 0.19; // TODO: Change back to 0.12 if no vision
             public static final double minArea = 0.05;
             public static final double maxArea = 0.90;
 
@@ -383,14 +383,14 @@ public final class Constants {
 
         public static final class FusionConstants {
             public static final boolean enabled = true;
-            public static final double timestampThresholdSecs = 0.05;
+            public static final double timestampThresholdSecs = 0.01;
             public static final int minCameras = 2;
 
             /**
              * Results whose normalized distance from the group mean exceeds this
              * number of sigma are rejected as outliers before fusion.
              */
-            public static final double outlierSigma = 3.0;
+            public static final double outlierSigma = 1.0;
         }
 
         public static final class CameraConstants {

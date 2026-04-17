@@ -31,7 +31,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     private double currentSetpoint;
     private final VelocityTorqueCurrentFOC velocityTorqueRequest = new VelocityTorqueCurrentFOC(0.0);
-    private final SlewRateLimiter slewRateLimiter = new SlewRateLimiter(60);
+    private final SlewRateLimiter slewRateLimiter = new SlewRateLimiter(50);
 
     private final TorqueCurrentFOC sysIdControl = new TorqueCurrentFOC(0.0);
     private boolean isCharacterizing = false;
