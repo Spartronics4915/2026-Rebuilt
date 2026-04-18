@@ -6,9 +6,11 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-
+import com.spartronics4915.frc2026.autos.ComplexAutoChooser.AutoSegment;
+import com.spartronics4915.frc2026.autos.ZoneTransition.TraversalMethod;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -27,15 +29,41 @@ public class NeutralZoneAutos {
         this.swerve = swerve;
     }
 
-    public Command generateQuadrantCommand(boolean isRightSide) {
+    public enum IntakeShift {
+        CLOSE(-1.5, false),
+        NORMAL(0, false),
+        FAR(0, true);
+
+        private double shiftDist;
+        private boolean flipOverCenter;
+
+        private IntakeShift(double shiftDist, boolean flipOverCenter) {
+            this.shiftDist = shiftDist;
+            this.flipOverCenter = flipOverCenter;
+        }
+    }
+
+    private static final Map<AutoSegment, IntakeShift> segmentToIntakeShiftMap = Map.of(
+        AutoSegment.INTAKE_CLOSE, IntakeShift.CLOSE,
+        AutoSegment.INTAKE_NORMAL, IntakeShift.NORMAL,
+        AutoSegment.INTAKE_FAR, IntakeShift.FAR
+    );
+
+    public static IntakeShift convertToIntakeShift(AutoSegment segment) {
+        return segmentToIntakeShiftMap.getOrDefault(segment, IntakeShift.NORMAL);
+    }
+
+    public Command generateQuadrantCommand(boolean isRightSide, IntakeShift intakeShift) {
         return Commands.defer(() -> {
             double sideMultiplier = isRightSide ? -1 : 1;
             Rotation2d rotation = Rotation2d.fromDegrees(isRightSide ? 90 : -90);
 
             Translation2d offsetFromCenter = new Translation2d(
-                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters),
+                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters) + intakeShift.shiftDist,
                 (robotLength.in(Meters) / 2 + intakeLength.in(Meters)) * sideMultiplier
             );
+
+            offsetFromCenter = Autos.flipXAcrCenterCond(offsetFromCenter, intakeShift.flipOverCenter);
 
             Pose2d intakeStart = new Pose2d(
                 centerPose.plus(offsetFromCenter).plus(fuelIntakeTransform.times(sideMultiplier)),
@@ -75,15 +103,17 @@ public class NeutralZoneAutos {
         }, Set.of(swerve));
     }
 
-    public Command generateHairpinCommand(boolean isRightSide) {
+    public Command generateHairpinCommand(boolean isRightSide, IntakeShift intakeShift) {
         return Commands.defer(() -> {
             double sideMultiplier = isRightSide ? -1 : 1;
             Rotation2d rotation = Rotation2d.fromDegrees(isRightSide ? 90 : -90);
 
             Translation2d offsetFromCenter = new Translation2d(
-                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters),
+                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters) + intakeShift.shiftDist,
                 (robotLength.in(Meters) / 2 + intakeLength.in(Meters)) * sideMultiplier
             );
+
+            offsetFromCenter = Autos.flipXAcrCenterCond(offsetFromCenter, intakeShift.flipOverCenter);
 
             Pose2d intakeStart = new Pose2d(
                 centerPose.plus(offsetFromCenter).plus(fuelIntakeTransform.times(sideMultiplier)),
@@ -137,15 +167,17 @@ public class NeutralZoneAutos {
         }, Set.of(swerve));
     }
 
-    public Command generateInvertedQuadrantCommand(boolean toRightSide) {
+    public Command generateInvertedQuadrantCommand(boolean toRightSide, IntakeShift intakeShift) {
         return Commands.defer(() -> {
             double sideMultiplier = toRightSide ? 1 : -1;
             Rotation2d rotation = Rotation2d.fromDegrees(toRightSide ? -90 : 90);
 
             Translation2d offsetFromCenter = new Translation2d(
-                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters),
+                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters) + intakeShift.shiftDist,
                 (robotLength.in(Meters) / 2 + intakeLength.in(Meters)) * sideMultiplier
             );
+
+            offsetFromCenter = Autos.flipXAcrCenterCond(offsetFromCenter, intakeShift.flipOverCenter);
 
             Pose2d quadrantEnd = new Pose2d(
                 centerPose.plus(offsetFromCenter).plus(fuelIntakeTransform.times(-sideMultiplier)),
@@ -180,18 +212,18 @@ public class NeutralZoneAutos {
         }, Set.of(swerve));
     }
 
-    public Command generateHalfCommand(boolean isRightSide, boolean endWithSpeed) {
+    public Command generateHalfCommand(boolean isRightSide, IntakeShift intakeShift) {
         return Commands.defer(() -> {
             double sideMultiplier = isRightSide ? -1 : 1;
             Rotation2d rotation = Rotation2d.fromDegrees(isRightSide ? 90 : -90);
 
             Translation2d startOffset = new Translation2d(
-                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters),
+                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters) + intakeShift.shiftDist,
                 (robotLength.in(Meters) / 2 + intakeLength.in(Meters)) * sideMultiplier
             ).plus(fuelIntakeTransform.times(sideMultiplier));
 
             Translation2d endOffset = new Translation2d(
-                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters),
+                startOffset.getX(),
                 0
             ).plus(fuelIntakeTransform.times(-sideMultiplier));
 
@@ -218,7 +250,7 @@ public class NeutralZoneAutos {
                 constraints
             );
 
-            return Autos.build(path, endWithSpeed ? fuelEnd.getTranslation().minus(fuelStart.getTranslation()).getAngle() : null, swerve);
+            return Autos.build(path, fuelEnd.getTranslation().minus(fuelStart.getTranslation()).getAngle(), swerve);
         }, Set.of(swerve));
     }
 

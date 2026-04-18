@@ -216,6 +216,14 @@ public final class Autos {
         }
     }
 
+    public static Translation2d flipXAcrCenter(Translation2d translation) {
+        return new Translation2d(-translation.getX(), translation.getY());
+    }
+
+    public static Translation2d flipXAcrCenterCond(Translation2d translation, boolean condition) {
+        return condition ? flipXAcrCenter(translation) : translation;
+    }
+
     public static boolean shouldFlip() {
         return cachedAlliance.isPresent() && cachedAlliance.get() == Alliance.Red;
     }

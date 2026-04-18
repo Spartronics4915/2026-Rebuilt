@@ -154,8 +154,8 @@ public class ZoneTransition {
                     trenchTransform.rotateBy(LRFlip)
                 ).plus(
                     endInTrench
-                        ? trenchExitTransform.rotateBy(IOFlip)
-                        : approachTransform.rotateBy(IOFlip.plus(Rotation2d.k180deg))
+                        ? trenchStopTransform.rotateBy(IOFlip)
+                        : trenchExitTransform.rotateBy(IOFlip.plus(Rotation2d.k180deg))
                 ),
                 trenchAngle
             )
@@ -199,7 +199,7 @@ public class ZoneTransition {
                 hubPose.plus(
                     trenchTransform.rotateBy(LRFlip)
                 ).plus(
-                    approachTransform.rotateBy(Rotation2d.k180deg)
+                    trenchExitTransform.rotateBy(Rotation2d.k180deg)
                 ),
                 trenchAngle
             )

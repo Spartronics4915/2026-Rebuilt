@@ -6,6 +6,7 @@ import static edu.wpi.first.units.Units.Meters;
 
 import java.util.Set;
 
+import com.spartronics4915.frc2026.autos.Autos;
 import com.spartronics4915.frc2026.commands.DriveCommand;
 import com.spartronics4915.frc2026.commands.DriveCommand.SpeedLimitMode;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands;
@@ -100,7 +101,7 @@ public class Superstructure extends SubsystemBase {
 
     private Translation2d nearestHub(Translation2d pos) {
         boolean closerToBlueHub = pos.minus(centerPose).getX() < 0;
-        return closerToBlueHub ? hubPose : centerPose.minus(hubPose).times(2).plus(hubPose);
+        return Autos.flipXAcrCenterCond(pos, closerToBlueHub);
     }
 
     private double hubDeltaX(Translation2d pos) {

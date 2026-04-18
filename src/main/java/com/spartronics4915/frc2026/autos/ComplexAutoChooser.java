@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.function.Supplier;
 
+import com.spartronics4915.frc2026.autos.NeutralZoneAutos.IntakeShift;
 import com.spartronics4915.frc2026.autos.ZoneTransition.TraversalMethod;
 import com.spartronics4915.frc2026.subsystems.control.Superstructure;
 
@@ -33,10 +34,15 @@ public class ComplexAutoChooser {
         R_TRENCH_TO_NEUTRAL("RT -> N", READY_TO_INTAKE),
         R_BUMP_TO_NEUTRAL("RB -> N", READY_TO_INTAKE),
 
-        INTAKE_QUARTER("Intake Quarter", WITHIN_NEUTRAL),
-        INTAKE_HALF("Intake Half", WITHIN_NEUTRAL),
-        INTAKE_HAIRPIN("Intake Quarter (w/ Hairpin)", WITHIN_NEUTRAL),
-        INTAKE_MIDDLE("Intake Middle", WITHIN_NEUTRAL),
+        INTAKE_QUARTER("I Quarter", DIST_SELECT),
+        INTAKE_HALF("I Half", DIST_SELECT),
+        INTAKE_HAIRPIN("I Quarter (w/ Hairpin)", DIST_SELECT),
+        INTAKE_INVERTED_QUARTER("I Inverted Quarter", DIST_SELECT),
+        INTAKE_MIDDLE("I Middle", WITHIN_NEUTRAL),
+
+        INTAKE_CLOSE("Intake Close", WITHIN_NEUTRAL),
+        INTAKE_NORMAL("Intake Normal", WITHIN_NEUTRAL),
+        INTAKE_FAR("Intake Far", WITHIN_NEUTRAL),
 
         L_TRENCH_TO_ALLIANCE("LT -> A", WITHIN_ALLIANCE),
         L_BUMP_TO_ALLIANCE("LB -> A", WITHIN_ALLIANCE),
@@ -67,6 +73,7 @@ public class ComplexAutoChooser {
      */
     public enum AllowedTransitions {
         READY_TO_INTAKE(() -> new AutoSegment[]{INTAKE_QUARTER, INTAKE_HALF, INTAKE_HAIRPIN, INTAKE_MIDDLE}),
+        DIST_SELECT(() -> new AutoSegment[]{INTAKE_CLOSE, INTAKE_NORMAL, INTAKE_FAR}),
         WITHIN_NEUTRAL(() -> new AutoSegment[]{L_TRENCH_TO_ALLIANCE, L_BUMP_TO_ALLIANCE, R_TRENCH_TO_ALLIANCE, R_BUMP_TO_ALLIANCE}),
         WITHIN_ALLIANCE(() -> new AutoSegment[]{L_TRENCH_TO_NEUTRAL, L_BUMP_TO_NEUTRAL, R_TRENCH_TO_NEUTRAL, R_BUMP_TO_NEUTRAL, DEPOT, OUTPOST, TOWER, PAUSE}),
         NONE(() -> new AutoSegment[]{});
@@ -178,18 +185,6 @@ public class ComplexAutoChooser {
         }
     }
 
-    private Command addNeutralZoneCommand(AutoSegment segment, boolean inRight, boolean outRight) {
-        if (segment == INTAKE_QUARTER) {
-            if (inRight ^ outRight) {
-                return neutralZoneFactory.generateInvertedQuadrantCommand(outRight);
-            } else {
-                return neutralZoneFactory.generateQuadrantCommand(inRight);
-            }
-        } else {
-            return neutralZoneFactory.generateHalfCommand(inRight, inRight ^ outRight);
-        }
-    }
-
     private boolean isRight(AutoSegment segment) {
         // Triggers with RT -> N, RB -> N, RT -> A, and RB -> A, the rest are "left"
         return segment.userFacingName.charAt(0) == 'R';
@@ -214,6 +209,7 @@ public class ComplexAutoChooser {
         for (int i = 0; i < selectedSegments.length; i++) {
             AutoSegment currentSegment = selectedSegments[i];
             AutoSegment futureSegment = (i + 1 < selectedSegments.length) ? selectedSegments[i + 1] : UNUSED;
+            IntakeShift intakeShift = NeutralZoneAutos.convertToIntakeShift(futureSegment);
 
             if (currentSegment == UNUSED) {
                 break;
@@ -243,13 +239,23 @@ public class ComplexAutoChooser {
                     commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, true));
                     break;
 
-                case INTAKE_QUARTER:
-                case INTAKE_HALF:
-                    commands.add(addNeutralZoneCommand(currentSegment, isRight(prevSegment), isRight(futureSegment)));
+                case INTAKE_CLOSE:
+                case INTAKE_NORMAL:
+                case INTAKE_FAR:
                     break;
 
+                case INTAKE_QUARTER:
+                    commands.add(neutralZoneFactory.generateQuadrantCommand(isRight(prevSegment), intakeShift));
+                    break;
+                case INTAKE_HALF:
+                    commands.add(neutralZoneFactory.generateHalfCommand(isRight(prevSegment), intakeShift));
+                    break;
+                case INTAKE_INVERTED_QUARTER:
+                    AutoSegment moreFutureSegment = (i + 2 < selectedSegments.length) ? selectedSegments[i + 2] : UNUSED;
+                    commands.add(neutralZoneFactory.generateInvertedQuadrantCommand(isRight(moreFutureSegment), intakeShift));
+                    break;
                 case INTAKE_HAIRPIN:
-                    commands.add(neutralZoneFactory.generateHairpinCommand(isRight(prevSegment)));
+                    commands.add(neutralZoneFactory.generateHairpinCommand(isRight(prevSegment), intakeShift));
                     break;
 
                 case INTAKE_MIDDLE:
