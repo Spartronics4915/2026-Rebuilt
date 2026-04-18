@@ -291,10 +291,11 @@ public class ComplexAutoChooser {
                         Commands.deadline(
                             Commands.race(
                                 Commands.waitSeconds(shootWaitTime)
-                                //Commands.sequence(
-                                //    Commands.waitSeconds(0.75),
+                                // Commands.sequence(
+                                //    Commands.waitUntil(() -> superstructure.isBallDetectedDebounced())
+                                //    Commands.waitSeconds(0.25),
                                 //    Commands.waitUntil(() -> !superstructure.isBallDetectedDebounced())
-                                //)
+                                // )
                             ),
                             preAlignmentFactory.generateCommand(prevSegment, futureSegment)
                         )
