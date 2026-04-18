@@ -8,8 +8,7 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
  * Manages slew rate limiters for X, Y, and omega axes with mode-specific max speeds.
  */
 public class ModeSpeedLimiter {
-    private final SlewRateLimiter xLimiter;
-    private final SlewRateLimiter yLimiter;
+    private final SlewRateLimiter magLimiter;
     private final SlewRateLimiter omegaLimiter;
     private final double maxSpeed;
     private final double maxOmega;
@@ -23,17 +22,18 @@ public class ModeSpeedLimiter {
     ) {
         this.maxSpeed = maxSpeed;
         this.maxOmega = maxOmega;
-        this.xLimiter = new SlewRateLimiter(maxSpeed * 10, -(maxSpeed / timeConstant), linearSpeed);
-        this.yLimiter = new SlewRateLimiter(maxSpeed * 10, -(maxSpeed / timeConstant), linearSpeed);
-        this.omegaLimiter = new SlewRateLimiter(maxSpeed * 10, -(maxSpeed / timeConstant), angularSpeed);
+        // Apply slew limiting to the translational speed magnitude so that
+        // acceleration/deceleration limits are direction-agnostic.
+        this.magLimiter = new SlewRateLimiter(maxSpeed * 10, -(maxSpeed / timeConstant), linearSpeed);
+        this.omegaLimiter = new SlewRateLimiter(maxOmega * 10, -(maxOmega / timeConstant), angularSpeed);
     }
 
     /**
      * Resets all limiters to the provided velocity values.
      */
     public void resetAll(double vX, double vY, double omega) {
-        xLimiter.reset(vX);
-        yLimiter.reset(vY);
+        double mag = Math.hypot(vX, vY);
+        magLimiter.reset(mag);
         omegaLimiter.reset(omega);
     }
 
@@ -46,13 +46,24 @@ public class ModeSpeedLimiter {
      * @return Array containing [limited_vX, limited_vY, limited_omega]
      */
     public double[] limit(double vX, double vY, double omega) {
+        // Clamp inputs to configured maxes
         vX = clampSymmetric(vX, maxSpeed);
         vY = clampSymmetric(vY, maxSpeed);
         omega = clampSymmetric(omega, maxOmega);
 
+        // Convert translational input to polar (magnitude + angle)
+        double requestedMag = Math.hypot(vX, vY);
+        double angle = Math.atan2(vY, vX);
+
+        // Apply slew limiting to the magnitude (direction is preserved)
+        double limitedMag = magLimiter.calculate(requestedMag);
+
+        double limitedVX = limitedMag * Math.cos(angle);
+        double limitedVY = limitedMag * Math.sin(angle);
+
         return new double[] {
-            xLimiter.calculate(vX),
-            yLimiter.calculate(vY),
+            limitedVX,
+            limitedVY,
             omegaLimiter.calculate(omega)
         };
     }
