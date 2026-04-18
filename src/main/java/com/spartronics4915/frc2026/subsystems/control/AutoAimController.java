@@ -386,6 +386,10 @@ public class AutoAimController extends SubsystemBase {
         return isPossibleDebouncedValue;
     }
 
+    public boolean isTryingToShoot() {
+        return shootOverride || isReadyToShoot();
+    }
+
     public boolean meetsFiringConditions(AutoAimResult result) {
         boolean hasValidSpeed = result.recommendedShotSpeed() != -1;
         boolean shouldShoot = isAutoShootingEnabled && shouldAutoShoot(result);

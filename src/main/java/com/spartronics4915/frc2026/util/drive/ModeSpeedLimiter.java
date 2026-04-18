@@ -14,12 +14,18 @@ public class ModeSpeedLimiter {
     private final double maxSpeed;
     private final double maxOmega;
 
-    public ModeSpeedLimiter(double maxSpeed, double maxOmega, double timeConstant) {
+    public ModeSpeedLimiter(
+        double maxSpeed, 
+        double maxOmega, 
+        double timeConstant, 
+        double linearSpeed,
+        double angularSpeed
+    ) {
         this.maxSpeed = maxSpeed;
         this.maxOmega = maxOmega;
-        this.xLimiter = new SlewRateLimiter(maxSpeed / timeConstant);
-        this.yLimiter = new SlewRateLimiter(maxSpeed / timeConstant);
-        this.omegaLimiter = new SlewRateLimiter(maxOmega / timeConstant);
+        this.xLimiter = new SlewRateLimiter(maxSpeed * 10, -(maxSpeed / timeConstant), linearSpeed);
+        this.yLimiter = new SlewRateLimiter(maxSpeed * 10, -(maxSpeed / timeConstant), linearSpeed);
+        this.omegaLimiter = new SlewRateLimiter(maxSpeed * 10, -(maxSpeed / timeConstant), angularSpeed);
     }
 
     /**

@@ -58,8 +58,8 @@ public class DriveCommand extends Command {
     private SpeedLimitMode lastLimitMode = SpeedLimitMode.OFF;
 
     // Each mode gets its own speed limiter to avoid carrying over incorrect rate when switching
-    private final ModeSpeedLimiter hubLimiter = new ModeSpeedLimiter(maxSpeedWhenShootingHub, maxOmegaWhenShootingHub, timeUntilLimitedMaxSpeed);
-    private final ModeSpeedLimiter ferryLimiter = new ModeSpeedLimiter(maxSpeedWhenFerrying, maxOmegaWhenFerrying, timeUntilLimitedMaxSpeed);
+    private final ModeSpeedLimiter hubLimiter = new ModeSpeedLimiter(maxSpeedWhenShootingHub, maxOmegaWhenShootingHub, timeUntilLimitedMaxSpeed, 0.0, 0.0);
+    private final ModeSpeedLimiter ferryLimiter = new ModeSpeedLimiter(maxSpeedWhenFerrying, maxOmegaWhenFerrying, timeUntilLimitedMaxSpeed, 0.0, 0.0);
 
     private final TrapezoidProfile trapezoidProfile = new TrapezoidProfile(trenchAlignConstraints);
     private final TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();

@@ -169,7 +169,7 @@ public class Superstructure extends SubsystemBase {
         }
 
         // Apply a speed limit while ready-to-shoot to help the turret track cleanly.
-        if (controller.isReadyToShoot()) {
+        if (controller.isTryingToShoot()) {
             if (controller.isPassTarget()) {
                 driveCommand.setSpeedLimit(SpeedLimitMode.FERRY);
             } else {
