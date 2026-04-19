@@ -36,7 +36,7 @@ public class ComplexAutoChooser {
 
         INTAKE_QUARTER("I Quarter", DIST_SELECT),
         INTAKE_HALF("I Half", DIST_SELECT),
-        INTAKE_HAIRPIN("I Quarter (w/ Hairpin)", DIST_SELECT),
+        INTAKE_HAIRPIN("I Quarter (w/ Hairpin)", WITHIN_NEUTRAL),
         INTAKE_INVERTED_QUARTER("I Inverted Quarter", DIST_SELECT),
         INTAKE_MIDDLE("I Middle", WITHIN_NEUTRAL),
 
@@ -255,7 +255,7 @@ public class ComplexAutoChooser {
                     commands.add(neutralZoneFactory.generateInvertedQuadrantCommand(isRight(moreFutureSegment), intakeShift));
                     break;
                 case INTAKE_HAIRPIN:
-                    commands.add(neutralZoneFactory.generateHairpinCommand(isRight(prevSegment), intakeShift));
+                    commands.add(neutralZoneFactory.generateHairpinCommand(isRight(prevSegment)));
                     break;
 
                 case INTAKE_MIDDLE:

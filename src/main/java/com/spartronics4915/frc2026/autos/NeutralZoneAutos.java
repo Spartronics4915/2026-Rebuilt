@@ -103,17 +103,15 @@ public class NeutralZoneAutos {
         }, Set.of(swerve));
     }
 
-    public Command generateHairpinCommand(boolean isRightSide, IntakeShift intakeShift) {
+    public Command generateHairpinCommand(boolean isRightSide) {
         return Commands.defer(() -> {
             double sideMultiplier = isRightSide ? -1 : 1;
             Rotation2d rotation = Rotation2d.fromDegrees(isRightSide ? 90 : -90);
 
             Translation2d offsetFromCenter = new Translation2d(
-                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters) + intakeShift.shiftDist,
+                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters),
                 (robotLength.in(Meters) / 2 + intakeLength.in(Meters)) * sideMultiplier
             );
-
-            offsetFromCenter = Autos.flipXAcrCenterCond(offsetFromCenter, intakeShift.flipOverCenter);
 
             Pose2d intakeStart = new Pose2d(
                 centerPose.plus(offsetFromCenter).plus(fuelIntakeTransform.times(sideMultiplier)),
