@@ -1,7 +1,5 @@
 package com.spartronics4915.frc2026;
 
-import static com.spartronics4915.frc2026.Constants.SuperstructureConstants.shooterBaseTranslation;
-
 // Copyright (c) FIRST and other WPILib contributors.
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
@@ -25,7 +23,6 @@ import java.util.List;
 
 import org.photonvision.simulation.SimCameraProperties;
 
-import com.spartronics4915.frc2026.subsystems.vision.cameras.LimelightProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.PhotonProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
 import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
@@ -823,9 +820,10 @@ public final class Constants {
     
     public static class IntakeConstants {
 
-        public static final int MOTOR_ID = 15;
+        public static final int LEAD_MOTOR_ID = 15;
+        public static final int FOLLOWER_MOTOR_ID = 25;
 
-        public static final double MAX_RPS = 100;
+        public static final double MAX_RPS = 40;
 
         public static final double P = 25.0;
         public static final double I = 0.0;
