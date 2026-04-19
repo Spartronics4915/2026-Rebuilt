@@ -281,9 +281,9 @@ public class ComplexAutoChooser {
                 case OUTPOST:
                     commands.add(POIFactory.generateCommand(DriveToPOI.POI.OUTPOST));
                     break;
-                case TOWER:
-                    commands.add(POIFactory.generateCommand(DriveToPOI.POI.TOWER));
-                    break;
+                // case TOWER:
+                //     commands.add(POIFactory.generateCommand(DriveToPOI.POI.TOWER));
+                //     break;
                 case PAUSE:
                     commands.add(
                         // This is very hard to read, but it runs preAlignment along with a bunch of wait conditions.

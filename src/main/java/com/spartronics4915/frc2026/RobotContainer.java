@@ -64,7 +64,7 @@ public class RobotContainer {
 
     public final PivotSubsystem pivotSubsystem = new PivotSubsystem();
     public final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
-    public final ClimberSubsystem climberSubsystem = new ClimberSubsystem();
+    // public final ClimberSubsystem climberSubsystem = new ClimberSubsystem();
 
     public final IndexerSubsystem indexerSubsystem = new IndexerSubsystem();
     public final FeederSubsystem feederSubsystem = new FeederSubsystem();
@@ -80,7 +80,7 @@ public class RobotContainer {
     );
     
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
-    private final DriveToPOI POIFactory = new DriveToPOI(swerveSubsystem, climberSubsystem);
+    private final DriveToPOI POIFactory = new DriveToPOI(swerveSubsystem, null);
     private final NeutralZoneAutos neutralZoneFactory = new NeutralZoneAutos(swerveSubsystem);
     private final PreAlignment preAlignmentFactory = new PreAlignment(swerveSubsystem);
 
@@ -97,7 +97,7 @@ public class RobotContainer {
         feederSubsystem, 
         indexerSubsystem, 
         shooterSubsystem, 
-        climberSubsystem, 
+        null, 
         intakeSubsystem,
         pivotSubsystem, 
         autoAimController
@@ -158,9 +158,9 @@ public class RobotContainer {
         ChassisSpeeds driverNudgeRight = new ChassisSpeeds(0, -0.25, 0);
         ChassisSpeeds driverNudgeDown = new ChassisSpeeds(-0.25, 0, 0);
 
-        driverController.povUp().onTrue(
-            climberSubsystem.setStateCommand(ClimberState.JORBIT)
-        );
+        // driverController.povUp().onTrue(
+        //     climberSubsystem.setStateCommand(ClimberState.JORBIT)
+        // );
 
         //driverController.povUp().whileTrue(
         //    Commands.run(() -> {
@@ -176,9 +176,9 @@ public class RobotContainer {
             Commands.run(() -> swerveSubsystem.drive(driverNudgeRight), swerveSubsystem)
         );
 
-        driverController.povDown().onTrue(
-            climberSubsystem.setStateCommand(ClimberState.DOWN)
-        );
+        // driverController.povDown().onTrue(
+        //     climberSubsystem.setStateCommand(ClimberState.DOWN)
+        // );
 
         //driverController.povDown().whileTrue(
         //    Commands.run(() -> {
@@ -222,9 +222,9 @@ public class RobotContainer {
             })
         );
 
-        driverController.y().whileTrue(
-            POIFactory.generateCommand(POI.TOWER)
-        );
+        // driverController.y().whileTrue(
+        //     POIFactory.generateCommand(POI.TOWER)
+        // );
 
         driverController.leftTrigger().whileTrue(
             Commands.run(swerveSubsystem::lockModules, swerveSubsystem)
@@ -398,8 +398,12 @@ public class RobotContainer {
             autoAimController.shootingToggle()
         );
 
-        debugController.y().whileTrue(
-            POIFactory.generateCommand(POI.TOWER)
+        // debugController.y().whileTrue(
+        //     POIFactory.generateCommand(POI.TOWER)
+        // );
+
+        debugController.y().onTrue(
+            superstructureCommands.stowed()
         );
 
         debugController.back().onTrue(

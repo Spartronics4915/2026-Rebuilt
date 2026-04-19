@@ -94,9 +94,9 @@ public class SuperstructureCommands {
         }, Set.of(indexer, feeder));
     }
 
-    public Command setClimberState(ClimberState state) {
-        return climber.setStateCommand(state);
-    }
+    // public Command setClimberState(ClimberState state) {
+    //     return climber.setStateCommand(state);
+    // }
 
     public Command resetDynamics() {
         return Commands.parallel(
@@ -203,8 +203,9 @@ public class SuperstructureCommands {
                 conditionalAutoAimOn(),
                 conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
-                shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
-                climber.setStateCommand(ClimberState.DOWN)),
+                shooter.setClampCommand(ShooterClamp.UNRESTRICTED)
+                // climber.setStateCommand(ClimberState.DOWN)
+            ),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
                 turret.setClampCommand(TurretClamp.UNRESTRICTED),
@@ -220,8 +221,9 @@ public class SuperstructureCommands {
                 conditionalAutoAimOn(),
                 conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.RESTRICTED),
-                shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
-                climber.setStateCommand(ClimberState.DOWN)),
+                shooter.setClampCommand(ShooterClamp.UNRESTRICTED)
+                // climber.setStateCommand(ClimberState.DOWN)
+            ),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
                 turret.setClampCommand(TurretClamp.UNRESTRICTED),
@@ -237,8 +239,9 @@ public class SuperstructureCommands {
                 conditionalAutoAimOn(),
                 conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
-                shooter.setClampCommand(ShooterClamp.RESTRICTED),
-                climber.setStateCommand(ClimberState.DOWN)),
+                shooter.setClampCommand(ShooterClamp.RESTRICTED)
+                // climber.setStateCommand(ClimberState.DOWN)
+            ),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
                 turret.setClampCommand(TurretClamp.UNRESTRICTED),
@@ -254,8 +257,9 @@ public class SuperstructureCommands {
                 conditionalAutoAimOn(),
                 conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
-                shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
-                climber.setStateCommand(ClimberState.DOWN)),
+                shooter.setClampCommand(ShooterClamp.UNRESTRICTED)
+                // climber.setStateCommand(ClimberState.DOWN)
+            ),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
                 turret.setClampCommand(TurretClamp.UNRESTRICTED),
@@ -269,8 +273,9 @@ public class SuperstructureCommands {
             Commands.parallel(
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
-                conditionalPivotReady(),
-                climber.setStateCommand(ClimberState.DOWN)),
+                conditionalPivotReady()
+                // climber.setStateCommand(ClimberState.DOWN)
+            ),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
                 turret.setClampCommand(TurretClamp.UNRESTRICTED),
@@ -302,8 +307,9 @@ public class SuperstructureCommands {
                 conditionalAutoShootOff(),
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.RESTRICTED),
-                pivot.setStateCommand(PivotSubsystem.PivotState.READY),
-                climber.setStateCommand(ClimberState.DOWN)),
+                pivot.setStateCommand(PivotSubsystem.PivotState.READY)
+                // climber.setStateCommand(ClimberState.DOWN)
+            ),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
                 turret.setClampCommand(TurretClamp.UNRESTRICTED),
@@ -322,7 +328,7 @@ public class SuperstructureCommands {
             Commands.parallel(
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.RESTRICTED),
-                climber.setStateCommand(ClimberState.DOWN),
+                // climber.setStateCommand(ClimberState.DOWN),
                 intake.setStateCommand(IntakeSubsystem.IntakeState.OFF)
             )
         );
