@@ -245,7 +245,7 @@ public final class Constants {
         public static final class AutoConstants {
             
             public static final PIDController translationPID = new PIDController(6.0, 0, 0.4);
-            public static final PIDController rotationPID    = new PIDController(20, 0, 4.1);
+            public static final PIDController rotationPID    = new PIDController(10, 0, 1);
             public static final PIDController crossTrackPID  = new PIDController(1.75, 0, 0);
 
             public static final PIDConstants alignTranslationPID = new PIDConstants(2.0,0,0);
@@ -308,8 +308,8 @@ public final class Constants {
                 .setMaxAccelerationMetersPerSec2(16.0);
 
             public static final Path.PathConstraints bumpPathConstraints = new Path.PathConstraints()
-                .setMaxVelocityMetersPerSec(4.0)
-                .setMaxAccelerationMetersPerSec2(9.0)
+                .setMaxVelocityMetersPerSec(8.0)
+                .setMaxAccelerationMetersPerSec2(20.0)
                 .setMaxVelocityDegPerSec(360)
                 .setMaxAccelerationDegPerSec2(360);
 
@@ -495,7 +495,7 @@ public final class Constants {
         public static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
         public static final double PIVOT_JOSTLE_FREQUENCY = 1.0; // Hz
 
-        public static final double percentLoss = 0.1071; // Percent loss on shooter to ball transfer, 0.1071
+        public static final double percentLoss = 0.1070; // Percent loss on shooter to ball transfer, 0.1071
 
         public static final int feederLC = 42;
         public static final double detectDistance = 140.0;
