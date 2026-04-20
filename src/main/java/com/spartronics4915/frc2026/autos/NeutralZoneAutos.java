@@ -192,7 +192,7 @@ public class NeutralZoneAutos {
                 new Path.Waypoint(swerve.getRelativePose()),
                 new Path.RotationTarget(
                     intakeStart.getRotation(), 
-                    0.75
+                    0.25
                 ),
                 new Path.Waypoint(intakeStart, 0.9),
                 new Path.Waypoint(quadrantEnd)

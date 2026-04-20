@@ -72,7 +72,7 @@ public class ComplexAutoChooser {
      * Enum used to shorten (and remove enum loop) of the AutoSegment enum.
      */
     public enum AllowedTransitions {
-        READY_TO_INTAKE(() -> new AutoSegment[]{INTAKE_QUARTER, INTAKE_HALF, INTAKE_HAIRPIN, INTAKE_MIDDLE}),
+        READY_TO_INTAKE(() -> new AutoSegment[]{INTAKE_QUARTER, INTAKE_HALF, INTAKE_HAIRPIN, INTAKE_INVERTED_QUARTER, INTAKE_MIDDLE}),
         DIST_SELECT(() -> new AutoSegment[]{INTAKE_CLOSE, INTAKE_NORMAL, INTAKE_FAR}),
         WITHIN_NEUTRAL(() -> new AutoSegment[]{L_TRENCH_TO_ALLIANCE, L_BUMP_TO_ALLIANCE, R_TRENCH_TO_ALLIANCE, R_BUMP_TO_ALLIANCE}),
         WITHIN_ALLIANCE(() -> new AutoSegment[]{L_TRENCH_TO_NEUTRAL, L_BUMP_TO_NEUTRAL, R_TRENCH_TO_NEUTRAL, R_BUMP_TO_NEUTRAL, DEPOT, OUTPOST, TOWER, PAUSE}),
@@ -251,8 +251,7 @@ public class ComplexAutoChooser {
                     commands.add(neutralZoneFactory.generateHalfCommand(isRight(prevSegment), intakeShift));
                     break;
                 case INTAKE_INVERTED_QUARTER:
-                    AutoSegment moreFutureSegment = (i + 2 < selectedSegments.length) ? selectedSegments[i + 2] : UNUSED;
-                    commands.add(neutralZoneFactory.generateInvertedQuadrantCommand(isRight(moreFutureSegment), intakeShift));
+                    commands.add(neutralZoneFactory.generateInvertedQuadrantCommand(!isRight(prevSegment), intakeShift));
                     break;
                 case INTAKE_HAIRPIN:
                     commands.add(neutralZoneFactory.generateHairpinCommand(isRight(prevSegment)));
