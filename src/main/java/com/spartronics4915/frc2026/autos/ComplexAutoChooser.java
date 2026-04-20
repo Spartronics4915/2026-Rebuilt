@@ -211,7 +211,7 @@ public class ComplexAutoChooser {
             AutoSegment futureSegment = (i + 1 < selectedSegments.length) ? selectedSegments[i + 1] : UNUSED;
             IntakeShift intakeShift = NeutralZoneAutos.convertToIntakeShift(futureSegment);
 
-            if (currentSegment == UNUSED) {
+            if (currentSegment == null || currentSegment == UNUSED) {
                 break;
             }
             

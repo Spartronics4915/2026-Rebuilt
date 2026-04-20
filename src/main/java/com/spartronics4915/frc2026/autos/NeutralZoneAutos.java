@@ -50,6 +50,8 @@ public class NeutralZoneAutos {
     );
 
     public static IntakeShift convertToIntakeShift(AutoSegment segment) {
+        if (segment == null) return IntakeShift.NORMAL;
+
         return segmentToIntakeShiftMap.getOrDefault(segment, IntakeShift.NORMAL);
     }
 
