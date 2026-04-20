@@ -86,15 +86,15 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
             motorConfig.apply(FEEDBACK_CONFIG);
             motorConfig.apply(MOTOR_OUTPUT_CONFIG);
 
-        CANcoderConfiguration cancoderConfigurator = new CANcoderConfiguration();
-            cancoderConfigurator.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 0.5;
-            cancoderConfigurator.MagnetSensor.SensorDirection = ENCODER_SENSOR_DIRECTION;
-            cancoderConfigurator.MagnetSensor.MagnetOffset = MAGNET_OFFSET;
-            encoder.getConfigurator().apply(cancoderConfigurator);
+        CANcoderConfiguration cancoderConfiguration = new CANcoderConfiguration();
+            cancoderConfiguration.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 0.5;
+            cancoderConfiguration.MagnetSensor.SensorDirection = ENCODER_SENSOR_DIRECTION;
+            cancoderConfiguration.MagnetSensor.MagnetOffset = MAGNET_OFFSET;
+            encoder.getConfigurator().apply(cancoderConfiguration);
 
         StatusSignal<Angle> pos = encoder.getAbsolutePosition();
         pos.waitForUpdate(0.5);
-        setMechanismAngle(Rotation2d.fromRotations(pos.getValueAsDouble()));
+        setMechanismAngle(Rotation2d.fromRotations(pos.getValue().in(Rotations)));
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         motor.addProfile(trapProfile);
