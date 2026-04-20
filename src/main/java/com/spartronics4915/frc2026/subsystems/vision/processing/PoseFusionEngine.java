@@ -187,7 +187,7 @@ public class PoseFusionEngine {
 
             List<TrackedTag> trackedTags = result.getTrackedTags();
             if (trackedTags != null && !trackedTags.isEmpty()) {
-                for (TrackedTag tag : new ArrayList<>(trackedTags)) {
+                for (TrackedTag tag : List.copyOf(trackedTags)) {
                     int id = tag.getFiducialId();
                     if (id >= 0 && id < tagPresenceBitset.length && !tagPresenceBitset[id]) {
                         tagPresenceBitset[id] = true;
