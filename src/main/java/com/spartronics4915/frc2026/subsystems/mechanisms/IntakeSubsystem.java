@@ -73,7 +73,7 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
             configurator.apply(FEEDBACK_CONFIG);
             configurator.apply(MOTOR_OUTPUT_CONFIG);
 
-        followerMotor.setControl(new Follower(LEAD_MOTOR_ID, MotorAlignmentValue.Aligned)); // Need to check alignment
+        followerMotor.setControl(new Follower(LEAD_MOTOR_ID, MotorAlignmentValue.Opposed)); // Need to check alignment
 
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
@@ -152,8 +152,8 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
     }
 
     public enum IntakeState {
-        INTAKE(21),
-        OUTTAKE(-21),
+        INTAKE(22),
+        OUTTAKE(-22),
         OFF(0);
 
         double rps;
