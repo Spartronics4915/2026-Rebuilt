@@ -65,7 +65,7 @@ public class NeutralZoneAutos {
                 (robotLength.in(Meters) / 2 + intakeLength.in(Meters)) * sideMultiplier
             );
 
-            offsetFromCenter = Autos.flipXAcrCenterCond(offsetFromCenter, intakeShift.flipOverCenter);
+            offsetFromCenter = Autos.invXCond(offsetFromCenter, intakeShift.flipOverCenter);
 
             Pose2d intakeStart = new Pose2d(
                 centerPose.plus(offsetFromCenter).plus(fuelIntakeTransform.times(sideMultiplier)),
@@ -177,7 +177,7 @@ public class NeutralZoneAutos {
                 (robotLength.in(Meters) / 2 + intakeLength.in(Meters)) * sideMultiplier
             );
 
-            offsetFromCenter = Autos.flipXAcrCenterCond(offsetFromCenter, intakeShift.flipOverCenter);
+            offsetFromCenter = Autos.invXCond(offsetFromCenter, intakeShift.flipOverCenter);
 
             Pose2d quadrantEnd = new Pose2d(
                 centerPose.plus(offsetFromCenter).plus(fuelIntakeTransform.times(-sideMultiplier)),
