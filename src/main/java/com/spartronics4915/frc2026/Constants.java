@@ -636,7 +636,7 @@ public final class Constants {
         public static final double MAX_VELOCITY = 100;
         public static final double MAX_ACCELERATION = 100;
 
-        public static final boolean CURRENT_LIMIT_ENABLE = true;
+        public static final boolean CURRENT_LIMIT_ENABLE = false;
         public static final double CURRENT_LIMIT = 45;
         public static final double LOWER_LIMIT = 20;
 
@@ -831,7 +831,7 @@ public final class Constants {
         public static final double V = 1.23273; // Maybe increase this?
         public static final double A = 75.05; // 0.7305 
 
-        public static final boolean CURRENT_LIMIT_ENABLE = true;
+        public static final boolean CURRENT_LIMIT_ENABLE = false;
         public static final double CURRENT_LIMIT = 40;
         public static final double LOWER_LIMIT = 20;
 
