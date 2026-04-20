@@ -51,7 +51,7 @@ public class ComplexAutoChooser {
 
         DEPOT("-> D", WITHIN_ALLIANCE),
         OUTPOST("-> O", WITHIN_ALLIANCE),
-        TOWER("-> T", NONE),
+        // TOWER("-> T", NONE),
         PAUSE("P", WITHIN_ALLIANCE),
         UNUSED(" ", NONE);
 
@@ -75,7 +75,7 @@ public class ComplexAutoChooser {
         READY_TO_INTAKE(() -> new AutoSegment[]{INTAKE_QUARTER, INTAKE_HALF, INTAKE_HAIRPIN, INTAKE_INVERTED_QUARTER, INTAKE_MIDDLE}),
         DIST_SELECT(() -> new AutoSegment[]{INTAKE_CLOSE, INTAKE_NORMAL, INTAKE_FAR}),
         WITHIN_NEUTRAL(() -> new AutoSegment[]{L_TRENCH_TO_ALLIANCE, L_BUMP_TO_ALLIANCE, R_TRENCH_TO_ALLIANCE, R_BUMP_TO_ALLIANCE}),
-        WITHIN_ALLIANCE(() -> new AutoSegment[]{L_TRENCH_TO_NEUTRAL, L_BUMP_TO_NEUTRAL, R_TRENCH_TO_NEUTRAL, R_BUMP_TO_NEUTRAL, DEPOT, OUTPOST, TOWER, PAUSE}),
+        WITHIN_ALLIANCE(() -> new AutoSegment[]{L_TRENCH_TO_NEUTRAL, L_BUMP_TO_NEUTRAL, R_TRENCH_TO_NEUTRAL, R_BUMP_TO_NEUTRAL, DEPOT, OUTPOST, /* TOWER, */ PAUSE}),
         NONE(() -> new AutoSegment[]{});
 
         private final Supplier<AutoSegment[]> allowedSegmentsSupplier;
