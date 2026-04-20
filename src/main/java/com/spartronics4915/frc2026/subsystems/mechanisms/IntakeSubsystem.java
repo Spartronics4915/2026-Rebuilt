@@ -28,7 +28,6 @@ import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonF
 public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
     private LoggedTalonFX leadMotor = new LoggedTalonFX(LEAD_MOTOR_ID, CAN_BUS);
-    private LoggedTalonFX followerMotor = new LoggedTalonFX(FOLLOWER_MOTOR_ID, CAN_BUS);
 
     private double currentSetpoint;
 
@@ -66,14 +65,6 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
             configurator.apply(CURRENT_LIMITS_CONFIG);
             configurator.apply(FEEDBACK_CONFIG);
             configurator.apply(MOTOR_OUTPUT_CONFIG);
-
-        configurator = followerMotor.getConfigurator();
-            configurator.apply(PID_CONFIG);
-            configurator.apply(CURRENT_LIMITS_CONFIG);
-            configurator.apply(FEEDBACK_CONFIG);
-            configurator.apply(MOTOR_OUTPUT_CONFIG);
-
-        followerMotor.setControl(new Follower(LEAD_MOTOR_ID, MotorAlignmentValue.Opposed)); // Need to check alignment
 
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 

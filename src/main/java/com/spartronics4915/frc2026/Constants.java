@@ -821,7 +821,6 @@ public final class Constants {
     public static class IntakeConstants {
 
         public static final int LEAD_MOTOR_ID = 15;
-        public static final int FOLLOWER_MOTOR_ID = 25;
 
         public static final double MAX_RPS = 40;
 
