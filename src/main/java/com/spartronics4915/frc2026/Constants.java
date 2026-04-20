@@ -360,20 +360,20 @@ public final class Constants {
         public static final double yawRecomputeThreshold = 1e-4;
 
         public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.44;
-            public static final double baseThetaStdDev = 0.85;
-            public static final double ambiguityWeight = 0.3;
-            public static final double areaWeight = 0.9;
-            public static final double latencyWeight = 1.0;
+            public static final double baseXYStdDev = 0.46;
+            public static final double baseThetaStdDev = 0.79;
+            public static final double ambiguityWeight = 0.8;
+            public static final double areaWeight = 0.6;
+            public static final double latencyWeight = 0.3;
         }
 
         public static final class FilterConstants {
-            public static final double maxLatencyMs = 100.0;
-            public static final double maxSingleTagDistanceMeters = 5.0;
-            public static final double maxMultiTagDistanceMeters = 9.0;
-            public static final double maxAmbiguity = 0.19; // TODO: Change back to 0.12 if no vision
-            public static final double minArea = 0.05;
-            public static final double maxArea = 0.90;
+            public static final double maxLatencyMs = 90.0;
+            public static final double maxSingleTagDistanceMeters = 6.0;
+            public static final double maxMultiTagDistanceMeters = 11.0;
+            public static final double maxAmbiguity = 0.18; // TODO: Change back to 0.12 if no vision
+            public static final double minArea = 0.07;
+            public static final double maxArea = 0.96;
 
             // Set < Double.MAX_VALUE to enable the odometry-outlier filter.
             public static final double maxOdometryDeviationMeters = Double.MAX_VALUE;
@@ -388,7 +388,7 @@ public final class Constants {
              * Results whose normalized distance from the group mean exceeds this
              * number of sigma are rejected as outliers before fusion.
              */
-            public static final double outlierSigma = 1.0;
+            public static final double outlierSigma = 2.0;
         }
 
         public static final class CameraConstants {
