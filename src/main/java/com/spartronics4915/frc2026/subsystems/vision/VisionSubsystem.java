@@ -216,8 +216,9 @@ public class VisionSubsystem extends SubsystemBase {
                 result.getTimestampSeconds(),
                 result.getStdDevs()
             );
+            return true;
         }
-        return true;
+        return false;
     }
 
     @SuppressWarnings("unused")
