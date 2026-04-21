@@ -124,7 +124,7 @@ public final class Constants {
         public static final double odomUpdateFrequency = 100.0; // 250.0
         public static final double staleCommandTimeout = 0.1;
 
-        public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.18, 0.18, 0.05); // 0.3, 0.3, 0.2
+        public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.1, 0.1, 0.02); // 0.3, 0.3, 0.2
         public static final Matrix<N3, N1> slipStdDevs = VecBuilder.fill(2.0, 2.0, 1.0);
 
         public static final double slipRecoverySeconds = 0.3;
