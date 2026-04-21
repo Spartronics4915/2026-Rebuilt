@@ -226,7 +226,7 @@ public class ComplexAutoChooser {
                     );
                     break;
                 case L_BUMP_TO_NEUTRAL:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP, true));
+                    commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP, false));
                     break;
                 case R_TRENCH_TO_NEUTRAL:
                     commands.add(
@@ -236,7 +236,7 @@ public class ComplexAutoChooser {
                     );
                     break;
                 case R_BUMP_TO_NEUTRAL:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, true));
+                    commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, false));
                     break;
 
                 case INTAKE_CLOSE:
@@ -295,8 +295,8 @@ public class ComplexAutoChooser {
                                 //    Commands.waitSeconds(0.25),
                                 //    Commands.waitUntil(() -> !superstructure.isBallDetectedDebounced())
                                 // )
-                            ),
-                            preAlignmentFactory.generateCommand(prevSegment, futureSegment)
+                            )
+                            // preAlignmentFactory.generateCommand(prevSegment, futureSegment)
                         )
                     );
                     break;
