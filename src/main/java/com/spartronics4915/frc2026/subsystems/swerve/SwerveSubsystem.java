@@ -467,7 +467,7 @@ public class SwerveSubsystem extends SubsystemBase {
         private final BooleanPublisher slipping = root.getBooleanTopic("IsSlipping").publish();
         private final BooleanPublisher slipRecovery = root.getBooleanTopic("IsInSlipRecovery").publish();
         private final BooleanPublisher fieldRelative = root.getBooleanTopic("IsFieldRelative").publish();
-        private final BooleanPublisher tilted = root.getBooleanTopic("IsTilted").publish();
+        private final BooleanPublisher flat = root.getBooleanTopic("IsFlat").publish();
  
         private final DoublePublisher[] driveVelMPS = new DoublePublisher[4];
         private final DoublePublisher[] driveTargetMPS = new DoublePublisher[4];
@@ -537,7 +537,7 @@ public class SwerveSubsystem extends SubsystemBase {
             slipping.set(swerve.currentlySlipping.get());
             slipRecovery.set(swerve.isInSlipRecovery);
             fieldRelative.set(swerve.isFieldRelativeState);
-            tilted.set(swerve.isFlatDebounced());
+            flat.set(swerve.isFlatDebounced());
  
             for (int i = 0; i < 4; i++) {
                 SwerveModule<?, ?, ?> mod = swerve.drivetrain.getModule(i);
