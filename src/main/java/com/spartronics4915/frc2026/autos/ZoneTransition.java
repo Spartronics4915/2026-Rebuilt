@@ -158,7 +158,9 @@ public class ZoneTransition {
                 ).plus(
                     endInTrench
                         ? trenchStopTransform.rotateBy(IOFlip)
-                        : trenchExitTransform.rotateBy(IOFlip.plus(Rotation2d.k180deg))
+                        : toNeutralZone 
+                            ? trenchExitTransform.rotateBy(IOFlip.plus(Rotation2d.k180deg))
+                            : trenchAllianceExitTransform.rotateBy(IOFlip.plus(Rotation2d.k180deg))
                 ),
                 trenchAngle
             )

@@ -280,6 +280,7 @@ public final class Constants {
             public static final Translation2d approachTransform = new Translation2d(-1.4, 0);
             public static final Translation2d exitTransform = new Translation2d((centerPose.getX() - hubPose.getX()) * 1.1, 0);
             public static final Translation2d trenchStopTransform = new Translation2d(0.65, 0);
+            public static final Translation2d trenchAllianceExitTransform = new Translation2d(-1.5, 0);
             public static final Translation2d trenchExitTransform = new Translation2d(-1, 0);
             public static final Translation2d fuelIntakeTransform = new Translation2d(0, 1.75);
             public static final Translation2d middleIntakeTransform = new Translation2d(-1.75, 0);
