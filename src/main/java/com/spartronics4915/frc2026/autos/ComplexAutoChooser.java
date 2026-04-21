@@ -53,6 +53,7 @@ public class ComplexAutoChooser {
         OUTPOST("-> O", WITHIN_ALLIANCE),
         // TOWER("-> T", NONE),
         PAUSE("P", WITHIN_ALLIANCE),
+        ALT_PAUSE("P-A", WITHIN_ALLIANCE),
         UNUSED(" ", NONE);
 
         public final String userFacingName;
@@ -75,7 +76,7 @@ public class ComplexAutoChooser {
         READY_TO_INTAKE(() -> new AutoSegment[]{INTAKE_QUARTER, INTAKE_HALF, INTAKE_HAIRPIN, INTAKE_INVERTED_QUARTER, INTAKE_MIDDLE}),
         DIST_SELECT(() -> new AutoSegment[]{INTAKE_CLOSE, INTAKE_NORMAL, INTAKE_FAR}),
         WITHIN_NEUTRAL(() -> new AutoSegment[]{L_TRENCH_TO_ALLIANCE, L_BUMP_TO_ALLIANCE, R_TRENCH_TO_ALLIANCE, R_BUMP_TO_ALLIANCE}),
-        WITHIN_ALLIANCE(() -> new AutoSegment[]{L_TRENCH_TO_NEUTRAL, L_BUMP_TO_NEUTRAL, R_TRENCH_TO_NEUTRAL, R_BUMP_TO_NEUTRAL, DEPOT, OUTPOST, /* TOWER, */ PAUSE}),
+        WITHIN_ALLIANCE(() -> new AutoSegment[]{L_TRENCH_TO_NEUTRAL, L_BUMP_TO_NEUTRAL, R_TRENCH_TO_NEUTRAL, R_BUMP_TO_NEUTRAL, DEPOT, OUTPOST, /* TOWER, */ PAUSE, ALT_PAUSE}),
         NONE(() -> new AutoSegment[]{});
 
         private final Supplier<AutoSegment[]> allowedSegmentsSupplier;
@@ -100,6 +101,7 @@ public class ComplexAutoChooser {
     private final Superstructure superstructure;
 
     private double shootWaitTime;
+    private double altShootWaitTime;
 
     private AutoSegment[] selectedSegments;
     private SendableChooser<AutoSegment>[] segmentChoosers;
@@ -130,13 +132,18 @@ public class ComplexAutoChooser {
         }
         resolveSteps();
 
-        shootWaitTime = SmartDashboard.getNumber("Auto Chooser/Shoot Wait Time", defaultShootWaitTime);
+        shootWaitTime = SmartDashboard.getNumber("Auto Chooser/Pause Time", defaultShootWaitTime);
+        altShootWaitTime = SmartDashboard.getNumber("Auto Chooser/Alt Pause Time", defaultShootWaitTime / 2);
 
-        SmartDashboard.putNumber("Auto Chooser/Shoot Wait Time", shootWaitTime);
+        SmartDashboard.putNumber("Auto Chooser/Pause Time", shootWaitTime);
+        SmartDashboard.putNumber("Auto Chooser/Alt Pause Time", altShootWaitTime);
 
         NetworkTable table = NetworkTableInstance.getDefault().getTable("SmartDashboard/Auto Chooser");
-        table.addListener("Shoot Wait Time", EnumSet.of(NetworkTableEvent.Kind.kValueAll), (filler, key, event) -> {
+        table.addListener("Pause Time", EnumSet.of(NetworkTableEvent.Kind.kValueAll), (filler, key, event) -> {
             shootWaitTime = event.valueData.value.getDouble();
+        });
+        table.addListener("Alt Pause Time", EnumSet.of(NetworkTableEvent.Kind.kValueAll), (filler, key, event) -> {
+            altShootWaitTime = event.valueData.value.getDouble();
         });
     }
 
@@ -162,7 +169,7 @@ public class ComplexAutoChooser {
                 selectedSegments[i] = UNUSED;
             } else {
                 for (AutoSegment option : lastSegment.getAllowedTransitions()) {
-                    if (option == lastSegment && option != PAUSE) continue;
+                    if (option == lastSegment && option != PAUSE && option != ALT_PAUSE) continue;
                     segment.addOption(option.userFacingName, option);
                 }
 
@@ -192,7 +199,7 @@ public class ComplexAutoChooser {
 
     private AutoSegment getNextNonPauseSegment(int currentIndex) {
         for (int i = currentIndex + 1; i < selectedSegments.length; i++) {
-            if (selectedSegments[i] != PAUSE) {
+            if (selectedSegments[i] != PAUSE && selectedSegments[i] != ALT_PAUSE) {
                 return selectedSegments[i] != null ? selectedSegments[i] : UNUSED;
             }
         }
@@ -283,6 +290,11 @@ public class ComplexAutoChooser {
                 // case TOWER:
                 //     commands.add(POIFactory.generateCommand(DriveToPOI.POI.TOWER));
                 //     break;
+                case ALT_PAUSE:
+                    commands.add(
+                        Commands.waitSeconds(altShootWaitTime)
+                    );
+                    break;
                 case PAUSE:
                     commands.add(
                         // This is very hard to read, but it runs preAlignment along with a bunch of wait conditions.
