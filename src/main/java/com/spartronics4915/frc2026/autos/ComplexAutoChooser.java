@@ -162,7 +162,7 @@ public class ComplexAutoChooser {
                 selectedSegments[i] = UNUSED;
             } else {
                 for (AutoSegment option : lastSegment.getAllowedTransitions()) {
-                    if (option == lastSegment) continue;
+                    if (option == lastSegment && option != PAUSE) continue;
                     segment.addOption(option.userFacingName, option);
                 }
 
