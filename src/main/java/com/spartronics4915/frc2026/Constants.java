@@ -117,14 +117,14 @@ public final class Constants {
 
         public static final double stickDeadband = 0.0;
         public static final double tiltThresholdDegrees = 1.0;
-        public static final double tiltDebounce = 0.07;
+        public static final double tiltDebounce = 0.05;
 
         public static final Constraints trenchAlignConstraints = new Constraints(3, 3);
 
-        public static final double odomUpdateFrequency = 100.0; // 250.0
+        public static final double odomUpdateFrequency = 120.0; // 250.0
         public static final double staleCommandTimeout = 0.1;
 
-        public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.1, 0.1, 0.02); // 0.3, 0.3, 0.2
+        public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.05, 0.05, 0.08); // 0.3, 0.3, 0.2
         public static final Matrix<N3, N1> slipStdDevs = VecBuilder.fill(2.0, 2.0, 1.0);
 
         public static final double slipRecoverySeconds = 0.3;
@@ -245,8 +245,8 @@ public final class Constants {
         public static final class AutoConstants {
             
             public static final PIDController translationPID = new PIDController(6.0, 0, 0.4);
-            public static final PIDController rotationPID    = new PIDController(10, 0, 1);
-            public static final PIDController crossTrackPID  = new PIDController(1.75, 0, 0);
+            public static final PIDController rotationPID = new PIDController(10, 0, 1);
+            public static final PIDController crossTrackPID = new PIDController(1.75, 0, 0);
 
             public static final PIDConstants alignTranslationPID = new PIDConstants(2.0,0,0);
             public static final PIDConstants alignRotationPID = new PIDConstants(2.0,0,0);
@@ -278,8 +278,8 @@ public final class Constants {
             public static final Translation2d bumpTransform = new Translation2d(0, -1.523);
             public static final Translation2d bumpTrenchDivTransform = new Translation2d(0, 2.604);
             public static final Translation2d approachTransform = new Translation2d(-1.4, 0);
-            public static final Translation2d exitTransform = new Translation2d((centerPose.getX() - hubPose.getX()) * 1.2, 0);
-            public static final Translation2d trenchStopTransform = new Translation2d(0.8, 0);
+            public static final Translation2d exitTransform = new Translation2d((centerPose.getX() - hubPose.getX()) * 1.1, 0);
+            public static final Translation2d trenchStopTransform = new Translation2d(0.65, 0);
             public static final Translation2d trenchExitTransform = new Translation2d(-1, 0);
             public static final Translation2d fuelIntakeTransform = new Translation2d(0, 1.75);
             public static final Translation2d middleIntakeTransform = new Translation2d(-1.75, 0);
@@ -308,7 +308,7 @@ public final class Constants {
                 .setMaxAccelerationMetersPerSec2(16.0);
 
             public static final Path.PathConstraints bumpPathConstraints = new Path.PathConstraints()
-                .setMaxVelocityMetersPerSec(8.0)
+                .setMaxVelocityMetersPerSec(3.0)
                 .setMaxAccelerationMetersPerSec2(20.0)
                 .setMaxVelocityDegPerSec(360)
                 .setMaxAccelerationDegPerSec2(360);
