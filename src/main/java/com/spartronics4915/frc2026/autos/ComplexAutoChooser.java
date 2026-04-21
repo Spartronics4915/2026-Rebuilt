@@ -197,13 +197,22 @@ public class ComplexAutoChooser {
         return segment.userFacingName.charAt(0) == 'R';
     }
 
-    private AutoSegment getNextNonPauseSegment(int currentIndex) {
+    private int getNextNonPauseIndex(int currentIndex) {
         for (int i = currentIndex + 1; i < selectedSegments.length; i++) {
             if (selectedSegments[i] != PAUSE && selectedSegments[i] != ALT_PAUSE) {
-                return selectedSegments[i] != null ? selectedSegments[i] : UNUSED;
+                return i;
             }
         }
-        return UNUSED;
+        return -1;
+    }
+
+    private AutoSegment getNextNonPauseSegment(int currentIndex) {
+        int i = getNextNonPauseIndex(currentIndex);
+        return i != -1 
+            ? selectedSegments[i] != null 
+                ? selectedSegments[i] 
+                : UNUSED
+            : UNUSED;
     }
 
     /**
@@ -222,12 +231,12 @@ public class ComplexAutoChooser {
                 break;
             }
             
-            boolean useStartingConstraints = (i == 1) && (prevSegment == L_TRENCH_TO_NEUTRAL || prevSegment == R_TRENCH_TO_NEUTRAL);
+            boolean useStartingCommand = (i == getNextNonPauseIndex(-1)) && (currentSegment == L_TRENCH_TO_NEUTRAL || currentSegment == R_TRENCH_TO_NEUTRAL);
 
             switch (currentSegment) {
                 case L_TRENCH_TO_NEUTRAL:
                     commands.add(
-                        prevSegment == UNUSED 
+                        useStartingCommand 
                             ? transitionFactory.generateStartingTrenchCommand(false) 
                             : transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, true)
                     );
@@ -237,7 +246,7 @@ public class ComplexAutoChooser {
                     break;
                 case R_TRENCH_TO_NEUTRAL:
                     commands.add(
-                        prevSegment == UNUSED 
+                        useStartingCommand 
                             ? transitionFactory.generateStartingTrenchCommand(true) 
                             : transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, true)
                     );
