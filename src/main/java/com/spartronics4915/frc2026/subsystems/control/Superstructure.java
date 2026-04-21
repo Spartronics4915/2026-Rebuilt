@@ -210,13 +210,13 @@ public class Superstructure extends SubsystemBase {
     private void configureTriggers() {
         // Zone triggers
         new Trigger(() -> currentZone == Zone.ALLIANCE_ZONE)
-            .onTrue(superCommands.shooting().withName("Auto: Shooting Zone"));
+            .onTrue(superCommands.shooting().withName("Auto: Shooting Zone").ignoringDisable(true));
         new Trigger(() -> currentZone == Zone.TRENCH)
-            .onTrue(superCommands.trench().withName("Auto: Trench Traversal"));
+            .onTrue(superCommands.trench().withName("Auto: Trench Traversal").ignoringDisable(true));
         new Trigger(() -> currentZone == Zone.NEUTRAL_ZONE)
-            .onTrue(superCommands.traversal().withName("Auto: Neutral Traversal"));
+            .onTrue(superCommands.traversal().withName("Auto: Neutral Traversal").ignoringDisable(true));
         new Trigger(() -> currentZone == Zone.BUMP || currentZone == Zone.OPPONENT_ZONE)
-            .onTrue(superCommands.cruise().withName("Auto: Cruise Zone"));
+            .onTrue(superCommands.cruise().withName("Auto: Cruise Zone").ignoringDisable(true));
 
         // Pipeline triggers, falling edge debounced so the pipeline turns on instantly
         // but won't turn off until isReadyToShoot has been false for the full duration.
