@@ -86,7 +86,7 @@ public class ZoneTransition {
                     ),
                     bumpAngle
                 ),
-                0.9
+                0.4
             ),
             new Path.Waypoint(
                 hubPose.plus( // Pose will be really wrong over the bump so set the setpoint *way* farther
@@ -103,7 +103,10 @@ public class ZoneTransition {
         Path path = new Path(pathElements, Autos.generatePathConstraintZone(bumpPathConstraints, 1, 2));
 
         return Commands.race(
-            Autos.build(path, endWithSpeed ? Rotation2d.kZero.rotateBy(IOFlip) : null, swerve),
+            Commands.sequence(
+                Autos.build(path, endWithSpeed ? Rotation2d.kZero.rotateBy(IOFlip) : null, swerve),
+                Commands.waitSeconds(0.5)
+            ),
             Commands.sequence(
                 Commands.waitUntil(() -> {
                     return swerve.getRelativePose().getMeasureX().in(Meters) > hubPose.getX() ^ !toNeutralZone 
