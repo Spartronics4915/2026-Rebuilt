@@ -57,7 +57,7 @@ public class Robot extends TimedRobot {
     public void robotInit() {
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
 
-        DataLogManager.start();
+        DataLogManager.start("/u/logs");
         DriverStation.startDataLog(DataLogManager.getLog(), true);
 
         NetworkTable metaData = NetworkTableInstance.getDefault().getTable("Metadata");
