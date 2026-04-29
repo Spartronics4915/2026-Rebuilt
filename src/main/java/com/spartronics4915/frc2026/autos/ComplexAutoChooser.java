@@ -238,21 +238,21 @@ public class ComplexAutoChooser {
                     commands.add(
                         useStartingCommand 
                             ? transitionFactory.generateStartingTrenchCommand(false) 
-                            : transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, true)
+                            : transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, true, true)
                     );
                     break;
                 case L_BUMP_TO_NEUTRAL:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP, false));
+                    commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP, true, false));
                     break;
                 case R_TRENCH_TO_NEUTRAL:
                     commands.add(
                         useStartingCommand 
                             ? transitionFactory.generateStartingTrenchCommand(true) 
-                            : transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, true)
+                            : transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, true, true)
                     );
                     break;
                 case R_BUMP_TO_NEUTRAL:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, false));
+                    commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, true, false));
                     break;
 
                 case INTAKE_CLOSE:
@@ -281,13 +281,13 @@ public class ComplexAutoChooser {
                     commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, false, futureSegment != PAUSE && futureSegment != UNUSED, getNextNonPauseSegment(i) == L_TRENCH_TO_NEUTRAL));
                     break;
                 case L_BUMP_TO_ALLIANCE:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP, futureSegment != PAUSE && futureSegment != UNUSED));
+                    commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP, false, futureSegment != PAUSE && futureSegment != UNUSED));
                     break;
                 case R_TRENCH_TO_ALLIANCE:
                     commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, false, futureSegment != PAUSE && futureSegment != UNUSED, getNextNonPauseSegment(i) == R_TRENCH_TO_NEUTRAL));
                     break;
                 case R_BUMP_TO_ALLIANCE:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, futureSegment != PAUSE && futureSegment != UNUSED));
+                    commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, false, futureSegment != PAUSE && futureSegment != UNUSED));
                     break;
 
                 case DEPOT:
