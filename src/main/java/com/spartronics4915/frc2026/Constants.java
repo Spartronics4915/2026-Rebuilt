@@ -93,7 +93,7 @@ public final class Constants {
 
     public static final class SwerveConstants {
 
-        public static final double maxSpeed = 9.12; // 5.12, should probably increase
+        public static final double maxSpeed = 10.12; // 5.12, should probably increase
         public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(10); // 6, should probably increase
 
         /**
@@ -233,7 +233,7 @@ public final class Constants {
                         new TalonFXConfiguration()
                             .withCurrentLimits(
                                 new CurrentLimitsConfigs()
-                                    .withStatorCurrentLimit(Amps.of(120))
+                                    .withStatorCurrentLimit(Amps.of(130))
                                     .withStatorCurrentLimitEnable(true)
                             )
                     );
