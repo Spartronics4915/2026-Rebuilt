@@ -56,7 +56,7 @@ public class PreAlignment {
         );
     }
 
-    private final Map<AutoSegment, TraversalMethod> segmentToTraversalMethodMap = Map.of(
+    private static final Map<AutoSegment, TraversalMethod> segmentToTraversalMethodMap = Map.of(
         AutoSegment.L_TRENCH_TO_NEUTRAL, TraversalMethod.LEFT_TRENCH,
         AutoSegment.L_BUMP_TO_NEUTRAL, TraversalMethod.LEFT_BUMP,
         AutoSegment.R_TRENCH_TO_NEUTRAL, TraversalMethod.RIGHT_TRENCH,
@@ -73,7 +73,7 @@ public class PreAlignment {
      * @param segment Auto segment to convert
      * @return Traversal method or null if conversion is not possible
      */
-    private TraversalMethod convertToTraversalMethod(AutoSegment segment) {
+    public static TraversalMethod convertToTraversalMethod(AutoSegment segment) {
         return segmentToTraversalMethodMap.get(segment);
     }
 }

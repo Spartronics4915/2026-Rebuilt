@@ -281,16 +281,14 @@ public class ComplexAutoChooser {
                     break;
 
                 case L_TRENCH_TO_ALLIANCE:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_TRENCH, false, futureSegment != PAUSE && futureSegment != UNUSED, getNextNonPauseSegment(i) == L_TRENCH_TO_NEUTRAL));
-                    break;
                 case L_BUMP_TO_ALLIANCE:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.LEFT_BUMP, false, futureSegment != PAUSE && futureSegment != UNUSED));
-                    break;
                 case R_TRENCH_TO_ALLIANCE:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_TRENCH, false, futureSegment != PAUSE && futureSegment != UNUSED, getNextNonPauseSegment(i) == R_TRENCH_TO_NEUTRAL));
-                    break;
                 case R_BUMP_TO_ALLIANCE:
-                    commands.add(transitionFactory.generateCommand(TraversalMethod.RIGHT_BUMP, false, futureSegment != PAUSE && futureSegment != UNUSED));
+                    boolean endWithSpeed = futureSegment != PAUSE && futureSegment != ALT_PAUSE && futureSegment != UNUSED;
+                    TraversalMethod currentTraversalMethod = PreAlignment.convertToTraversalMethod(currentSegment);
+                    boolean endInTrench = currentTraversalMethod == PreAlignment.convertToTraversalMethod(getNextNonPauseSegment(i)) || getNextNonPauseSegment(i) == UNUSED;
+
+                    commands.add(transitionFactory.generateCommand(currentTraversalMethod, false, endWithSpeed, endInTrench));
                     break;
 
                 case DEPOT:
