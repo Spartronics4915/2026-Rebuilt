@@ -739,7 +739,7 @@ public final class Constants {
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.22226;
-        public static final double A = 27.0318; //0.70318
+        public static final double A = 67.0318; //27.0318
         public static final double S = 1.23135;
 
         public static final double MAX_RPS = 20.0; // 13.238
