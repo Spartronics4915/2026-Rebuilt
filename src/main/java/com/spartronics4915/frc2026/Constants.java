@@ -742,7 +742,7 @@ public final class Constants {
         public static final double A = 27.0318; //0.70318
         public static final double S = 1.23135;
 
-        public static final double MAX_RPS = 20.0; // 13.238
+        public static final double MAX_RPS = 22.0; // 13.238
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 60;
