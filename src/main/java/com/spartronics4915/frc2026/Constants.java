@@ -361,7 +361,7 @@ public final class Constants {
         public static final double yawRecomputeThreshold = 1e-4;
 
         public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.46;
+            public static final double baseXYStdDev = 0.44;
             public static final double baseThetaStdDev = 0.79;
             public static final double ambiguityWeight = 0.8;
             public static final double areaWeight = 0.6;
@@ -372,8 +372,8 @@ public final class Constants {
             public static final double maxLatencyMs = 90.0;
             public static final double maxSingleTagDistanceMeters = 6.0;
             public static final double maxMultiTagDistanceMeters = 11.0;
-            public static final double maxAmbiguity = 0.18; // TODO: Change back to 0.12 if no vision
-            public static final double minArea = 0.07;
+            public static final double maxAmbiguity = 0.18;
+            public static final double minArea = 0.04;
             public static final double maxArea = 0.96;
 
             // Set < Double.MAX_VALUE to enable the odometry-outlier filter.
