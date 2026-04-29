@@ -30,16 +30,14 @@ public class NeutralZoneAutos {
     }
 
     public enum IntakeShift {
-        CLOSE(-1.5, false),
-        NORMAL(0, false),
-        FAR(0, true);
+        CLOSE(-1.5),
+        NORMAL(0),
+        FAR(0.4);
 
         private double shiftDist;
-        private boolean flipOverCenter;
 
-        private IntakeShift(double shiftDist, boolean flipOverCenter) {
+        private IntakeShift(double shiftDist) {
             this.shiftDist = shiftDist;
-            this.flipOverCenter = flipOverCenter;
         }
     }
 
@@ -64,8 +62,6 @@ public class NeutralZoneAutos {
                 -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters) + intakeShift.shiftDist,
                 (robotLength.in(Meters) / 2 + intakeLength.in(Meters)) * sideMultiplier
             );
-
-            offsetFromCenter = Autos.invXCond(offsetFromCenter, intakeShift.flipOverCenter);
 
             Pose2d intakeStart = new Pose2d(
                 centerPose.plus(offsetFromCenter).plus(fuelIntakeTransform.times(sideMultiplier)),
@@ -176,8 +172,6 @@ public class NeutralZoneAutos {
                 -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters) + intakeShift.shiftDist,
                 (robotLength.in(Meters) / 2 + intakeLength.in(Meters)) * sideMultiplier
             );
-
-            offsetFromCenter = Autos.invXCond(offsetFromCenter, intakeShift.flipOverCenter);
 
             Pose2d quadrantEnd = new Pose2d(
                 centerPose.plus(offsetFromCenter).plus(fuelIntakeTransform.times(-sideMultiplier)),
