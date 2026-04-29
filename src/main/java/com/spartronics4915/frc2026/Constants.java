@@ -363,9 +363,9 @@ public final class Constants {
         public static final class StdDevConstants {
             public static final double baseXYStdDev = 0.44;
             public static final double baseThetaStdDev = 0.79;
-            public static final double ambiguityWeight = 0.8;
+            public static final double ambiguityWeight = 0.7;
             public static final double areaWeight = 0.6;
-            public static final double latencyWeight = 0.3;
+            public static final double latencyWeight = 0.2;
         }
 
         public static final class FilterConstants {
