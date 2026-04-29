@@ -10,6 +10,7 @@ import com.spartronics4915.frc2026.commands.DriveCommand;
 import com.spartronics4915.frc2026.commands.DriveCommand.SpeedLimitMode;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands.PipelineState;
+import com.spartronics4915.frc2026.autos.Autos;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 import com.spartronics4915.frc2026.util.control.FieldRegion;
@@ -223,18 +224,7 @@ public class Superstructure extends SubsystemBase {
         Trigger pipelineOn = new Trigger(controller::isReadyToShoot)
             .onTrue(superCommands.setPipelineState(PipelineState.ON))
             .onFalse(superCommands.setPipelineState(PipelineState.OFF));
-
-        // In auto, jostle the pivot while the pipeline is active
-        pipelineOn
-            .and(DriverStation::isAutonomous)
-            .whileTrue(Commands.sequence(
-                superCommands.conditionalPivotSafe(),
-                Commands.waitSeconds(0.5 / PIVOT_JOSTLE_FREQUENCY),
-                superCommands.conditionalPivotReady(),
-                Commands.waitSeconds(0.5 / PIVOT_JOSTLE_FREQUENCY)
-            ).repeatedly())
-            .whileFalse(superCommands.conditionalPivotReady());
-        
+            
         RobotModeTriggers.teleop().onTrue(Commands.runOnce(() -> {
             controller.setShootingState(false);
         }));
@@ -257,4 +247,27 @@ public class Superstructure extends SubsystemBase {
         }, Set.of()).withName("Restore Zone State");
     }
 
+    /**
+     * Jostles the pivot back and forth, then leaves it in READY (down), stopping 0.5s before `duration` finishes.
+     */
+    public Command getJostleCommand(double duration) {
+        if (duration <= 0.5) return Commands.sequence(
+            superCommands.conditionalPivotReady(),
+            Autos.wait(duration)
+        );
+        
+        return Commands.sequence(
+            Commands.deadline(
+                Autos.wait(duration - 0.5),
+                Commands.sequence(
+                    superCommands.conditionalPivotSafe(),
+                    Commands.waitSeconds(0.5 / PIVOT_JOSTLE_FREQUENCY),
+                    superCommands.conditionalPivotReady(),
+                    Commands.waitSeconds(0.5 / PIVOT_JOSTLE_FREQUENCY)
+                ).repeatedly()
+            ),
+            superCommands.conditionalPivotReady(),
+            Autos.wait(0.5)
+        );
+    }
 }

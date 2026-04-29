@@ -302,7 +302,7 @@ public class ComplexAutoChooser {
                 //     break;
                 case ALT_PAUSE:
                     commands.add(
-                        Autos.wait(altShootWaitTime)
+                        superstructure.getJostleCommand(altShootWaitTime)
                     );
                     break;
                 case PAUSE:
@@ -310,14 +310,7 @@ public class ComplexAutoChooser {
                         // This is very hard to read, but it runs preAlignment along with a bunch of wait conditions.
                         // The max limit is the shootWaitTime set by the user, otherwise it'll end earlier if no balls are detected after 0.3 seconds of waiting
                         Commands.deadline(
-                            Commands.race(
-                                Autos.wait(shootWaitTime)
-                                // Commands.sequence(
-                                //    Commands.waitUntil(() -> superstructure.isBallDetectedDebounced())
-                                //    Autos.wait(0.25),
-                                //    Commands.waitUntil(() -> !superstructure.isBallDetectedDebounced())
-                                // )
-                            )
+                            superstructure.getJostleCommand(shootWaitTime)
                             // preAlignmentFactory.generateCommand(prevSegment, futureSegment)
                         )
                     );
