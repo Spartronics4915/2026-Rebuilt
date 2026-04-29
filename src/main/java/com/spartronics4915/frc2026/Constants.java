@@ -128,8 +128,8 @@ public final class Constants {
         public static final Matrix<N3, N1> slipStdDevs = VecBuilder.fill(2.0, 2.0, 1.0);
 
         public static final double slipRecoverySeconds = 0.3;
-        public static final double slipThresholdRPS = 2.0;
-        public static final double minSpeedDetectMPS = 0.7;
+        public static final double slipThresholdRPS = 2.2;
+        public static final double minSpeedDetectMPS = 0.8;
         public static final int slipDebounceCycles = 5;
 
         public static final double headingLockKP = 7.0;
@@ -225,7 +225,7 @@ public final class Constants {
                         new TalonFXConfiguration()
                             .withCurrentLimits(
                                 new CurrentLimitsConfigs()
-                                    .withStatorCurrentLimit(Amps.of(60))
+                                    .withStatorCurrentLimit(Amps.of(80))
                                     .withStatorCurrentLimitEnable(true)
                             )
                     )
