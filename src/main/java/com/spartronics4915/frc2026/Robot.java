@@ -60,7 +60,7 @@ public class Robot extends TimedRobot {
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
 
         if (Robot.isReal()) {
-            DataLogManager.start("/u/logs");
+            DataLogManager.start();
             DriverStation.startDataLog(DataLogManager.getLog(), true);
         }
 
