@@ -235,6 +235,7 @@ public class ComplexAutoChooser {
             }
             
             boolean useStartingCommand = (i == getNextNonPauseIndex(-1)) && (currentSegment == L_TRENCH_TO_NEUTRAL || currentSegment == R_TRENCH_TO_NEUTRAL);
+            TraversalMethod nextMethod = PreAlignment.convertToTraversalMethod((i + 2 < selectedSegments.length) ? selectedSegments[i + 2] : null);
 
             switch (currentSegment) {
                 case L_TRENCH_TO_NEUTRAL:
@@ -264,16 +265,16 @@ public class ComplexAutoChooser {
                     break;
 
                 case INTAKE_QUARTER:
-                    commands.add(neutralZoneFactory.generateQuadrantCommand(isRight(prevSegment), intakeShift));
+                    commands.add(neutralZoneFactory.generateQuadrantCommand(isRight(prevSegment), PreAlignment.convertToTraversalMethod(prevSegment).isTrench, intakeShift));
                     break;
                 case INTAKE_HALF:
-                    commands.add(neutralZoneFactory.generateHalfCommand(isRight(prevSegment), intakeShift));
+                    commands.add(neutralZoneFactory.generateHalfCommand(isRight(prevSegment), PreAlignment.convertToTraversalMethod(prevSegment).isTrench, nextMethod == null || nextMethod.isTrench, intakeShift));
                     break;
                 case INTAKE_INVERTED_QUARTER:
-                    commands.add(neutralZoneFactory.generateInvertedQuadrantCommand(!isRight(prevSegment), intakeShift));
+                    commands.add(neutralZoneFactory.generateInvertedQuadrantCommand(!isRight(prevSegment), nextMethod == null || nextMethod.isTrench, intakeShift));
                     break;
                 case INTAKE_HAIRPIN:
-                    commands.add(neutralZoneFactory.generateHairpinCommand(isRight(prevSegment)));
+                    commands.add(neutralZoneFactory.generateHairpinCommand(isRight(prevSegment), PreAlignment.convertToTraversalMethod(prevSegment).isTrench));
                     break;
 
                 case INTAKE_MIDDLE:

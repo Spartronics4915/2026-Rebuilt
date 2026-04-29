@@ -53,18 +53,18 @@ public class NeutralZoneAutos {
         return segmentToIntakeShiftMap.getOrDefault(segment, IntakeShift.NORMAL);
     }
 
-    public Command generateQuadrantCommand(boolean isRightSide, IntakeShift intakeShift) {
+    public Command generateQuadrantCommand(boolean isRightSide, boolean fromTrench, IntakeShift intakeShift) {
         return Commands.defer(() -> {
             double sideMultiplier = isRightSide ? -1 : 1;
             Rotation2d rotation = Rotation2d.fromDegrees(isRightSide ? 90 : -90);
 
             Translation2d offsetFromCenter = new Translation2d(
                 -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters) + intakeShift.shiftDist,
-                (robotLength.in(Meters) / 2 + intakeLength.in(Meters)) * sideMultiplier
+                (robotLength.in(Meters) / 2) * sideMultiplier
             );
 
             Pose2d intakeStart = new Pose2d(
-                centerPose.plus(offsetFromCenter).plus(fuelIntakeTransform.times(sideMultiplier)),
+                centerPose.plus(offsetFromCenter).plus(fuelIntakeTransform.times(sideMultiplier * (fromTrench ? 1 : 0.45))),
                 rotation
             );
             Pose2d quadrantEnd = new Pose2d(
@@ -101,7 +101,7 @@ public class NeutralZoneAutos {
         }, Set.of(swerve));
     }
 
-    public Command generateHairpinCommand(boolean isRightSide) {
+    public Command generateHairpinCommand(boolean isRightSide, boolean fromTrench) {
         return Commands.defer(() -> {
             double sideMultiplier = isRightSide ? -1 : 1;
             Rotation2d rotation = Rotation2d.fromDegrees(isRightSide ? 90 : -90);
@@ -112,7 +112,7 @@ public class NeutralZoneAutos {
             );
 
             Pose2d intakeStart = new Pose2d(
-                centerPose.plus(offsetFromCenter).plus(fuelIntakeTransform.times(sideMultiplier)),
+                centerPose.plus(offsetFromCenter).plus(fuelIntakeTransform.times(sideMultiplier * (fromTrench ? 1 : 0.6))),
                 rotation
             );
             Pose2d quadrantEnd = new Pose2d(
@@ -163,7 +163,7 @@ public class NeutralZoneAutos {
         }, Set.of(swerve));
     }
 
-    public Command generateInvertedQuadrantCommand(boolean toRightSide, IntakeShift intakeShift) {
+    public Command generateInvertedQuadrantCommand(boolean toRightSide, boolean toTrench, IntakeShift intakeShift) {
         return Commands.defer(() -> {
             double sideMultiplier = toRightSide ? 1 : -1;
             Rotation2d rotation = Rotation2d.fromDegrees(toRightSide ? -90 : 90);
@@ -173,12 +173,20 @@ public class NeutralZoneAutos {
                 (robotLength.in(Meters) / 2 + intakeLength.in(Meters)) * sideMultiplier
             );
 
-            Pose2d quadrantEnd = new Pose2d(
-                centerPose.plus(offsetFromCenter).plus(fuelIntakeTransform.times(-sideMultiplier)),
-                rotation
-            );
             Pose2d intakeStart = new Pose2d(
                 centerPose.plus(offsetFromCenter), 
+                rotation
+            );
+
+            Pose2d quadrantEnd = new Pose2d(
+                centerPose.plus(
+                    new Translation2d(
+                        offsetFromCenter.getX(), 
+                        0
+                    )
+                ).plus(
+                    fuelIntakeTransform.times(-sideMultiplier * (toTrench ? 1 : 0.7))
+                ),
                 rotation
             );
 
@@ -206,7 +214,7 @@ public class NeutralZoneAutos {
         }, Set.of(swerve));
     }
 
-    public Command generateHalfCommand(boolean isRightSide, IntakeShift intakeShift) {
+    public Command generateHalfCommand(boolean isRightSide, boolean fromTrench, boolean toTrench, IntakeShift intakeShift) {
         return Commands.defer(() -> {
             double sideMultiplier = isRightSide ? -1 : 1;
             Rotation2d rotation = Rotation2d.fromDegrees(isRightSide ? 90 : -90);
@@ -214,12 +222,12 @@ public class NeutralZoneAutos {
             Translation2d startOffset = new Translation2d(
                 -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters) + intakeShift.shiftDist,
                 (robotLength.in(Meters) / 2 + intakeLength.in(Meters)) * sideMultiplier
-            ).plus(fuelIntakeTransform.times(sideMultiplier));
+            ).plus(fuelIntakeTransform.times(sideMultiplier * (fromTrench ? 1 : 0.45)));
 
             Translation2d endOffset = new Translation2d(
                 startOffset.getX(),
                 0
-            ).plus(fuelIntakeTransform.times(-sideMultiplier));
+            ).plus(fuelIntakeTransform.times(-sideMultiplier * (toTrench ? 1 : 0.7)));
 
             Pose2d fuelStart = new Pose2d(centerPose.plus(startOffset), rotation);
             Pose2d fuelEnd = new Pose2d(centerPose.plus(endOffset), rotation);

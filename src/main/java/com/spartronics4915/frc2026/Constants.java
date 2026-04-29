@@ -282,7 +282,7 @@ public final class Constants {
             public static final Translation2d trenchStopTransform = new Translation2d(0.65, 0);
             public static final Translation2d trenchAllianceExitTransform = new Translation2d(-1.5, 0);
             public static final Translation2d trenchExitTransform = new Translation2d(-1, 0);
-            public static final Translation2d fuelIntakeTransform = new Translation2d(0, 1.75);
+            public static final Translation2d fuelIntakeTransform = new Translation2d(0, 2.1);
             public static final Translation2d middleIntakeTransform = new Translation2d(-1.75, 0);
 
             public static final Distance robotLength = Millimeters.of(818.5);

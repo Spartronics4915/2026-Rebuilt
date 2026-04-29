@@ -74,6 +74,9 @@ public class PreAlignment {
      * @return Traversal method or null if conversion is not possible
      */
     public static TraversalMethod convertToTraversalMethod(AutoSegment segment) {
+        if (segment == null) {
+            return null;
+        }
         return segmentToTraversalMethodMap.get(segment);
     }
 }
