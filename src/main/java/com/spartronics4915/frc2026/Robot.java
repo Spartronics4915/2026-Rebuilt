@@ -4,6 +4,8 @@
 
 package com.spartronics4915.frc2026;
 
+import com.spartronics4915.frc2026.autos.Autos;
+
 import au.grapplerobotics.CanBridge;
 import edu.wpi.first.net.WebServer;
 import edu.wpi.first.networktables.BooleanPublisher;
@@ -107,6 +109,7 @@ public class Robot extends TimedRobot {
     /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
     @Override
     public void autonomousInit() {
+        Autos.surveyMode = false;
         autonomousCommand = robotContainer.getAutonomousCommand();
 
         shiftNamePub.set("Auto");

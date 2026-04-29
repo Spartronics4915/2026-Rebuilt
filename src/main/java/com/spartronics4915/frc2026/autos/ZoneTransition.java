@@ -90,7 +90,9 @@ public class ZoneTransition {
             ),
             new Path.Waypoint(
                 hubPose.plus( // Pose will be really wrong over the bump so set the setpoint *way* farther
-                    exitTransform.rotateBy(IOFlip)
+                    Autos.surveyMode
+                    ? approachTransform.rotateBy(IOFlip.plus(Rotation2d.k180deg))
+                    : exitTransform.rotateBy(IOFlip)
                 ).plus(
                     bumpTransform.rotateBy(LRFlip)
                 ),

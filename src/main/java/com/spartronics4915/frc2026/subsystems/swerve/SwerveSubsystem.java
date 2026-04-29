@@ -45,6 +45,7 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
@@ -195,6 +196,9 @@ public class SwerveSubsystem extends SubsystemBase {
         telemetry.publish(drivetrain.getState(), this);
 
         field.setRobotPose(getPose());
+        if (DriverStation.isDisabled()) {
+            Autos.setSwervePose(getPose());
+        }
     }
  
     @Override

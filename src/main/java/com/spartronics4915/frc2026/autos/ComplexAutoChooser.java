@@ -4,6 +4,7 @@ import static com.spartronics4915.frc2026.autos.ComplexAutoChooser.AutoSegment.*
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import com.spartronics4915.frc2026.autos.NeutralZoneAutos.IntakeShift;
@@ -190,6 +191,8 @@ public class ComplexAutoChooser {
             segmentSources[i] = lastSegment;
             lastSegment = selectedSegments[i] != null ? selectedSegments[i] : UNUSED;
         }
+
+        Autos.survey(Commands.defer(() -> getAuto(), Set.of()));
     }
 
     private boolean isRight(AutoSegment segment) {
