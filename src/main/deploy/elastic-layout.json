@@ -430,6 +430,66 @@
                   "topic": "/SmartDashboard/Auto Chooser/Step 14",
                   "period": 0.06
                 }
+              },
+              {
+                "title": "Step 15",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 128.0,
+                "height": 128.0,
+                "type": "Split Button Chooser",
+                "properties": {
+                  "topic": "/SmartDashboard/Auto Chooser/Step 15",
+                  "period": 0.06
+                }
+              },
+              {
+                "title": "Step 16",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 128.0,
+                "height": 128.0,
+                "type": "Split Button Chooser",
+                "properties": {
+                  "topic": "/SmartDashboard/Auto Chooser/Step 16",
+                  "period": 0.06
+                }
+              },
+              {
+                "title": "Step 17",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 128.0,
+                "height": 128.0,
+                "type": "Split Button Chooser",
+                "properties": {
+                  "topic": "/SmartDashboard/Auto Chooser/Step 17",
+                  "period": 0.06
+                }
+              },
+              {
+                "title": "Step 18",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 128.0,
+                "height": 128.0,
+                "type": "Split Button Chooser",
+                "properties": {
+                  "topic": "/SmartDashboard/Auto Chooser/Step 18",
+                  "period": 0.06
+                }
+              },
+              {
+                "title": "Step 19",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 128.0,
+                "height": 128.0,
+                "type": "Split Button Chooser",
+                "properties": {
+                  "topic": "/SmartDashboard/Auto Chooser/Step 19",
+                  "period": 0.06
+                }
               }
             ]
           }
@@ -439,7 +499,7 @@
             "title": "Outpost Wait Time",
             "x": 768.0,
             "y": 0.0,
-            "width": 128.0,
+            "width": 160.0,
             "height": 128.0,
             "type": "Text Display",
             "properties": {
@@ -450,14 +510,49 @@
             }
           },
           {
-            "title": "Shoot Wait Time",
-            "x": 896.0,
+            "title": "Pause Time",
+            "x": 928.0,
             "y": 0.0,
-            "width": 128.0,
+            "width": 160.0,
             "height": 128.0,
             "type": "Text Display",
             "properties": {
-              "topic": "/SmartDashboard/Auto Chooser/Shoot Wait Time",
+              "topic": "/SmartDashboard/Auto Chooser/Pause Time",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "Survey Field",
+            "x": 768.0,
+            "y": 128.0,
+            "width": 480.0,
+            "height": 256.0,
+            "type": "Field",
+            "properties": {
+              "topic": "/SmartDashboard/Auto Chooser/Survey Field",
+              "period": 0.06,
+              "field_game": "Rebuilt",
+              "robot_width": 0.8128,
+              "robot_length": 0.762,
+              "show_other_objects": true,
+              "show_trajectories": true,
+              "field_rotation": 0.0,
+              "robot_color": 4294198070,
+              "trajectory_color": 4278255615,
+              "show_robot_outside_widget": true
+            }
+          },
+          {
+            "title": "Alt Pause Time",
+            "x": 1088.0,
+            "y": 0.0,
+            "width": 160.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Auto Chooser/Alt Pause Time",
               "period": 0.06,
               "data_type": "double",
               "show_submit_button": true
@@ -733,6 +828,193 @@
               "period": 0.06,
               "data_type": "double",
               "show_submit_button": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Tab 5",
+      "grid_layout": {
+        "layouts": [],
+        "containers": [
+          {
+            "title": "Ball Detect",
+            "x": 0.0,
+            "y": 0.0,
+            "width": 448.0,
+            "height": 736.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "superstructure/Ball Detect",
+              "period": 0.06,
+              "data_type": "boolean",
+              "true_color": 4283215696,
+              "false_color": 4294198070,
+              "true_icon": "None",
+              "false_icon": "None"
+            }
+          },
+          {
+            "title": "Turret Motor",
+            "x": 448.0,
+            "y": 0.0,
+            "width": 256.0,
+            "height": 384.0,
+            "type": "ProfiledPIDController",
+            "properties": {
+              "topic": "/SmartDashboard/Turret Motor",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Pipeline On",
+            "x": 704.0,
+            "y": 0.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Pipeline On",
+              "period": 0.06,
+              "show_type": true,
+              "maximize_button_space": false
+            }
+          },
+          {
+            "title": "Pipeline Off",
+            "x": 704.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Pipeline Off",
+              "period": 0.06,
+              "show_type": true,
+              "maximize_button_space": false
+            }
+          },
+          {
+            "title": "Hood Motor",
+            "x": 960.0,
+            "y": 0.0,
+            "width": 256.0,
+            "height": 384.0,
+            "type": "ProfiledPIDController",
+            "properties": {
+              "topic": "/SmartDashboard/Hood Motor",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Shooter Motor",
+            "x": 1216.0,
+            "y": 0.0,
+            "width": 256.0,
+            "height": 384.0,
+            "type": "ProfiledPIDController",
+            "properties": {
+              "topic": "/SmartDashboard/Shooter Motor",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Position",
+            "x": 544.0,
+            "y": 384.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Turret Motor/Position",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "Pivot Safe",
+            "x": 704.0,
+            "y": 416.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Pivot Safe",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Pivot Ready",
+            "x": 704.0,
+            "y": 544.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Pivot Ready",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Intake On",
+            "x": 960.0,
+            "y": 416.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Intake On",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Intake Off",
+            "x": 960.0,
+            "y": 544.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Intake Off",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "a",
+            "x": 544.0,
+            "y": 512.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Feeder Motor/a",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "p",
+            "x": 544.0,
+            "y": 640.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Feeder Motor/p",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": true
             }
           }
         ]
