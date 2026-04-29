@@ -121,7 +121,7 @@ public final class Constants {
 
         public static final Constraints trenchAlignConstraints = new Constraints(3, 3);
 
-        public static final double odomUpdateFrequency = 150.0; // 250.0
+        public static final double odomUpdateFrequency = 120.0; // 250.0
         public static final double staleCommandTimeout = 0.1;
 
         public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.05, 0.05, 0.08); // 0.3, 0.3, 0.2
