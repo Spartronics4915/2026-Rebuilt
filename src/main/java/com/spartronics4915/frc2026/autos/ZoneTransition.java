@@ -105,7 +105,7 @@ public class ZoneTransition {
         return Commands.race(
             Commands.sequence(
                 Autos.build(path, endWithSpeed ? Rotation2d.kZero.rotateBy(IOFlip) : null, swerve),
-                Commands.waitSeconds(0.5)
+                Autos.wait(0.5)
             ),
             Commands.sequence(
                 Commands.waitUntil(() -> {
@@ -113,7 +113,7 @@ public class ZoneTransition {
                         && swerve.isFlatDebounced()
                         && vision.hasAnyPose();
                 }),
-                Commands.waitSeconds(bumpDriveContinueTime)
+                Autos.wait(bumpDriveContinueTime)
             )
         );
     }

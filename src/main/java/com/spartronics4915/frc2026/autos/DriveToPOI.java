@@ -123,7 +123,7 @@ public class DriveToPOI {
                             Rotation2d.fromDegrees(90.0)
                         ),
                         Commands.runOnce(() -> swerve.lockModules()),
-                        Commands.waitSeconds(outpostWaitTime)
+                        Autos.wait(outpostWaitTime)
                     );
                 }
                 default: {

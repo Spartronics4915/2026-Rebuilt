@@ -301,7 +301,7 @@ public class ComplexAutoChooser {
                 //     break;
                 case ALT_PAUSE:
                     commands.add(
-                        Commands.waitSeconds(altShootWaitTime)
+                        Autos.wait(altShootWaitTime)
                     );
                     break;
                 case PAUSE:
@@ -310,10 +310,10 @@ public class ComplexAutoChooser {
                         // The max limit is the shootWaitTime set by the user, otherwise it'll end earlier if no balls are detected after 0.3 seconds of waiting
                         Commands.deadline(
                             Commands.race(
-                                Commands.waitSeconds(shootWaitTime)
+                                Autos.wait(shootWaitTime)
                                 // Commands.sequence(
                                 //    Commands.waitUntil(() -> superstructure.isBallDetectedDebounced())
-                                //    Commands.waitSeconds(0.25),
+                                //    Autos.wait(0.25),
                                 //    Commands.waitUntil(() -> !superstructure.isBallDetectedDebounced())
                                 // )
                             )

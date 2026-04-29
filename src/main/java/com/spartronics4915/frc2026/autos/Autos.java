@@ -56,6 +56,10 @@ public final class Autos {
         pathBuilder = builder;
     }
 
+    public static Command wait(double seconds) {
+        return Commands.waitSeconds(seconds);
+    }
+
     public static Path.PathConstraints generatePathConstraintZone(Path.PathConstraints constraints, int start, int end) {
         Path.PathConstraints limitedConstraints = new Path.PathConstraints();
 
