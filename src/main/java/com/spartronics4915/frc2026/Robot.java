@@ -4,6 +4,11 @@
 
 package com.spartronics4915.frc2026;
 
+import java.io.File;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 import com.spartronics4915.frc2026.autos.Autos;
 
 import au.grapplerobotics.CanBridge;
@@ -60,7 +65,8 @@ public class Robot extends TimedRobot {
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
 
         if (Robot.isReal()) {
-            DataLogManager.start();
+            String filename = "FRC_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".wpilog";
+            DataLogManager.start("", filename);
         }
 
         NetworkTable metaData = NetworkTableInstance.getDefault().getTable("Metadata");
