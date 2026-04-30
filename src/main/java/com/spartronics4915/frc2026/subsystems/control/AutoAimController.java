@@ -211,8 +211,8 @@ public class AutoAimController extends SubsystemBase {
 
         return autoAim.calculateDynamicAim(
             swerve.getSmoothedRelativePose(),
-            lastFieldSpeeds,
-            fieldAccelerations,
+            lastFieldSpeeds.div(isPassTarget() ? 2.0 : 1.0),
+            fieldAccelerations.div(isPassTarget() ? 2.0 : 1.0),
             target,
             RPSToMPS(flywheelFilter.calculate(Robot.isSimulation() ? shooter.getCurrentSetpoint() : shooter.getCurrentRPS())),
             processingCompensation // Dynamic processing compensation can be supplied here
