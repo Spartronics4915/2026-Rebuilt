@@ -225,7 +225,7 @@ public final class Constants {
                         new TalonFXConfiguration()
                             .withCurrentLimits(
                                 new CurrentLimitsConfigs()
-                                    .withStatorCurrentLimit(Amps.of(80))
+                                    .withStatorCurrentLimit(Amps.of(60))
                                     .withStatorCurrentLimitEnable(true)
                             )
                     )
@@ -361,7 +361,7 @@ public final class Constants {
         public static final double yawRecomputeThreshold = 1e-4;
 
         public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.44;
+            public static final double baseXYStdDev = 0.41;
             public static final double baseThetaStdDev = 0.79;
             public static final double ambiguityWeight = 0.7;
             public static final double areaWeight = 0.6;
@@ -496,7 +496,7 @@ public final class Constants {
         public static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
         public static final double PIVOT_JOSTLE_FREQUENCY = 1.0; // Hz
 
-        public static final double percentLoss = 0.1070; // Percent loss on shooter to ball transfer, 0.1071
+        public static final double percentLoss = 0.10695; // Percent loss on shooter to ball transfer, 0.1071
 
         public static final int feederLC = 42;
         public static final double detectDistance = 140.0;
@@ -739,8 +739,8 @@ public final class Constants {
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.22226;
-        public static final double A = 67.0318; //0.70318
-        public static final double S = 1.63135;
+        public static final double A = 37.0318; //0.70318
+        public static final double S = 1.53135;
 
         public static final double MAX_RPS = 22.0; // 13.238
 

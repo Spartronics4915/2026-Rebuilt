@@ -61,7 +61,6 @@ public class Robot extends TimedRobot {
 
         if (Robot.isReal()) {
             DataLogManager.start();
-            DriverStation.startDataLog(DataLogManager.getLog(), true);
         }
 
         NetworkTable metaData = NetworkTableInstance.getDefault().getTable("Metadata");
