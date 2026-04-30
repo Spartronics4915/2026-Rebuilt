@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.photonvision.PhotonCamera;
+import org.photonvision.simulation.PhotonCameraSim;
 import org.photonvision.simulation.VisionSystemSim;
 
 import com.spartronics4915.frc2026.Constants.VisionConstants;
@@ -146,20 +147,17 @@ public class VisionSubsystem extends SubsystemBase {
 
     private void startCamera(ProcessorInterface camera) {
         camera.start();
-        if (isSimulation) {
-            camera.getCameraSim().ifPresent(sim -> {
+        if (isSimulation && visionSystemSim != null) {
+            PhotonCameraSim sim = camera.getCameraSim().get();
                 visionSystemSim.addCamera(sim, camera.getCameraTransform());
                 sim.enableDrawWireframe(false);
                 sim.enableProcessedStream(false);
                 sim.enableRawStream(false);
-            });
         }
     }
 
     @Override
     public void periodic() {
-        double fpgaTimestamp = Timer.getFPGATimestamp();
-
         if (swerve != null) {
             double robotHeading = swerve.getGyroRotation3d().toRotation2d().getDegrees();
             cameras.forEach(camera -> {
