@@ -101,23 +101,23 @@ public class DriveCommand extends Command {
             yState.velocity = swerve.getFieldVelocity().vyMetersPerSecond;
         }
 
-        if (limitMode != SpeedLimitMode.OFF) {
-            // If the mode just changed, reset the limiters for the new mode so we
-            // don't snap to the wrong rate or carry over stale state.
-            if (limitMode != lastLimitMode) {
-                getLimiterFromMode(limitMode).resetAll(vX, vY, omega);
-            }
+        //if (limitMode != SpeedLimitMode.OFF) {
+        //    // If the mode just changed, reset the limiters for the new mode so we
+        //    // don't snap to the wrong rate or carry over stale state.
+        //    if (limitMode != lastLimitMode) {
+        //        getLimiterFromMode(limitMode).resetAll(vX, vY, omega);
+        //    }
 
-            double[] limited = getLimiterFromMode(limitMode).limit(vX, vY, omega);
-                vX = limited[0];
-                vY = limited[1];
-                omega = limited[2];
-        } else {
-            // Reset both sets of limiters to current velocity so there is no
-            // sudden lurch when a limit mode is first engaged.
-            hubLimiter.resetAll(vX, vY, omega);
-            ferryLimiter.resetAll(vX, vY, omega);
-        }
+        //    double[] limited = getLimiterFromMode(limitMode).limit(vX, vY, omega);
+        //        vX = limited[0];
+        //        vY = limited[1];
+        //        omega = limited[2];
+        //} else {
+        //    // Reset both sets of limiters to current velocity so there is no
+        //    // sudden lurch when a limit mode is first engaged.
+        //    hubLimiter.resetAll(vX, vY, omega);
+        //    ferryLimiter.resetAll(vX, vY, omega);
+        //}
 
         lastLimitMode = limitMode;
 

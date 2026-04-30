@@ -90,6 +90,8 @@ public class Superstructure extends SubsystemBase {
             System.err.println("Error initializing LaserCan: " + e.getMessage());
         }
 
+        driveCommand.setSpeedLimit(SpeedLimitMode.OFF);
+
         configureTriggers();
     }
 
@@ -166,17 +168,6 @@ public class Superstructure extends SubsystemBase {
         if (newZone != currentZone) {
             currentZone = newZone;
             zonePublisher.accept(currentZone.name());
-        }
-
-        // Apply a speed limit while ready-to-shoot to help the turret track cleanly.
-        if (controller.isTryingToShoot()) {
-            if (controller.isPassTarget()) {
-                driveCommand.setSpeedLimit(SpeedLimitMode.FERRY);
-            } else {
-                driveCommand.setSpeedLimit(SpeedLimitMode.HUB);
-            }
-        } else {
-            driveCommand.setSpeedLimit(SpeedLimitMode.OFF);
         }
 
         Pose2d pose = swerve.getPose();
