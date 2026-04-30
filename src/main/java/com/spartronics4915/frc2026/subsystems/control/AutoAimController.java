@@ -261,9 +261,9 @@ public class AutoAimController extends SubsystemBase {
             Rotation2d recommendedAngle = null;
             if (DriverStation.isAutonomous()) {
                 if (swerve.getRelativePose().getY() > hubPose.getY()) {
-                    recommendedAngle = Rotation2d.fromDegrees(-45);
+                    recommendedAngle = Rotation2d.fromDegrees(90);
                 } else {
-                    recommendedAngle = Rotation2d.fromDegrees(45);
+                    recommendedAngle = Rotation2d.fromDegrees(-90);
                 }
             }
 
