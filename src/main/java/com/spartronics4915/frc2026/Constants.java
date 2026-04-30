@@ -382,7 +382,7 @@ public final class Constants {
 
         public static final class FusionConstants {
             public static final boolean enabled = true;
-            public static final double timestampThresholdSecs = 0.01;
+            public static final double timestampThresholdSecs = 0.02;
             public static final int minCameras = 2;
 
             /**
@@ -437,6 +437,10 @@ public final class Constants {
                 //    new StdDevCalculator(), 
                 //    30.0
                 //)
+                new PhotonProcessor(
+                    "evan", apriltagFieldLayout, frontTowerCamTransform,
+                    new StdDevCalculator(), simCameraProperties, 20.0
+                )
             );
 
             /**
@@ -444,10 +448,6 @@ public final class Constants {
              * valid pose.
              */
             public static final List<ProcessorInterface> fallbackCameras = List.of(
-                new PhotonProcessor(
-                    "evan", apriltagFieldLayout, frontTowerCamTransform,
-                    new StdDevCalculator(), simCameraProperties, 20.0
-                ),
                 new PhotonProcessor(
                     "val", apriltagFieldLayout, backTowerCamTransform,
                     new StdDevCalculator(), simCameraProperties, 20.0
