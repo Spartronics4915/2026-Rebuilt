@@ -93,8 +93,8 @@ public final class Constants {
 
     public static final class SwerveConstants {
 
-        public static final double maxSpeed = 10.12; // 5.12, should probably increase
-        public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(10); // 6, should probably increase
+        public static final double maxSpeed = 9.12; // 5.12, should probably increase
+        public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(8); // 6, should probably increase
 
         /**
          * Speed limits applied while shooting at the hub (tight precision required).
