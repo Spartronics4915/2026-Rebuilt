@@ -124,8 +124,8 @@ public class VisionSubsystem extends SubsystemBase {
         this.fusionEngine = new PoseFusionEngine();
         this.resultFilter = buildFilter(swerve);
 
-        this.visionSystemSim = new VisionSystemSim("main");
         this.isSimulation = Robot.isSimulation();
+        this.visionSystemSim = (isSimulation) ? new VisionSystemSim("main") : null;
 
         if (isSimulation) {
             visionSystemSim.addAprilTags(fieldLayout);
@@ -181,7 +181,7 @@ public class VisionSubsystem extends SubsystemBase {
         if (primaryValid) publishDiagnostics(primaryFused);
         else if (fallbackValid) publishDiagnostics(fallbackFused);
 
-        if (isSimulation && swerve != null) {
+        if (isSimulation && swerve != null && visionSystemSim != null) {
             visionSystemSim.update(swerve.getPose());
         }
     }
