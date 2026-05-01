@@ -846,6 +846,7 @@ public final class Constants {
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
             .withSupplyCurrentLimit(CURRENT_LIMIT)
+            .withStatorCurrentLimit(160)
             .withSupplyCurrentLowerLimit(LOWER_LIMIT)
             .withSupplyCurrentLowerTime(LOWER_TIME);
 
