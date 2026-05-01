@@ -370,8 +370,7 @@ public final class Constants {
 
         public static final class FilterConstants {
             public static final double maxLatencyMs = 90.0;
-            public static final double maxSingleTagDistanceMeters = 6.0;
-            public static final double maxMultiTagDistanceMeters = 11.0;
+            public static final double maxSingleTagDistanceMeters = 7.0;
             public static final double maxAmbiguity = 0.18;
             public static final double minArea = 0.04;
             public static final double maxArea = 0.96;
@@ -643,7 +642,7 @@ public final class Constants {
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 50.625;
 
-        public static final double MAGNET_OFFSET = -0.398193;
+        public static final double MAGNET_OFFSET = 1.283203;
         public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.CounterClockwise_Positive;
 
         public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(-2);
