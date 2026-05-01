@@ -22,5 +22,6 @@ public interface ResultInterface {
     int getTargetCount();
     double getAmbiguity();
     double getAverageArea();
+    double getAvgDistance();
     
 }

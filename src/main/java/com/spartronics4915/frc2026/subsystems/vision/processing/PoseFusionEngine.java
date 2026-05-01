@@ -213,7 +213,8 @@ public class PoseFusionEngine {
             fusedStdDevScratch,
             tagScratch,
             sumAmbiguity * invN,
-            sumArea * invN
+            sumArea * invN,
+            0.0
         );
 
         return Optional.of(fusedResult);

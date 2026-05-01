@@ -238,7 +238,8 @@ public class LimelightProcessor implements ProcessorInterface {
             finalStdDevs, 
             tagScratch, 
             avgAmbiguity, 
-            avgAreaFraction
+            avgAreaFraction,
+            0.0
         );
 
         queue(pooledResult);

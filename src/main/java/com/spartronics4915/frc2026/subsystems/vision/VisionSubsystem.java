@@ -26,7 +26,6 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
@@ -36,7 +35,6 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 // sim.enableDrawWireframe(false);
@@ -225,6 +223,7 @@ public class VisionSubsystem extends SubsystemBase {
             filter.add(new ResultFilters.LatencyFilter(FilterConstants.maxLatencyMs));
             filter.add(new ResultFilters.AmbiguityFilter(FilterConstants.maxAmbiguity));
             filter.add(new ResultFilters.AreaFilter(FilterConstants.minArea, FilterConstants.maxArea));
+            filter.add(new ResultFilters.DistanceFilter(FilterConstants.maxSingleTagDistanceMeters));
         if (FilterConstants.maxOdometryDeviationMeters < Double.MAX_VALUE) {
             filter.add(
                 new ResultFilters.OdometryOutlierFilter(

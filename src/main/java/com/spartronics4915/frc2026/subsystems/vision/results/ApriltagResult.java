@@ -34,6 +34,7 @@ public class ApriltagResult implements ResultInterface {
     private int targetCount = 0;
     private double avgAmbiguity = 0.0;
     private double avgArea = 0.0;
+    private double avgDistance = 0.0;
 
     /** No-arg constructor for pre-allocation in pools. */
     public ApriltagResult() {
@@ -54,7 +55,8 @@ public class ApriltagResult implements ResultInterface {
         Matrix<N3, N1> resultStdDevs,
         List<TrackedTag> tags,
         double averageAmbiguity,
-        double averageArea
+        double averageArea,
+        double averageDistance
     ) {
         this.sourceName = Objects.requireNonNullElse(name, "Unknown");
         this.timestampSeconds = timestamp;
@@ -80,6 +82,7 @@ public class ApriltagResult implements ResultInterface {
         this.targetCount = this.trackedTagsMutable.size();
         this.avgAmbiguity = averageAmbiguity;
         this.avgArea = averageArea;
+        this.avgDistance = averageDistance;
     }
 
     @Override public String getSourceName() {
@@ -116,6 +119,10 @@ public class ApriltagResult implements ResultInterface {
 
     @Override public double getAverageArea() {
         return avgArea;
+    }
+
+    @Override public double getAvgDistance() {
+        return avgDistance;
     }
 
 }
