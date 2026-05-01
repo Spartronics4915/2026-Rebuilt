@@ -295,12 +295,8 @@ public class PhotonProcessor implements ProcessorInterface {
 
     private static double calculateAmbiguity(List<PhotonTrackedTarget> targets) {
         if (targets.size() == 1) return targets.get(0).getPoseAmbiguity();
-        double min = 0.01;
-        for (int i = 0, n = targets.size(); i < n; i++) {
-            double a = targets.get(i).getPoseAmbiguity();
-            if (a >= 0 && a < min) min = a;
-        }
-        return min / Math.sqrt(targets.size());
+        // Multi-tag pose estimation is unambiguous (no pose ambiguity)
+        return 0.0;
     }
 
     private static double calculateAverageArea(List<PhotonTrackedTarget> targets) {
