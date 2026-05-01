@@ -266,6 +266,12 @@ public class RobotContainer {
             })
         );
 
+        operatorController.rightStick().onTrue(
+            Commands.runOnce(() -> {
+                pivotSubsystem.resetMechanism(Rotation2d.kZero);
+            })
+        );
+
         SmartDashboard.putData("Pivot Reset", Commands.runOnce(() -> pivotSubsystem.resetMechanism(Rotation2d.kZero)));
 
         operatorController.leftTrigger().onTrue(
