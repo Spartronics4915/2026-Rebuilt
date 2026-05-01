@@ -440,14 +440,7 @@ public final class Constants {
                 new PhotonProcessor(
                     "evan", apriltagFieldLayout, frontTowerCamTransform,
                     new StdDevCalculator(), simCameraProperties, 20.0
-                )
-            );
-
-            /**
-             * Fallback cameras, used only when the primary pipeline produces no
-             * valid pose.
-             */
-            public static final List<ProcessorInterface> fallbackCameras = List.of(
+                ),
                 new PhotonProcessor(
                     "val", apriltagFieldLayout, backTowerCamTransform,
                     new StdDevCalculator(), simCameraProperties, 20.0
@@ -457,6 +450,12 @@ public final class Constants {
                     new StdDevCalculator(), simCameraProperties, 20.0
                 )
             );
+
+            /**
+             * Fallback cameras, used only when the primary pipeline produces no
+             * valid pose.
+             */
+            public static final List<ProcessorInterface> fallbackCameras = List.of();
         }
     }
 
