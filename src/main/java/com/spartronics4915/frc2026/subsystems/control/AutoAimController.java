@@ -209,13 +209,34 @@ public class AutoAimController extends SubsystemBase {
             autoAim.setCollisionMap(null, null);
         }
 
+        ChassisSpeeds adjFieldSpeeds;
+        ChassisSpeeds adjFieldAccelerations;
+        if (!isPassTarget()) {
+            adjFieldSpeeds = lastFieldSpeeds;
+            adjFieldAccelerations = fieldAccelerations;
+        } else if (swerve.getRelativePose().getX() > centerPose.minus(hubPose).times(2).plus(hubPose).getX()) {
+            adjFieldSpeeds = multiTransOfSpeeds(lastFieldSpeeds, 0.0);
+            adjFieldAccelerations = multiTransOfSpeeds(fieldAccelerations, 0.0);
+        } else {
+            adjFieldSpeeds = multiTransOfSpeeds(lastFieldSpeeds, 0.5);
+            adjFieldAccelerations = multiTransOfSpeeds(fieldAccelerations, 0.5);
+        }
+
         return autoAim.calculateDynamicAim(
             swerve.getSmoothedRelativePose(),
-            lastFieldSpeeds.div(isPassTarget() ? 2.0 : 1.0),
-            fieldAccelerations.div(isPassTarget() ? 2.0 : 1.0),
+            adjFieldSpeeds,
+            adjFieldAccelerations,
             target,
             RPSToMPS(flywheelFilter.calculate(Robot.isSimulation() ? shooter.getCurrentSetpoint() : shooter.getCurrentRPS())),
             processingCompensation // Dynamic processing compensation can be supplied here
+        );
+    }
+
+    public static ChassisSpeeds multiTransOfSpeeds(ChassisSpeeds speeds, double scalar) {
+        return new ChassisSpeeds(
+            speeds.vxMetersPerSecond * scalar,
+            speeds.vyMetersPerSecond * scalar,
+            speeds.omegaRadiansPerSecond
         );
     }
 
