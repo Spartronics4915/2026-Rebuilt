@@ -362,7 +362,7 @@ public final class Constants {
 
         public static final class StdDevConstants {
             public static final double baseXYStdDev = 0.41;
-            public static final double baseThetaStdDev = 0.77;
+            public static final double baseThetaStdDev = 0.58;
             public static final double ambiguityWeight = 0.7;
             public static final double areaWeight = 0.6;
             public static final double latencyWeight = 0.2;
@@ -373,7 +373,7 @@ public final class Constants {
             public static final double maxSingleTagDistanceMeters = 7.0;
             public static final double maxAmbiguity = 0.18;
             public static final double minArea = 0.04;
-            public static final double maxArea = 0.96;
+            public static final double maxArea = 10.0;
 
             // Set < Double.MAX_VALUE to enable the odometry-outlier filter.
             public static final double maxOdometryDeviationMeters = Double.MAX_VALUE;
@@ -548,12 +548,12 @@ public final class Constants {
         public static final double IDLE_SHOOTER_RPS = 30.0;
         public static final double maxShooterDecel = -12.0;
 
-        public static final double P = 0.4;
+        public static final double P = 0.46;
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.115;
-        public static final double A = 1000.0;
-        public static final double S = 0.2;
+        public static final double A = 20000.0;
+        public static final double S = 0.22;
 
         public static final boolean CURRENT_LIMIT_ENABLE = false;
         public static final double CURRENT_LIMIT = 80;
