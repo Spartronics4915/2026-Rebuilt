@@ -552,7 +552,7 @@ public final class Constants {
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.115;
-        public static final double A = 20000.0;
+        public static final double A = 30000.0;
         public static final double S = 0.22;
 
         public static final boolean CURRENT_LIMIT_ENABLE = false;
