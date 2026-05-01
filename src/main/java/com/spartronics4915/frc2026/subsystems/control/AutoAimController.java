@@ -17,7 +17,7 @@ import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
 
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
-import edu.wpi.first.math.filter.LinearFilter;
+import edu.wpi.first.math.filter.MedianFilter;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -93,11 +93,11 @@ public class AutoAimController extends SubsystemBase {
     private ChassisSpeeds lastFieldSpeeds = new ChassisSpeeds();
     private ChassisSpeeds fieldAccelerations = new ChassisSpeeds();
     
-    private final LinearFilter accelFilterX = LinearFilter.movingAverage(5);
-    private final LinearFilter accelFilterY = LinearFilter.movingAverage(5);
-    private final LinearFilter accelFilterOmega = LinearFilter.movingAverage(5);
+    private final MedianFilter accelFilterX = new MedianFilter(5);
+    private final MedianFilter accelFilterY = new MedianFilter(5);
+    private final MedianFilter accelFilterOmega = new MedianFilter(5);
 
-    private final LinearFilter flywheelFilter = LinearFilter.movingAverage(15);
+    private final MedianFilter flywheelFilter = new MedianFilter(10);
 
     private final BooleanPublisher isAimEnabledPublisher = NetworkTableInstance.getDefault()
             .getBooleanTopic("superstructure/AutoAim/AimEnabled").publish();
