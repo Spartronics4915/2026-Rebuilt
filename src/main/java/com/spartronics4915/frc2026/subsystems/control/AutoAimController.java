@@ -428,7 +428,7 @@ public class AutoAimController extends SubsystemBase {
                 && hasValidResult()
                 && meetsFiringConditions(lastResult)
             ) {
-                return shooter.getCurrentRPS() / shooter.getCurrentSetpoint() >= 1.0 - manualShooterLeniency;
+                return shooter.getCurrentRPS() / shooter.getCurrentSetpoint() >= 1.0 - ferryingShooterLeniency;
             } else {
                 return false;
             }
