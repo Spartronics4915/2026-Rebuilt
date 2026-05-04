@@ -38,25 +38,17 @@ jobs:
             - name: Update libstdc++ for GLIBCXX_3.4.32
               id: update_lib
               run: |
-                  # Dynamically fetch the latest gcc-13 libstdc++6 from the ubuntu-toolchain-r PPA since versions update frequently
-                  PPA_URL="https://ppa.launchpadcontent.net/ubuntu-toolchain-r/test/ubuntu/pool/main/g/gcc-13/"
-                  DEB_FILE=$(wget -qO- "$PPA_URL" | grep -o 'href="libstdc++6_13[^"]*amd64\.deb"' | cut -d'"' -f2 | tail -n 1)
-                  
-                  if [ -z "$DEB_FILE" ]; then
-                      echo "::warning::Could not find libstdc++6 deb file on Launchpad. Passing step and skipping remainder of job."
-                      echo "**Notice:** Could not validate the commit (failed to download libstdc++ manually due to network timeouts). The rest of the job has been skipped." >> "$GITHUB_STEP_SUMMARY"
+                  if ! (
+                      sudo apt-get update -y &&
+                      sudo apt-get install software-properties-common -y &&
+                      for i in {1..5}; do sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && break || sleep 15; done &&
+                      sudo apt-get update -y &&
+                      sudo apt-get install --only-upgrade libstdc++6 -y
+                  ); then
+                      echo "::warning::Could not update libstdc++ from Launchpad (network timeout). Passing step and skipping remainder of job."
+                      echo "**Notice:** Could not validate the commit (failed to update libstdc++ due to apt network timeouts). The rest of the job has been skipped." >> "$GITHUB_STEP_SUMMARY"
                       echo "SKIP_JOB=true" >> "$GITHUB_ENV"
                       exit 0
-                  fi
-                  
-                  wget --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 -t 10 "$PPA_URL$DEB_FILE" -O libstdc++6.deb
-                  sudo dpkg -i libstdc++6.deb || true
-                  
-                  # Optional: also grab the libgcc_s1 dependency frequently needed by gcc-13
-                  GCC_DEB_FILE=$(wget -qO- "$PPA_URL" | grep -o 'href="libgcc-s1_13[^"]*amd64\.deb"' | cut -d'"' -f2 | tail -n 1)
-                  if [ -n "$GCC_DEB_FILE" ]; then
-                      wget --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 -t 10 "$PPA_URL$GCC_DEB_FILE" -O libgcc.deb || true
-                      sudo dpkg -i libgcc.deb || true
                   fi
 
             - name: Compile and run tests on robot code
