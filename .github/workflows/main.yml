@@ -38,13 +38,13 @@ jobs:
             - name: Update libstdc++ for GLIBCXX_3.4.32
               id: update_lib
               run: |
-                  if ! (
-                      sudo apt-get update -y &&
-                      sudo apt-get install software-properties-common -y &&
-                      for i in {1..5}; do sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && break || sleep 15; done &&
-                      sudo apt-get update -y &&
-                      sudo apt-get install --only-upgrade libstdc++6 -y
-                  ); then
+                  sudo apt-get update -y || true
+                  sudo apt-get install software-properties-common -y || true
+                  for i in {1..5}; do sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && break || sleep 15; done || true
+                  sudo apt-get update -y || true
+                  sudo apt-get install --only-upgrade libstdc++6 -y || true
+
+                  if ! strings /lib/x86_64-linux-gnu/libstdc++.so.6 | grep -q GLIBCXX_3.4.32; then
                       echo "::warning::Could not update libstdc++ from Launchpad (network timeout). Passing step and skipping remainder of job."
                       echo "**Notice:** Could not validate the commit (failed to update libstdc++ due to apt network timeouts). The rest of the job has been skipped." >> "$GITHUB_STEP_SUMMARY"
                       echo "SKIP_JOB=true" >> "$GITHUB_ENV"
