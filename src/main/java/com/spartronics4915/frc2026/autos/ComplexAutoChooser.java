@@ -35,11 +35,11 @@ public class ComplexAutoChooser {
         R_TRENCH_TO_NEUTRAL("RT -> N", READY_TO_INTAKE),
         R_BUMP_TO_NEUTRAL("RB -> N", READY_TO_INTAKE),
 
-        INTAKE_QUARTER("I Quarter", DIST_SELECT),
-        INTAKE_HALF("I Half", DIST_SELECT),
-        INTAKE_HAIRPIN("I Quarter (w/ Hairpin)", WITHIN_NEUTRAL),
-        INTAKE_INVERTED_QUARTER("I Inverted Quarter", DIST_SELECT),
-        INTAKE_MIDDLE("I Middle", WITHIN_NEUTRAL),
+        INTAKE_QUARTER("I 1/4", DIST_SELECT),
+        INTAKE_HALF("I 1/2", DIST_SELECT),
+        INTAKE_HAIRPIN("I 1/4 (w/ Hairpin)", WITHIN_NEUTRAL),
+        INTAKE_INVERTED_QUARTER("I Inverted 1/4", DIST_SELECT),
+        INTAKE_MIDDLE("I Mid", WITHIN_NEUTRAL),
 
         INTAKE_CLOSE("Intake Close", WITHIN_NEUTRAL),
         INTAKE_NORMAL("Intake Normal", WITHIN_NEUTRAL),
