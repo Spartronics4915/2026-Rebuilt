@@ -304,6 +304,25 @@ public class NeutralZoneAutos {
         }, Set.of(swerve));
     }
 
+    public Command generateStopCommand(boolean isRightSide) {
+        return Commands.defer(() -> {
+            double sideMultiplier = isRightSide ? -1 : 1;
+            Translation2d endOffset = centerPose.plus(new Translation2d(
+                -0.25,
+                3.5 * sideMultiplier
+            ));
+
+            Pose2d stopPoint = new Pose2d(endOffset, Rotation2d.kZero);
+
+            List<PathElement> pathElements = new ArrayList<>(List.of(
+                new Path.Waypoint(stopPoint)
+            ));
+
+            Path path = new Path(pathElements);
+            return Autos.build(path);
+        }, Set.of(swerve));
+    }
+
     public Command generateMiddleCommand() { // Sota Bots tech
         return Commands.defer(() -> {
             Translation2d endOffset = new Translation2d(

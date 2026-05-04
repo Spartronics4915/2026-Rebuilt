@@ -41,6 +41,7 @@ public class ComplexAutoChooser {
         INTAKE_INVERTED_QUARTER("I Inverted 1/4", DIST_SELECT),
         INTAKE_MIDDLE("I Mid", WITHIN_NEUTRAL),
         INTAKE_SHORT("I 1/8", DIST_SELECT),
+        STOP("Stop", NONE),
 
         INTAKE_CLOSE("Intake Close", WITHIN_NEUTRAL),
         INTAKE_NORMAL("Intake Normal", WITHIN_NEUTRAL),
@@ -75,7 +76,7 @@ public class ComplexAutoChooser {
      * Enum used to shorten (and remove enum loop) of the AutoSegment enum.
      */
     public enum AllowedTransitions {
-        READY_TO_INTAKE(() -> new AutoSegment[]{INTAKE_QUARTER, INTAKE_HALF, INTAKE_HAIRPIN, INTAKE_INVERTED_QUARTER, INTAKE_MIDDLE, INTAKE_SHORT}),
+        READY_TO_INTAKE(() -> new AutoSegment[]{INTAKE_QUARTER, INTAKE_HALF, INTAKE_HAIRPIN, INTAKE_INVERTED_QUARTER, INTAKE_MIDDLE, STOP, INTAKE_SHORT}),
         DIST_SELECT(() -> new AutoSegment[]{INTAKE_CLOSE, INTAKE_NORMAL, INTAKE_FAR}),
         WITHIN_NEUTRAL(() -> new AutoSegment[]{L_TRENCH_TO_ALLIANCE, L_BUMP_TO_ALLIANCE, R_TRENCH_TO_ALLIANCE, R_BUMP_TO_ALLIANCE}),
         WITHIN_ALLIANCE(() -> new AutoSegment[]{L_TRENCH_TO_NEUTRAL, L_BUMP_TO_NEUTRAL, R_TRENCH_TO_NEUTRAL, R_BUMP_TO_NEUTRAL, DEPOT, OUTPOST, /* TOWER, */ PAUSE, ALT_PAUSE}),
@@ -284,6 +285,10 @@ public class ComplexAutoChooser {
 
                 case INTAKE_SHORT:
                     commands.add(neutralZoneFactory.generateShortCommand(isRight(prevSegment), PreAlignment.convertToTraversalMethod(prevSegment).isTrench, intakeShift));
+                    break;
+
+                case STOP:
+                    commands.add(neutralZoneFactory.generateStopCommand(isRight(prevSegment)));
                     break;
 
                 case L_TRENCH_TO_ALLIANCE:
