@@ -422,6 +422,18 @@ public class AutoAimController extends SubsystemBase {
 
     /** True when the shot is solvable AND the current flywheel speed is sufficient. */
     public boolean isReadyToShoot() {
+        if (isPassTarget()) {
+            if (
+                !turretController.isWrapping()
+                && hasValidResult()
+                && meetsFiringConditions(lastResult)
+            ) {
+                return shooter.getCurrentRPS() / shooter.getCurrentSetpoint() >= 1.0 - manualShooterLeniency;
+            } else {
+                return false;
+            }
+        }
+
         // Check if the manual shooter is within the allowed leniency as well as that it's commanded to shoot (since we can't check with the auto-aim system if the shot is possible)
         if (activeManualOverride != null && shootOverride) {
             return shooter.getCurrentRPS() / shooter.getCurrentSetpoint() >= 1.0 - manualShooterLeniency;
