@@ -32,7 +32,7 @@ public class NeutralZoneAutos {
     public enum IntakeShift {
         CLOSE(-1.5),
         NORMAL(0),
-        FAR(0.4);
+        FAR(0.3);
 
         private double shiftDist;
 
