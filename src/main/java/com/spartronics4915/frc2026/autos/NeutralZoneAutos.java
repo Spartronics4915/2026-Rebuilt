@@ -101,6 +101,54 @@ public class NeutralZoneAutos {
         }, Set.of(swerve));
     }
 
+    public Command generateShortCommand(boolean isRightSide, boolean fromTrench, IntakeShift intakeShift) {
+        return Commands.defer(() -> {
+            double sideMultiplier = isRightSide ? -1 : 1;
+            Rotation2d rotation = Rotation2d.fromDegrees(isRightSide ? 90 : -90);
+
+            Translation2d offsetFromCenter = new Translation2d(
+                -robotWidth.in(Meters) / 2 - paddingFromOp.in(Meters) + intakeShift.shiftDist,
+                (robotLength.in(Meters) / 2) * sideMultiplier
+            );
+
+            Pose2d intakeStart = new Pose2d(
+                centerPose.plus(offsetFromCenter).plus(fuelIntakeTransform.times(sideMultiplier * (fromTrench ? 1 : 0.45))),
+                rotation
+            );
+            Pose2d quadrantEnd = new Pose2d(
+                centerPose.plus(offsetFromCenter).plus(
+                    new Translation2d(
+                        0, 
+                        paddingFromCenter.in(Meters) + 1 // The +1 makes this shorter than the quadrant command, otherwise they're exactly the same
+                    ).times(sideMultiplier)
+                ), 
+                rotation
+            );
+
+            List<PathElement> pathElements = new ArrayList<>(List.of(
+                new Path.Waypoint(swerve.getRelativePose()),
+                new Path.RotationTarget(
+                    intakeStart.getRotation(), 
+                    0.75
+                ),
+                new Path.Waypoint(intakeStart, 1.4),
+                new Path.Waypoint(quadrantEnd)
+            ));
+
+            Path.PathConstraints constraints = Autos.combineConstraints(
+                Autos.generatePathConstraintZone(driveToCenterConstraints, 0, 1),
+                Autos.generatePathConstraintZone(intakePathConstraints, 1, 2)
+            );
+
+            Path path = new Path(
+                pathElements,
+                constraints
+            );
+
+            return Autos.build(path, quadrantEnd.getTranslation().minus(intakeStart.getTranslation()).getAngle(), swerve);
+        }, Set.of(swerve));
+    }
+
     public Command generateHairpinCommand(boolean isRightSide, boolean fromTrench) {
         return Commands.defer(() -> {
             double sideMultiplier = isRightSide ? -1 : 1;
