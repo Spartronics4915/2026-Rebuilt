@@ -162,11 +162,13 @@ public class RobotContainer {
         //     climberSubsystem.setStateCommand(ClimberState.JORBIT)
         // );
 
-        //driverController.povUp().whileTrue(
-        //    Commands.run(() -> {
-        //        swerveSubsystem.drive(driverNudgeUp);
-        //    })
-        //);
+        // driverController.povDown().onTrue(
+        //     climberSubsystem.setStateCommand(ClimberState.DOWN)
+        // );
+
+        driverController.povUp().whileTrue(
+            Commands.run(() -> swerveSubsystem.drive(driverNudgeUp))
+        );
 
         driverController.povLeft().whileTrue(
             Commands.run(() -> swerveSubsystem.drive(driverNudgeLeft), swerveSubsystem)
@@ -176,15 +178,9 @@ public class RobotContainer {
             Commands.run(() -> swerveSubsystem.drive(driverNudgeRight), swerveSubsystem)
         );
 
-        // driverController.povDown().onTrue(
-        //     climberSubsystem.setStateCommand(ClimberState.DOWN)
-        // );
-
-        //driverController.povDown().whileTrue(
-        //    Commands.run(() -> {
-        //        swerveSubsystem.drive(driverNudgeDown);
-        //    })
-        //);
+        driverController.povDown().whileTrue(
+            Commands.run(() -> swerveSubsystem.drive(driverNudgeDown))
+        );
 
         driverController.leftBumper().onTrue(
             Commands.runOnce(() -> {
