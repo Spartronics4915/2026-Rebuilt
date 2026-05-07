@@ -134,7 +134,7 @@ public class SwerveSubsystem extends SubsystemBase {
                 new Pose2d(config.modules[2].LocationX, config.modules[2].LocationY, Rotation2d.kZero),
                 new Pose2d(config.modules[3].LocationX, config.modules[3].LocationY, Rotation2d.kZero)
             };
-            bumpSim = new BumpSim(modulePoses, 20, 0.1);
+            bumpSim = new BumpSim(modulePoses);
         } else {
             bumpSim = null;
         }

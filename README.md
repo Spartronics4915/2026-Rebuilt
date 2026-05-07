@@ -9,14 +9,10 @@ First we re, then we built. LET'S REBUILT!
 | Left Stick | Drive |
 | Right Stick | Rotate |
 | Left Trigger | X Brake Swerve |
-| Right Trigger | Face Towards Velocity Heading |
-| A | Set Forward Pos heading |
+| A | Reset Heading Offset |
 | B | Toggle Field Relative |
-| Y | Auto climb |
 | L / R Bumpers | Align To Left / Right Trench |
-| D-pad L/R | Nudge Swerve |
-| D-pad U/D | Climber Up / Down |
-
+| D-pad | Nudge Swerve |
 
 
 ### Operator Controller
@@ -30,7 +26,7 @@ First we re, then we built. LET'S REBUILT!
 | X | Toggle Auto Score |
 | Y | Full Stow Intake |
 | D-pad | Corner Presets / Manual Intake Pivot |
-| Left Stick Down | Reset Pivot Position |
+| Any Stick Down | Reset Pivot Position |
 | Menu | Toggle Auto-Aim |
 | Windows | Reset Dynamics |
 
@@ -39,27 +35,12 @@ First we re, then we built. LET'S REBUILT!
 | --- | --- |
 | Left stick | Drive |
 | Right stick | Rotate |
-| A | Set Forward Pos heading |
-| B | Toggle field relative | 
-| Y | Auto climb | 
+| A | Reset Heading Offset |
+| B | Toggle Field Relative |
 | X | Toggle Auto Score |
 | L / R bumpers | Align to Left / Right trench |
 | Left Trigger | Intake |
 | Right Trigger | Shoot |
 | D-pad | Nudge Swerve |
-| Menu | Toggle Auto-Aim | 
+| Menu | Toggle Auto-Aim |
 | Windows | Reset Dynamics |
-
-<!-- ## Driver Communication
-
-### Bling
-| LED Pattern | Meaning |
-| --- | --- |
-| Off | Robot needs to be turned on |
-| Green | 👍 |
-
-### Controller Rumble
-| Controller | Rumble Strength | Meaning |
-| --- | --- | --- |
-| Driver | None | None |
-| Operator | None | None | -->

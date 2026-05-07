@@ -56,6 +56,7 @@ public class DriveToPOI {
             }
 
             switch (poi) {
+                // !CLIMBER! (Some of this code might need to be fixed)
                 // case TOWER: {
                 //     boolean shouldFlip = swerve.getRelativePose().getY() < towerPose.getY();
 

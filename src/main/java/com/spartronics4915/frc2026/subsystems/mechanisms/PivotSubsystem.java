@@ -113,7 +113,6 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
 
     @Override
     public void periodic(){
-        // TODO: Is this even needed with PositionTorqueCurrentFOC control?
         currentState = trapProfile.calculate(
             dtCalc.update(), 
             currentState, 

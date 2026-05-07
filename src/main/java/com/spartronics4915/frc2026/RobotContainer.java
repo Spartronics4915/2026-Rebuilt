@@ -64,7 +64,7 @@ public class RobotContainer {
 
     public final PivotSubsystem pivotSubsystem = new PivotSubsystem();
     public final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
-    // public final ClimberSubsystem climberSubsystem = new ClimberSubsystem();
+    // public final ClimberSubsystem climberSubsystem = new ClimberSubsystem(); // !CLIMBER!
 
     public final IndexerSubsystem indexerSubsystem = new IndexerSubsystem();
     public final FeederSubsystem feederSubsystem = new FeederSubsystem();
@@ -80,7 +80,7 @@ public class RobotContainer {
     );
     
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
-    private final DriveToPOI POIFactory = new DriveToPOI(swerveSubsystem, null);
+    private final DriveToPOI POIFactory = new DriveToPOI(swerveSubsystem, null); // !CLIMBER!
     private final NeutralZoneAutos neutralZoneFactory = new NeutralZoneAutos(swerveSubsystem);
     private final PreAlignment preAlignmentFactory = new PreAlignment(swerveSubsystem);
 
@@ -97,7 +97,7 @@ public class RobotContainer {
         feederSubsystem, 
         indexerSubsystem, 
         shooterSubsystem, 
-        null, 
+        null, // !CLIMBER!
         intakeSubsystem,
         pivotSubsystem, 
         autoAimController
@@ -158,15 +158,18 @@ public class RobotContainer {
         ChassisSpeeds driverNudgeRight = new ChassisSpeeds(0, -0.25, 0);
         ChassisSpeeds driverNudgeDown = new ChassisSpeeds(-0.25, 0, 0);
 
+        // !CLIMBER! (remove the conflicting nudge commands)
         // driverController.povUp().onTrue(
         //     climberSubsystem.setStateCommand(ClimberState.JORBIT)
         // );
 
-        //driverController.povUp().whileTrue(
-        //    Commands.run(() -> {
-        //        swerveSubsystem.drive(driverNudgeUp);
-        //    })
-        //);
+        // driverController.povDown().onTrue(
+        //     climberSubsystem.setStateCommand(ClimberState.DOWN)
+        // );
+
+        driverController.povUp().whileTrue(
+            Commands.run(() -> swerveSubsystem.drive(driverNudgeUp))
+        );
 
         driverController.povLeft().whileTrue(
             Commands.run(() -> swerveSubsystem.drive(driverNudgeLeft), swerveSubsystem)
@@ -176,15 +179,9 @@ public class RobotContainer {
             Commands.run(() -> swerveSubsystem.drive(driverNudgeRight), swerveSubsystem)
         );
 
-        // driverController.povDown().onTrue(
-        //     climberSubsystem.setStateCommand(ClimberState.DOWN)
-        // );
-
-        //driverController.povDown().whileTrue(
-        //    Commands.run(() -> {
-        //        swerveSubsystem.drive(driverNudgeDown);
-        //    })
-        //);
+        driverController.povDown().whileTrue(
+            Commands.run(() -> swerveSubsystem.drive(driverNudgeDown))
+        );
 
         driverController.leftBumper().onTrue(
             Commands.runOnce(() -> {
@@ -222,6 +219,7 @@ public class RobotContainer {
             })
         );
 
+        // !CLIMBER!
         // driverController.y().whileTrue(
         //     POIFactory.generateCommand(POI.TOWER)
         // );
@@ -404,6 +402,7 @@ public class RobotContainer {
             autoAimController.shootingToggle()
         );
 
+        // !CLIMBER!
         // debugController.y().whileTrue(
         //     POIFactory.generateCommand(POI.TOWER)
         // );

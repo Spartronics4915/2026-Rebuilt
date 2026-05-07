@@ -94,6 +94,7 @@ public class SuperstructureCommands {
         }, Set.of(indexer, feeder));
     }
 
+    // !CLIMBER!
     // public Command setClimberState(ClimberState state) {
     //     return climber.setStateCommand(state);
     // }
@@ -205,7 +206,7 @@ public class SuperstructureCommands {
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
                 conditionalIntakeOn()
-                // climber.setStateCommand(ClimberState.DOWN)
+                // climber.setStateCommand(ClimberState.DOWN) // !CLIMBER!
             ),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
@@ -223,7 +224,7 @@ public class SuperstructureCommands {
                 hood.setClampCommand(HoodClamp.RESTRICTED),
                 shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
                 conditionalIntakeOn()
-                // climber.setStateCommand(ClimberState.DOWN)
+                // climber.setStateCommand(ClimberState.DOWN) // !CLIMBER!
             ),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
@@ -241,7 +242,7 @@ public class SuperstructureCommands {
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.RESTRICTED),
                 conditionalIntakeOn()
-                // climber.setStateCommand(ClimberState.DOWN)
+                // climber.setStateCommand(ClimberState.DOWN) // !CLIMBER!
             ),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
@@ -259,7 +260,7 @@ public class SuperstructureCommands {
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.UNRESTRICTED),
                 conditionalIntakeOn()
-                // climber.setStateCommand(ClimberState.DOWN)
+                // climber.setStateCommand(ClimberState.DOWN) // !CLIMBER!
             ),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
@@ -277,7 +278,7 @@ public class SuperstructureCommands {
                 conditionalAutoAimOn(),
                 conditionalAutoShootOn(),
                 conditionalIntakeOn()
-                // climber.setStateCommand(ClimberState.DOWN)
+                // climber.setStateCommand(ClimberState.DOWN) // !CLIMBER!
             ),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
@@ -308,7 +309,7 @@ public class SuperstructureCommands {
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.RESTRICTED),
                 pivot.setStateCommand(PivotSubsystem.PivotState.READY)
-                // climber.setStateCommand(ClimberState.DOWN)
+                // climber.setStateCommand(ClimberState.DOWN) // !CLIMBER!
             ),
             Commands.waitUntil(this::isPivotSafe),
             Commands.parallel(
@@ -328,7 +329,7 @@ public class SuperstructureCommands {
             Commands.parallel(
                 hood.setClampCommand(HoodClamp.UNRESTRICTED),
                 shooter.setClampCommand(ShooterClamp.RESTRICTED),
-                // climber.setStateCommand(ClimberState.DOWN),
+                // climber.setStateCommand(ClimberState.DOWN), // !CLIMBER!
                 intake.setStateCommand(IntakeSubsystem.IntakeState.OFF)
             )
         );
@@ -347,7 +348,6 @@ public class SuperstructureCommands {
         return (Robot.isReal() ? pivot.getPosition() : pivot.getSetpoint()).getDegrees() <= pivotSafeThreshold.getDegrees();
     }
 
-    // TODO: Make this work the same as the turret ready check in AutoAimController
     private boolean isTurretSafe() {
         double degrees = turret.getPosition().getDegrees();
         return degrees >= turretMinSafeThreshold.getDegrees() 
