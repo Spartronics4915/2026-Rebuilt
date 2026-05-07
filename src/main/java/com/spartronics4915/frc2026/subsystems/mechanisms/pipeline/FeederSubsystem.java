@@ -32,16 +32,12 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterface {
     
     private LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
-    private LaserCan laserCan = new LaserCan(LASER_ID);
     
     private double currentSetpoint;
     private final VelocityTorqueCurrentFOC velocityTorqueRequest = new VelocityTorqueCurrentFOC(0.0);
 
     private DoubleSupplier distanceToTargetSupplier = null;
     private boolean dynamicSpeedActive = false;
-    
-    private double lastTime = 0.0;    
-    private double ballDetectedPercent = 0.0;
 
     private final TorqueCurrentFOC sysIdControl = new TorqueCurrentFOC(0.0);
     private boolean isCharacterizing = false;
@@ -81,9 +77,6 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         motor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
 
-        new Trigger(() -> isBallDetected())
-            .debounce(0.2, DebounceType.kFalling);
-
         SmartDashboard.putData("Feeder Quasistatic Forward", sysIdQuasistatic(Direction.kForward));
         SmartDashboard.putData("Feeder Quasistatic Reverse", sysIdQuasistatic(Direction.kReverse));
         SmartDashboard.putData("Feeder Dynamic Forward", sysIdDynamic(Direction.kForward));
@@ -93,19 +86,6 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
         SmartDashboard.putData("Feeder Off", setStateCommand(FeederState.OFF));
         SmartDashboard.putData("Feeder Motor", motor);
     }
-
-    private double getCanOutput(){
-        LaserCan.Measurement measurement = laserCan.getMeasurement();
-        if (measurement == null) {
-            return -1;
-        } else{
-            return measurement.distance_mm;
-        }
-    }
-
-    private boolean isBallDetected() {
-        return getCanOutput() <= DETECTION_DISTANCE;
-    };
     
     @Override
     public void periodic() {
@@ -139,15 +119,6 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPM());
         setpointPublisher.accept(currentSetpoint);
-
-        double currentTime = Timer.getFPGATimestamp();
-        double deltaTime = currentTime - lastTime;
-        lastTime = currentTime;
-
-        ballDetectedPercent *= (1 - deltaTime);
-        if(isBallDetected()){
-            ballDetectedPercent += deltaTime;
-        }
     }
 
     public double getCurrentRPM() {
@@ -167,10 +138,6 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     public void setDistanceSupplier(DoubleSupplier supplier) {
         this.distanceToTargetSupplier = supplier;
-    }
-
-    public double getBallPercent(){
-        return ballDetectedPercent;
     }
 
     //#endregion

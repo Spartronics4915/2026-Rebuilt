@@ -711,9 +711,6 @@ public final class Constants {
 
         public static final MotorOutputConfigs MOTOR_OUTPUT_CONFIG = new MotorOutputConfigs()
             .withNeutralMode(NeutralModeValue.Coast);
-        
-        public static final int LASER_ID = 0; 
-        public static final double DETECTION_DISTANCE = 20.0;
 
         public static final InterpolatingDoubleTreeMap feederSpeedMap = new InterpolatingDoubleTreeMap();
             static {
