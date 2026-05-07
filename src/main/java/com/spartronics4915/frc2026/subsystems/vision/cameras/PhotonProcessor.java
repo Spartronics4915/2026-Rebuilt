@@ -212,8 +212,17 @@ public class PhotonProcessor implements ProcessorInterface {
 
         List<PhotonTrackedTarget> targets = rawResult.getTargets();
         int targetCount = targets.size();
-        double avgAmbiguity = calculateAmbiguity(targets);
-        double avgArea = calculateAverageArea(targets);
+        double ambiguity = calculateAmbiguity(targets);
+        double avgArea = 0.0;
+        double avgDistance = 0.0;
+
+        for (int i = 0, n = targets.size(); i < n; i++) {
+            avgArea += targets.get(i).getArea();
+            avgDistance += targets.get(i).bestCameraToTarget.getTranslation().getNorm();
+        }
+
+        avgArea /= targets.size();
+        avgDistance /= targets.size();
 
         Optional<EstimatedRobotPose> poseOpt = (targetCount > 1)
             ? poseEstimator.estimateCoprocMultiTagPose(rawResult)
@@ -222,8 +231,6 @@ public class PhotonProcessor implements ProcessorInterface {
         if (poseOpt.isEmpty()) return null;
 
         EstimatedRobotPose estimatedRobotPose = poseOpt.get();
-
-
         Pose2d poseEstimate = estimatedRobotPose
             .estimatedPose
             .toPose2d();
@@ -232,7 +239,7 @@ public class PhotonProcessor implements ProcessorInterface {
         double latency = rawResult.metadata.getLatencyMillis();
 
         Matrix<N3, N1> calculatedValues = stdDevCalculator.calculate(
-            avgAmbiguity, avgArea, latency, targetCount
+            ambiguity, avgArea, latency, targetCount
         );
 
         for (int i = 0; i < 3; i++) {
@@ -268,8 +275,9 @@ public class PhotonProcessor implements ProcessorInterface {
             poseEstimate,
             finalStdDevs, 
             tagList, 
-            avgAmbiguity, 
-            avgArea
+            ambiguity, 
+            avgArea,
+            avgDistance
         );
 
         return result;
@@ -295,19 +303,8 @@ public class PhotonProcessor implements ProcessorInterface {
 
     private static double calculateAmbiguity(List<PhotonTrackedTarget> targets) {
         if (targets.size() == 1) return targets.get(0).getPoseAmbiguity();
-        double min = 0.01;
-        for (int i = 0, n = targets.size(); i < n; i++) {
-            double a = targets.get(i).getPoseAmbiguity();
-            if (a >= 0 && a < min) min = a;
-        }
-        return min / Math.sqrt(targets.size());
-    }
-
-    private static double calculateAverageArea(List<PhotonTrackedTarget> targets) {
-        if (targets.isEmpty()) return 0.0;
-        double sum = 0.0;
-        for (int i = 0, n = targets.size(); i < n; i++) sum += targets.get(i).getArea();
-        return sum / targets.size();
+        // Multi-tag pose estimation is unambiguous (no pose ambiguity)
+        return 0.0;
     }
 
     private static void fillScaledMultiTagStdDevs(

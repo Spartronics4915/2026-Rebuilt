@@ -3,9 +3,9 @@ package com.spartronics4915.frc2026.subsystems.vision;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import org.photonvision.PhotonCamera;
+import org.photonvision.simulation.PhotonCameraSim;
 import org.photonvision.simulation.VisionSystemSim;
 
 import com.spartronics4915.frc2026.Constants.VisionConstants;
@@ -26,7 +26,6 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
@@ -36,7 +35,6 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 // sim.enableDrawWireframe(false);
@@ -64,8 +62,6 @@ public class VisionSubsystem extends SubsystemBase {
     private final List<ProcessorInterface> primaryCameras;
     private final List<ProcessorInterface> fallbackCameras;
     private final List<ProcessorInterface> cameras;
-
-    private final Supplier<Rotation2d> turretAngleSupplier;
 
     private final PoseFusionEngine fusionEngine;
     private final PipelineFilter resultFilter;
@@ -112,8 +108,7 @@ public class VisionSubsystem extends SubsystemBase {
         VisionPoseConsumer poseConsumer,
         SwerveSubsystem swerve,
         List<ProcessorInterface> primaryCameras,
-        List<ProcessorInterface> fallbackCameras,
-        Supplier<Rotation2d> turretAngleSupplier
+        List<ProcessorInterface> fallbackCameras
     ) {
         this.poseConsumer = poseConsumer;
         this.swerve = swerve;
@@ -124,13 +119,12 @@ public class VisionSubsystem extends SubsystemBase {
         combined.addAll(fallbackCameras);
 
         this.cameras = List.copyOf(combined);
-        this.turretAngleSupplier = turretAngleSupplier;
 
         this.fusionEngine = new PoseFusionEngine();
         this.resultFilter = buildFilter(swerve);
 
-        this.visionSystemSim = new VisionSystemSim("main");
         this.isSimulation = Robot.isSimulation();
+        this.visionSystemSim = (isSimulation) ? new VisionSystemSim("main") : null;
 
         if (isSimulation) {
             visionSystemSim.addAprilTags(fieldLayout);
@@ -146,36 +140,26 @@ public class VisionSubsystem extends SubsystemBase {
         SwerveSubsystem swerve,
         List<ProcessorInterface> primaryCameras
     ) {
-        this(fieldLayout, poseConsumer, swerve, primaryCameras, List.of(), null);
+        this(fieldLayout, poseConsumer, swerve, primaryCameras, List.of());
     }
 
     private void startCamera(ProcessorInterface camera) {
         camera.start();
-        if (isSimulation) {
-            camera.getCameraSim().ifPresent(sim -> {
+        if (isSimulation && visionSystemSim != null) {
+            PhotonCameraSim sim = camera.getCameraSim().get();
                 visionSystemSim.addCamera(sim, camera.getCameraTransform());
                 sim.enableDrawWireframe(false);
                 sim.enableProcessedStream(false);
                 sim.enableRawStream(false);
-            });
         }
     }
 
     @Override
     public void periodic() {
-        double fpgaTimestamp = Timer.getFPGATimestamp();
-
         if (swerve != null) {
             double robotHeading = swerve.getGyroRotation3d().toRotation2d().getDegrees();
             cameras.forEach(camera -> {
                 if (camera instanceof LimelightProcessor) camera.setRobotHeading(robotHeading);
-            });
-        }
-
-        if (turretAngleSupplier != null) {
-            Rotation2d turretAngle = turretAngleSupplier.get();
-            cameras.forEach(camera -> {
-                if (camera.isTurreted()) camera.updateTurretAngle(turretAngle, fpgaTimestamp);
             });
         }
 
@@ -193,7 +177,7 @@ public class VisionSubsystem extends SubsystemBase {
         if (primaryValid) publishDiagnostics(primaryFused);
         else if (fallbackValid) publishDiagnostics(fallbackFused);
 
-        if (isSimulation && swerve != null) {
+        if (isSimulation && swerve != null && visionSystemSim != null) {
             visionSystemSim.update(swerve.getPose());
         }
     }
@@ -228,8 +212,9 @@ public class VisionSubsystem extends SubsystemBase {
                 result.getTimestampSeconds(),
                 result.getStdDevs()
             );
+            return true;
         }
-        return true;
+        return false;
     }
 
     @SuppressWarnings("unused")
@@ -238,6 +223,7 @@ public class VisionSubsystem extends SubsystemBase {
             filter.add(new ResultFilters.LatencyFilter(FilterConstants.maxLatencyMs));
             filter.add(new ResultFilters.AmbiguityFilter(FilterConstants.maxAmbiguity));
             filter.add(new ResultFilters.AreaFilter(FilterConstants.minArea, FilterConstants.maxArea));
+            filter.add(new ResultFilters.DistanceFilter(FilterConstants.maxSingleTagDistanceMeters));
         if (FilterConstants.maxOdometryDeviationMeters < Double.MAX_VALUE) {
             filter.add(
                 new ResultFilters.OdometryOutlierFilter(
@@ -292,6 +278,10 @@ public class VisionSubsystem extends SubsystemBase {
 
     public Pose2d getVisionPose() { 
         return hasValidPose ? visionPose : null; 
+    }
+
+    public List<ProcessorInterface> getCameras() {
+        return cameras;
     }
 
     public boolean hasAnyPose() { 

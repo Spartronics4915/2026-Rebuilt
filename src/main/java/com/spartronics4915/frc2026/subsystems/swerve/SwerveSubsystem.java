@@ -3,7 +3,6 @@ package com.spartronics4915.frc2026.subsystems.swerve;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.*;
 
-import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -47,7 +46,6 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
@@ -56,12 +54,10 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.lib.BLine.FlippingUtil;
 import frc.robot.lib.BLine.FollowPath;
 import frc.robot.lib.BLine.Path;
-import frc.robot.lib.BLine.Path.Waypoint;
 
 public class SwerveSubsystem extends SubsystemBase {
 
     private final SwerveDrivetrain<?, ?, ?> drivetrain;
-    private final SwerveConfigurations activeConfig;
 
     private final SwerveRequest.FieldCentric fieldCentricRequest =
         new SwerveRequest.FieldCentric()
@@ -97,10 +93,9 @@ public class SwerveSubsystem extends SubsystemBase {
     private double prevYawTimestamp = Double.NaN;
 
     private Pose2d smoothedPose = new Pose2d();
-
     private Field2d field = new Field2d();
 
-    private final MovingAveragePose poseFilter = new MovingAveragePose(0.30); // previously 0.20
+    private final MovingAveragePose poseFilter = new MovingAveragePose(1.60); // previously 0.30
 
     public static Pose3d pose3d = new Pose3d();
     private final BumpSim bumpSim;
@@ -122,8 +117,6 @@ public class SwerveSubsystem extends SubsystemBase {
             odomUpdateFrequency,
             config.modules[0], config.modules[1], config.modules[2], config.modules[3]
         );
-
-        activeConfig = config;
 
         drivetrain.setStateStdDevs(normalStdDevs);
         drivetrain.configNeutralMode(NeutralModeValue.Brake);
@@ -203,6 +196,9 @@ public class SwerveSubsystem extends SubsystemBase {
         telemetry.publish(drivetrain.getState(), this);
 
         field.setRobotPose(getPose());
+        if (DriverStation.isDisabled()) {
+            Autos.setSwervePose(getPose());
+        }
     }
  
     @Override
@@ -475,6 +471,7 @@ public class SwerveSubsystem extends SubsystemBase {
         private final BooleanPublisher slipping = root.getBooleanTopic("IsSlipping").publish();
         private final BooleanPublisher slipRecovery = root.getBooleanTopic("IsInSlipRecovery").publish();
         private final BooleanPublisher fieldRelative = root.getBooleanTopic("IsFieldRelative").publish();
+        private final BooleanPublisher flat = root.getBooleanTopic("IsFlat").publish();
  
         private final DoublePublisher[] driveVelMPS = new DoublePublisher[4];
         private final DoublePublisher[] driveTargetMPS = new DoublePublisher[4];
@@ -544,6 +541,7 @@ public class SwerveSubsystem extends SubsystemBase {
             slipping.set(swerve.currentlySlipping.get());
             slipRecovery.set(swerve.isInSlipRecovery);
             fieldRelative.set(swerve.isFieldRelativeState);
+            flat.set(swerve.isFlatDebounced());
  
             for (int i = 0; i < 4; i++) {
                 SwerveModule<?, ?, ?> mod = swerve.drivetrain.getModule(i);

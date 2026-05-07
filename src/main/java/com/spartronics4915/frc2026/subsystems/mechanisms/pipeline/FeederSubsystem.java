@@ -5,6 +5,8 @@ import static edu.wpi.first.units.Units.Volts;
 import static com.spartronics4915.frc2026.Constants.FeederConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
+import java.util.function.DoubleSupplier;
+
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
@@ -34,6 +36,9 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
     
     private double currentSetpoint;
     private final VelocityTorqueCurrentFOC velocityTorqueRequest = new VelocityTorqueCurrentFOC(0.0);
+
+    private DoubleSupplier distanceToTargetSupplier = null;
+    private boolean dynamicSpeedActive = false;
     
     private double lastTime = 0.0;    
     private double ballDetectedPercent = 0.0;
@@ -104,6 +109,18 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
     
     @Override
     public void periodic() {
+        // When dynamic speed is active, override the static setpoint with the
+        // interpolated value from the distance→RPS lookup table.
+        if (dynamicSpeedActive && distanceToTargetSupplier != null) {
+            //currentSetpoint = feederSpeedMap.get(
+            //    distanceToTargetSupplier.getAsDouble()
+            //);
+            currentSetpoint = 22.87887 / (1 + Math.pow(
+                Math.E, 
+                -(((0.928997 * distanceToTargetSupplier.getAsDouble()) - 1.56251)))
+            );
+        }
+
         currentSetpoint = MathUtil.clamp(
             currentSetpoint,
             -MAX_RPS,
@@ -143,6 +160,13 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     public void setState(FeederState state) {
         setSetpoint(state.rps);
+        // Enable dynamic distance-based speed only when spinning forward.
+        // Reverse and OFF always use the literal enum value.
+        dynamicSpeedActive = (state == FeederState.FORWARD);
+    }
+
+    public void setDistanceSupplier(DoubleSupplier supplier) {
+        this.distanceToTargetSupplier = supplier;
     }
 
     public double getBallPercent(){
@@ -158,7 +182,7 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
     }
 
     public Command setStateCommand(FeederState state){
-        return setSetpointCommand(state.rps);
+        return this.runOnce(() -> setState(state));
     }
 
     public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
@@ -174,8 +198,8 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
     }
 
     public enum FeederState{
-        FORWARD(19.4),
-        REVERSE(-19.4),
+        FORWARD(22.0),
+        REVERSE(-22.0),
         OFF(0);
 
         double rps;
@@ -188,6 +212,7 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
     @Override
     public void onModeSwitch() {
         setState(FeederState.OFF);
+        dynamicSpeedActive = false;
     }
 
 }

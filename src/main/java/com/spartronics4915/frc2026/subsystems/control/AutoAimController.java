@@ -17,14 +17,16 @@ import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
 
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
-import edu.wpi.first.math.filter.LinearFilter;
+import edu.wpi.first.math.filter.MedianFilter;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.BooleanPublisher;
+import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.DriverStation;
 
 import static edu.wpi.first.units.Units.InchesPerSecond;
 import static edu.wpi.first.units.Units.Meters;
@@ -91,24 +93,22 @@ public class AutoAimController extends SubsystemBase {
     private ChassisSpeeds lastFieldSpeeds = new ChassisSpeeds();
     private ChassisSpeeds fieldAccelerations = new ChassisSpeeds();
     
-    private final LinearFilter accelFilterX = LinearFilter.movingAverage(5);
-    private final LinearFilter accelFilterY = LinearFilter.movingAverage(5);
-    private final LinearFilter accelFilterOmega = LinearFilter.movingAverage(5);
+    private final MedianFilter accelFilterX = new MedianFilter(5);
+    private final MedianFilter accelFilterY = new MedianFilter(5);
+    private final MedianFilter accelFilterOmega = new MedianFilter(5);
 
-    private final LinearFilter flywheelFilter = LinearFilter.movingAverage(15);
+    private final MedianFilter flywheelFilter = new MedianFilter(10);
 
-    private final BooleanPublisher isAimEnabledPublisher =
-        NetworkTableInstance.getDefault()
+    private final BooleanPublisher isAimEnabledPublisher = NetworkTableInstance.getDefault()
             .getBooleanTopic("superstructure/AutoAim/AimEnabled").publish();
-    private final BooleanPublisher isShootingEnabledPublisher =
-        NetworkTableInstance.getDefault()
+    private final BooleanPublisher isShootingEnabledPublisher = NetworkTableInstance.getDefault()
             .getBooleanTopic("superstructure/AutoAim/ShootingEnabled").publish();
-    private final BooleanPublisher hasValidResultPublisher =
-        NetworkTableInstance.getDefault()
+    private final BooleanPublisher hasValidResultPublisher = NetworkTableInstance.getDefault()
             .getBooleanTopic("superstructure/AutoAim/HasValidResult").publish();
-    private final BooleanPublisher requiresIdealSpeedPublisher =
-        NetworkTableInstance.getDefault()
+    private final BooleanPublisher requiresIdealSpeedPublisher = NetworkTableInstance.getDefault()
             .getBooleanTopic("superstructure/AutoAim/RequiresIdealSpeed").publish();
+    private final DoublePublisher distanceToTargetPublisher = NetworkTableInstance.getDefault()
+            .getDoubleTopic("superstructure/DistanceToTarget").publish();
 
     public AutoAimController(
         HoodSubsystem hood,
@@ -140,7 +140,7 @@ public class AutoAimController extends SubsystemBase {
         isAimEnabledPublisher.accept(isAimEnabled);
         isShootingEnabledPublisher.accept(isAutoShootingEnabled);
 
-        isPossibleDebouncedValue = possibleDebouncer.calculate(isShotPossible());
+        isPossibleDebouncedValue = possibleDebouncer.calculate(isPhysicallyAligned());
 
         double dt = Math.max(dtCalc.update(), 0.001); // Prevent division by zero
         ChassisSpeeds currentSpeeds = swerve.getFieldRelativeVelocity();
@@ -185,9 +185,11 @@ public class AutoAimController extends SubsystemBase {
             return;
         }
 
-        if (!hasResult) return;
+        if (lastResult == null) return;
 
         applyAimResult(lastResult);
+
+        distanceToTargetPublisher.accept(getDistanceToTarget());
     }
 
     //#endregion
@@ -201,19 +203,40 @@ public class AutoAimController extends SubsystemBase {
     private AutoAimResult computeAimResult() {
         Translation3d target = (targetOverride != null) ? targetOverride : getDefaultTarget();
         
-        if (target.equals(BOTTOM_FUNNEL_POSITION)) {
+        if (!isPassTarget()) {
             autoAim.setCollisionMap(this::collidesWithHub, this::collidesWithHubWithPadding);
         } else {
             autoAim.setCollisionMap(null, null);
         }
 
+        ChassisSpeeds adjFieldSpeeds;
+        ChassisSpeeds adjFieldAccelerations;
+        if (!isPassTarget()) {
+            adjFieldSpeeds = lastFieldSpeeds;
+            adjFieldAccelerations = fieldAccelerations;
+        } else if (swerve.getRelativePose().getX() > centerPose.minus(hubPose).times(2).plus(hubPose).getX()) {
+            adjFieldSpeeds = multiTransOfSpeeds(lastFieldSpeeds, 0.0);
+            adjFieldAccelerations = multiTransOfSpeeds(fieldAccelerations, 0.0);
+        } else {
+            adjFieldSpeeds = multiTransOfSpeeds(lastFieldSpeeds, 0.5);
+            adjFieldAccelerations = multiTransOfSpeeds(fieldAccelerations, 0.5);
+        }
+
         return autoAim.calculateDynamicAim(
             swerve.getSmoothedRelativePose(),
-            lastFieldSpeeds,
-            fieldAccelerations,
+            adjFieldSpeeds,
+            adjFieldAccelerations,
             target,
             RPSToMPS(flywheelFilter.calculate(Robot.isSimulation() ? shooter.getCurrentSetpoint() : shooter.getCurrentRPS())),
-            0.08 // Dynamic processing compensation can be supplied here
+            processingCompensation // Dynamic processing compensation can be supplied here
+        );
+    }
+
+    public static ChassisSpeeds multiTransOfSpeeds(ChassisSpeeds speeds, double scalar) {
+        return new ChassisSpeeds(
+            speeds.vxMetersPerSecond * scalar,
+            speeds.vyMetersPerSecond * scalar,
+            speeds.omegaRadiansPerSecond
         );
     }
 
@@ -223,10 +246,9 @@ public class AutoAimController extends SubsystemBase {
      * uses to signal that the shot cannot land.
      */
     private void applyAimResult(AutoAimResult result) {
-        boolean readyToShoot = readyToShoot(result);
+        boolean readyToShoot = meetsFiringConditions(result);
         if (readyToShoot) {
-            Translation3d target = (targetOverride != null) ? targetOverride : getDefaultTarget();
-            shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed() * (!target.equals(BOTTOM_FUNNEL_POSITION) ? 1.01 : 1)));
+            shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed() * (isPassTarget() ? 1.05 : 1)));
         } else {
             shooter.setSetpoint(0);
         }
@@ -247,20 +269,31 @@ public class AutoAimController extends SubsystemBase {
         if (!readyToShoot) {
             result = autoAim.calculateDynamicAim(
                 swerve.getSmoothedRelativePose(),
-                new ChassisSpeeds(0.0, 0.0, lastFieldSpeeds.omegaRadiansPerSecond),
-                new ChassisSpeeds(0.0, 0.0, fieldAccelerations.omegaRadiansPerSecond),
+                lastFieldSpeeds,
+                fieldAccelerations,
                 BOTTOM_FUNNEL_POSITION,
                 0.0,
-                0.08
+                processingCompensation,
+                false
             );
         }
 
         if (result.yaw() != null) {
+            Rotation2d recommendedAngle = null;
+            if (DriverStation.isAutonomous()) {
+                if (swerve.getRelativePose().getY() > hubPose.getY()) {
+                    recommendedAngle = Rotation2d.fromDegrees(90);
+                } else {
+                    recommendedAngle = Rotation2d.fromDegrees(-90);
+                }
+            }
+
             turret.setComplexSetpoint(
                 turretController.calculate(
                     result.yaw(),
                     swerve.getRelativePose().getRotation(),
-                    turret.getPosition()
+                    turret.getPosition(),
+                    recommendedAngle
                 ),
                 result.yawOmega() != null ? 
                     result.yawOmega() : 
@@ -329,6 +362,11 @@ public class AutoAimController extends SubsystemBase {
             && swerve.isFlatDebounced();
     }
 
+    public boolean isPassTarget() {
+        Translation3d target = (targetOverride != null) ? targetOverride : getDefaultTarget();
+        return !target.equals(BOTTOM_FUNNEL_POSITION);
+    }
+
     private Translation3d getDefaultTarget() {
         if (swerve.getRelativePose().getX() < hubPose.getX()) return BOTTOM_FUNNEL_POSITION;
         return swerve.getRelativePose().getY() < hubPose.getY()
@@ -339,6 +377,13 @@ public class AutoAimController extends SubsystemBase {
     /** @return The most recent aim result, or {@code null} if auto-aim is off or unsolved. */
     public AutoAimResult getLastResult() {
         return lastResult;
+    }
+
+    public double getDistanceToTarget() {
+        Translation3d target = (targetOverride != null) ? targetOverride : getDefaultTarget();
+        Translation2d robotPos2d = swerve.getSmoothedRelativePose().getTranslation()
+            .plus(turretTranslation2D.rotateBy(swerve.getRelativePose().getRotation()));
+        return robotPos2d.getDistance(target.toTranslation2d());
     }
 
     //#endregion
@@ -352,29 +397,21 @@ public class AutoAimController extends SubsystemBase {
         return lastResult != null && lastResult.ToF() != -1;
     }
 
-    public boolean isShotPossible() {
-        if (lastResult == null) {
-            return false;
-        }
-
-        boolean possibleSpeed;
-        if (getDefaultTarget().equals(BOTTOM_FUNNEL_POSITION)) {
-            possibleSpeed = !lastResult.requiresIdealSpeed();
-        } else {
-            double recommendedRPS = MPSToRPS(lastResult.recommendedShotSpeed());
-            possibleSpeed = shooter.getCurrentRPS() - recommendedRPS > -3 || !lastResult.requiresIdealSpeed();
-        }
-
-        return possibleSpeed
+    public boolean isPhysicallyAligned() {
+        return lastResult != null && !lastResult.requiresIdealSpeed()
             && isHoodReady()
             && isTurretReady();
     }
 
-    public boolean isShotPossibleDebounced() {
+    public boolean isPhysicallyAlignedDebounced() {
         return isPossibleDebouncedValue;
     }
 
-    public boolean readyToShoot(AutoAimResult result) {
+    public boolean isTryingToShoot() {
+        return shootOverride || isReadyToShoot();
+    }
+
+    public boolean meetsFiringConditions(AutoAimResult result) {
         boolean hasValidSpeed = result.recommendedShotSpeed() != -1;
         boolean shouldShoot = isAutoShootingEnabled && shouldAutoShoot(result);
         boolean isUnrestricted = shooter.getShooterClamp() == ShooterClamp.UNRESTRICTED;
@@ -390,10 +427,23 @@ public class AutoAimController extends SubsystemBase {
             return shooter.getCurrentRPS() / shooter.getCurrentSetpoint() >= 1.0 - manualShooterLeniency;
         }
 
+        if (isPassTarget()) {
+            if (
+                !turretController.isWrapping()
+                && hasValidResult()
+                && meetsFiringConditions(lastResult)
+            ) {
+                return shooter.getCurrentRPS() / shooter.getCurrentSetpoint() >= 1.0 - ferryingShooterLeniency;
+            } else {
+                return false;
+            }
+        }
+
         // General case when auto-aim is enabled, it has to have a valid result and speed, and the turret and hood have to be near their setpoints
-        if (hasValidResult() && isShotPossibleDebounced()
-            // Hood and turret moved to isShotPossible because they move A LOT
-            && readyToShoot(lastResult)
+        if (hasValidResult() && isPhysicallyAlignedDebounced()
+            // Hood and turret moved to isPhysicallyAligned because they move A LOT
+            && !turretController.isWrapping()
+            && meetsFiringConditions(lastResult)
         ) {
             return true;
         }
@@ -404,18 +454,20 @@ public class AutoAimController extends SubsystemBase {
     // TODO: This could not be working
 
     public boolean isTurretReady() {
+        if (turretController.isWrapping()) return false;
+
         return Math.abs(
             Math.IEEEremainder( 
                 turret.getPosition().getDegrees() 
                 - turretController.getLastSetpoint(), 360.0
             )
-        ) <= 4.0;
+        ) <= (isPassTarget() ? 15.0 : 4.0);
     }
 
     public boolean isHoodReady() {
         return Math.abs(
             hood.getPosition().minus(hood.getCurrentSetpoint()).getDegrees()
-        ) <= 5.0;
+        ) <= (isPassTarget() ? 15.0 : 5.0);
     }
 
     //#endregion

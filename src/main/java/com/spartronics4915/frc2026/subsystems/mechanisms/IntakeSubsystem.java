@@ -25,7 +25,7 @@ import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonF
 
 public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
-    private LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
+    private LoggedTalonFX leadMotor = new LoggedTalonFX(LEAD_MOTOR_ID, CAN_BUS);
 
     private double currentSetpoint;
 
@@ -41,13 +41,13 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
             null
         ),
         new SysIdRoutine.Mechanism(
-            (Voltage volts) -> motor.setControl(sysIdControl.withOutput(volts.in(Volts))),
+            (Voltage volts) -> leadMotor.setControl(sysIdControl.withOutput(volts.in(Volts))),
             (log) -> {
                 log.motor("Intake")
-                    .voltage(Volts.of(motor.getTorqueCurrent().getValueAsDouble()))
-                    .angularVelocity(motor.getVelocity().getValue())
-                    .angularPosition(motor.getPosition().getValue())
-                    .angularAcceleration(motor.getAcceleration().getValue());
+                    .voltage(Volts.of(leadMotor.getTorqueCurrent().getValueAsDouble()))
+                    .angularVelocity(leadMotor.getVelocity().getValue())
+                    .angularPosition(leadMotor.getPosition().getValue())
+                    .angularAcceleration(leadMotor.getAcceleration().getValue());
             },
             this
         )
@@ -58,16 +58,15 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("setpoint").publish();
 
     public IntakeSubsystem() {
-        TalonFXConfigurator intakeMotorConfig = motor.getConfigurator();
-            intakeMotorConfig.apply(PID_CONFIG);
-            intakeMotorConfig.apply(CURRENT_LIMITS_CONFIG);
-            intakeMotorConfig.apply(FEEDBACK_CONFIG);
-            intakeMotorConfig.apply(MOTOR_OUTPUT_CONFIG);
+        TalonFXConfigurator configurator = leadMotor.getConfigurator();
+            configurator.apply(PID_CONFIG);
+            configurator.apply(CURRENT_LIMITS_CONFIG);
+            configurator.apply(FEEDBACK_CONFIG);
+            configurator.apply(MOTOR_OUTPUT_CONFIG);
 
-        setState(IntakeState.OFF);
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
-        motor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
+        leadMotor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
 
         SmartDashboard.putData("Intake Quasistatic Forward", sysIdQuasistatic(Direction.kForward));
         SmartDashboard.putData("Intake Quasistatic Reverse", sysIdQuasistatic(Direction.kReverse));
@@ -76,7 +75,7 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         SmartDashboard.putData("Intake On", setStateCommand(IntakeState.INTAKE));
         SmartDashboard.putData("Intake Off", setStateCommand(IntakeState.OFF));
-        SmartDashboard.putData("Intake Motor", motor);
+        SmartDashboard.putData("Intake Motor", leadMotor);
     }
 
     @Override
@@ -90,23 +89,23 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
         if (!isCharacterizing) {
             if (currentSetpoint != 0) {
                 velocityTorqueRequest.Velocity = currentSetpoint;
-                motor.setControl(velocityTorqueRequest);
+                leadMotor.setControl(velocityTorqueRequest);
             } else {
-                motor.setControl(new VoltageOut(0.0));
+                leadMotor.setControl(new VoltageOut(0.0));
             }
         }
 
-        appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
+        appliedOutPublisher.accept(leadMotor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPS());
         setpointPublisher.accept(currentSetpoint);
     }
 
     public double getCurrentRPS() {
-        return motor.getVelocity().getValueAsDouble();
+        return leadMotor.getVelocity().getValueAsDouble();
     }
 
     public double getAppliedVoltage() {
-        return motor.getMotorVoltage().getValueAsDouble();
+        return leadMotor.getMotorVoltage().getValueAsDouble();
     }
 
     public void setSetpoint(double newSetpoint){
@@ -142,8 +141,8 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
     }
 
     public enum IntakeState {
-        INTAKE(21),
-        OUTTAKE(-21),
+        INTAKE(22),
+        OUTTAKE(-22),
         OFF(0);
 
         double rps;

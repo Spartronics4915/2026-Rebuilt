@@ -5,10 +5,10 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstant
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
+import com.spartronics4915.frc2026.util.drive.ModeSpeedLimiter;
 import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -26,6 +26,26 @@ import com.pathplanner.lib.trajectory.PathPlannerTrajectoryState;
  */
 public class DriveCommand extends Command {
 
+    /**
+     * Controls how aggressively the driver's speed input is limited while
+     * auto-aim is active.
+     *
+     * <ul>
+     *   <li>{@code OFF} – no limit, full driver authority.</li>
+     *   <li>{@code HUB} – tight limit for precise hub shots; inspired by 6328's
+     *       per-mode speed-capping approach where the robot must be nearly still
+     *       to guarantee shot accuracy at close-to-mid range.</li>
+     *   <li>{@code FERRY} – looser limit for pass/ferry shots; the target is far
+     *       away and can tolerate moderate robot movement without meaningful
+     *       aiming error.</li>
+     * </ul>
+     */
+    public enum SpeedLimitMode {
+        OFF,
+        HUB,
+        FERRY
+    }
+
     private final SwerveSubsystem swerve;
     private final CommandXboxController driverController;
     private final CommandXboxController testingController;
@@ -34,10 +54,12 @@ public class DriveCommand extends Command {
 
     private Rotation2d lockedHeading = null;
 
-    private boolean limitChassisSpeeds = false;
-    private SlewRateLimiter xRateLimiter = new SlewRateLimiter(maxSpeedWhenShooting / timeUntilLimitedMaxSpeed);
-    private SlewRateLimiter yRateLimiter = new SlewRateLimiter(maxSpeedWhenShooting / timeUntilLimitedMaxSpeed);
-    private SlewRateLimiter omegaRateLimiter = new SlewRateLimiter(maxOmegaWhenShooting / timeUntilLimitedMaxSpeed);
+    private SpeedLimitMode limitMode = SpeedLimitMode.OFF;
+    private SpeedLimitMode lastLimitMode = SpeedLimitMode.OFF;
+
+    // Each mode gets its own speed limiter to avoid carrying over incorrect rate when switching
+    private final ModeSpeedLimiter hubLimiter = new ModeSpeedLimiter(maxSpeedWhenShootingHub, maxOmegaWhenShootingHub, timeUntilLimitedMaxSpeed, 0.0, 0.0);
+    private final ModeSpeedLimiter ferryLimiter = new ModeSpeedLimiter(maxSpeedWhenFerrying, maxOmegaWhenFerrying, timeUntilLimitedMaxSpeed, 0.0, 0.0);
 
     private final TrapezoidProfile trapezoidProfile = new TrapezoidProfile(trenchAlignConstraints);
     private final TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
@@ -79,19 +101,25 @@ public class DriveCommand extends Command {
             yState.velocity = swerve.getFieldVelocity().vyMetersPerSecond;
         }
 
-        if (limitChassisSpeeds) {
-            vX = Math.min(Math.abs(vX), maxSpeedWhenShooting) * Math.signum(vX);
-            vY = Math.min(Math.abs(vY), maxSpeedWhenShooting) * Math.signum(vY);
-            omega = Math.min(Math.abs(omega), maxOmegaWhenShooting) * Math.signum(omega);
-            
-            vX = xRateLimiter.calculate(vX);
-            vY = yRateLimiter.calculate(vY);
-            omega = omegaRateLimiter.calculate(omega);
-        } else {
-            xRateLimiter.reset(vX);
-            yRateLimiter.reset(vY);
-            omegaRateLimiter.reset(omega);
-        }
+        //if (limitMode != SpeedLimitMode.OFF) {
+        //    // If the mode just changed, reset the limiters for the new mode so we
+        //    // don't snap to the wrong rate or carry over stale state.
+        //    if (limitMode != lastLimitMode) {
+        //        getLimiterFromMode(limitMode).resetAll(vX, vY, omega);
+        //    }
+
+        //    double[] limited = getLimiterFromMode(limitMode).limit(vX, vY, omega);
+        //        vX = limited[0];
+        //        vY = limited[1];
+        //        omega = limited[2];
+        //} else {
+        //    // Reset both sets of limiters to current velocity so there is no
+        //    // sudden lurch when a limit mode is first engaged.
+        //    hubLimiter.resetAll(vX, vY, omega);
+        //    ferryLimiter.resetAll(vX, vY, omega);
+        //}
+
+        lastLimitMode = limitMode;
 
         if (!swerve.isFieldRelative()) {
             swerve.driveRobotCentric(vX, vY, omega);
@@ -101,7 +129,7 @@ public class DriveCommand extends Command {
 
         swerve.setDriverPerspective(swerve.getHeadingOffset());
 
-        boolean alignTriggerHeld = hid.getRightTriggerAxis() > 0.5;
+        boolean alignTriggerHeld = false /* hid.getRightTriggerAxis() > 0.5 */;
         boolean movingFastEnough = Math.hypot(vX, vY) > 0.1;
 
         if (alignTriggerHeld && movingFastEnough) {
@@ -114,7 +142,7 @@ public class DriveCommand extends Command {
         }
 
         //double rotationBreakThreshold = (lockedHeading != null) ? maxAngularRate * 0.03 : maxAngularRate * 0.03;
-        boolean driverIsRotating = true /*Math.abs(omega) > rotationBreakThreshold*/;
+        boolean driverIsRotating = true /* Math.abs(omega) > rotationBreakThreshold */;
         boolean driverIsTranslating = Math.hypot(vX, vY) > maxSpeed * 0.05;
 
         if (driverIsRotating) {
@@ -164,8 +192,14 @@ public class DriveCommand extends Command {
                robotTarget.vyMetersPerSecond * cosTheta;
     }
 
-    public void setSpeedLimit(boolean isLimited) {
-        limitChassisSpeeds = isLimited;
+    /**
+     * Sets the active speed-limit mode for this drive command.
+     * {@code OFF} removes all limits; {@code HUB} applies a tight cap for precise
+     * hub shots; {@code FERRY} applies a looser cap for pass/ferry shots.
+     * Safe to call from any periodic context.
+     */
+    public void setSpeedLimit(SpeedLimitMode mode) {
+        limitMode = mode;
     }
 
     @Override
@@ -174,6 +208,8 @@ public class DriveCommand extends Command {
         wasAligning = false;
         lockedHeading = null;
         yState = new TrapezoidProfile.State();
+        limitMode = SpeedLimitMode.OFF;
+        lastLimitMode = SpeedLimitMode.OFF;
     }
 
     @Override
@@ -201,4 +237,9 @@ public class DriveCommand extends Command {
         //return Math.signum(x) * shaped;
         return Math.signum(x) * Math.pow(Math.abs(x), 1.5);
     }
+
+    private ModeSpeedLimiter getLimiterFromMode(SpeedLimitMode mode) {
+        return mode == SpeedLimitMode.HUB ? hubLimiter : ferryLimiter;
+    }
+
 }

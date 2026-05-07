@@ -86,11 +86,13 @@ public class ZoneTransition {
                     ),
                     bumpAngle
                 ),
-                0.9
+                0.4
             ),
             new Path.Waypoint(
                 hubPose.plus( // Pose will be really wrong over the bump so set the setpoint *way* farther
-                    exitTransform.rotateBy(IOFlip)
+                    Autos.surveyMode
+                    ? approachTransform.rotateBy(IOFlip.plus(Rotation2d.k180deg))
+                    : exitTransform.rotateBy(IOFlip)
                 ).plus(
                     bumpTransform.rotateBy(LRFlip)
                 ),
@@ -103,14 +105,17 @@ public class ZoneTransition {
         Path path = new Path(pathElements, Autos.generatePathConstraintZone(bumpPathConstraints, 1, 2));
 
         return Commands.race(
-            Autos.build(path, endWithSpeed ? Rotation2d.kZero.rotateBy(IOFlip) : null, swerve),
+            Commands.sequence(
+                Autos.build(path, endWithSpeed ? Rotation2d.kZero.rotateBy(IOFlip) : null, swerve),
+                Autos.wait(0.5)
+            ),
             Commands.sequence(
                 Commands.waitUntil(() -> {
                     return swerve.getRelativePose().getMeasureX().in(Meters) > hubPose.getX() ^ !toNeutralZone 
                         && swerve.isFlatDebounced()
                         && vision.hasAnyPose();
                 }),
-                Commands.waitSeconds(bumpDriveContinueTime)
+                Autos.wait(bumpDriveContinueTime)
             )
         );
     }
@@ -154,8 +159,10 @@ public class ZoneTransition {
                     trenchTransform.rotateBy(LRFlip)
                 ).plus(
                     endInTrench
-                        ? trenchExitTransform.rotateBy(IOFlip)
-                        : approachTransform.rotateBy(IOFlip.plus(Rotation2d.k180deg))
+                        ? trenchStopTransform.rotateBy(IOFlip)
+                        : toNeutralZone 
+                            ? trenchExitTransform.rotateBy(IOFlip.plus(Rotation2d.k180deg))
+                            : trenchAllianceExitTransform.rotateBy(IOFlip.plus(Rotation2d.k180deg))
                 ),
                 trenchAngle
             )
@@ -199,7 +206,7 @@ public class ZoneTransition {
                 hubPose.plus(
                     trenchTransform.rotateBy(LRFlip)
                 ).plus(
-                    approachTransform.rotateBy(Rotation2d.k180deg)
+                    trenchExitTransform.rotateBy(Rotation2d.k180deg)
                 ),
                 trenchAngle
             )

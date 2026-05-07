@@ -7,6 +7,7 @@ package com.spartronics4915.frc2026;
 import com.spartronics4915.frc2026.Constants.AutoAimConstants;
 import com.spartronics4915.frc2026.Constants.OperatorConstants;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
+import com.spartronics4915.frc2026.autos.Autos;
 import com.spartronics4915.frc2026.autos.ComplexAutoChooser;
 import com.spartronics4915.frc2026.autos.DriveToPOI;
 import com.spartronics4915.frc2026.autos.NeutralZoneAutos;
@@ -42,6 +43,7 @@ import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -62,7 +64,7 @@ public class RobotContainer {
 
     public final PivotSubsystem pivotSubsystem = new PivotSubsystem();
     public final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
-    public final ClimberSubsystem climberSubsystem = new ClimberSubsystem();
+    // public final ClimberSubsystem climberSubsystem = new ClimberSubsystem();
 
     public final IndexerSubsystem indexerSubsystem = new IndexerSubsystem();
     public final FeederSubsystem feederSubsystem = new FeederSubsystem();
@@ -74,12 +76,11 @@ public class RobotContainer {
         swerveSubsystem::addVisionMeasurement, 
         swerveSubsystem, 
         VisionConstants.CameraConstants.primaryCameras, 
-        VisionConstants.CameraConstants.fallbackCameras, 
-        turretSubsystem::getPosition
+        VisionConstants.CameraConstants.fallbackCameras
     );
     
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
-    private final DriveToPOI POIFactory = new DriveToPOI(swerveSubsystem, climberSubsystem);
+    private final DriveToPOI POIFactory = new DriveToPOI(swerveSubsystem, null);
     private final NeutralZoneAutos neutralZoneFactory = new NeutralZoneAutos(swerveSubsystem);
     private final PreAlignment preAlignmentFactory = new PreAlignment(swerveSubsystem);
 
@@ -96,7 +97,7 @@ public class RobotContainer {
         feederSubsystem, 
         indexerSubsystem, 
         shooterSubsystem, 
-        climberSubsystem, 
+        null, 
         intakeSubsystem,
         pivotSubsystem, 
         autoAimController
@@ -104,17 +105,27 @@ public class RobotContainer {
 
     public final Superstructure superstructure = new Superstructure(
         swerveSubsystem, 
-        shooterSubsystem,
         autoAimController, 
         superstructureCommands,
         driveCommand,
         visionSubsystem
     );
 
-    private final ComplexAutoChooser autoChooser = new ComplexAutoChooser(transitionFactory, POIFactory, neutralZoneFactory, preAlignmentFactory, superstructure, 15);
+    private final ComplexAutoChooser autoChooser = new ComplexAutoChooser(transitionFactory, POIFactory, neutralZoneFactory, preAlignmentFactory, superstructure, 20);
 
     public RobotContainer() {
         configureBindings();
+
+        // Register vision observer with turret to ensure accurate turret angle timestamps
+        turretSubsystem.setVisionObserver((turretAngle, timestamp) -> {
+            visionSubsystem.getCameras().forEach(camera -> {
+                if (camera.isTurreted()) {
+                    camera.updateTurretAngle(turretAngle, timestamp);
+                }
+            });
+        });
+
+        feederSubsystem.setDistanceSupplier(autoAimController::getDistanceToTarget);
 
         SmartDashboard.putData("Auto-Aim Toggle", autoAimController.aimToggle());
         SmartDashboard.putData("Auto-Shoot Toggle", autoAimController.shootingToggle());
@@ -123,6 +134,10 @@ public class RobotContainer {
         SmartDashboard.putData("Pipeline Off", superstructureCommands.setPipelineState(PipelineState.OFF));
         SmartDashboard.putData("Reset Odometry", Commands.runOnce(
             () -> swerveSubsystem.resetPose(visionSubsystem.getVisionPose())
+        ));
+        SmartDashboard.putData("Temp Waypoint", Commands.defer(
+            () -> Autos.generatePathFromWaypoint(swerveSubsystem, new Translation2d(2.5, 2.0), Rotation2d.kZero),
+            Set.of(swerveSubsystem)
         ));
     }
 
@@ -143,9 +158,9 @@ public class RobotContainer {
         ChassisSpeeds driverNudgeRight = new ChassisSpeeds(0, -0.25, 0);
         ChassisSpeeds driverNudgeDown = new ChassisSpeeds(-0.25, 0, 0);
 
-        driverController.povUp().onTrue(
-            climberSubsystem.setStateCommand(ClimberState.JORBIT)
-        );
+        // driverController.povUp().onTrue(
+        //     climberSubsystem.setStateCommand(ClimberState.JORBIT)
+        // );
 
         //driverController.povUp().whileTrue(
         //    Commands.run(() -> {
@@ -161,9 +176,9 @@ public class RobotContainer {
             Commands.run(() -> swerveSubsystem.drive(driverNudgeRight), swerveSubsystem)
         );
 
-        driverController.povDown().onTrue(
-            climberSubsystem.setStateCommand(ClimberState.DOWN)
-        );
+        // driverController.povDown().onTrue(
+        //     climberSubsystem.setStateCommand(ClimberState.DOWN)
+        // );
 
         //driverController.povDown().whileTrue(
         //    Commands.run(() -> {
@@ -207,9 +222,9 @@ public class RobotContainer {
             })
         );
 
-        driverController.y().whileTrue(
-            POIFactory.generateCommand(POI.TOWER)
-        );
+        // driverController.y().whileTrue(
+        //     POIFactory.generateCommand(POI.TOWER)
+        // );
 
         driverController.leftTrigger().whileTrue(
             Commands.run(swerveSubsystem::lockModules, swerveSubsystem)
@@ -246,6 +261,12 @@ public class RobotContainer {
         );
 
         operatorController.leftStick().onTrue(
+            Commands.runOnce(() -> {
+                pivotSubsystem.resetMechanism(Rotation2d.kZero);
+            })
+        );
+
+        operatorController.rightStick().onTrue(
             Commands.runOnce(() -> {
                 pivotSubsystem.resetMechanism(Rotation2d.kZero);
             })
@@ -383,8 +404,12 @@ public class RobotContainer {
             autoAimController.shootingToggle()
         );
 
-        debugController.y().whileTrue(
-            POIFactory.generateCommand(POI.TOWER)
+        // debugController.y().whileTrue(
+        //     POIFactory.generateCommand(POI.TOWER)
+        // );
+
+        debugController.y().onTrue(
+            superstructureCommands.stowed()
         );
 
         debugController.back().onTrue(

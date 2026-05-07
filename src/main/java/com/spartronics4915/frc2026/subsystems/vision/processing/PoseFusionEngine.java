@@ -109,8 +109,6 @@ public class PoseFusionEngine {
             double distance = calculateNormalizedDistance(result.getPose(), meanPose, result.getStdDevs());
             if (distance < thresholdSigma) filteredScratch.add(result);
         }
-
-        if (filteredScratch.isEmpty()) filteredScratch.addAll(results);
     }
 
     private static Pose2d calculateMeanPose(List<ApriltagResult> results) {
@@ -187,12 +185,14 @@ public class PoseFusionEngine {
             sumAmbiguity += result.getAmbiguity();
             sumArea += result.getAverageArea();
 
-            // Merge unique tags
-            for (TrackedTag tag : result.getTrackedTags()) {
-                int id = tag.getFiducialId();
-                if (id >= 0 && id < tagPresenceBitset.length && !tagPresenceBitset[id]) {
-                    tagPresenceBitset[id] = true;
-                    tagScratch.add(tag);
+            List<TrackedTag> trackedTags = result.getTrackedTags();
+            if (trackedTags != null && !trackedTags.isEmpty()) {
+                for (TrackedTag tag : List.copyOf(trackedTags)) {
+                    int id = tag.getFiducialId();
+                    if (id >= 0 && id < tagPresenceBitset.length && !tagPresenceBitset[id]) {
+                        tagPresenceBitset[id] = true;
+                        tagScratch.add(tag);
+                    }
                 }
             }
         }
@@ -213,7 +213,8 @@ public class PoseFusionEngine {
             fusedStdDevScratch,
             tagScratch,
             sumAmbiguity * invN,
-            sumArea * invN
+            sumArea * invN,
+            0.0
         );
 
         return Optional.of(fusedResult);

@@ -63,6 +63,20 @@ public class ResultFilters {
         }
     }
 
+    public static class DistanceFilter implements FilterInterface {
+        private final double maxDistance;
+
+        public DistanceFilter(double newMaxDistance) {
+            this.maxDistance = newMaxDistance;
+        }
+
+        @Override
+        public boolean test(ResultInterface result) {
+            if (result.getTargetCount() > 1) return true;
+            return result.getAvgDistance() <= maxDistance;
+        }
+    }
+
     /**
      * A filter that rejects any vision result whose estimated pose is farther than
      * {@code maxDeviationMeters} from the current odometry pose

@@ -11,11 +11,9 @@ import static edu.wpi.first.units.Units.Centimeter;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.InchesPerSecond;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
-import static edu.wpi.first.units.Units.Meter;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Millimeters;
-import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Seconds;
@@ -25,7 +23,6 @@ import java.util.List;
 
 import org.photonvision.simulation.SimCameraProperties;
 
-import com.spartronics4915.frc2026.subsystems.vision.cameras.LimelightProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.PhotonProcessor;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
 import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
@@ -43,9 +40,9 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
@@ -96,32 +93,44 @@ public final class Constants {
 
     public static final class SwerveConstants {
 
-        public static final double maxSpeed = 7.12; // 5.12, should probably increase
+        public static final double maxSpeed = 9.12; // 5.12, should probably increase
         public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(8); // 6, should probably increase
 
-        public static final double maxSpeedWhenShooting = maxSpeed * 0.35;
-        public static final double maxOmegaWhenShooting = maxAngularSpeed.in(RadiansPerSecond) * 0.35;
+        /**
+         * Speed limits applied while shooting at the hub (tight precision required).
+         * Inspired by 6328's approach of using separate, tighter limits for hub shots
+         * vs. ferry/pass shots to stabilize the robot while the turret tracks.
+         */
+        public static final double maxSpeedWhenShootingHub = maxSpeed * 0.15;
+        public static final double maxOmegaWhenShootingHub = maxAngularSpeed.in(RadiansPerSecond) * 0.20;
 
-        public static final double timeUntilLimitedMaxSpeed = 0.75;
+        /**
+         * Speed limits applied during ferry/pass shots (target is far, more robot
+         * movement can be tolerated).
+         */
+        public static final double maxSpeedWhenFerrying = maxSpeed * 0.50;
+        public static final double maxOmegaWhenFerrying = maxAngularSpeed.in(RadiansPerSecond) * 0.45;
+
+        public static final double timeUntilLimitedMaxSpeed = 0.5; // 0.75
 
         public static final boolean defaultFieldRelative = true;
 
         public static final double stickDeadband = 0.0;
         public static final double tiltThresholdDegrees = 1.0;
-        public static final double tiltDebounce = 0.07;
+        public static final double tiltDebounce = 0.05;
 
         public static final Constraints trenchAlignConstraints = new Constraints(3, 3);
 
         public static final double odomUpdateFrequency = 120.0; // 250.0
         public static final double staleCommandTimeout = 0.1;
 
-        public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.18, 0.18, 0.05); // 0.3, 0.3, 0.2
+        public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.05, 0.05, 0.02); // 0.3, 0.3, 0.2
         public static final Matrix<N3, N1> slipStdDevs = VecBuilder.fill(2.0, 2.0, 1.0);
 
-        public static final double slipRecoverySeconds = 0.2;
-        public static final double slipThresholdRPS = 1.5;
-        public static final double minSpeedDetectMPS = 0.7;
-        public static final int slipDebounceCycles = 2;
+        public static final double slipRecoverySeconds = 0.3;
+        public static final double slipThresholdRPS = 2.2;
+        public static final double minSpeedDetectMPS = 0.8;
+        public static final int slipDebounceCycles = 5;
 
         public static final double headingLockKP = 7.0;
         public static final double headingLockKD = 0.0;
@@ -192,18 +201,18 @@ public final class Constants {
                 return new SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>()
                     .withDriveMotorType(DriveMotorArrangement.TalonFX_Integrated)
                     .withSteerMotorType(SteerMotorArrangement.TalonFX_Integrated)
-                    .withDriveMotorGearRatio(6.026785714285714)
+                    .withDriveMotorGearRatio(7.03125)
                     .withSteerMotorGearRatio(26.09090909090909)
                     .withCouplingGearRatio(3.857142857142857)
                     .withWheelRadius(Inches.of(2.0))
-                    .withSpeedAt12Volts(MetersPerSecond.of(5.12))
+                    .withSpeedAt12Volts(MetersPerSecond.of(4.32))
                     .withSlipCurrent(Amps.of(120))
                     .withSteerMotorGains(new Slot0Configs()
                         .withKP(110).withKI(0).withKD(5.0)
                         .withKS(0.1).withKV(2.49).withKA(0)
                         .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseClosedLoopSign))
                     .withDriveMotorGains(new Slot0Configs()
-                        .withKP(7).withKI(0).withKD(0)
+                        .withKP(9).withKI(0).withKD(0)
                         .withKS(1).withKV(0.124))
                     .withSteerMotorClosedLoopOutput(ClosedLoopOutputType.Voltage)
                     .withDriveMotorClosedLoopOutput(ClosedLoopOutputType.TorqueCurrentFOC)
@@ -216,7 +225,7 @@ public final class Constants {
                         new TalonFXConfiguration()
                             .withCurrentLimits(
                                 new CurrentLimitsConfigs()
-                                    .withStatorCurrentLimit(Amps.of(60))
+                                    .withStatorCurrentLimit(Amps.of(80))
                                     .withStatorCurrentLimitEnable(true)
                             )
                     )
@@ -224,7 +233,7 @@ public final class Constants {
                         new TalonFXConfiguration()
                             .withCurrentLimits(
                                 new CurrentLimitsConfigs()
-                                    .withStatorCurrentLimit(Amps.of(80))
+                                    .withStatorCurrentLimit(Amps.of(140))
                                     .withStatorCurrentLimitEnable(true)
                             )
                     );
@@ -235,9 +244,9 @@ public final class Constants {
 
         public static final class AutoConstants {
             
-            public static final PIDController translationPID = new PIDController(6.0, 0, 0.08);
-            public static final PIDController rotationPID    = new PIDController(10, 0, 1);
-            public static final PIDController crossTrackPID  = new PIDController(1.75, 0, 0);
+            public static final PIDController translationPID = new PIDController(6.0, 0, 0.4);
+            public static final PIDController rotationPID = new PIDController(10, 0, 1);
+            public static final PIDController crossTrackPID = new PIDController(1.75, 0, 0);
 
             public static final PIDConstants alignTranslationPID = new PIDConstants(2.0,0,0);
             public static final PIDConstants alignRotationPID = new PIDConstants(2.0,0,0);
@@ -269,9 +278,11 @@ public final class Constants {
             public static final Translation2d bumpTransform = new Translation2d(0, -1.523);
             public static final Translation2d bumpTrenchDivTransform = new Translation2d(0, 2.604);
             public static final Translation2d approachTransform = new Translation2d(-1.4, 0);
-            public static final Translation2d exitTransform = new Translation2d((centerPose.getX() - hubPose.getX()) * 1.2, 0);
-            public static final Translation2d trenchExitTransform = new Translation2d(0.8, 0);
-            public static final Translation2d fuelIntakeTransform = new Translation2d(0, 1.75);
+            public static final Translation2d exitTransform = new Translation2d((centerPose.getX() - hubPose.getX()) * 1.1, 0);
+            public static final Translation2d trenchStopTransform = new Translation2d(0.65, 0);
+            public static final Translation2d trenchAllianceExitTransform = new Translation2d(-1.5, 0);
+            public static final Translation2d trenchExitTransform = new Translation2d(-1, 0);
+            public static final Translation2d fuelIntakeTransform = new Translation2d(0, 2.1);
             public static final Translation2d middleIntakeTransform = new Translation2d(-1.75, 0);
 
             public static final Distance robotLength = Millimeters.of(818.5);
@@ -298,8 +309,8 @@ public final class Constants {
                 .setMaxAccelerationMetersPerSec2(16.0);
 
             public static final Path.PathConstraints bumpPathConstraints = new Path.PathConstraints()
-                .setMaxVelocityMetersPerSec(4.0)
-                .setMaxAccelerationMetersPerSec2(9.0)
+                .setMaxVelocityMetersPerSec(3.0)
+                .setMaxAccelerationMetersPerSec2(20.0)
                 .setMaxVelocityDegPerSec(360)
                 .setMaxAccelerationDegPerSec2(360);
 
@@ -338,7 +349,7 @@ public final class Constants {
 
         public static final SimCameraProperties simCameraProperties = new SimCameraProperties();
             static {
-                simCameraProperties.setCalibration(1600, 1200, Rotation2d.fromDegrees(97.65));
+                simCameraProperties.setCalibration(1280, 800, Rotation2d.fromDegrees(97.65));
                 simCameraProperties.setCalibError(0.05, 0.005);
                 simCameraProperties.setFPS(50);
                 simCameraProperties.setAvgLatencyMs(20);
@@ -350,20 +361,19 @@ public final class Constants {
         public static final double yawRecomputeThreshold = 1e-4;
 
         public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.42;
-            public static final double baseThetaStdDev = 0.85;
-            public static final double ambiguityWeight = 0.1;
-            public static final double areaWeight = 0.9;
-            public static final double latencyWeight = 1.0;
+            public static final double baseXYStdDev = 0.41;
+            public static final double baseThetaStdDev = 0.58;
+            public static final double ambiguityWeight = 0.7;
+            public static final double areaWeight = 0.6;
+            public static final double latencyWeight = 0.2;
         }
 
         public static final class FilterConstants {
-            public static final double maxLatencyMs = 100.0;
+            public static final double maxLatencyMs = 90.0;
             public static final double maxSingleTagDistanceMeters = 7.0;
-            public static final double maxMultiTagDistanceMeters = 10.0;
-            public static final double maxAmbiguity = 0.12; // TODO: Change back to 0.12 if no vision
-            public static final double minArea = 0.05;
-            public static final double maxArea = 0.90;
+            public static final double maxAmbiguity = 0.18;
+            public static final double minArea = 0.04;
+            public static final double maxArea = 10.0;
 
             // Set < Double.MAX_VALUE to enable the odometry-outlier filter.
             public static final double maxOdometryDeviationMeters = Double.MAX_VALUE;
@@ -371,14 +381,14 @@ public final class Constants {
 
         public static final class FusionConstants {
             public static final boolean enabled = true;
-            public static final double timestampThresholdSecs = 0.05;
+            public static final double timestampThresholdSecs = 0.02;
             public static final int minCameras = 2;
 
             /**
              * Results whose normalized distance from the group mean exceeds this
              * number of sigma are rejected as outliers before fusion.
              */
-            public static final double outlierSigma = 3.0;
+            public static final double outlierSigma = 2.0;
         }
 
         public static final class CameraConstants {
@@ -411,7 +421,7 @@ public final class Constants {
                 new Rotation3d(
                     0.0,
                     Math.toRadians(-28.1),
-                    Math.toRadians(90.0)
+                    Math.toRadians(270.0)
                 )
             );
 
@@ -419,6 +429,13 @@ public final class Constants {
              * Primary cameras, always participate in pose fusion.
              */
             public static final List<ProcessorInterface> primaryCameras = List.of(
+                //new LimelightProcessor(
+                //    "limelight-argos", 
+                //    shooterBaseTranslation, 
+                //    turretToCamera, 
+                //    new StdDevCalculator(), 
+                //    30.0
+                //)
                 new PhotonProcessor(
                     "evan", apriltagFieldLayout, frontTowerCamTransform,
                     new StdDevCalculator(), simCameraProperties, 20.0
@@ -437,9 +454,7 @@ public final class Constants {
              * Fallback cameras, used only when the primary pipeline produces no
              * valid pose.
              */
-            public static final List<ProcessorInterface> fallbackCameras = List.of(
-                
-            );
+            public static final List<ProcessorInterface> fallbackCameras = List.of();
         }
     }
 
@@ -479,7 +494,7 @@ public final class Constants {
         public static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
         public static final double PIVOT_JOSTLE_FREQUENCY = 1.0; // Hz
 
-        public static final double percentLoss = 0.1070; // Percent loss on shooter to ball transfer, 0.1071
+        public static final double percentLoss = 0.10695; // Percent loss on shooter to ball transfer, 0.1071
 
         public static final int feederLC = 42;
         public static final double detectDistance = 140.0;
@@ -502,13 +517,16 @@ public final class Constants {
         public static final double FUNNEL_HEIGHT = Units.inchesToMeters(22.25);
         public static final Translation3d HUB_POSITION = new Translation3d(hubPose.getX(), hubPose.getY(), HUB_HEIGHT);
         public static final Translation3d BOTTOM_FUNNEL_POSITION = new Translation3d(hubPose.getX(), hubPose.getY(), HUB_HEIGHT - FUNNEL_HEIGHT);
-        public static final double MAX_SHOOTER_RPS = 100;
+        public static final double MAX_SHOOTER_RPS = 120;
         
         // ik this is badly named but it basically defines how much below the setpoint in manual mode is still considered fine for the shot
         public static final double manualShooterLeniency = 0.1;
+        public static final double ferryingShooterLeniency = 0.7;
 
-        public static final Distance HUB_SHOT_PADDING = Meters.of(0.1);
-        public static final Distance HUB_IDEAL_SHOT_PADDING = Meters.of(0.5);
+        public static final double processingCompensation = 0.05;
+
+        public static final Distance HUB_SHOT_PADDING = Meters.of(0.05);
+        public static final Distance HUB_IDEAL_SHOT_PADDING = Meters.of(0.2);
 
         public static final double alliancePassOffset = 2.135;
 
@@ -531,12 +549,12 @@ public final class Constants {
         public static final double IDLE_SHOOTER_RPS = 30.0;
         public static final double maxShooterDecel = -12.0;
 
-        public static final double P = 0.4;
+        public static final double P = 0.46;
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.115;
-        public static final double A = 1000.0;
-        public static final double S = 0.2;
+        public static final double A = 30000.0;
+        public static final double S = 0.22;
 
         public static final boolean CURRENT_LIMIT_ENABLE = false;
         public static final double CURRENT_LIMIT = 80;
@@ -619,14 +637,14 @@ public final class Constants {
         public static final double MAX_ACCELERATION = 100;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 45;
+        public static final double CURRENT_LIMIT = 50;
         public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 50.625;
 
-        public static final double MAGNET_OFFSET = -0.127197;
-        public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.Clockwise_Positive;
+        public static final double MAGNET_OFFSET = 1.283203;
+        public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.CounterClockwise_Positive;
 
         public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(-2);
         public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(132);
@@ -696,6 +714,17 @@ public final class Constants {
         
         public static final int LASER_ID = 0; 
         public static final double DETECTION_DISTANCE = 20.0;
+
+        public static final InterpolatingDoubleTreeMap feederSpeedMap = new InterpolatingDoubleTreeMap();
+            static {
+                feederSpeedMap.put(0.5, 10.0);
+                feederSpeedMap.put(1.5,  18.0);
+                feederSpeedMap.put(2.5,  19.4);
+                feederSpeedMap.put(3.5,  21.0);
+                feederSpeedMap.put(4.5,  22.5);
+                feederSpeedMap.put(5.5,  24.0);
+                feederSpeedMap.put(7.0,  25.5);
+            }
     }
 
     //#endregion
@@ -705,14 +734,14 @@ public final class Constants {
         
         public static final int MOTOR_ID = 17;
 
-        public static final double P = 80.0;
+        public static final double P = 90.0;
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.22226;
-        public static final double A = 17.0318; //0.70318
-        public static final double S = 0.23135;
+        public static final double A = 37.0318; //0.70318
+        public static final double S = 1.53135;
 
-        public static final double MAX_RPS = 20.0; // 13.238
+        public static final double MAX_RPS = 22.0; // 13.238
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 60;
@@ -791,17 +820,17 @@ public final class Constants {
     
     public static class IntakeConstants {
 
-        public static final int MOTOR_ID = 15;
+        public static final int LEAD_MOTOR_ID = 15;
 
-        public static final double MAX_RPS = 100;
+        public static final double MAX_RPS = 40;
 
-        public static final double P = 25.0;
+        public static final double P = 45.0;
         public static final double I = 0.0;
         public static final double D = 0.0;
-        public static final double V = 0.23273; // Maybe increase this?
-        public static final double A = 73.05; // 0.7305
+        public static final double V = 1.23273; // Maybe increase this?
+        public static final double A = 75.05; // 0.7305 
 
-        public static final boolean CURRENT_LIMIT_ENABLE = true;
+        public static final boolean CURRENT_LIMIT_ENABLE = false;
         public static final double CURRENT_LIMIT = 40;
         public static final double LOWER_LIMIT = 20;
 
@@ -818,6 +847,7 @@ public final class Constants {
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
             .withSupplyCurrentLimit(CURRENT_LIMIT)
+            .withStatorCurrentLimit(160)
             .withSupplyCurrentLowerLimit(LOWER_LIMIT)
             .withSupplyCurrentLowerTime(LOWER_TIME);
 

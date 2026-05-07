@@ -11,6 +11,7 @@ import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VoltageOut;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.units.measure.Voltage;
@@ -29,8 +30,8 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
 
     private double currentSetpoint;
-
     private final VelocityTorqueCurrentFOC velocityTorqueRequest = new VelocityTorqueCurrentFOC(0.0);
+    private final SlewRateLimiter slewRateLimiter = new SlewRateLimiter(50);
 
     private final TorqueCurrentFOC sysIdControl = new TorqueCurrentFOC(0.0);
     private boolean isCharacterizing = false;
@@ -88,9 +89,11 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
             MAX_RPS
         );
 
+        double limitedSetpoint = slewRateLimiter.calculate(currentSetpoint);
+
         if (!isCharacterizing) {
-            if (currentSetpoint != 0) {
-                velocityTorqueRequest.Velocity = currentSetpoint;
+            if (limitedSetpoint != 0) {
+                velocityTorqueRequest.Velocity = limitedSetpoint;
                 motor.setControl(velocityTorqueRequest);
             } else {
                 motor.setControl(new VoltageOut(0.0));
@@ -99,7 +102,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         rpsPublisher.accept(getCurrentRPM());
-        setpointPublisher.accept(currentSetpoint);
+        setpointPublisher.accept(currentSetpoint); 
     }
 
     public double getCurrentRPM() {
@@ -139,8 +142,8 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
     }
 
     public enum IndexerState {
-        FORWARD(19.0),
-        REVERSE(-19.0),
+        FORWARD(22.0),
+        REVERSE(-22.0),
         OFF(0.0);
 
         public double rps;

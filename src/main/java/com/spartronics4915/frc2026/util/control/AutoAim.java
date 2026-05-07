@@ -138,6 +138,22 @@ public class AutoAim {
      * @return The result of the auto-aim calculation.
      */
     public AutoAimResult calculateDynamicAim(Pose2d robotPose, ChassisSpeeds fieldSpeeds, ChassisSpeeds fieldAccelerations, Translation3d targetTranslation, double projectileSpeed, double processingCompensation) {
+        return calculateDynamicAim(robotPose, fieldSpeeds, fieldAccelerations, targetTranslation, projectileSpeed, processingCompensation, true);
+    }
+
+    /**
+     * Resolves the aim for a moving target / robot, taking into account the robot's current pose, field-relative speeds, target translation, and projectile shooting speed.
+     * 
+     * @param robotPose The current pose of the robot.
+     * @param fieldSpeeds The current field-relative speeds of the robot.
+     * @param fieldAccelerations The current field-relative accelerations of the robot.
+     * @param targetTranslation The translation of the target relative to the field.
+     * @param projectileSpeed The shooting speed of the projectile.
+     * @param processingCompensation The compensation (in seconds) for processing latency.
+     * @param compensateForToF Whether to compensate for the time of flight of the projectile.
+     * @return The result of the auto-aim calculation.
+     */
+    public AutoAimResult calculateDynamicAim(Pose2d robotPose, ChassisSpeeds fieldSpeeds, ChassisSpeeds fieldAccelerations, Translation3d targetTranslation, double projectileSpeed, double processingCompensation, boolean compensateForToF) {
         // Calculate the predicted state of the robot at the exact moment the projectile leaves the launcher
         double tSqHalf = 0.5 * squared(processingCompensation);
         Rotation2d futureRotation = robotPose.getRotation().plus(
@@ -181,7 +197,7 @@ public class AutoAim {
             
             Translation3d displacement = calculateDisplacement(
                 robotPose, fieldSpeeds, fieldAccelerations, turretFieldSpeedsAtLaunch, 
-                currentTurretTranslation, processingCompensation, result.ToF()
+                currentTurretTranslation, processingCompensation, compensateForToF ? result.ToF() : 0.0
             );
 
             if (i > 0 && displacement.minus(prevDisplacement).getNorm() < convergenceThreshold) {
@@ -197,7 +213,7 @@ public class AutoAim {
         double lookaheadWaitTime = processingCompensation + lookaheadTime;
         Translation3d lookaheadDisplacement = calculateDisplacement(
             robotPose, fieldSpeeds, fieldAccelerations, turretFieldSpeedsAtLaunch, 
-            currentTurretTranslation, lookaheadWaitTime, result.ToF()
+            currentTurretTranslation, lookaheadWaitTime, compensateForToF ? result.ToF() : 0.0
         );
 
         AutoAimResult lookaheadResult = calculateStaticAim(

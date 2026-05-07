@@ -7,9 +7,10 @@ import static edu.wpi.first.units.Units.Meters;
 import java.util.Set;
 
 import com.spartronics4915.frc2026.commands.DriveCommand;
+import com.spartronics4915.frc2026.commands.DriveCommand.SpeedLimitMode;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands.PipelineState;
-import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
+import com.spartronics4915.frc2026.autos.Autos;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 import com.spartronics4915.frc2026.util.control.FieldRegion;
@@ -48,7 +49,6 @@ public class Superstructure extends SubsystemBase {
     }
 
     private final SwerveSubsystem swerve;
-    private final ShooterSubsystem shooter;
     private final AutoAimController controller;
     private final SuperstructureCommands superCommands;
     private final DriveCommand driveCommand;
@@ -69,14 +69,12 @@ public class Superstructure extends SubsystemBase {
 
     public Superstructure(
         SwerveSubsystem swerve,
-        ShooterSubsystem shooter,
         AutoAimController controller,
         SuperstructureCommands superCommands,
         DriveCommand driveCommand,
         VisionSubsystem vision
     ) {
         this.swerve = swerve;
-        this.shooter = shooter;
         this.controller = controller;
         this.superCommands = superCommands;
         this.driveCommand = driveCommand;
@@ -92,6 +90,8 @@ public class Superstructure extends SubsystemBase {
             System.err.println("Error initializing LaserCan: " + e.getMessage());
         }
 
+        driveCommand.setSpeedLimit(SpeedLimitMode.OFF);
+
         configureTriggers();
     }
 
@@ -101,13 +101,13 @@ public class Superstructure extends SubsystemBase {
         return Math.abs(pos.minus(hubPose).getY()) > bumpTrenchDivTransform.getY();
     }
 
-    private Translation2d nearestHub(Translation2d pos) {
+    private Translation2d getClosestHub(Translation2d pos) {
         boolean closerToBlueHub = pos.minus(centerPose).getX() < 0;
         return closerToBlueHub ? hubPose : centerPose.minus(hubPose).times(2).plus(hubPose);
     }
 
     private double hubDeltaX(Translation2d pos) {
-        return pos.minus(nearestHub(pos)).getX();
+        return pos.minus(getClosestHub(pos)).getX();
     }
 
     private FieldZoneMap<Zone> buildZoneMap() {
@@ -119,12 +119,13 @@ public class Superstructure extends SubsystemBase {
             ChassisSpeeds vel = swerve.getFieldRelativeVelocity();
             Translation2d projected = pose.plus(
                 new Translation2d(vel.vxMetersPerSecond, vel.vyMetersPerSecond)
-                    .times(TRENCH_LOOKAHEAD_SEC));
+                    .times(TRENCH_LOOKAHEAD_SEC)
+            );
 
             double hubPos = hubDeltaX(pose);
             double hubProjected = hubDeltaX(projected);
 
-            boolean atPose =       inTrenchColumn(pose)      && Math.abs(hubPos)       < trenchLength.in(Meters) / 2.0;
+            boolean atPose = inTrenchColumn(pose) && Math.abs(hubPos) < trenchLength.in(Meters) / 2.0;
             boolean atFuturePose = inTrenchColumn(projected) && Math.abs(hubProjected) < trenchLength.in(Meters) / 2.0;
 
             boolean projectedValid = (hubPos * hubProjected) <= 0.0 && (inTrenchColumn(pose) || inTrenchColumn(projected));
@@ -169,12 +170,6 @@ public class Superstructure extends SubsystemBase {
             zonePublisher.accept(currentZone.name());
         }
 
-        if (currentZone == Zone.ALLIANCE_ZONE && shooter.getIsShooting()) {
-            driveCommand.setSpeedLimit(false);
-        } else {
-            driveCommand.setSpeedLimit(false);
-        }
-
         Pose2d pose = swerve.getPose();
         
         if (pose != null) {
@@ -207,31 +202,20 @@ public class Superstructure extends SubsystemBase {
     private void configureTriggers() {
         // Zone triggers
         new Trigger(() -> currentZone == Zone.ALLIANCE_ZONE)
-            .onTrue(superCommands.shooting().withName("Auto: Shooting Zone"));
+            .onTrue(superCommands.shooting().withName("Auto: Shooting Zone").ignoringDisable(true));
         new Trigger(() -> currentZone == Zone.TRENCH)
-            .onTrue(superCommands.trench().withName("Auto: Trench Traversal"));
+            .onTrue(superCommands.trench().withName("Auto: Trench Traversal").ignoringDisable(true));
         new Trigger(() -> currentZone == Zone.NEUTRAL_ZONE)
-            .onTrue(superCommands.traversal().withName("Auto: Neutral Traversal"));
+            .onTrue(superCommands.traversal().withName("Auto: Neutral Traversal").ignoringDisable(true));
         new Trigger(() -> currentZone == Zone.BUMP || currentZone == Zone.OPPONENT_ZONE)
-            .onTrue(superCommands.cruise().withName("Auto: Cruise Zone"));
+            .onTrue(superCommands.cruise().withName("Auto: Cruise Zone").ignoringDisable(true));
 
         // Pipeline triggers, falling edge debounced so the pipeline turns on instantly
         // but won't turn off until isReadyToShoot has been false for the full duration.
         Trigger pipelineOn = new Trigger(controller::isReadyToShoot)
             .onTrue(superCommands.setPipelineState(PipelineState.ON))
             .onFalse(superCommands.setPipelineState(PipelineState.OFF));
-
-        // In auto, jostle the pivot while the pipeline is active
-        pipelineOn
-            .and(DriverStation::isAutonomous)
-            .whileTrue(Commands.sequence(
-                superCommands.conditionalPivotSafe(),
-                Commands.waitSeconds(0.5 / PIVOT_JOSTLE_FREQUENCY),
-                superCommands.conditionalPivotReady(),
-                Commands.waitSeconds(0.5 / PIVOT_JOSTLE_FREQUENCY)
-            ).repeatedly())
-            .whileFalse(superCommands.conditionalPivotReady());
-        
+            
         RobotModeTriggers.teleop().onTrue(Commands.runOnce(() -> {
             controller.setShootingState(false);
         }));
@@ -252,5 +236,29 @@ public class Superstructure extends SubsystemBase {
                 default: return superCommands.idle();
             }
         }, Set.of()).withName("Restore Zone State");
+    }
+
+    /**
+     * Jostles the pivot back and forth, then leaves it in READY (down), stopping 0.5s before `duration` finishes.
+     */
+    public Command getJostleCommand(double duration) {
+        if (duration <= 0.5) return Commands.sequence(
+            superCommands.conditionalPivotReady(),
+            Autos.wait(duration)
+        );
+        
+        return Commands.sequence(
+            Commands.deadline(
+                Autos.wait(duration - 0.5),
+                Commands.sequence(
+                    superCommands.conditionalPivotSafe(),
+                    Commands.waitSeconds(0.5 / PIVOT_JOSTLE_FREQUENCY),
+                    superCommands.conditionalPivotReady(),
+                    Commands.waitSeconds(0.5 / PIVOT_JOSTLE_FREQUENCY)
+                ).repeatedly()
+            ),
+            superCommands.conditionalPivotReady(),
+            Autos.wait(0.5)
+        );
     }
 }

@@ -4,6 +4,13 @@
 
 package com.spartronics4915.frc2026;
 
+import java.io.File;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+import com.spartronics4915.frc2026.autos.Autos;
+
 import au.grapplerobotics.CanBridge;
 import edu.wpi.first.net.WebServer;
 import edu.wpi.first.networktables.BooleanPublisher;
@@ -57,8 +64,10 @@ public class Robot extends TimedRobot {
     public void robotInit() {
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
 
-        DataLogManager.start();
-        DriverStation.startDataLog(DataLogManager.getLog(), true);
+        if (Robot.isReal()) {
+            String filename = "FRC_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".wpilog";
+            DataLogManager.start("", filename);
+        }
 
         NetworkTable metaData = NetworkTableInstance.getDefault().getTable("Metadata");
         metaData.getStringTopic("Git: SHA").publish().accept(BuildConstants.GIT_SHA);
@@ -105,6 +114,7 @@ public class Robot extends TimedRobot {
     /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
     @Override
     public void autonomousInit() {
+        Autos.surveyMode = false;
         autonomousCommand = robotContainer.getAutonomousCommand();
 
         shiftNamePub.set("Auto");
