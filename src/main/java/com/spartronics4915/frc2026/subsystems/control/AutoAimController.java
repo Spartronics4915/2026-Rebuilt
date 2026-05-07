@@ -459,13 +459,13 @@ public class AutoAimController extends SubsystemBase {
                 turret.getPosition().getDegrees() 
                 - turretController.getLastSetpoint(), 360.0
             )
-        ) <= (isPassTarget() ? 15.0 : 4.0);
+        ) <= turretTolerance;
     }
 
     public boolean isHoodReady() {
         return Math.abs(
             hood.getPosition().minus(hood.getCurrentSetpoint()).getDegrees()
-        ) <= (isPassTarget() ? 15.0 : 5.0);
+        ) <= hoodTolerance;
     }
 
     //#endregion

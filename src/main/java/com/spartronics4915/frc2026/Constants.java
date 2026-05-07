@@ -523,6 +523,9 @@ public final class Constants {
         public static final double manualShooterLeniency = 0.1;
         public static final double ferryingShooterLeniency = 0.7;
 
+        public static final double turretTolerance = 7.5;
+        public static final double hoodTolerance = 4.0;
+
         public static final double processingCompensation = 0.05;
 
         public static final Distance HUB_SHOT_PADDING = Meters.of(0.05);
