@@ -13,76 +13,52 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstant
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.centerPose;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.hubPose;
 
-import java.util.Arrays;
-
+// The idea behind this file was so that we could have a cool visualization of the robot driving over the bump,
+// but it was never finished, so all it does now is flip the robot 180 when a swerve module is on the bump,
+// so that bump autos know when to end (since 180 > tilt tolerance). Sorry I could never finish this - Daniil
 public class BumpSim {
     private final Pose2d[] modulePoses;
-    private final int maxIterations;
-    private final double convergenceThreshold;
     StructArrayPublisher<Pose3d> posePublisher = NetworkTableInstance.getDefault().getStructArrayTopic("Modules", Pose3d.struct).publish();
 
     /***
      * Constructor for BumpSim
      * 
-     * @param modulePoses
-     *            the poses of the swerve modules relative to the robot center, in the order of FL, FR, BL, BR
-     * @param maxIterations
-     *            the maximum number of iterations to run the simulation for, to prevent infinite loops. Should be set high enough to
-     *            allow convergence, but low enough to prevent long runtimes in edge cases.
-     * @param convergenceThreshold
-     *            the threshold for determining convergence of swerve angle in degrees
+     * @param modulePoses the poses of the swerve modules relative to the robot center, in the order of FL, FR, BL, BR
      */
-    public BumpSim(Pose2d[] modulePoses, int maxIterations, double convergenceThreshold) {
+    public BumpSim(Pose2d[] modulePoses) {
         this.modulePoses = modulePoses;
-        this.maxIterations = maxIterations;
-        this.convergenceThreshold = convergenceThreshold;
     }
 
     /***
-     * Calculates the pose of the robot in 3d based on the 2d pose of the robot. Runs for a certain number of iterations, as the
-     * projected swerve modules in 2d get closer together as the tilt of the robot increases. Only call this in Simulation, and use the
-     * IMU otherwise.
+     * Resolves whether the robot is on the bump and flips it 180 degrees if so.
      * 
-     * @param robotPose 
-     *            2d pose of the robot
-     * @return Pose3d of the robot, with the Z value representing the estimated height of the robot based on swerve module heights
+     * @param robotPose 2d pose of the robot
+     * @return Pose3d of the robot with 180-degree rotation if on bump, otherwise normal pose
      */
     public Pose3d resolveRobotPose(Pose2d robotPose) {
-        Rotation3d currentRotation = new Rotation3d();
-
-        // for (int i = 0; i < maxIterations; i++) {
         Translation3d[] globalModulePoses = new Translation3d[modulePoses.length];
-        int highestModuleIndex = -1;
 
         for (int m = 0; m < modulePoses.length; m++) {
             Pose2d modulePose = modulePoses[m];
-            Translation3d localPose = new Translation3d(modulePose.getX(), modulePose.getY(), 0);
-            Translation3d rotatedPose = localPose.rotateBy(currentRotation);
-            Translation2d transModulePose = new Translation2d(rotatedPose.getX(), rotatedPose.getY());
-            transModulePose = robotPose.getTranslation().plus(transModulePose.rotateBy(robotPose.getRotation()));
-
+            Translation2d transModulePose = robotPose.getTranslation().plus(modulePose.getTranslation().rotateBy(robotPose.getRotation()));
             double altitude = getFloorHeight(transModulePose);
             globalModulePoses[m] = new Translation3d(transModulePose.getX(), transModulePose.getY(), altitude);
-
-            // if (highestModuleIndex == -1 || altitude > globalModulePoses[highestModuleIndex].getZ()) {
-            //     highestModuleIndex = m;
-            // }
         }
 
-        // int modulePair = (highestModuleIndex + (highestModuleIndex % 2 == 0 ? 1 : -1) + modulePoses.length) % modulePoses.length; // Pair modules are FL-BR and FR-BL
+        // Publish module poses for visualization
         Pose3d[] publishPoses = new Pose3d[globalModulePoses.length];
         for (int i = 0; i < publishPoses.length; i++) {
             publishPoses[i] = new Pose3d(globalModulePoses[i], new Rotation3d());
         }
         posePublisher.accept(publishPoses);
 
+        // If any module is on the bump, flip the robot 180 degrees
         for (int m = 0; m < modulePoses.length; m++) {
             if (globalModulePoses[m].getZ() > 0.01) {
                 return new Pose3d(new Pose3d(robotPose).getTranslation().plus(new Translation3d(0, 0, 1)), new Rotation3d(Math.PI, 0, 0));
             }
         }
 
-        // }
         return new Pose3d(robotPose);
     }
 
@@ -100,6 +76,7 @@ public class BumpSim {
 
         double distToBump = Units.metersToInches(Math.abs(coordinates.minus(closestHub).getX()));
 
+        // Equation for bump height. 6.56 is max height, and is 24.47 inches each way from the center. This is a basic rise over run equation.
         double altitude = 6.56 - 6.56*(distToBump / 24.47);
 
         return Math.max(Units.inchesToMeters(altitude), 0.0);
