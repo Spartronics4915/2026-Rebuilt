@@ -347,7 +347,6 @@ public class SuperstructureCommands {
         return (Robot.isReal() ? pivot.getPosition() : pivot.getSetpoint()).getDegrees() <= pivotSafeThreshold.getDegrees();
     }
 
-    // TODO: Make this work the same as the turret ready check in AutoAimController
     private boolean isTurretSafe() {
         double degrees = turret.getPosition().getDegrees();
         return degrees >= turretMinSafeThreshold.getDegrees() 

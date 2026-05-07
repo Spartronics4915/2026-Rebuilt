@@ -451,8 +451,6 @@ public class AutoAimController extends SubsystemBase {
         return false;
     }
 
-    // TODO: This could not be working
-
     public boolean isTurretReady() {
         if (turretController.isWrapping()) return false;
 
