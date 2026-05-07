@@ -64,7 +64,7 @@ public class RobotContainer {
 
     public final PivotSubsystem pivotSubsystem = new PivotSubsystem();
     public final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
-    // public final ClimberSubsystem climberSubsystem = new ClimberSubsystem();
+    // public final ClimberSubsystem climberSubsystem = new ClimberSubsystem(); // !CLIMBER!
 
     public final IndexerSubsystem indexerSubsystem = new IndexerSubsystem();
     public final FeederSubsystem feederSubsystem = new FeederSubsystem();
@@ -80,7 +80,7 @@ public class RobotContainer {
     );
     
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
-    private final DriveToPOI POIFactory = new DriveToPOI(swerveSubsystem, null);
+    private final DriveToPOI POIFactory = new DriveToPOI(swerveSubsystem, null); // !CLIMBER!
     private final NeutralZoneAutos neutralZoneFactory = new NeutralZoneAutos(swerveSubsystem);
     private final PreAlignment preAlignmentFactory = new PreAlignment(swerveSubsystem);
 
@@ -97,7 +97,7 @@ public class RobotContainer {
         feederSubsystem, 
         indexerSubsystem, 
         shooterSubsystem, 
-        null, 
+        null, // !CLIMBER!
         intakeSubsystem,
         pivotSubsystem, 
         autoAimController
@@ -158,6 +158,7 @@ public class RobotContainer {
         ChassisSpeeds driverNudgeRight = new ChassisSpeeds(0, -0.25, 0);
         ChassisSpeeds driverNudgeDown = new ChassisSpeeds(-0.25, 0, 0);
 
+        // !CLIMBER! (remove the conflicting nudge commands)
         // driverController.povUp().onTrue(
         //     climberSubsystem.setStateCommand(ClimberState.JORBIT)
         // );
@@ -218,6 +219,7 @@ public class RobotContainer {
             })
         );
 
+        // !CLIMBER!
         // driverController.y().whileTrue(
         //     POIFactory.generateCommand(POI.TOWER)
         // );
@@ -400,6 +402,7 @@ public class RobotContainer {
             autoAimController.shootingToggle()
         );
 
+        // !CLIMBER!
         // debugController.y().whileTrue(
         //     POIFactory.generateCommand(POI.TOWER)
         // );
