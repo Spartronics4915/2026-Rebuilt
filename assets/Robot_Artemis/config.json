@@ -1,6 +1,7 @@
 {
     "name": "Artemis",
     "isFTC": false,
+    "position": [0, 0, 0],
     "rotations": [
         {
             "axis": "x",
@@ -8,13 +9,14 @@
         },
         {
             "axis": "y",
-            "degrees": 0
+            "degrees": 180
         },
         {
             "axis": "z",
             "degrees": 0
         }
     ],
+    "cameras": [],
     "components": [
         {
             "zeroedRotations": [
@@ -24,7 +26,7 @@
                 },
                 {
                     "axis": "y",
-                    "degrees": 0
+                    "degrees": 180
                 },
                 {
                     "axis": "z",
@@ -32,9 +34,9 @@
                 }
             ],
             "zeroedPosition": [
+                -0.2842,
                 0.0,
-                0.0,
-                0.0
+                -0.1825
             ]
         },
         {
@@ -45,7 +47,7 @@
                 },
                 {
                     "axis": "y",
-                    "degrees": 0
+                    "degrees": 180
                 },
                 {
                     "axis": "z",
@@ -53,9 +55,9 @@
                 }
             ],
             "zeroedPosition": [
-                0.0,
-                0.0,
-                0.0
+                0.118295, 
+                0.143695,
+                -0.362276
             ]
         },
         {
@@ -66,7 +68,7 @@
                 },
                 {
                     "axis": "y",
-                    "degrees": 0
+                    "degrees": 180
                 },
                 {
                     "axis": "z",
@@ -74,9 +76,9 @@
                 }
             ],
             "zeroedPosition": [
-                0.0,
-                0.0,
-                0.0
+                0.1281,
+                0.0972,
+                -0.4953
             ]
         },
         {
@@ -87,7 +89,7 @@
                 },
                 {
                     "axis": "y",
-                    "degrees": 0
+                    "degrees": 180
                 },
                 {
                     "axis": "z",
@@ -95,30 +97,9 @@
                 }
             ],
             "zeroedPosition": [
-                0.0,
-                0.0,
-                0.0
-            ]
-        },
-        {
-            "zeroedRotations": [
-                {
-                    "axis": "x",
-                    "degrees": 0
-                },
-                {
-                    "axis": "y",
-                    "degrees": 0
-                },
-                {
-                    "axis": "z",
-                    "degrees": 0
-                }
-            ],
-            "zeroedPosition": [
-                0.0,
-                0.0,
-                0.0
+                -0.0472,
+                0.0002,
+                -0.0619
             ]
         }
   ]
