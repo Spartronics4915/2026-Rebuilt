@@ -26,7 +26,6 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.networktables.BooleanPublisher;
@@ -237,10 +236,6 @@ public class VisionSubsystem extends SubsystemBase {
             Optional<Pose3d> pose = VisionConstants.apriltagFieldLayout.getTagPose(tags.get(i).getFiducialId());
             tagPoseScratch[i] = pose.orElse(new Pose3d());
         }
-
-        for (int i = tags.size(); i < tagPoseScratch.length; i++) {
-            tagPoseScratch[i] = new Pose3d(0, 0, 0, new Rotation3d(0, 0, 0));
-        }
     }
 
     private void publishDiagnostics(List<ApriltagResult> results) {
@@ -249,7 +244,8 @@ public class VisionSubsystem extends SubsystemBase {
             .max((a, b) -> Double.compare(a.getTimestampSeconds(), b.getTimestampSeconds()))
             .orElse(results.get(0));
 
-        updateTagPublishScratch(latest.getTrackedTags());
+        List<TrackedTag> trackedTags = latest.getTrackedTags();
+        updateTagPublishScratch(trackedTags);
 
         visionPose = latest.getPose();
         posePublisher.set(latest.getPose());
@@ -259,7 +255,11 @@ public class VisionSubsystem extends SubsystemBase {
         areaPublisher.accept(latest.getAverageArea());
         latencyPublisher.set(latest.getLatencyMs());
         targetCountPublisher.set(latest.getTargetCount());
-        trackedTagsPublisher.set(tagPoseScratch);
+        
+        // Only publish the detected tags, not the entire scratch array
+        Pose3d[] detectedTags = new Pose3d[trackedTags.size()];
+        System.arraycopy(tagPoseScratch, 0, detectedTags, 0, trackedTags.size());
+        trackedTagsPublisher.set(detectedTags);
     }
 
     public Pose3d[] getTargetPoses(List<TrackedTag> tags) {

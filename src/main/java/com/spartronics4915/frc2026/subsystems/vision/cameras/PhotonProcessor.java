@@ -160,7 +160,7 @@ public class PhotonProcessor implements ProcessorInterface {
     private void initTagCache() {
         for (int i = 0; i < maxQueueSize; i++) {
             for (int j = 0; j < maxTagsPerFrame; j++) {
-                tagCache[i][j] = new TrackedTag(0, 0.0, 0.0); 
+                tagCache[i][j] = new TrackedTag(-1, 0.0, 0.0); 
             }
         }
     }

@@ -40,7 +40,7 @@ public class ApriltagResult implements ResultInterface {
     public ApriltagResult() {
         ownedTags = new TrackedTag[maxTagsPerFrame];
         for (int i = 0; i < maxTagsPerFrame; i++) {
-            ownedTags[i] = new TrackedTag(0, 0.0, 0.0);
+            ownedTags[i] = new TrackedTag(-1, 0.0, 0.0);
         }
     }
 
