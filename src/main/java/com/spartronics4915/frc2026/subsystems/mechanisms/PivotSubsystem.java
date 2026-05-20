@@ -20,7 +20,9 @@ import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.LoggedTrapezoidPr
 import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.networktables.DoublePublisher;
@@ -76,8 +78,8 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
     private final StructPublisher<Rotation2d> positionPublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("Position", Rotation2d.struct).publish();
     private final StructPublisher<Rotation2d> desiredStatePublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("Desired State", Rotation2d.struct).publish();
     private final StructPublisher<Rotation2d> setpointPublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("Setpoint", Rotation2d.struct).publish();
-
     private final StructPublisher<Rotation2d> encoderPositionPublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("encoder position", Rotation2d.struct).publish();
+    private final StructPublisher<Pose3d> pose3dPublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("Pose3d", Pose3d.struct).publish();
     
     public PivotSubsystem() {
         TalonFXConfigurator motorConfig = motor.getConfigurator();
@@ -130,6 +132,10 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
         setpointPublisher.accept(currentSetpoint);
 
         encoderPositionPublisher.accept(Rotation2d.fromRotations(encoder.getAbsolutePosition().getValueAsDouble()));
+        pose3dPublisher.accept(
+            new Pose3d(0.2842, 0, 0.1825, 
+            new Rotation3d(0, getPosition().getRadians(), 0))
+        );
     }
 
     public Rotation2d getPosition() {
