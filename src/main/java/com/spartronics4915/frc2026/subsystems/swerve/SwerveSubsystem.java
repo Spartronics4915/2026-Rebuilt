@@ -454,6 +454,7 @@ public class SwerveSubsystem extends SubsystemBase {
         private final StructPublisher<Pose2d> pose = root.getStructTopic("Pose", Pose2d.struct).publish();
         private final StructPublisher<Pose3d> pose3dPub = root.getStructTopic("Pose3d", Pose3d.struct).publish();
         private final StructPublisher<Pose2d> smoothed = root.getStructTopic("SmoothedPose", Pose2d.struct).publish();
+        private final StructPublisher<Pose2d> origin = root.getStructTopic("OriginPose", Pose2d.struct).publish();
         private final StructPublisher<ChassisSpeeds> measuredSpeeds = root.getStructTopic("MeasuredSpeeds", ChassisSpeeds.struct).publish();
         private final StructPublisher<ChassisSpeeds> fieldSpeeds = root.getStructTopic("FieldRelativeSpeeds", ChassisSpeeds.struct).publish();
  
@@ -516,6 +517,7 @@ public class SwerveSubsystem extends SubsystemBase {
         void publish(SwerveDriveState state, SwerveSubsystem swerve) {
             Pose2d rawPose = state.Pose;
             pose.set(rawPose);
+            origin.set(new Pose2d());
             pose3dPub.set(SwerveSubsystem.pose3d);
 
             smoothed.set(swerve.smoothedPose);
