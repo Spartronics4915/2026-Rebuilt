@@ -12,8 +12,11 @@ import com.ctre.phoenix6.controls.VoltageOut;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -32,6 +35,8 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private double currentSetpoint;
     private final VelocityTorqueCurrentFOC velocityTorqueRequest = new VelocityTorqueCurrentFOC(0.0);
     private final SlewRateLimiter slewRateLimiter = new SlewRateLimiter(50);
+    
+    private double indexerAngle = 0.0; // Tracks cumulative rotation angle in radians
 
     private final TorqueCurrentFOC sysIdControl = new TorqueCurrentFOC(0.0);
     private boolean isCharacterizing = false;
@@ -58,6 +63,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("indexer").getDoubleTopic("applied out").publish();
     private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("indexer").getDoubleTopic("rps").publish();
     private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("indexer").getDoubleTopic("setpoint").publish();
+    private final StructPublisher<Pose3d> pose3dPublisher = NetworkTableInstance.getDefault().getTable("indexer").getStructTopic("Pose3d", Pose3d.struct).publish();
 
     public IndexerSubsystem() {
         TalonFXConfigurator configurator = motor.getConfigurator();
@@ -99,14 +105,29 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
                 motor.setControl(new VoltageOut(0.0));
             }
         }
-
+        
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
-        rpsPublisher.accept(getCurrentRPM());
-        setpointPublisher.accept(currentSetpoint); 
+        rpsPublisher.accept(getCurrentRPS());
+        setpointPublisher.accept(currentSetpoint);
+        
+        // Publish 3D pose with rotation around Z-axis (perpendicular to intake flow)
+
+        indexerAngle += getCurrentRPS() * 2 * Math.PI * 0.02;
+
+        pose3dPublisher.accept(
+            new Pose3d(
+                0.0472, -0.0002, 0.0619, 
+                new Rotation3d(0, 0, indexerAngle)
+            )
+        );
     }
 
-    public double getCurrentRPM() {
+    public double getCurrentRPS() {
         return motor.getVelocity().getValueAsDouble();
+    }
+
+    public double getCurrentSetpoint() {
+        return currentSetpoint;
     }
 
     public void setSetpoint(double setpoint){
