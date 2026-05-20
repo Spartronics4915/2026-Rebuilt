@@ -125,6 +125,9 @@ public class RobotContainer {
             });
         });
 
+        // Initialize hood with turret reference for 3D visualization
+        hoodSubsystem.setTurretSubsystem(turretSubsystem);
+
         feederSubsystem.setDistanceSupplier(autoAimController::getDistanceToTarget);
 
         SmartDashboard.putData("Auto-Aim Toggle", autoAimController.aimToggle());

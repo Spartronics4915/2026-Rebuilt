@@ -12,7 +12,9 @@ import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -37,6 +39,8 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
     private State targetState = new State();
+    
+    private TurretSubsystem turret;
 
     private final PositionTorqueCurrentFOC positionTorqueRequest = new PositionTorqueCurrentFOC(0.0);
 
@@ -69,6 +73,7 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("hood").getDoubleTopic("applied out").publish();
     private final StructPublisher<Rotation2d> positionPublisher = NetworkTableInstance.getDefault().getTable("hood").getStructTopic("position", Rotation2d.struct).publish();
     private final StructPublisher<Rotation2d> setpointPublisher = NetworkTableInstance.getDefault().getTable("hood").getStructTopic("setpoint", Rotation2d.struct).publish();
+    private final StructPublisher<Pose3d> pose3dPublisher = NetworkTableInstance.getDefault().getTable("hood").getStructTopic("Pose3d", Pose3d.struct).publish();
     
     public HoodSubsystem() {
         TalonFXConfigurator motorConfig = motor.getConfigurator();
@@ -96,6 +101,10 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
         SmartDashboard.putData("Hood Motor", motor);
     }
 
+    public void setTurretSubsystem(TurretSubsystem turretSubsystem) {
+        this.turret = turretSubsystem;
+    }
+
     @Override
     public void periodic(){
         targetState.position = MathUtil.clamp(
@@ -119,6 +128,13 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         positionPublisher.accept(getPosition());
         setpointPublisher.accept(Rotation2d.fromRotations(targetState.position));
+        
+        // Publish 3D pose with turret rotation applied
+        double turretAngle = (turret != null) ? turret.getPosition().getRadians() : 0.0;
+        Rotation3d hoodRotation = new Rotation3d(-getPosition().getRadians(), 0, turretAngle);
+        pose3dPublisher.accept(
+            new Pose3d(-0.1181, -0.0972-0.0453, 0.4953 + getPosition().getTan() * 0.0453, hoodRotation)
+        );
     }
 
     public Rotation2d getPosition() {
