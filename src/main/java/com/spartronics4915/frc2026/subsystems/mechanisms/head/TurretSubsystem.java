@@ -19,7 +19,9 @@ import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
 import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -75,6 +77,7 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("turret").getDoubleTopic("applied out").publish();
     private final StructPublisher<Rotation2d> positionPublisher = NetworkTableInstance.getDefault().getTable("turret").getStructTopic("position", Rotation2d.struct).publish();
     private final StructPublisher<Rotation2d> setpointPublisher = NetworkTableInstance.getDefault().getTable("turret").getStructTopic("setpoint", Rotation2d.struct).publish();
+    private final StructPublisher<Pose3d> pose3dPublisher = NetworkTableInstance.getDefault().getTable("turret").getStructTopic("Pose3d", Pose3d.struct).publish();
 
     // Vision observer: called during turret's periodic() with accurate timestamp
     private BiConsumer<Rotation2d, Double> visionObserver;
@@ -135,6 +138,12 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
         appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
         positionPublisher.accept(getPosition());
         setpointPublisher.accept(Rotation2d.fromRotations(targetState.position));
+        pose3dPublisher.accept(
+            new Pose3d(
+                -0.118295, -0.143695, 0.362276, 
+                new Rotation3d(0, 0, getPosition().getRadians())
+            )
+        );
 
         // Notify vision of turret angle with accurate FPGA timestamp
         if (visionObserver != null) {
