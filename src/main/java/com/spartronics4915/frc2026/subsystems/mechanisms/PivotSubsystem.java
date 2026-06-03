@@ -134,7 +134,7 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
         encoderPositionPublisher.accept(Rotation2d.fromRotations(encoder.getAbsolutePosition().getValueAsDouble()));
         pose3dPublisher.accept(
             new Pose3d(0.2842, 0, 0.1825, 
-            new Rotation3d(0, getPosition().getRadians(), 0))
+            new Rotation3d(0, -getPosition().plus(Rotation2d.fromDegrees(-130)).getRadians(), 0))
         );
     }
 
