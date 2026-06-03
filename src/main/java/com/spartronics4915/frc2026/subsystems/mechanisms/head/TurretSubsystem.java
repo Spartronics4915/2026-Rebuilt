@@ -12,7 +12,7 @@ import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.ctre.phoenix6.hardware.CANcoder;
-
+import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
 import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
@@ -152,6 +152,9 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
     }
 
     public Rotation2d getPosition() {
+        if (Robot.isSimulation()) {
+            return Rotation2d.fromRotations(targetState.position);
+        }
         double position = motor.getPosition().getValue().in(Rotations);
         return Rotation2d.fromRotations(position);
     }
