@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
+import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
 import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
@@ -134,6 +135,9 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     }
 
     public double getCurrentRPS() {
+        if (Robot.isSimulation()) {
+            return currentSetpoint;
+        }
         return leadMotor.getVelocity().getValueAsDouble();
     }
 
