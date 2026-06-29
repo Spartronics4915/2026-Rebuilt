@@ -5,9 +5,7 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.function.Supplier;
 
-import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 
 /**
@@ -28,9 +26,6 @@ import edu.wpi.first.wpilibj.Alert.AlertType;
  *
  * <p>Call {@link #apply()} once during {@code robotInit()} <em>after</em> all
  * subsystems are constructed (so all Alert groups are already registered).
- *
- * <p>This patch is a workaround for WPILib issue #7308 and can be removed once
- * the team upgrades to WPILib 2026.3.0 or later.
  */
 public final class AlertPatch {
 
@@ -46,8 +41,7 @@ public final class AlertPatch {
         int patched = 0;
         try {
             // Access Alert$SendableAlerts.groups (static Map<String, SendableAlerts>)
-            Class<?> sendableAlertsClass = Class.forName(
-                "edu.wpi.first.wpilibj.Alert$SendableAlerts");
+            Class<?> sendableAlertsClass = Class.forName("edu.wpi.first.wpilibj.Alert$SendableAlerts");
             Field groupsField = sendableAlertsClass.getDeclaredField("groups");
             groupsField.setAccessible(true);
 

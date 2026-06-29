@@ -26,30 +26,27 @@ import edu.wpi.first.math.numbers.N3;
  */
 public class PoseFusionEngine {
 
-    // ── Scratch lists (reused every call, never reallocated) ─────────────────
-    private final List<ApriltagResult> sortedScratch  = new ArrayList<>(8);
-    private final List<ApriltagResult> currentGroup   = new ArrayList<>(8);
-    private final List<ApriltagResult> bestGroup      = new ArrayList<>(8);
-    private final List<ApriltagResult> filteredScratch= new ArrayList<>(8);
-    private final List<ApriltagResult> validScratch   = new ArrayList<>(8);
-    private final List<TrackedTag>     tagScratch     = new ArrayList<>(16);
+    // ── Scratch lists (reused every call, never reallocated)
+    private final List<ApriltagResult> sortedScratch = new ArrayList<>(8);
+    private final List<ApriltagResult> currentGroup = new ArrayList<>(8);
+    private final List<ApriltagResult> bestGroup = new ArrayList<>(8);
+    private final List<ApriltagResult> filteredScratch = new ArrayList<>(8);
+    private final List<ApriltagResult> validScratch = new ArrayList<>(8);
+    private final List<TrackedTag> tagScratch = new ArrayList<>(16);
 
-    // ── Pre-allocated result + stddev (mutated in place) ─────────────────────
+    // ── Pre-allocated result + stddev (mutated in place)
     private final ApriltagResult fusedResult      = new ApriltagResult();
     private final Matrix<N3, N1> fusedStdDevScratch = VecBuilder.fill(0.0, 0.0, 0.0);
     private final boolean[]      tagPresenceBitset = new boolean[33];
 
-    // ── Mean-pose scratch (avoids new Pose2d in calculateMeanPose) ───────────
+    // ── Mean-pose scratch (avoids new Pose2d in calculateMeanPose)
     private double meanX, meanY, meanRad;
 
     /** Set to true by fusePoses() when a valid result is available in fusedResult. */
     private boolean hasFusedResult = false;
 
-    // ── Cached timestamp comparator (lambda is a singleton after first call) ──
-    private static final Comparator<ApriltagResult> BY_TIMESTAMP =
-        Comparator.comparingDouble(ApriltagResult::getTimestampSeconds);
-
-    // ─────────────────────────────────────────────────────────────────────────
+    // ── Cached timestamp comparator (lambda is a singleton after first call)
+    private static final Comparator<ApriltagResult> BY_TIMESTAMP = Comparator.comparingDouble(ApriltagResult::getTimestampSeconds);
 
     /**
      * Fuses the provided pose estimates. After this call, check {@link #hasFusedResult()};
@@ -180,8 +177,8 @@ public class PoseFusionEngine {
             sumCos += Math.cos(rad);
         }
         double invN = 1.0 / results.size();
-        meanX   = sumX * invN;
-        meanY   = sumY * invN;
+        meanX = sumX * invN;
+        meanY = sumY * invN;
         meanRad = Math.atan2(sumSin * invN, sumCos * invN);
     }
 
@@ -189,12 +186,12 @@ public class PoseFusionEngine {
         Pose2d pose, double refX, double refY, double refRad, Matrix<N3, N1> stdDevs
     ) {
         if (stdDevs == null) return Double.MAX_VALUE;
-        double dx     = pose.getX() - refX;
-        double dy     = pose.getY() - refY;
+        double dx = pose.getX() - refX;
+        double dy = pose.getY() - refY;
         double dtheta = Math.IEEEremainder(pose.getRotation().getRadians() - refRad, 2 * Math.PI);
-        double distX  = Math.abs(dx)     / Math.max(stdDevs.get(0, 0), 0.001);
-        double distY  = Math.abs(dy)     / Math.max(stdDevs.get(1, 0), 0.001);
-        double distT  = Math.abs(dtheta) / Math.max(stdDevs.get(2, 0), 0.001);
+        double distX = Math.abs(dx) / Math.max(stdDevs.get(0, 0), 0.001);
+        double distY = Math.abs(dy) / Math.max(stdDevs.get(1, 0), 0.001);
+        double distT = Math.abs(dtheta) / Math.max(stdDevs.get(2, 0), 0.001);
         return Math.sqrt(distX * distX + distY * distY + distT * distT);
     }
 
@@ -229,9 +226,9 @@ public class PoseFusionEngine {
 
             if (result.getTimestampSeconds() > latestTimestamp)
                 latestTimestamp = result.getTimestampSeconds();
-            sumLatency   += result.getLatencyMs();
+            sumLatency += result.getLatencyMs();
             sumAmbiguity += result.getAmbiguity();
-            sumArea      += result.getAverageArea();
+            sumArea += result.getAverageArea();
 
             List<TrackedTag> tracked = result.getTrackedTags();
             if (tracked != null) {
@@ -285,8 +282,7 @@ public class PoseFusionEngine {
             ApriltagResult result = results.get(i);
             Matrix<N3, N1> dev = result.getStdDevs();
             if (dev == null) continue;
-            double score = (2.0 * dev.get(0, 0) / StdDevConstants.baseXYStdDev)
-                         + (dev.get(2, 0)        / StdDevConstants.baseThetaStdDev);
+            double score = (2.0 * dev.get(0, 0) / StdDevConstants.baseXYStdDev) + (dev.get(2, 0) / StdDevConstants.baseThetaStdDev);
             if (score < bestScore) { bestScore = score; best = result; }
         }
         if (best == null) return false;

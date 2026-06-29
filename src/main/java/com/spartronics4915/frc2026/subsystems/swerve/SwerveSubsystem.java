@@ -14,7 +14,6 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain.SwerveDriveState;
-import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
@@ -498,29 +497,20 @@ public class SwerveSubsystem extends SubsystemBase {
         private final DoublePublisher[] steerTempC = new DoublePublisher[4];
         private final DoublePublisher[] steerCLError = new DoublePublisher[4];
 
-        // Pre-cached status signals for batch refresh — avoids 40 individual CAN calls per loop.
+        // Pre-cached status signals for batch refresh
         // Phoenix6 signals are cached by default; calling getValue() without prior refresh returns
         // a stale value from the last update thread. We register signals here so that one
         // BaseStatusSignal.refreshAll() call updates all of them atomically.
         // We use StatusSignal<?> (wildcards) because we only ever call getValueAsDouble(),
         // which is defined on the raw BaseStatusSignal and doesn't require the generic type.
-        @SuppressWarnings("unchecked")
         private final StatusSignal<?>[] driveCurrentSig = new StatusSignal[4];
-        @SuppressWarnings("unchecked")
         private final StatusSignal<?>[] driveVoltageSig = new StatusSignal[4];
-        @SuppressWarnings("unchecked")
         private final StatusSignal<?>[] driveTempSig = new StatusSignal[4];
-        @SuppressWarnings("unchecked")
         private final StatusSignal<?>[] driveCLErrorSig = new StatusSignal[4];
-        @SuppressWarnings("unchecked")
         private final StatusSignal<?>[] driveCLRefSig = new StatusSignal[4];
-        @SuppressWarnings("unchecked")
         private final StatusSignal<?>[] steerCurrentSig = new StatusSignal[4];
-        @SuppressWarnings("unchecked")
         private final StatusSignal<?>[] steerVoltageSig = new StatusSignal[4];
-        @SuppressWarnings("unchecked")
         private final StatusSignal<?>[] steerTempSig = new StatusSignal[4];
-        @SuppressWarnings("unchecked")
         private final StatusSignal<?>[] steerCLErrorSig = new StatusSignal[4];
 
         private BaseStatusSignal[] allModuleSignals;

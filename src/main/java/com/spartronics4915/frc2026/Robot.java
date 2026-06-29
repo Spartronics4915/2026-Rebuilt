@@ -3,9 +3,6 @@
 // the WPILib BSD license file in the root directory of this project.
 
 package com.spartronics4915.frc2026;
-
-import java.io.File;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -22,7 +19,6 @@ import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Filesystem;
-import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -57,7 +53,7 @@ public class Robot extends TimedRobot {
     private long loopCount = 0;
     private long overrunCount = 0;
     private static final double LOOP_BUDGET_MS = 20.0;
-    private static final double LOOP_WARN_MS = 15.0; // warn if > 75% of budget used
+    
     //private final BooleanPublisher isCanbusOK = NetworkTableInstance.getDefault().getBooleanTopic("Canbus OK").publish();
     //private final DoublePublisher canBusUtilizationPub = NetworkTableInstance.getDefault().getDoubleTopic("CAN Bus Utilization").publish();
     public boolean currentAllianceSelected = false;

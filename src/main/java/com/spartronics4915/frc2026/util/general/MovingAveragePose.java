@@ -1,7 +1,6 @@
 package com.spartronics4915.frc2026.util.general;
 
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Translation2d;
 
 /**
  * Exponential moving average filter for robot pose.
@@ -25,10 +24,6 @@ public class MovingAveragePose {
     private double filteredX;
     private double filteredY;
     private boolean initialized;
-
-    // Reusable Translation2d scratch to avoid per-call allocation.
-    // calculate() is called from robotPeriodic (single thread), so this is safe.
-    private Translation2d scratchTranslation = new Translation2d();
 
     /**
      * @param alpha Smoothing factor in (0, 1]. Higher = more responsive, less smooth.
