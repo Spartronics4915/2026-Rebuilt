@@ -149,11 +149,10 @@ public class AutoAimController extends SubsystemBase {
         double rawAccelY = (currentSpeeds.vyMetersPerSecond - lastFieldSpeeds.vyMetersPerSecond) / dt;
         double rawAccelOmega = (currentSpeeds.omegaRadiansPerSecond - lastFieldSpeeds.omegaRadiansPerSecond) / dt;
 
-        fieldAccelerations = new ChassisSpeeds(
-            accelFilterX.calculate(rawAccelX),
-            accelFilterY.calculate(rawAccelY),
-            accelFilterOmega.calculate(rawAccelOmega)
-        );
+        // Mutate in-place to avoid allocating a new ChassisSpeeds every 20ms
+        fieldAccelerations.vxMetersPerSecond    = accelFilterX.calculate(rawAccelX);
+        fieldAccelerations.vyMetersPerSecond    = accelFilterY.calculate(rawAccelY);
+        fieldAccelerations.omegaRadiansPerSecond = accelFilterOmega.calculate(rawAccelOmega);
         lastFieldSpeeds = currentSpeeds;
 
         updateCollisionCache();
@@ -244,6 +243,10 @@ public class AutoAimController extends SubsystemBase {
      * Pushes yaw to the turret and pitch to the hood.
      * Pitch is skipped when time-of-flight is {@code -1}, which the solver
      * uses to signal that the shot cannot land.
+     *
+     * <p>When not ready to shoot, aims the turret at the bottom funnel position
+     * using a dedicated (cheaper) solve so the turret is pre-positioned for intake.
+     * This avoids running a second full iterative solve on the same target.
      */
     private void applyAimResult(AutoAimResult result) {
         boolean readyToShoot = meetsFiringConditions(result);
@@ -255,7 +258,6 @@ public class AutoAimController extends SubsystemBase {
 
         if (!isAimEnabled) return;
         if (result.pitch() != null && shooter.getCurrentSetpoint() != 0) {
-            // This might be a little iffy because of flywheel losing speed
             hood.setComplexSetpoint(
                 Rotation2d.kCCW_Pi_2.minus(result.pitch()), 
                 result.pitchOmega() != null ? 
@@ -266,8 +268,18 @@ public class AutoAimController extends SubsystemBase {
             hood.setSetpoint(Rotation2d.kZero);
         }
 
+        // Determine recommended turret angle for autonomous cross-field passes
+        Rotation2d recommendedAngle = null;
+        if (DriverStation.isAutonomous()) {
+            recommendedAngle = swerve.getRelativePose().getY() > hubPose.getY()
+                ? Rotation2d.fromDegrees(90)
+                : Rotation2d.fromDegrees(-90);
+        }
+
         if (!readyToShoot) {
-            result = autoAim.calculateDynamicAim(
+            // Not ready to fire: park turret toward intake funnel.
+            // Run a lighter solve (no ToF compensation) to avoid a second full solve on the shot target.
+            AutoAimResult funnelResult = autoAim.calculateDynamicAim(
                 swerve.getSmoothedRelativePose(),
                 lastFieldSpeeds,
                 fieldAccelerations,
@@ -276,18 +288,24 @@ public class AutoAimController extends SubsystemBase {
                 processingCompensation,
                 false
             );
+            if (funnelResult != null && funnelResult.yaw() != null) {
+                turret.setComplexSetpoint(
+                    turretController.calculate(
+                        funnelResult.yaw(),
+                        swerve.getRelativePose().getRotation(),
+                        turret.getPosition(),
+                        recommendedAngle
+                    ),
+                    funnelResult.yawOmega() != null ?
+                        funnelResult.yawOmega() :
+                        RotationsPerSecond.of(0)
+                );
+            }
+            return;
         }
 
+        // Ready to shoot — apply the aim result yaw directly
         if (result.yaw() != null) {
-            Rotation2d recommendedAngle = null;
-            if (DriverStation.isAutonomous()) {
-                if (swerve.getRelativePose().getY() > hubPose.getY()) {
-                    recommendedAngle = Rotation2d.fromDegrees(90);
-                } else {
-                    recommendedAngle = Rotation2d.fromDegrees(-90);
-                }
-            }
-
             turret.setComplexSetpoint(
                 turretController.calculate(
                     result.yaw(),

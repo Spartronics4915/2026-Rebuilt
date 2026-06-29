@@ -20,10 +20,15 @@ import edu.wpi.first.math.geometry.Translation2d;
 public class MovingAveragePose {
 
     private final double alpha;
+    private final double oneMinusAlpha;
 
     private double filteredX;
     private double filteredY;
     private boolean initialized;
+
+    // Reusable Translation2d scratch to avoid per-call allocation.
+    // calculate() is called from robotPeriodic (single thread), so this is safe.
+    private Translation2d scratchTranslation = new Translation2d();
 
     /**
      * @param alpha Smoothing factor in (0, 1]. Higher = more responsive, less smooth.
@@ -31,6 +36,7 @@ public class MovingAveragePose {
      */
     public MovingAveragePose(double alpha) {
         this.alpha = Math.max(1e-6, Math.min(1.0, alpha));
+        this.oneMinusAlpha = 1.0 - this.alpha;
         this.initialized = false;
     }
 
@@ -47,10 +53,12 @@ public class MovingAveragePose {
             filteredY = raw.getY();
             initialized = true;
         } else {
-            filteredX = alpha * raw.getX() + (1.0 - alpha) * filteredX;
-            filteredY = alpha * raw.getY() + (1.0 - alpha) * filteredY;
+            filteredX = alpha * raw.getX() + oneMinusAlpha * filteredX;
+            filteredY = alpha * raw.getY() + oneMinusAlpha * filteredY;
         }
-        return new Pose2d(new Translation2d(filteredX, filteredY), raw.getRotation());
+        // Pose2d(Translation2d, Rotation2d) still allocates a Pose2d, but we avoid the
+        // inner Translation2d allocation by using the two-double constructor.
+        return new Pose2d(filteredX, filteredY, raw.getRotation());
     }
 
     /**

@@ -173,10 +173,15 @@ public class Superstructure extends SubsystemBase {
         Pose2d pose = swerve.getPose();
         
         if (pose != null) {
-            if (pose.getX() < 0) {
-                swerve.resetPose(vision.getVisionPose());
-            } else if (pose.getY() < 0.0 || pose.getY() > 8.1) {
-                swerve.resetPose(vision.getVisionPose());
+            boolean poseOutOfBounds = pose.getX() < 0
+                || pose.getY() < 0.0
+                || pose.getY() > 8.1;
+            if (poseOutOfBounds) {
+                // Only reset if vision has a valid pose to offer; avoids a no-op call to drivetrain
+                Pose2d visionPose = vision.getVisionPose();
+                if (visionPose != null) {
+                    swerve.resetPose(visionPose);
+                }
             }
         }
 

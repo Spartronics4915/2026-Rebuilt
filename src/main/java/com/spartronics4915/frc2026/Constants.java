@@ -438,15 +438,15 @@ public final class Constants {
                 //)
                 new PhotonProcessor(
                     "evan", apriltagFieldLayout, frontTowerCamTransform,
-                    new StdDevCalculator(), simCameraProperties, 20.0
+                    new StdDevCalculator(), simCameraProperties, 40.0
                 ),
                 new PhotonProcessor(
                     "val", apriltagFieldLayout, backTowerCamTransform,
-                    new StdDevCalculator(), simCameraProperties, 20.0
+                    new StdDevCalculator(), simCameraProperties, 40.0
                 ),
                 new PhotonProcessor(
                     "daniil", apriltagFieldLayout, rioCamTransform,
-                    new StdDevCalculator(), simCameraProperties, 20.0
+                    new StdDevCalculator(), simCameraProperties, 40.0
                 )
             );
 

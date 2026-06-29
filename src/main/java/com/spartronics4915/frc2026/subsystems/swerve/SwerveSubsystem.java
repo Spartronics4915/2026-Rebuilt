@@ -6,6 +6,8 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstant
 import java.util.OptionalDouble;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
@@ -79,6 +81,9 @@ public class SwerveSubsystem extends SubsystemBase {
             .withDriveRequestType(DriveRequestType.Velocity)
             .withSteerRequestType(SteerRequestType.Position);
 
+    /** Pre-built zero speeds to avoid per-loop allocation on the stale-command path. */
+    private static final ChassisSpeeds ZERO_SPEEDS = new ChassisSpeeds(0.0, 0.0, 0.0);
+
     private final SwerveRequest.SwerveDriveBrake lockRequest =
         new SwerveRequest.SwerveDriveBrake();
 
@@ -108,7 +113,7 @@ public class SwerveSubsystem extends SubsystemBase {
     private boolean isFlatDebouncedValue = false;
     private volatile double lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
 
-    private final SwerveTelemetry telemetry = new SwerveTelemetry();
+    private SwerveTelemetry telemetry;
 
     public SwerveSubsystem(SwerveConfigurations config) {
         drivetrain = new SwerveDrivetrain<>(
@@ -143,6 +148,9 @@ public class SwerveSubsystem extends SubsystemBase {
         configureBLine();
 
         SmartDashboard.putData(field);
+
+        // Initialize telemetry AFTER drivetrain so motor signal references are valid
+        telemetry = new SwerveTelemetry(this);
     }
 
     private void updateOdometry(SwerveDriveState state) {
@@ -189,7 +197,7 @@ public class SwerveSubsystem extends SubsystemBase {
         }
 
         if ((now - lastDriveCommandTimestamp) > staleCommandTimeout) {
-            drivetrain.setControl(autoRequest.withSpeeds(new ChassisSpeeds(0.0, 0.0, 0.0)));
+            drivetrain.setControl(autoRequest.withSpeeds(ZERO_SPEEDS));
             lastDriveCommandTimestamp = now;
         }
 
@@ -489,9 +497,35 @@ public class SwerveSubsystem extends SubsystemBase {
         private final DoublePublisher[] steerVoltageV = new DoublePublisher[4];
         private final DoublePublisher[] steerTempC = new DoublePublisher[4];
         private final DoublePublisher[] steerCLError = new DoublePublisher[4];
+
+        // Pre-cached status signals for batch refresh — avoids 40 individual CAN calls per loop.
+        // Phoenix6 signals are cached by default; calling getValue() without prior refresh returns
+        // a stale value from the last update thread. We register signals here so that one
+        // BaseStatusSignal.refreshAll() call updates all of them atomically.
+        // We use StatusSignal<?> (wildcards) because we only ever call getValueAsDouble(),
+        // which is defined on the raw BaseStatusSignal and doesn't require the generic type.
+        @SuppressWarnings("unchecked")
+        private final StatusSignal<?>[] driveCurrentSig = new StatusSignal[4];
+        @SuppressWarnings("unchecked")
+        private final StatusSignal<?>[] driveVoltageSig = new StatusSignal[4];
+        @SuppressWarnings("unchecked")
+        private final StatusSignal<?>[] driveTempSig = new StatusSignal[4];
+        @SuppressWarnings("unchecked")
+        private final StatusSignal<?>[] driveCLErrorSig = new StatusSignal[4];
+        @SuppressWarnings("unchecked")
+        private final StatusSignal<?>[] driveCLRefSig = new StatusSignal[4];
+        @SuppressWarnings("unchecked")
+        private final StatusSignal<?>[] steerCurrentSig = new StatusSignal[4];
+        @SuppressWarnings("unchecked")
+        private final StatusSignal<?>[] steerVoltageSig = new StatusSignal[4];
+        @SuppressWarnings("unchecked")
+        private final StatusSignal<?>[] steerTempSig = new StatusSignal[4];
+        @SuppressWarnings("unchecked")
+        private final StatusSignal<?>[] steerCLErrorSig = new StatusSignal[4];
+
+        private BaseStatusSignal[] allModuleSignals;
  
- 
-        SwerveTelemetry() {
+        SwerveTelemetry(SwerveSubsystem swerve) {
             for (int i = 0; i < 4; i++) {
                 NetworkTable t = root.getSubTable("modules/" + MODULE_NAMES[i]);
  
@@ -510,7 +544,48 @@ public class SwerveSubsystem extends SubsystemBase {
                 steerVoltageV[i] = t.getDoubleTopic("SteerVoltageV").publish();
                 steerTempC[i] = t.getDoubleTopic("SteerTempC").publish();
                 steerCLError[i] = t.getDoubleTopic("SteerClosedLoopError").publish();
- 
+
+                // Cache signals for batch refresh
+                TalonFX drive = (TalonFX) swerve.drivetrain.getModule(i).getDriveMotor();
+                TalonFX steer = (TalonFX) swerve.drivetrain.getModule(i).getSteerMotor();
+
+                driveCurrentSig[i] = drive.getStatorCurrent();
+                driveVoltageSig[i] = drive.getMotorVoltage();
+                driveTempSig[i]    = drive.getDeviceTemp();
+                driveCLErrorSig[i] = drive.getClosedLoopError();
+                driveCLRefSig[i]   = drive.getClosedLoopReference();
+
+                steerCurrentSig[i] = steer.getStatorCurrent();
+                steerVoltageSig[i] = steer.getMotorVoltage();
+                steerTempSig[i]    = steer.getDeviceTemp();
+                steerCLErrorSig[i] = steer.getClosedLoopError();
+
+                // Reduce telemetry update rates — 50 Hz is more than sufficient for dashboard display.
+                // Odometry-critical signals are handled by the drivetrain itself at high frequency.
+                driveCurrentSig[i].setUpdateFrequency(50);
+                driveVoltageSig[i].setUpdateFrequency(50);
+                driveTempSig[i].setUpdateFrequency(10);   // Temperature changes very slowly
+                driveCLErrorSig[i].setUpdateFrequency(50);
+                driveCLRefSig[i].setUpdateFrequency(50);
+                steerCurrentSig[i].setUpdateFrequency(50);
+                steerVoltageSig[i].setUpdateFrequency(50);
+                steerTempSig[i].setUpdateFrequency(10);
+                steerCLErrorSig[i].setUpdateFrequency(50);
+            }
+
+            // Build flat array for batch refresh
+            allModuleSignals = new BaseStatusSignal[4 * 9];
+            for (int i = 0; i < 4; i++) {
+                int base = i * 9;
+                allModuleSignals[base + 0] = driveCurrentSig[i];
+                allModuleSignals[base + 1] = driveVoltageSig[i];
+                allModuleSignals[base + 2] = driveTempSig[i];
+                allModuleSignals[base + 3] = driveCLErrorSig[i];
+                allModuleSignals[base + 4] = driveCLRefSig[i];
+                allModuleSignals[base + 5] = steerCurrentSig[i];
+                allModuleSignals[base + 6] = steerVoltageSig[i];
+                allModuleSignals[base + 7] = steerTempSig[i];
+                allModuleSignals[base + 8] = steerCLErrorSig[i];
             }
         }
  
@@ -544,27 +619,26 @@ public class SwerveSubsystem extends SubsystemBase {
             slipRecovery.set(swerve.isInSlipRecovery);
             fieldRelative.set(swerve.isFieldRelativeState);
             flat.set(swerve.isFlatDebounced());
+
+            // Batch-refresh all module signals in a single CAN transaction instead of 40 individual calls.
+            BaseStatusSignal.refreshAll(allModuleSignals);
  
             for (int i = 0; i < 4; i++) {
-                SwerveModule<?, ?, ?> mod = swerve.drivetrain.getModule(i);
-                TalonFX drive = (TalonFX) mod.getDriveMotor();
-                TalonFX steer = (TalonFX) mod.getSteerMotor();
- 
                 driveVelMPS[i].set(state.ModuleStates[i].speedMetersPerSecond);
                 driveTargetMPS[i].set(state.ModuleTargets[i].speedMetersPerSecond);
                 drivePositionM[i].set(state.ModulePositions[i].distanceMeters);
-                driveCurrentA[i].set(drive.getStatorCurrent().getValueAsDouble());
-                driveVoltageV[i].set(drive.getMotorVoltage().getValueAsDouble());
-                driveTempC[i].set(drive.getDeviceTemp().getValueAsDouble());
-                driveCLError[i].set(drive.getClosedLoopError().getValueAsDouble());
-                driveClosedLoopRef[i].set(drive.getClosedLoopReference().getValueAsDouble());
+                driveCurrentA[i].set(driveCurrentSig[i].getValueAsDouble());
+                driveVoltageV[i].set(driveVoltageSig[i].getValueAsDouble());
+                driveTempC[i].set(driveTempSig[i].getValueAsDouble());
+                driveCLError[i].set(driveCLErrorSig[i].getValueAsDouble());
+                driveClosedLoopRef[i].set(driveCLRefSig[i].getValueAsDouble());
 
                 steerAngleDeg[i].set(state.ModuleStates[i].angle.getDegrees());
                 steerTargetDeg[i].set(state.ModuleTargets[i].angle.getDegrees());
-                steerCurrentA[i].set(steer.getStatorCurrent().getValueAsDouble());
-                steerVoltageV[i].set(steer.getMotorVoltage().getValueAsDouble());
-                steerTempC[i].set(steer.getDeviceTemp().getValueAsDouble());
-                steerCLError[i].set(steer.getClosedLoopError().getValueAsDouble());
+                steerCurrentA[i].set(steerCurrentSig[i].getValueAsDouble());
+                steerVoltageV[i].set(steerVoltageSig[i].getValueAsDouble());
+                steerTempC[i].set(steerTempSig[i].getValueAsDouble());
+                steerCLError[i].set(steerCLErrorSig[i].getValueAsDouble());
             }
         }
     }

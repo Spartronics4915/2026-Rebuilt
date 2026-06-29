@@ -22,7 +22,9 @@ import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -41,6 +43,21 @@ public class Robot extends TimedRobot {
     private final DoublePublisher timeUntilSwitchPub = NetworkTableInstance.getDefault().getDoubleTopic("IO/Time Left Until Switch").publish();
     private final BooleanPublisher currentAllianceSelectedPub = NetworkTableInstance.getDefault().getBooleanTopic("IO/Current Alliance Selected").publish();
     private final StringPublisher shiftNamePub = NetworkTableInstance.getDefault().getStringTopic("IO/Shift Name").publish();
+
+    // Loop time telemetry — published every cycle to SmartDashboard for visibility
+    private final NetworkTable loopTimingTable = NetworkTableInstance.getDefault().getTable("LoopTiming");
+    private final DoublePublisher loopTimeMsPub = loopTimingTable.getDoubleTopic("LoopTimeMs").publish();
+    private final DoublePublisher loopTimeMaxMsPub = loopTimingTable.getDoubleTopic("LoopTimeMaxMs").publish();
+    private final DoublePublisher loopTimeAvgMsPub = loopTimingTable.getDoubleTopic("LoopTimeAvgMs").publish();
+    private final DoublePublisher overrunCountPub = loopTimingTable.getDoubleTopic("OverrunCount").publish();
+
+    private double loopStartTime = 0.0;
+    private double loopTimeMaxMs = 0.0;
+    private double loopTimeSumMs = 0.0;
+    private long loopCount = 0;
+    private long overrunCount = 0;
+    private static final double LOOP_BUDGET_MS = 20.0;
+    private static final double LOOP_WARN_MS = 15.0; // warn if > 75% of budget used
     //private final BooleanPublisher isCanbusOK = NetworkTableInstance.getDefault().getBooleanTopic("Canbus OK").publish();
     //private final DoublePublisher canBusUtilizationPub = NetworkTableInstance.getDefault().getDoubleTopic("CAN Bus Utilization").publish();
     public boolean currentAllianceSelected = false;
@@ -80,6 +97,14 @@ public class Robot extends TimedRobot {
         metaData.getStringTopic("DS: EventName").publish().accept(DriverStation.getEventName());
 
         DriverStation.silenceJoystickConnectionWarning(true);
+
+        // Patch WPILib Alert internals to use thread-safe collections.
+        // WPILib 2026.2.1 uses a TreeSet for active alerts that is written from vendor
+        // library threads (e.g. Phoenix6 odometry thread) and read from the main loop,
+        // causing "Accept exceeded fixed size of 0" crashes. This replaces each TreeSet
+        // with a ConcurrentSkipListSet. Remove when upgrading to WPILib 2026.3.0+.
+        int patchedGroups = com.spartronics4915.frc2026.util.general.AlertPatch.apply();
+        System.out.println("[Robot] AlertPatch applied to " + patchedGroups + " alert group(s).");
     }
 
     /**
@@ -91,6 +116,8 @@ public class Robot extends TimedRobot {
      */
     @Override
     public void robotPeriodic() {
+        loopStartTime = Timer.getFPGATimestamp();
+
         // Runs the Scheduler. This is responsible for polling buttons, adding newly-scheduled
         // commands, running already-scheduled commands, removing finished or interrupted commands,
         // and running subsystem periodic() methods. This must be called from the robot's periodic
@@ -98,10 +125,19 @@ public class Robot extends TimedRobot {
         CommandScheduler.getInstance().run();
 
         SmartDashboard.putNumber("Match Time", DriverStation.getMatchTime());
-        
-        //CANBusStatus canStatus = CAN_BUS.getStatus();
-        //isCanbusOK.set(canStatus.Status.isOK() && canStatus.BusUtilization > 0);
-        //canBusUtilizationPub.set(canStatus.BusUtilization);
+
+        // Measure loop time after all work is done
+        double loopTimeMs = (Timer.getFPGATimestamp() - loopStartTime) * 1000.0;
+        loopCount++;
+        loopTimeSumMs += loopTimeMs;
+
+        if (loopTimeMs > loopTimeMaxMs) loopTimeMaxMs = loopTimeMs;
+        if (loopTimeMs > LOOP_BUDGET_MS) overrunCount++;
+
+        loopTimeMsPub.set(loopTimeMs);
+        loopTimeMaxMsPub.set(loopTimeMaxMs);
+        loopTimeAvgMsPub.set(loopTimeSumMs / loopCount);
+        overrunCountPub.set(overrunCount);
     }
 
     /** This function is called once each time the robot enters Disabled mode. */
