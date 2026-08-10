@@ -207,16 +207,19 @@ public class LimelightProcessor implements ProcessorInterface {
         RawFiducial[] fiducials = estimate.rawFiducials;
         TrackedTag[] currentFrameTags = tagCache[resultCacheIndex];
         
+        double averageDistance = 0.0;
         if (fiducials != null) {
             int count = Math.min(fiducials.length, maxTagsPerFrame);
             for (int i = 0; i < count; i++) {
                 currentFrameTags[i].set(fiducials[i].id, avgAreaFraction, fiducials[i].ambiguity);
                 tagScratch.add(currentFrameTags[i]);
+                averageDistance += fiducials[i].distToCamera;
             }
+            if (count > 0) averageDistance /= count;
         }
         if (tagScratch.isEmpty()) return;
 
-        Matrix<N3, N1> calculatedStd = stdDevCalculator.calculate(avgAmbiguity, avgAreaFraction, latencyMs, estimate.tagCount);
+        Matrix<N3, N1> calculatedStd = stdDevCalculator.calculate(estimate.tagCount, averageDistance);
         for(int i = 0; i < 3; i++) stdDevScratch.set(i, 0, calculatedStd.get(i, 0));
 
         Matrix<N3, N1> finalStdDevs;
@@ -239,7 +242,7 @@ public class LimelightProcessor implements ProcessorInterface {
             tagScratch, 
             avgAmbiguity, 
             avgAreaFraction,
-            0.0
+            averageDistance
         );
 
         queue(pooledResult);

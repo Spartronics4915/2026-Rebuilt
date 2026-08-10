@@ -350,45 +350,40 @@ public final class Constants {
         public static final SimCameraProperties simCameraProperties = new SimCameraProperties();
             static {
                 simCameraProperties.setCalibration(1280, 800, Rotation2d.fromDegrees(97.65));
-                simCameraProperties.setCalibError(0.05, 0.005);
-                simCameraProperties.setFPS(50);
-                simCameraProperties.setAvgLatencyMs(20);
-                simCameraProperties.setLatencyStdDevMs(0);
+                simCameraProperties.setCalibError(0.08, 0.005);
+                simCameraProperties.setFPS(60);
+                simCameraProperties.setAvgLatencyMs(40);
+                simCameraProperties.setLatencyStdDevMs(12);
             }
 
-        public static final double turretHistorySeconds = 0.5;
-        public static final int maxTagsPerFrame = 8;
-        public static final double yawRecomputeThreshold = 1e-4;
+        /** Selects whether each accepted camera measurement is sent independently or fused first. */
+        public enum VisionMeasurementMode {
+            INDIVIDUAL,
+            FUSED
+        }
+
+        /** Default to the standard multi-camera approach: feed each camera measurement to the estimator. */
+        public static final VisionMeasurementMode measurementMode = VisionMeasurementMode.INDIVIDUAL;
 
         public static final class StdDevConstants {
-            public static final double baseXYStdDev = 0.41;
-            public static final double baseThetaStdDev = 0.58;
-            public static final double ambiguityWeight = 0.7;
-            public static final double areaWeight = 0.6;
-            public static final double latencyWeight = 0.2;
+            /** XY uncertainty at one meter; values scale linearly with average tag distance. */
+            public static final double singleTagXYStdDevMeters = 0.90;
+            public static final double multiTagXYStdDevMeters = 0.30;
+            /** Keep gyro as the source of heading; vision primarily corrects field position. */
+            public static final double thetaStdDevRadians = 999_999.0;
         }
 
         public static final class FilterConstants {
             public static final double maxLatencyMs = 90.0;
             public static final double maxSingleTagDistanceMeters = 7.0;
             public static final double maxAmbiguity = 0.18;
-            public static final double minArea = 0.04;
-            public static final double maxArea = 10.0;
-
             // Set < Double.MAX_VALUE to enable the odometry-outlier filter.
             public static final double maxOdometryDeviationMeters = Double.MAX_VALUE;
         }
 
         public static final class FusionConstants {
-            public static final boolean enabled = true;
-            public static final double timestampThresholdSecs = 0.02;
-            public static final int minCameras = 2;
-
-            /**
-             * Results whose normalized distance from the group mean exceeds this
-             * number of sigma are rejected as outliers before fusion.
-             */
-            public static final double outlierSigma = 2.0;
+            /** Measurements farther apart than this are never averaged together. */
+            public static final double timestampWindowSecs = 0.02;
         }
 
         public static final class CameraConstants {
@@ -426,9 +421,9 @@ public final class Constants {
             );
 
             /**
-             * Primary cameras, always participate in pose fusion.
+             * All AprilTag cameras. Each one is sent to the pose estimator by default.
              */
-            public static final List<ProcessorInterface> primaryCameras = List.of(
+            public static final List<ProcessorInterface> cameras = List.of(
                 //new LimelightProcessor(
                 //    "limelight-argos", 
                 //    shooterBaseTranslation, 
@@ -450,11 +445,6 @@ public final class Constants {
                 )
             );
 
-            /**
-             * Fallback cameras, used only when the primary pipeline produces no
-             * valid pose.
-             */
-            public static final List<ProcessorInterface> fallbackCameras = List.of();
         }
     }
 

@@ -238,9 +238,7 @@ public class PhotonProcessor implements ProcessorInterface {
         double timestamp = Utils.fpgaToCurrentTime(estimatedRobotPose.timestampSeconds);
         double latency = rawResult.metadata.getLatencyMillis();
 
-        Matrix<N3, N1> calculatedValues = stdDevCalculator.calculate(
-            ambiguity, avgArea, latency, targetCount
-        );
+        Matrix<N3, N1> calculatedValues = stdDevCalculator.calculate(targetCount, avgDistance);
 
         for (int i = 0; i < 3; i++) {
             stdDevs.set(i, 0, calculatedValues.get(i, 0));

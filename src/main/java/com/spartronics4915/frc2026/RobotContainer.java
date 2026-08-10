@@ -75,8 +75,7 @@ public class RobotContainer {
         VisionConstants.apriltagFieldLayout, 
         swerveSubsystem::addVisionMeasurement, 
         swerveSubsystem, 
-        VisionConstants.CameraConstants.primaryCameras, 
-        VisionConstants.CameraConstants.fallbackCameras
+        VisionConstants.CameraConstants.cameras
     );
     
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
