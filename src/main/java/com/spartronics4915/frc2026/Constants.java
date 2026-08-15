@@ -19,13 +19,7 @@ import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
-import java.util.List;
-
 import org.photonvision.simulation.SimCameraProperties;
-
-import com.spartronics4915.frc2026.subsystems.vision.cameras.PhotonProcessor;
-import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
-import com.spartronics4915.frc2026.subsystems.vision.processing.StdDevCalculator;
 
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
@@ -92,6 +86,8 @@ public final class Constants {
     //#region Swerve
 
     public static final class SwerveConstants {
+
+        public static final SwerveConfigurations swerveConfiguration = SwerveConfigurations.COMP_CHASSIS;
 
         public static final double maxSpeed = 9.12; // 5.12, should probably increase
         public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(8); // 6, should probably increase
@@ -345,107 +341,92 @@ public final class Constants {
     //#region Vision
 
     public static final class VisionConstants {
-        public static final AprilTagFieldLayout apriltagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
-        public static final SimCameraProperties simCameraProperties = new SimCameraProperties();
-            static {
-                simCameraProperties.setCalibration(1280, 800, Rotation2d.fromDegrees(97.65));
-                simCameraProperties.setCalibError(0.08, 0.005);
-                simCameraProperties.setFPS(60);
-                simCameraProperties.setAvgLatencyMs(40);
-                simCameraProperties.setLatencyStdDevMs(12);
-            }
+        public static final double CAMERA_LOOP_PERIOD_SECONDS = 0.01;
 
-        /** Selects whether each accepted camera measurement is sent independently or fused first. */
-        public enum VisionMeasurementMode {
-            INDIVIDUAL,
-            FUSED
+        // Measurement validity.
+        public static final double MAX_CAPTURE_LATENCY_SECONDS = 0.150;
+        public static final double MAX_FUTURE_TIMESTAMP_SECONDS = 0.020;
+        public static final double MAX_AVERAGE_TAG_DISTANCE_METERS = 6.0;
+        public static final double FIELD_BOUNDARY_MARGIN_METERS = 0.50;
+        public static final double MIN_ROBOT_Z_METERS = -0.50;
+        public static final double MAX_ROBOT_Z_METERS = 1.00;
+        public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.35;
+
+        // Defualt AprilTag field, may want to calibrate with our field.
+        public static final AprilTagFieldLayout APRILTAG_FIELD_LAYOUT = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+
+        // Measurement covariance. The baseline mirrors the structure used by Team 6328:
+        // coefficient * distance^2 / tagCount^2.
+        public static final double XY_STD_DEV_COEFFICIENT = 0.01;
+        public static final double THETA_STD_DEV_COEFFICIENT = 0.03;
+        
+        // public static final double CAMERA_STD_DEV_FACTOR = 1.0;
+        public static final double TAG_DISTANCE_REFERENCE_METERS = 1.0;
+        public static final double MIN_DISTANCE_FRACTION = 0.25;
+        public static final double TAG_SPAN_REFERENCE_METERS = 1.0;
+        public static final double MIN_TAG_SPREAD_SCALE = 0.50;
+        public static final double MAX_TAG_SPREAD_SCALE = 1.00;
+        public static final double AMBIGUITY_SCALE = 2.0;
+        public static final double LATENCY_SCALE = 0.0; // 0.50
+
+        public static final double MIN_XY_STD_DEV_METERS = 0.02;
+        public static final double MAX_XY_STD_DEV_METERS = 2.0;
+        public static final double MIN_THETA_STD_DEV_RADIANS = Units.degreesToRadians(2.0);
+        public static final double MAX_THETA_STD_DEV_RADIANS = Units.degreesToRadians(180.0);
+        public static final boolean USE_VISION_ROTATION_FOR_SINGLE_TAG = false;
+
+        public static final double SIM_CAMERA_PIXEL_ERROR_MEAN = 0.25;
+        public static final double SIM_CAMERA_PIXEL_ERROR_STD_DEV = 0.08;
+        public static final double SIM_CAMERA_FPS = 30.0;
+        public static final double SIM_CAMERA_LATENCY_MEAN_MS = 35.0;
+        public static final double SIM_CAMERA_LATENCY_STD_DEV_MS = 5.0;
+
+        public static SimCameraProperties createSimulationCameraProperties() {
+            SimCameraProperties properties = new SimCameraProperties()
+                .setCalibration(1280, 800, Rotation2d.fromDegrees(100))
+                .setCalibError(0.25, 0.08)
+                .setFPS(30)
+                .setAvgLatencyMs(35)
+                .setLatencyStdDevMs(5);
+            return properties;
         }
 
-        /** Default to the standard multi-camera approach: feed each camera measurement to the estimator. */
-        public static final VisionMeasurementMode measurementMode = VisionMeasurementMode.INDIVIDUAL;
+        // Turret configuration.
+        public static final double TURNTABLE_ZERO_OFFSET_DEGREES = 0.0;
+        public static final double TURRET_CAMERA_YAW_SIGN = 1.0;
 
-        public static final class StdDevConstants {
-            /** XY uncertainty at one meter; values scale linearly with average tag distance. */
-            public static final double singleTagXYStdDevMeters = 0.90;
-            public static final double multiTagXYStdDevMeters = 0.30;
-            /** Keep gyro as the source of heading; vision primarily corrects field position. */
-            public static final double thetaStdDevRadians = 999_999.0;
-        }
+        /** evan — front tower camera */
+        public static final Transform3d frontCameraTransform = new Transform3d(
+            new Translation3d(-0.11767, 0.310900, 0.520276),
+            new Rotation3d(Math.toRadians(0), Math.toRadians(-30), Math.toRadians(0))
+        );
 
-        public static final class FilterConstants {
-            public static final double maxLatencyMs = 90.0;
-            public static final double maxSingleTagDistanceMeters = 7.0;
-            public static final double maxAmbiguity = 0.18;
-            // Set < Double.MAX_VALUE to enable the odometry-outlier filter.
-            public static final double maxOdometryDeviationMeters = Double.MAX_VALUE;
-        }
+        /** val — back tower camera */
+        public static final Transform3d backCameraTransform = new Transform3d(
+            new Translation3d(-0.268191, 0.311499, 0.437110 + 0.0127),
+            new Rotation3d(Math.toRadians(0), Math.toRadians(-30), Math.toRadians(180))
+        );
 
-        public static final class FusionConstants {
-            /** Measurements farther apart than this are never averaged together. */
-            public static final double timestampWindowSecs = 0.02;
-        }
+        /** daniil — RIO-mounted camera */
+        public static final Transform3d rioCameraTransform = new Transform3d(
+            new Translation3d(-0.125205, -0.334776, 0.257945),
+            new Rotation3d(Math.toRadians(0), Math.toRadians(-26), Math.toRadians(297))
+        );
 
-        public static final class CameraConstants {
-
-            /** evan — front tower camera */
-            public static final Transform3d frontTowerCamTransform = new Transform3d(
-                new Translation3d(-0.11767, 0.310900, 0.520276),
-                new Rotation3d(Math.toRadians(0), Math.toRadians(-30), Math.toRadians(0))
-            );
-
-            /** val — back tower camera */
-            public static final Transform3d backTowerCamTransform = new Transform3d(
-                new Translation3d(-0.268191, 0.311499, 0.437110 + 0.0127),
-                new Rotation3d(Math.toRadians(0), Math.toRadians(-30), Math.toRadians(180))
-            );
-
-            /** daniil — RIO-mounted camera */
-            public static final Transform3d rioCamTransform = new Transform3d(
-                new Translation3d(-0.125205, -0.334776, 0.257945),
-                new Rotation3d(Math.toRadians(0), Math.toRadians(-26), Math.toRadians(297))
-            );
-
-            /** argos - turret camera */
-            public static final Transform3d turretToCamera = new Transform3d(
-                new Translation3d(
-                    Units.inchesToMeters(-5.55878),
-                    Units.inchesToMeters(1.61053),
-                    Units.inchesToMeters(6.55698)
-                ),
-                new Rotation3d(
-                    0.0,
-                    Math.toRadians(-28.1),
-                    Math.toRadians(270.0)
-                )
-            );
-
-            /**
-             * All AprilTag cameras. Each one is sent to the pose estimator by default.
-             */
-            public static final List<ProcessorInterface> cameras = List.of(
-                //new LimelightProcessor(
-                //    "limelight-argos", 
-                //    shooterBaseTranslation, 
-                //    turretToCamera, 
-                //    new StdDevCalculator(), 
-                //    30.0
-                //)
-                new PhotonProcessor(
-                    "evan", apriltagFieldLayout, frontTowerCamTransform,
-                    new StdDevCalculator(), simCameraProperties, 20.0
-                ),
-                new PhotonProcessor(
-                    "val", apriltagFieldLayout, backTowerCamTransform,
-                    new StdDevCalculator(), simCameraProperties, 20.0
-                ),
-                new PhotonProcessor(
-                    "daniil", apriltagFieldLayout, rioCamTransform,
-                    new StdDevCalculator(), simCameraProperties, 20.0
-                )
-            );
-
-        }
+        /** argos - turret camera */
+        public static final Transform3d turretToCamera = new Transform3d(
+            new Translation3d(
+                Units.inchesToMeters(-5.55878),
+                Units.inchesToMeters(1.61053),
+                Units.inchesToMeters(6.55698)
+            ),
+            new Rotation3d(
+                0.0,
+                Math.toRadians(-28.1),
+                Math.toRadians(270.0)
+            )
+        );
     }
 
     //#endregion
@@ -496,7 +477,9 @@ public final class Constants {
 
     public static final class AutoAimConstants {
         /** Throttle rate for simulation projectile spawning (seconds between shots). */
-        public static final double SIM_SHOT_INTERVAL_SECONDS = 0.1;
+        public static final double SIM_SHOT_INTERVAL_SECONDS = 0.08;
+        public static final int SIM_FUEL_CAPACITY = 500;
+        public static final int SIM_INITIAL_FUEL = 8;
         
         /**
          * Height of the hub target used for both aim calculation and sim display.

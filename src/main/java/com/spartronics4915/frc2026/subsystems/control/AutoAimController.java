@@ -7,9 +7,11 @@ import static com.spartronics4915.frc2026.Constants.AutoAimConstants.*;
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.HoodSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem;
+import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem.ShooterClamp;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
+import com.spartronics4915.frc2026.util.simulation.FuelSim;
 import com.spartronics4915.frc2026.util.control.AutoAim;
 import com.spartronics4915.frc2026.util.control.AutoAim.AutoAimResult;
 import com.spartronics4915.frc2026.util.control.TurretController;
@@ -19,6 +21,7 @@ import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.filter.MedianFilter;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -27,10 +30,12 @@ import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 
 import static edu.wpi.first.units.Units.InchesPerSecond;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 import edu.wpi.first.wpilibj2.command.Command;
@@ -46,6 +51,11 @@ public class AutoAimController extends SubsystemBase {
     private final TurretSubsystem turret;
     private final ShooterSubsystem shooter;
     private final SwerveSubsystem swerve;
+    private IntakeSubsystem intake;
+
+    private final FuelSim fuelSim;
+    private int simulatedFuelStored = SIM_INITIAL_FUEL;
+    private double lastSimulatedShotTimestamp = Double.NEGATIVE_INFINITY;
 
     private final AutoAim autoAim = new AutoAim(
         20, // 30
@@ -99,16 +109,14 @@ public class AutoAimController extends SubsystemBase {
 
     private final MedianFilter flywheelFilter = new MedianFilter(10);
 
-    private final BooleanPublisher isAimEnabledPublisher = NetworkTableInstance.getDefault()
-            .getBooleanTopic("superstructure/AutoAim/AimEnabled").publish();
-    private final BooleanPublisher isShootingEnabledPublisher = NetworkTableInstance.getDefault()
-            .getBooleanTopic("superstructure/AutoAim/ShootingEnabled").publish();
-    private final BooleanPublisher hasValidResultPublisher = NetworkTableInstance.getDefault()
-            .getBooleanTopic("superstructure/AutoAim/HasValidResult").publish();
-    private final BooleanPublisher requiresIdealSpeedPublisher = NetworkTableInstance.getDefault()
-            .getBooleanTopic("superstructure/AutoAim/RequiresIdealSpeed").publish();
-    private final DoublePublisher distanceToTargetPublisher = NetworkTableInstance.getDefault()
-            .getDoubleTopic("superstructure/DistanceToTarget").publish();
+    private final BooleanPublisher isAimEnabledPublisher = NetworkTableInstance.getDefault().getBooleanTopic("superstructure/AutoAim/AimEnabled").publish();
+    private final BooleanPublisher isShootingEnabledPublisher = NetworkTableInstance.getDefault().getBooleanTopic("superstructure/AutoAim/ShootingEnabled").publish();
+    private final BooleanPublisher hasValidResultPublisher = NetworkTableInstance.getDefault().getBooleanTopic("superstructure/AutoAim/HasValidResult").publish();
+    private final BooleanPublisher requiresIdealSpeedPublisher = NetworkTableInstance.getDefault().getBooleanTopic("superstructure/AutoAim/RequiresIdealSpeed").publish();
+    private final DoublePublisher distanceToTargetPublisher = NetworkTableInstance.getDefault().getDoubleTopic("superstructure/DistanceToTarget").publish();
+    private final DoublePublisher simulatedFuelPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Fuel Simulation/Stored").publish();
+    private final DoublePublisher blueFuelScorePublisher = NetworkTableInstance.getDefault().getDoubleTopic("Fuel Simulation/Blue Score").publish();
+    private final DoublePublisher redFuelScorePublisher = NetworkTableInstance.getDefault().getDoubleTopic("Fuel Simulation/Red Score").publish();
 
     public AutoAimController(
         HoodSubsystem hood,
@@ -116,10 +124,21 @@ public class AutoAimController extends SubsystemBase {
         SwerveSubsystem swerve,
         ShooterSubsystem shooter
     ) {
+        this(hood, turret, swerve, shooter, null);
+    }
+
+    public AutoAimController(
+        HoodSubsystem hood,
+        TurretSubsystem turret,
+        SwerveSubsystem swerve,
+        ShooterSubsystem shooter,
+        FuelSim fuelSim
+    ) {
         this.hood = hood;
         this.turret = turret;
         this.swerve = swerve;
         this.shooter = shooter;
+        this.fuelSim = fuelSim;
 
         this.turretController = new TurretController(
             turret.getClamp().minAngle.getDegrees(),
@@ -130,6 +149,11 @@ public class AutoAimController extends SubsystemBase {
         );
 
         turretController.reset(turret.getPosition());
+    }
+
+    /** Supplies the intake used by the simulation fuel model. */
+    public void setSimulationIntake(IntakeSubsystem intake) {
+        this.intake = intake;
     }
 
     // Collision cache
@@ -157,6 +181,7 @@ public class AutoAimController extends SubsystemBase {
         lastFieldSpeeds = currentSpeeds;
 
         updateCollisionCache();
+        updateFuelSimulation();
 
         if (isAimEnabled) {
             lastResult = computeAimResult();
@@ -192,7 +217,80 @@ public class AutoAimController extends SubsystemBase {
         distanceToTargetPublisher.accept(getDistanceToTarget());
     }
 
-    //#endregion
+    private void updateFuelSimulation() {
+        if (!Robot.isSimulation() || fuelSim == null) {
+            return;
+        }
+
+        fuelSim.updateSim();
+        simulatedFuelPublisher.set(simulatedFuelStored);
+        blueFuelScorePublisher.set(FuelSim.Hub.BLUE_HUB.getScore());
+        redFuelScorePublisher.set(FuelSim.Hub.RED_HUB.getScore());
+
+        if (!DriverStation.isEnabled() || !isReadyToShoot() || simulatedFuelStored <= 0) {
+            return;
+        }
+
+        double now = Timer.getFPGATimestamp();
+        if (now - lastSimulatedShotTimestamp < SIM_SHOT_INTERVAL_SECONDS) {
+            return;
+        }
+
+        launchSimulatedFuel();
+    }
+
+    private void launchSimulatedFuel() {
+        double flywheelRps = shooter.getCurrentSetpoint();
+        if (!Double.isFinite(flywheelRps) || flywheelRps <= 0.0) {
+            return;
+        }
+
+        double launchSpeedMps = InchesPerSecond.of(flywheelRps * Math.PI * 1.92).in(MetersPerSecond);
+        double hoodPitchRadians = Rotation2d.kCCW_Pi_2
+            .minus(hood.getCurrentSetpoint())
+            .getRadians();
+
+        fuelSim.launchFuel(
+            MetersPerSecond.of(launchSpeedMps),
+            Radians.of(hoodPitchRadians),
+            Radians.of(turret.getCurrentSetpoint().getRadians()),
+            shooterBaseTranslation.rotateBy(new Rotation3d(swerve.getRelativePose().getRotation()))
+        );
+
+        simulatedFuelStored--;
+        lastSimulatedShotTimestamp = Timer.getFPGATimestamp();
+    }
+
+    public void resetSimulatedFuel() {
+        if (fuelSim == null) {
+            return;
+        }
+
+        fuelSim.stop();
+        fuelSim.clearFuel();
+        FuelSim.Hub.BLUE_HUB.resetScore();
+        FuelSim.Hub.RED_HUB.resetScore();
+        fuelSim.spawnStartingFuel();
+        simulatedFuelStored = SIM_INITIAL_FUEL;
+        lastSimulatedShotTimestamp = Double.NEGATIVE_INFINITY;
+        fuelSim.start();
+    }
+
+    /** Adds one simulated fuel to the robot inventory, up to capacity. */
+    public void intakeSimulatedFuel() {
+        if (Robot.isSimulation() && simulatedFuelStored < SIM_FUEL_CAPACITY) {
+            simulatedFuelStored++;
+        }
+    }
+
+    /** Returns whether the physical intake is currently running in simulation. */
+    public boolean isSimulationIntaking() {
+        return Robot.isSimulation()
+            && intake != null
+            && intake.getSetpoint() > 5.0;
+    }
+
+        //#endregion
     //#region Auto-Aim 
 
     /**

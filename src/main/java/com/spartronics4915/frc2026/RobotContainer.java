@@ -6,20 +6,21 @@ package com.spartronics4915.frc2026;
 
 import com.spartronics4915.frc2026.Constants.AutoAimConstants;
 import com.spartronics4915.frc2026.Constants.OperatorConstants;
+import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
 import com.spartronics4915.frc2026.autos.Autos;
 import com.spartronics4915.frc2026.autos.ComplexAutoChooser;
 import com.spartronics4915.frc2026.autos.DriveToPOI;
 import com.spartronics4915.frc2026.autos.NeutralZoneAutos;
 import com.spartronics4915.frc2026.autos.PreAlignment;
-import com.spartronics4915.frc2026.autos.DriveToPOI.POI;
 import com.spartronics4915.frc2026.autos.ZoneTransition;
-import com.spartronics4915.frc2026.Constants.VisionConstants;
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.hubPose;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.trenchTransform;
+import static edu.wpi.first.units.Units.Meters;
 
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.spartronics4915.frc2026.commands.DriveCommand;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands;
@@ -27,10 +28,8 @@ import com.spartronics4915.frc2026.commands.SuperstructureCommands.PipelineState
 import com.spartronics4915.frc2026.subsystems.control.AutoAimController;
 import com.spartronics4915.frc2026.subsystems.control.AutoAimController.ManualOverride;
 import com.spartronics4915.frc2026.subsystems.control.Superstructure;
-import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem;
-import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem.ClimberState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem.IntakeState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.HoodSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem;
@@ -41,6 +40,7 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsyst
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
+import com.spartronics4915.frc2026.util.simulation.FuelSim;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -70,20 +70,24 @@ public class RobotContainer {
     public final FeederSubsystem feederSubsystem = new FeederSubsystem();
     public final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
     
-    public final SwerveSubsystem swerveSubsystem = new SwerveSubsystem(SwerveConfigurations.COMP_CHASSIS);
-    public final VisionSubsystem visionSubsystem = new VisionSubsystem(
-        VisionConstants.apriltagFieldLayout, 
-        swerveSubsystem::addVisionMeasurement, 
-        swerveSubsystem, 
-        VisionConstants.CameraConstants.cameras
-    );
+    public final SwerveSubsystem swerveSubsystem =
+        SwerveSubsystem.getInstance(SwerveConfigurations.COMP_CHASSIS);
+    public final VisionSubsystem visionSubsystem = VisionSubsystem.getInstance(swerveSubsystem);
     
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
     private final DriveToPOI POIFactory = new DriveToPOI(swerveSubsystem, null); // !CLIMBER!
     private final NeutralZoneAutos neutralZoneFactory = new NeutralZoneAutos(swerveSubsystem);
     private final PreAlignment preAlignmentFactory = new PreAlignment(swerveSubsystem);
 
-    private final AutoAimController autoAimController = new AutoAimController(hoodSubsystem, turretSubsystem, swerveSubsystem, shooterSubsystem);
+    private final FuelSim fuelSim = createFuelSim();
+
+    private final AutoAimController autoAimController = new AutoAimController(
+        hoodSubsystem,
+        turretSubsystem,
+        swerveSubsystem,
+        shooterSubsystem,
+        fuelSim
+    );
 
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
     private final CommandXboxController operatorController = new CommandXboxController(OperatorConstants.OPERATOR_CONTROLLER_PORT);
@@ -112,17 +116,63 @@ public class RobotContainer {
 
     private final ComplexAutoChooser autoChooser = new ComplexAutoChooser(transitionFactory, POIFactory, neutralZoneFactory, preAlignmentFactory, superstructure, 20);
 
+    private FuelSim createFuelSim() {
+        if (!Robot.isSimulation()) {
+            return null;
+        }
+
+        FuelSim fuelSim = new FuelSim("/Fuel Simulation");
+        fuelSim.setSubticks(20);
+        fuelSim.enableAirResistance();
+        fuelSim.registerRobot(
+            AutoConstants.robotWidth,
+            AutoConstants.robotLength,
+            Meters.of(0.20),
+            () -> {
+                return swerveSubsystem.getPose().rotateAround(
+                    swerveSubsystem.getPose().getTranslation(),
+                    Rotation2d.kCCW_90deg
+                );
+            },
+            () -> ChassisSpeeds.fromRobotRelativeSpeeds(
+                swerveSubsystem.getRobotVelocity(),
+                swerveSubsystem.getPose().getRotation()));
+        fuelSim.spawnStartingFuel();
+        fuelSim.start();
+        return fuelSim;
+    }
+
+    private void configureFuelSimIntake() {
+        if (!Robot.isSimulation() || fuelSim == null) {
+            return;
+        }
+
+        double halfLength = AutoConstants.robotLength.in(Meters) / 2.0;
+        double halfWidth = AutoConstants.robotWidth.in(Meters) / 2.0;
+
+        // One intake mounted along the robot's -Y side.
+        double intakeDepth = 0.18;
+
+        fuelSim.registerIntake(
+            -halfLength,
+            halfLength,
+            -halfWidth - intakeDepth,
+            -halfWidth,
+            autoAimController::isSimulationIntaking,
+            autoAimController::intakeSimulatedFuel);
+    }
+
     public RobotContainer() {
+        autoAimController.setSimulationIntake(intakeSubsystem);
+        configureFuelSimIntake();
         configureBindings();
 
-        // Register vision observer with turret to ensure accurate turret angle timestamps
+        // Supply the current turret angle to the turreted MegaTag1 Limelight.
+        AtomicReference<Double> turretYawDegrees = new AtomicReference<>(0.0);
         turretSubsystem.setVisionObserver((turretAngle, timestamp) -> {
-            visionSubsystem.getCameras().forEach(camera -> {
-                if (camera.isTurreted()) {
-                    camera.updateTurretAngle(turretAngle, timestamp);
-                }
-            });
+            turretYawDegrees.set(turretAngle.getDegrees());
         });
+        visionSubsystem.configureDefaultCameras(turretYawDegrees::get);
 
         // Initialize hood with turret reference for 3D visualization
         hoodSubsystem.setTurretSubsystem(turretSubsystem);
@@ -132,6 +182,8 @@ public class RobotContainer {
         SmartDashboard.putData("Auto-Aim Toggle", autoAimController.aimToggle());
         SmartDashboard.putData("Auto-Shoot Toggle", autoAimController.shootingToggle());
         SmartDashboard.putData("Reset Dynamics", superstructureCommands.resetDynamics());
+        SmartDashboard.putData("Fuel Sim/Reset", Commands.runOnce(autoAimController::resetSimulatedFuel));
+        SmartDashboard.putData("Fuel Sim/Add Fuel", Commands.runOnce(autoAimController::intakeSimulatedFuel));
         SmartDashboard.putData("Pipeline On", superstructureCommands.setPipelineState(PipelineState.ON));
         SmartDashboard.putData("Pipeline Off", superstructureCommands.setPipelineState(PipelineState.OFF));
         SmartDashboard.putData("Reset Odometry", Commands.runOnce(
@@ -231,11 +283,11 @@ public class RobotContainer {
             .withName("X Brake Swerve")
         );
 
-        driverController.start().onTrue(
-            Commands.runOnce(
-                () -> swerveSubsystem.resetPose(visionSubsystem.getVisionPose())
-            )
-        );
+        //driverController.start().onTrue(
+        //    Commands.runOnce(
+        //        () -> swerveSubsystem.resetPose(visionSubsystem.getVisionPose())
+        //    )
+        //);
 
         //#endregion
         //#region Operator Controller

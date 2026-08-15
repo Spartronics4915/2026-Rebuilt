@@ -3,6 +3,7 @@ package com.spartronics4915.frc2026.subsystems.swerve;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.*;
 
+import java.util.Objects;
 import java.util.OptionalDouble;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -34,6 +35,7 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
@@ -57,6 +59,10 @@ import frc.robot.lib.BLine.Path;
 
 public class SwerveSubsystem extends SubsystemBase {
 
+    private static final double SIMULATION_DT_SECONDS = 0.020;
+
+    private static SwerveSubsystem instance;
+    private final SwerveConfigurations configuration;
     private final SwerveDrivetrain<?, ?, ?> drivetrain;
 
     private final SwerveRequest.FieldCentric fieldCentricRequest =
@@ -95,10 +101,11 @@ public class SwerveSubsystem extends SubsystemBase {
     private Pose2d smoothedPose = new Pose2d();
     private Field2d field = new Field2d();
 
-    private final MovingAveragePose poseFilter = new MovingAveragePose(1.60); // previously 0.30
+    private final MovingAveragePose poseFilter = new MovingAveragePose(1.60);
 
-    public static Pose3d pose3d = new Pose3d();
+    private Pose3d pose3d = new Pose3d();
     private final BumpSim bumpSim;
+    private Pose2d simulatedTruthPose = new Pose2d();
 
     private double movementOverride = 0.0;
     private boolean isFieldRelativeState = defaultFieldRelative;
@@ -111,6 +118,7 @@ public class SwerveSubsystem extends SubsystemBase {
     private final SwerveTelemetry telemetry = new SwerveTelemetry();
 
     public SwerveSubsystem(SwerveConfigurations config) {
+        configuration = Objects.requireNonNull(config, "config");
         drivetrain = new SwerveDrivetrain<>(
             TalonFX::new, TalonFX::new, CANcoder::new,
             config.drivetrainConstants,
@@ -135,6 +143,7 @@ public class SwerveSubsystem extends SubsystemBase {
                 new Pose2d(config.modules[3].LocationX, config.modules[3].LocationY, Rotation2d.kZero)
             };
             bumpSim = new BumpSim(modulePoses);
+            simulatedTruthPose = drivetrain.getState().Pose;
         } else {
             bumpSim = null;
         }
@@ -143,6 +152,15 @@ public class SwerveSubsystem extends SubsystemBase {
         configureBLine();
 
         SmartDashboard.putData(field);
+    }
+
+    public static synchronized SwerveSubsystem getInstance(SwerveConfigurations config) {
+        if (instance == null) {
+            instance = new SwerveSubsystem(config);
+        } else if (instance.configuration != config && !instance.configuration.equals(config)) {
+            throw new IllegalStateException("SwerveSubsystem was already initialized with a different configuration.");
+        }
+        return instance;
     }
 
     private void updateOdometry(SwerveDriveState state) {
@@ -181,10 +199,13 @@ public class SwerveSubsystem extends SubsystemBase {
 
         smoothedPose = poseFilter.calculate(getPose());
 
-        if (Robot.isSimulation() && bumpSim != null) {
-            Pose3d resolvedPose = bumpSim.resolveRobotPose(getPose());
-            if (resolvedPose != null) {
-                pose3d = resolvedPose;
+        if (Robot.isSimulation()) {
+            pose3d = new Pose3d(simulatedTruthPose);
+            if (bumpSim != null) {
+                Pose3d resolvedPose = bumpSim.resolveRobotPose(simulatedTruthPose);
+                if (resolvedPose != null) {
+                    pose3d = resolvedPose;
+                }
             }
         }
 
@@ -203,7 +224,15 @@ public class SwerveSubsystem extends SubsystemBase {
  
     @Override
     public void simulationPeriodic() {
-        drivetrain.updateSimState(0.020, RobotController.getBatteryVoltage());
+        drivetrain.updateSimState(SIMULATION_DT_SECONDS, RobotController.getBatteryVoltage());
+
+        ChassisSpeeds speeds = drivetrain.getState().Speeds;
+        simulatedTruthPose = simulatedTruthPose.exp(new Twist2d(
+                speeds.vxMetersPerSecond * SIMULATION_DT_SECONDS,
+                speeds.vyMetersPerSecond * SIMULATION_DT_SECONDS,
+                speeds.omegaRadiansPerSecond * SIMULATION_DT_SECONDS));
+
+        pose3d = new Pose3d(simulatedTruthPose);
     }
 
     public void driveFieldCentric(double vX, double vY, double omega) {
@@ -261,12 +290,7 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public Pose2d getPastVisionPose(double timestamp) {
-        try {
-            return drivetrain.samplePoseAt(timestamp).orElse(getPose());
-        } catch (Exception e) {
-            System.err.println("Warning: Could not sample pose at timestamp " + timestamp);
-            return getPose();
-        }
+        return drivetrain.samplePoseAt(timestamp).orElseGet(this::getPose);
     }
 
     public void addVisionMeasurement(Pose2d pose, double timestamp, Matrix<N3, N1> stdDevs) {
@@ -277,6 +301,17 @@ public class SwerveSubsystem extends SubsystemBase {
         if (pose == null) return;
         drivetrain.resetPose(pose);
         poseFilter.reset(pose);
+        if (Robot.isSimulation()) {
+            simulatedTruthPose = pose;
+        }
+    }
+
+    /**
+     * Returns the independently simulated ground-truth pose. This must not be replaced by the
+     * estimator pose when vision measurements are being fused.
+     */
+    public Pose2d getSimulatedTruthPose() {
+        return simulatedTruthPose;
     }
 
     public ChassisSpeeds getRobotVelocity() {
@@ -518,7 +553,7 @@ public class SwerveSubsystem extends SubsystemBase {
             Pose2d rawPose = state.Pose;
             pose.set(rawPose);
             origin.set(new Pose2d());
-            pose3dPub.set(SwerveSubsystem.pose3d);
+            pose3dPub.set(swerve.pose3d);
 
             smoothed.set(swerve.smoothedPose);
             measuredSpeeds.set(state.Speeds);

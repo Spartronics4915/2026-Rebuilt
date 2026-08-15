@@ -172,13 +172,15 @@ public class Superstructure extends SubsystemBase {
 
         Pose2d pose = swerve.getPose();
         
-        if (pose != null) {
-            if (pose.getX() < 0) {
-                swerve.resetPose(vision.getVisionPose());
-            } else if (pose.getY() < 0.0 || pose.getY() > 8.1) {
-                swerve.resetPose(vision.getVisionPose());
+        /* Maybe include in the future, but hopefully I don't have to
+            if (pose != null) {
+                if (pose.getX() < 0) {
+                    swerve.resetPose(vision.getVisionPose());
+                } else if (pose.getY() < 0.0 || pose.getY() > 8.1) {
+                    swerve.resetPose(vision.getVisionPose());
+                }
             }
-        }
+        */
 
         ballDetectedDebounced = ballDebouncer.calculate(ballDetect());
         ballDetectedPublisher.set(ballDetectedDebounced);

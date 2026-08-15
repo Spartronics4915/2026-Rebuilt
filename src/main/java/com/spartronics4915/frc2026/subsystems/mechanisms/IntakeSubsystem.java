@@ -108,6 +108,10 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
         return leadMotor.getMotorVoltage().getValueAsDouble();
     }
 
+    public double getSetpoint() {
+        return currentSetpoint;
+    }
+
     public void setSetpoint(double newSetpoint){
         currentSetpoint = newSetpoint;
     }
