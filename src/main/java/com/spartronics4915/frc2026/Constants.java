@@ -477,7 +477,7 @@ public final class Constants {
 
     public static final class AutoAimConstants {
         /** Throttle rate for simulation projectile spawning (seconds between shots). */
-        public static final double SIM_SHOT_INTERVAL_SECONDS = 0.08;
+        public static final double SIM_SHOT_INTERVAL_SECONDS = 0.11;
         public static final int SIM_FUEL_CAPACITY = 500;
         public static final int SIM_INITIAL_FUEL = 8;
         
@@ -499,7 +499,7 @@ public final class Constants {
         public static final double turretTolerance = 7.5;
         public static final double hoodTolerance = 4.0;
 
-        public static final double processingCompensation = 0.05;
+        public static final double processingCompensation = 0.02;
 
         public static final Distance HUB_SHOT_PADDING = Meters.of(0.05);
         public static final Distance HUB_IDEAL_SHOT_PADDING = Meters.of(0.2);

@@ -321,7 +321,7 @@ public class AutoAimController extends SubsystemBase {
         }
 
         return autoAim.calculateDynamicAim(
-            swerve.getSmoothedRelativePose(),
+            swerve.getRelativePose(),
             adjFieldSpeeds,
             adjFieldAccelerations,
             target,
@@ -366,7 +366,7 @@ public class AutoAimController extends SubsystemBase {
 
         if (!readyToShoot) {
             result = autoAim.calculateDynamicAim(
-                swerve.getSmoothedRelativePose(),
+                swerve.getRelativePose(),
                 lastFieldSpeeds,
                 fieldAccelerations,
                 BOTTOM_FUNNEL_POSITION,
@@ -434,7 +434,7 @@ public class AutoAimController extends SubsystemBase {
     }
 
     private void updateCollisionCache() {
-        Translation2d robotPos2d = swerve.getSmoothedRelativePose().getTranslation()
+        Translation2d robotPos2d = swerve.getRelativePose().getTranslation()
             .plus(turretTranslation2D.rotateBy(swerve.getRelativePose().getRotation()));
 
         Translation2d targetPos2d = new Translation2d(hubPose.getX(), hubPose.getY());
@@ -479,7 +479,7 @@ public class AutoAimController extends SubsystemBase {
 
     public double getDistanceToTarget() {
         Translation3d target = (targetOverride != null) ? targetOverride : getDefaultTarget();
-        Translation2d robotPos2d = swerve.getSmoothedRelativePose().getTranslation()
+        Translation2d robotPos2d = swerve.getRelativePose().getTranslation()
             .plus(turretTranslation2D.rotateBy(swerve.getRelativePose().getRotation()));
         return robotPos2d.getDistance(target.toTranslation2d());
     }

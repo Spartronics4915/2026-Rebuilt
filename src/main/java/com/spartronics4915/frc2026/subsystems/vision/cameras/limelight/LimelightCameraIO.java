@@ -145,7 +145,8 @@ public class LimelightCameraIO extends CameraIO {
 
                 maxSpan = Math.max(
                     maxSpan,
-                    first.get().getTranslation().toTranslation2d().getDistance(second.get().getTranslation().toTranslation2d()));
+                    first.get().getTranslation().toTranslation2d()
+                        .getDistance(second.get().getTranslation().toTranslation2d()));
             }
         }
 
