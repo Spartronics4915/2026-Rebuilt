@@ -10,6 +10,7 @@ import java.util.Map;
 
 import static com.spartronics4915.frc2026.Constants.VisionConstants.*;
 
+import com.ctre.phoenix6.Utils;
 import com.spartronics4915.frc2026.Constants;
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
@@ -49,7 +50,7 @@ public class VisionSubsystem extends SubsystemBase {
     private static VisionSubsystem instance;
 
     private final SwerveSubsystem swerve;
-    private final AprilTagFieldLayout fieldLayout = (Robot.isReal()) ? REAL_APRILTAG_FIELD_LAYOUT : SIM_APRILTAG_FIELD_LAYOUT;
+    private final AprilTagFieldLayout fieldLayout = (Robot.isReal()) ? SIM_APRILTAG_FIELD_LAYOUT : SIM_APRILTAG_FIELD_LAYOUT;
     private final List<CameraIO> cameras = new ArrayList<>();
     private final Map<String, CameraDiagnostics> cameraDiagnostics = new HashMap<>();
     private final VisionSystemSim visionSim;
@@ -224,7 +225,7 @@ public class VisionSubsystem extends SubsystemBase {
 
     private void applyVisionMeasurement(String cameraName, VisionEstimate observation) {
         Matrix<N3, N1> stdDevs = StdDevCalculator.calculate(observation);
-        double timestamp = observation.timestamp().in(Seconds);
+        double timestamp = Utils.fpgaToCurrentTime(observation.timestamp().in(Seconds));
         String prefix = "Vision/" + cameraName + "/Last";
 
         swerve.addVisionMeasurement(observation.getPose2d(), timestamp, stdDevs);

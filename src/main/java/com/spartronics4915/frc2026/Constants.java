@@ -47,6 +47,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.units.measure.Time;
+import edu.wpi.first.wpilibj.Filesystem;
 import frc.robot.lib.BLine.Path;
 
 import com.ctre.phoenix6.CANBus;
@@ -101,10 +102,10 @@ public final class Constants {
 
         public static final Constraints TRENCH_ALIGN_CONSTRAINTS = new Constraints(3, 3);
 
-        public static final double ODOMETRY_FREQUENCY = 150.0; // 250.0
+        public static final double ODOMETRY_FREQUENCY = 120.0; // 250.0
         public static final double STALE_COMMAND_TIMEOUT = 0.1;
 
-        public static final Matrix<N3, N1> NORMAL_STD_DEVS = VecBuilder.fill(0.05, 0.05, 0.02);
+        public static final Matrix<N3, N1> NORMAL_STD_DEVS = VecBuilder.fill(0.06, 0.06, 0.04);
 
         public static final double HEADING_LOCK_P = 7.0;
         public static final double HEADING_LOCK_D = 0.0;
@@ -218,7 +219,7 @@ public final class Constants {
                         new TalonFXConfiguration()
                             .withCurrentLimits(
                                 new CurrentLimitsConfigs()
-                                    .withStatorCurrentLimit(Amps.of(140))
+                                    .withStatorCurrentLimit(Amps.of(120))
                                     .withStatorCurrentLimitEnable(true)
                             )
                     );
@@ -331,7 +332,7 @@ public final class Constants {
 
     public static final class VisionConstants {
 
-        public static final double CAMERA_LOOP_PERIOD_SECONDS = 0.01;
+        public static final double CAMERA_LOOP_PERIOD_SECONDS = 0.02; // 0.01
 
         // Measurement validity.
         public static final double MAX_CAPTURE_LATENCY_SECONDS = 0.150;
@@ -347,7 +348,7 @@ public final class Constants {
         public static AprilTagFieldLayout REAL_APRILTAG_FIELD_LAYOUT;
         static {
             try {
-                REAL_APRILTAG_FIELD_LAYOUT = new AprilTagFieldLayout("./map/field_map_aug_21_11_19_54.json");
+                REAL_APRILTAG_FIELD_LAYOUT = new AprilTagFieldLayout(Filesystem.getDeployDirectory().getPath() + "/map/field_map_aug_21_13_51_35.json");
             } catch(IOException e) {
                 System.err.println("Error: Could not find real April Tag Field json file");
             }
@@ -355,8 +356,8 @@ public final class Constants {
         
         // Measurement covariance. The baseline mirrors the structure used by Team 6328:
         // coefficient * distance^2 / tagCount^2.
-        public static final double XY_STD_DEV_COEFFICIENT = 0.01;
-        public static final double THETA_STD_DEV_COEFFICIENT = 0.03;
+        public static final double XY_STD_DEV_COEFFICIENT = 0.06; // 0.01
+        public static final double THETA_STD_DEV_COEFFICIENT = 0.03; // 0.03
         
         // public static final double CAMERA_STD_DEV_FACTOR = 1.0;
         public static final double TAG_DISTANCE_REFERENCE_METERS = 1.0;
@@ -365,7 +366,7 @@ public final class Constants {
         public static final double MIN_TAG_SPREAD_SCALE = 0.50;
         public static final double MAX_TAG_SPREAD_SCALE = 1.00;
         public static final double AMBIGUITY_SCALE = 2.0;
-        public static final double LATENCY_SCALE = 0.0; // 0.50
+        public static final double LATENCY_SCALE = 0.50; // 0.50
 
         public static final double MIN_XY_STD_DEV_METERS = 0.02;
         public static final double MAX_XY_STD_DEV_METERS = 2.0;

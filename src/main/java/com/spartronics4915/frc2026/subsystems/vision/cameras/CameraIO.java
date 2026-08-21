@@ -212,7 +212,7 @@ public abstract class CameraIO implements Sendable {
 
     public record CameraPipeline(String name, int index) {
         public static CameraPipeline defaultPipeline() {
-            return new CameraPipeline("default", -1);
+            return new CameraPipeline("default", 1);
         }
     }
 }
