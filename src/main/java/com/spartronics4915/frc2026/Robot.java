@@ -122,7 +122,7 @@ public class Robot extends TimedRobot {
         timeUntilSwitchPub.set(timeUntilSwitch);
 
         // schedule the autonomous command (example)
-        robotContainer.swerveSubsystem.configureStandardDevsForEnabled();
+        robotContainer.swerveSubsystem.configureStdDevsEnabled();
         if (autonomousCommand != null) {
             CommandScheduler.getInstance().schedule(autonomousCommand);
         }
@@ -138,7 +138,7 @@ public class Robot extends TimedRobot {
             autonomousCommand.cancel();
         }
 
-        robotContainer.swerveSubsystem.configureStandardDevsForEnabled();
+        robotContainer.swerveSubsystem.configureStdDevsEnabled();
 
         // If match time is near zero (or negative), we are likely in pure Teleop mode (counting up)
         // In practice mode or real matches, teleop starts with a high number (e.g. 135) and counts down.

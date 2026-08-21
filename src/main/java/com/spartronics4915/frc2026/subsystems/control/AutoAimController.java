@@ -21,7 +21,6 @@ import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.filter.MedianFilter;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -56,6 +55,9 @@ public class AutoAimController extends SubsystemBase {
     private final FuelSim fuelSim;
     private int simulatedFuelStored = SIM_INITIAL_FUEL;
     private double lastSimulatedShotTimestamp = Double.NEGATIVE_INFINITY;
+
+    // TODO: The turret setpoint is jittery not becuase of Auto-Aim, but swerve drive tuning
+    // 
 
     private final AutoAim autoAim = new AutoAim(
         20, // 30
@@ -254,7 +256,7 @@ public class AutoAimController extends SubsystemBase {
             MetersPerSecond.of(launchSpeedMps),
             Radians.of(hoodPitchRadians),
             Radians.of(turret.getCurrentSetpoint().getRadians()),
-            shooterBaseTranslation.rotateBy(new Rotation3d(swerve.getRelativePose().getRotation()))
+            shooterBaseTranslation
         );
 
         simulatedFuelStored--;

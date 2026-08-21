@@ -110,7 +110,6 @@ public class RobotContainer {
         swerveSubsystem, 
         autoAimController, 
         superstructureCommands,
-        driveCommand,
         visionSubsystem
     );
 

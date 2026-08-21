@@ -19,6 +19,9 @@ import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
 import org.photonvision.simulation.SimCameraProperties;
 
 import com.pathplanner.lib.config.PIDConstants;
@@ -89,47 +92,31 @@ public final class Constants {
 
         public static final SwerveConfigurations swerveConfiguration = SwerveConfigurations.COMP_CHASSIS;
 
-        public static final double maxSpeed = 9.12; // 5.12, should probably increase
-        public static final AngularVelocity maxAngularSpeed = RadiansPerSecond.of(8); // 6, should probably increase
+        public static final double MAX_VELOCITY = 4.39;
+        public static final AngularVelocity MAX_ANGULAR_VELOCITY = RadiansPerSecond.of(11.015797);
 
-        /**
-         * Speed limits applied while shooting at the hub (tight precision required).
-         * Inspired by 6328's approach of using separate, tighter limits for hub shots
-         * vs. ferry/pass shots to stabilize the robot while the turret tracks.
-         */
-        public static final double maxSpeedWhenShootingHub = maxSpeed * 0.15;
-        public static final double maxOmegaWhenShootingHub = maxAngularSpeed.in(RadiansPerSecond) * 0.20;
+        public static final double STICK_DEADBAND = 0.0;
+        public static final double TILT_THRESHOLD_DEGREES = 1.0;
+        public static final double TILT_DEBOUNCE = 0.05;
 
-        /**
-         * Speed limits applied during ferry/pass shots (target is far, more robot
-         * movement can be tolerated).
-         */
-        public static final double maxSpeedWhenFerrying = maxSpeed * 0.50;
-        public static final double maxOmegaWhenFerrying = maxAngularSpeed.in(RadiansPerSecond) * 0.45;
+        public static final Constraints TRENCH_ALIGN_CONSTRAINTS = new Constraints(3, 3);
 
-        public static final double timeUntilLimitedMaxSpeed = 0.5; // 0.75
+        public static final double ODOMETRY_FREQUENCY = 150.0; // 250.0
+        public static final double STALE_COMMAND_TIMEOUT = 0.1;
 
-        public static final boolean defaultFieldRelative = true;
+        public static final Matrix<N3, N1> NORMAL_STD_DEVS = VecBuilder.fill(0.05, 0.05, 0.02);
 
-        public static final double stickDeadband = 0.0;
-        public static final double tiltThresholdDegrees = 1.0;
-        public static final double tiltDebounce = 0.05;
+        public static final double HEADING_LOCK_P = 7.0;
+        public static final double HEADING_LOCK_D = 0.0;
 
-        public static final Constraints trenchAlignConstraints = new Constraints(3, 3);
-
-        public static final double odomUpdateFrequency = 120.0; // 250.0
-        public static final double staleCommandTimeout = 0.1;
-
-        public static final Matrix<N3, N1> normalStdDevs = VecBuilder.fill(0.05, 0.05, 0.02); // 0.3, 0.3, 0.2
-        public static final Matrix<N3, N1> slipStdDevs = VecBuilder.fill(2.0, 2.0, 1.0);
-
-        public static final double slipRecoverySeconds = 0.3;
+        // Depreciated
         public static final double slipThresholdRPS = 2.2;
         public static final double minSpeedDetectMPS = 0.8;
         public static final int slipDebounceCycles = 5;
 
-        public static final double headingLockKP = 7.0;
-        public static final double headingLockKD = 0.0;
+        public static final boolean DEFAULT_FIELD_RELATIVE = true;
+        public static final Rotation2d BLUE_OPERATOR_FORWARD = Rotation2d.kZero;
+        public static final Rotation2d RED_OPERATOR_FORWARD = Rotation2d.kPi;
 
         public record ModuleConfig(
             int steerMotorId, int driveMotorId, int encoderId,
@@ -140,30 +127,32 @@ public final class Constants {
 
         public enum SwerveConfigurations {
             COMP_CHASSIS(
-                new SwerveDrivetrainConstants()
-                    .withCANBusName("Hydra")
-                    .withPigeon2Id(13),
+                new SwerveDrivetrainConstants().withCANBusName("Hydra").withPigeon2Id(13),
                 compChassisFactory(),
                 // Front Left
                 new ModuleConfig(1, 2, 3,
                     Rotations.of(-0.306885),
                     Inches.of(9.585892), Inches.of(12.1640885),
-                    false),
+                    false
+                ),
                 // Front Right
                 new ModuleConfig(4, 5, 6,
                     Rotations.of(0.15380859375),
                     Inches.of(9.585892), Inches.of(-12.1640885),
-                    true),
+                    true
+                ),
                 // Back Left
                 new ModuleConfig(7, 8, 9,
                     Rotations.of(-0.08837890625),
                     Inches.of(-9.585892), Inches.of(12.1640885),
-                    false),
+                    false
+                ),
                 // Back Right
-                new ModuleConfig(10, 11, 12, // 10, 11, 12
+                new ModuleConfig(10, 11, 12,
                     Rotations.of(0.155517578125),
                     Inches.of(-9.585892), Inches.of(-12.1640885),
-                    true)
+                    true
+                )
             );
 
             public final SwerveDrivetrainConstants drivetrainConstants;
@@ -201,7 +190,7 @@ public final class Constants {
                     .withSteerMotorGearRatio(26.09090909090909)
                     .withCouplingGearRatio(3.857142857142857)
                     .withWheelRadius(Inches.of(2.0))
-                    .withSpeedAt12Volts(MetersPerSecond.of(4.32))
+                    .withSpeedAt12Volts(MetersPerSecond.of(4.39))
                     .withSlipCurrent(Amps.of(120))
                     .withSteerMotorGains(new Slot0Configs()
                         .withKP(110).withKI(0).withKD(5.0)
@@ -354,8 +343,16 @@ public final class Constants {
         public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.35;
 
         // Defualt AprilTag field, may want to calibrate with our field.
-        public static final AprilTagFieldLayout APRILTAG_FIELD_LAYOUT = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
-
+        public static final AprilTagFieldLayout SIM_APRILTAG_FIELD_LAYOUT = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+        public static AprilTagFieldLayout REAL_APRILTAG_FIELD_LAYOUT;
+        static {
+            try {
+                REAL_APRILTAG_FIELD_LAYOUT = new AprilTagFieldLayout("./map/field_map_aug_21_11_19_54.json");
+            } catch(IOException e) {
+                System.err.println("Error: Could not find real April Tag Field json file");
+            }
+        }
+        
         // Measurement covariance. The baseline mirrors the structure used by Team 6328:
         // coefficient * distance^2 / tagCount^2.
         public static final double XY_STD_DEV_COEFFICIENT = 0.01;
@@ -434,13 +431,14 @@ public final class Constants {
 
     public static final class SuperstructureConstants {
         
+        // Are these even correct?
         public static final Translation2d turretTranslation2D = new Translation2d(-0.1185, -0.1568);
         public static final Translation3d turretTranslation3D = new Translation3d(turretTranslation2D.getX(), turretTranslation2D.getY(), Units.inchesToMeters(21.443748 + 2.955));
 
         public static final Translation3d shooterBaseTranslation = new Translation3d(
-            Units.inchesToMeters(-4.657289), 
-            Units.inchesToMeters(-5.657289), 
-            Units.inchesToMeters(14.262838)
+            Units.inchesToMeters(-4.6573), 
+            Units.inchesToMeters(5.657289), 
+            Units.inchesToMeters(18.5550)
         );
 
         public static final double shooterReadyThresholdRPS = 4.0;
@@ -477,7 +475,7 @@ public final class Constants {
 
     public static final class AutoAimConstants {
         /** Throttle rate for simulation projectile spawning (seconds between shots). */
-        public static final double SIM_SHOT_INTERVAL_SECONDS = 0.11;
+        public static final double SIM_SHOT_INTERVAL_SECONDS = 0.094915;
         public static final int SIM_FUEL_CAPACITY = 500;
         public static final int SIM_INITIAL_FUEL = 8;
         
@@ -490,7 +488,7 @@ public final class Constants {
         public static final double FUNNEL_HEIGHT = Units.inchesToMeters(22.25);
         public static final Translation3d HUB_POSITION = new Translation3d(hubPose.getX(), hubPose.getY(), HUB_HEIGHT);
         public static final Translation3d BOTTOM_FUNNEL_POSITION = new Translation3d(hubPose.getX(), hubPose.getY(), HUB_HEIGHT - FUNNEL_HEIGHT);
-        public static final double MAX_SHOOTER_RPS = 120;
+        public static final double MAX_SHOOTER_RPS = 110;
         
         // ik this is badly named but it basically defines how much below the setpoint in manual mode is still considered fine for the shot
         public static final double manualShooterLeniency = 0.1;
@@ -499,7 +497,7 @@ public final class Constants {
         public static final double turretTolerance = 7.5;
         public static final double hoodTolerance = 4.0;
 
-        public static final double processingCompensation = 0.02;
+        public static final double processingCompensation = 0.0;
 
         public static final Distance HUB_SHOT_PADDING = Meters.of(0.05);
         public static final Distance HUB_IDEAL_SHOT_PADDING = Meters.of(0.2);

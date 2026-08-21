@@ -49,7 +49,7 @@ public class VisionSubsystem extends SubsystemBase {
     private static VisionSubsystem instance;
 
     private final SwerveSubsystem swerve;
-    private final AprilTagFieldLayout fieldLayout = APRILTAG_FIELD_LAYOUT;
+    private final AprilTagFieldLayout fieldLayout = (Robot.isReal()) ? REAL_APRILTAG_FIELD_LAYOUT : SIM_APRILTAG_FIELD_LAYOUT;
     private final List<CameraIO> cameras = new ArrayList<>();
     private final Map<String, CameraDiagnostics> cameraDiagnostics = new HashMap<>();
     private final VisionSystemSim visionSim;
@@ -304,7 +304,7 @@ public class VisionSubsystem extends SubsystemBase {
         visionSim.update(swerve.getPose());
         visionSim.getDebugField()
             .getObject("TruthRobot")
-            .setPose(swerve.getSimulatedTruthPose());
+            .setPose(swerve.getPose());
         visionSim.getDebugField()
             .getObject("EstimatedRobot")
             .setPose(swerve.getPose());
