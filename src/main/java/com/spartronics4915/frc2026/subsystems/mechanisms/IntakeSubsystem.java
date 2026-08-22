@@ -25,6 +25,8 @@ import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonF
 
 public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
+    // Enable FOC control and Switch to Velocity Voltage
+
     private LoggedTalonFX leadMotor = new LoggedTalonFX(LEAD_MOTOR_ID, CAN_BUS);
 
     private double currentSetpoint;

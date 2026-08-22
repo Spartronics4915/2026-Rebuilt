@@ -182,6 +182,9 @@ public final class Constants {
                 };
             }
 
+            // TODO: Tune Swerve (the goal is to remove the crunchy sound, and to ellimate jitter)
+            // TODO: Add accurate current limits to swerve (Stator, supply, etc...)
+
             /** Shared module constants factory for the competition chassis. */
             private static SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration> compChassisFactory() {
                 return new SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>()

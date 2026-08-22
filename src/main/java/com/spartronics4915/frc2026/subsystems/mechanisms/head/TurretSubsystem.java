@@ -38,6 +38,8 @@ import java.util.function.BiConsumer;
 
 public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
+    // May need to retune or switch to position + FOC
+
     private LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
     private CANcoder encoder = new CANcoder(ENCODER_ID, CAN_BUS);
     

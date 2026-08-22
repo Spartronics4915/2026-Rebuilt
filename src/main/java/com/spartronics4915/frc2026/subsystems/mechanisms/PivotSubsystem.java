@@ -38,6 +38,8 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
+    // Motion Magic?
+
     LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
     CANcoder encoder = new CANcoder(ENCODER_ID, CAN_BUS);
     

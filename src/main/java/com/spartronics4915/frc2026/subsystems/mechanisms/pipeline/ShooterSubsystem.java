@@ -29,6 +29,8 @@ import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonF
 
 public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
+    // Enable FOC control
+
     private LoggedTalonFX leadMotor;
     private LoggedTalonFX followerMotor;
 

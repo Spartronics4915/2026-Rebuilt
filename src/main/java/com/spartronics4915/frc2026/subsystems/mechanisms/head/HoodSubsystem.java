@@ -35,6 +35,8 @@ import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonF
 
 public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
+    // May need to retune or switch to position + FOC
+
     LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
     
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
