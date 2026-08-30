@@ -10,12 +10,12 @@ import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
-
+import com.spartronics4915.frc2026.util.logging.Telemetry;
+import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
-import edu.wpi.first.networktables.DoublePublisher;
-import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -28,6 +28,7 @@ import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInte
 import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
 
 public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterface {
+    private static final Scope LOG = Telemetry.scope("Mechanisms/Shooter");
 
     // Enable FOC control
 
@@ -35,6 +36,11 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private LoggedTalonFX followerMotor;
 
     private double currentSetpoint;
+    private long sampleTimestampUs;
+    private double appliedDutyCycle;
+    private double velocityRps;
+    private double workingSetpointRps;
+    private double profileSetpointRps;
 
     private SlewRateLimiter rpsProfile = new SlewRateLimiter(9999, maxShooterDecel, 0);
 
@@ -63,11 +69,6 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     private ShooterClamp RPSClamp;
     private double maxRPS;
-
-    private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("applied out").publish();
-    private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("rps").publish();
-    private final DoublePublisher desiredStatePublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("desired state").publish();
-    private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("shooter").getDoubleTopic("setpoint").publish();
 
     private final VoltageOut stopRequest = new VoltageOut(0.0);
 
@@ -106,8 +107,6 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
         SmartDashboard.putData("Shooter Dynamic Reverse", sysIdDynamic(Direction.kReverse));
         SmartDashboard.putData("Shooter On", setSetpointCommand(55));
         SmartDashboard.putData("Shooter Off", setSetpointCommand(0));
-        SmartDashboard.putData("Shooter Motor", leadMotor);
-        SmartDashboard.putData("Follower Shooter Motor", followerMotor);
     }
 
     @Override
@@ -130,10 +129,20 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
             }
         }
 
-        appliedOutPublisher.accept(leadMotor.getDutyCycle().getValueAsDouble());
-        rpsPublisher.accept(getCurrentRPS());
-        desiredStatePublisher.accept(limitedSetpoint);
-        setpointPublisher.accept(workingSetpoint);
+        appliedDutyCycle = leadMotor.getDutyCycle().getValueAsDouble();
+        velocityRps = getCurrentRPS();
+        workingSetpointRps = workingSetpoint;
+        profileSetpointRps = limitedSetpoint;
+        sampleTimestampUs = RobotController.getFPGATime();
+        outputTelemetry();
+    }
+
+    private void outputTelemetry() {
+        LOG.critical.log("SampleTimestampUs", sampleTimestampUs);
+        LOG.critical.log("VelocityRps", velocityRps);
+        LOG.critical.log("SetpointRps", workingSetpointRps);
+        LOG.critical.log("ProfileSetpointRps", profileSetpointRps);
+        LOG.info.log("AppliedDutyCycle", appliedDutyCycle);
     }
 
     public double getCurrentRPS() {

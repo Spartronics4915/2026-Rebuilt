@@ -16,11 +16,12 @@ import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInte
 import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
 
 import au.grapplerobotics.LaserCan;
+import com.spartronics4915.frc2026.util.logging.Telemetry;
+import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
-import edu.wpi.first.networktables.DoublePublisher;
-import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -30,12 +31,17 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterface {
+    private static final Scope LOG = Telemetry.scope("Mechanisms/Feeder");
 
     // Enable FOC control and Switch to Velocity Voltage
     
     private LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
     
     private double currentSetpoint;
+    private long sampleTimestampUs;
+    private double appliedDutyCycle;
+    private double velocityRps;
+    private double profileSetpointRps;
     private final VelocityTorqueCurrentFOC velocityTorqueRequest = new VelocityTorqueCurrentFOC(0.0);
 
     private DoubleSupplier distanceToTargetSupplier = null;
@@ -63,10 +69,6 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
         )
     );
 
-    private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("feeder").getDoubleTopic("applied out").publish();
-    private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("feeder").getDoubleTopic("rps").publish();
-    private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("feeder").getDoubleTopic("setpoint").publish();
-
     public FeederSubsystem() {
         TalonFXConfigurator configurator = motor.getConfigurator();
             configurator.apply(PID_CONFIG);
@@ -86,7 +88,6 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         SmartDashboard.putData("Feeder On", setStateCommand(FeederState.FORWARD));
         SmartDashboard.putData("Feeder Off", setStateCommand(FeederState.OFF));
-        SmartDashboard.putData("Feeder Motor", motor);
     }
     
     @Override
@@ -118,9 +119,19 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
             }
         }
 
-        appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
-        rpsPublisher.accept(getCurrentRPM());
-        setpointPublisher.accept(currentSetpoint);
+        appliedDutyCycle = motor.getDutyCycle().getValueAsDouble();
+        velocityRps = getCurrentRPM();
+        profileSetpointRps = currentSetpoint;
+        sampleTimestampUs = RobotController.getFPGATime();
+        outputTelemetry();
+    }
+
+    private void outputTelemetry() {
+        LOG.critical.log("SampleTimestampUs", sampleTimestampUs);
+        LOG.critical.log("VelocityRps", velocityRps);
+        LOG.critical.log("SetpointRps", currentSetpoint);
+        LOG.critical.log("ProfileSetpointRps", profileSetpointRps);
+        LOG.info.log("AppliedDutyCycle", appliedDutyCycle);
     }
 
     public double getCurrentRPM() {

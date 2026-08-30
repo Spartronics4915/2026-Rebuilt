@@ -21,6 +21,8 @@ import com.spartronics4915.frc2026.subsystems.vision.cameras.photon.PhotonCamera
 import com.spartronics4915.frc2026.subsystems.vision.cameras.photon.SimulatedCameraIO;
 import com.spartronics4915.frc2026.util.vision.VisionEstimate;
 import com.spartronics4915.frc2026.util.vision.StdDevCalculator;
+import com.spartronics4915.frc2026.util.logging.Telemetry;
+import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 
 import static edu.wpi.first.units.Units.Seconds;
 
@@ -32,12 +34,8 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.networktables.IntegerArrayPublisher;
-import edu.wpi.first.networktables.NetworkTable;
-import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.StructArrayPublisher;
-import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -46,16 +44,19 @@ import org.photonvision.simulation.VisionSystemSim;
 
 /** Common AprilTag localization pipeline. */
 public class VisionSubsystem extends SubsystemBase {
+    private static final Scope LOG = Telemetry.scope("Vision");
 
     private static VisionSubsystem instance;
 
     private final SwerveSubsystem swerve;
     private final AprilTagFieldLayout fieldLayout = (Robot.isReal()) ? SIM_APRILTAG_FIELD_LAYOUT : SIM_APRILTAG_FIELD_LAYOUT;
     private final List<CameraIO> cameras = new ArrayList<>();
-    private final Map<String, CameraDiagnostics> cameraDiagnostics = new HashMap<>();
+    private final Map<String, CameraSnapshot> cameraDiagnostics = new HashMap<>();
+    private final Map<String, Scope> cameraLogs = new HashMap<>();
     private final VisionSystemSim visionSim;
     private Pose2d latestVisionPose;
     private boolean camerasConfigured;
+    private long periodicDurationUs;
 
     private VisionSubsystem(SwerveSubsystem swerve) {
         this.swerve = swerve;
@@ -106,7 +107,8 @@ public class VisionSubsystem extends SubsystemBase {
 
     public void addCamera(CameraIO camera) {
         cameras.add(camera);
-        cameraDiagnostics.put(camera.getName(), new CameraDiagnostics(camera.getName()));
+        cameraDiagnostics.put(camera.getName(), new CameraSnapshot());
+        cameraLogs.put(camera.getName(), LOG.child(camera.getName()));
         SmartDashboard.putData("Vision/" + camera.getName(), camera);
         camera.start();
     }
@@ -191,12 +193,17 @@ public class VisionSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
+        long periodicStartUs = RobotController.getFPGATime();
         List<CameraObservation> observations = new ArrayList<>();
         for (CameraIO camera : cameras) {
+            CameraSnapshot diagnostics = cameraDiagnostics.get(camera.getName());
+            if (diagnostics != null) {
+                diagnostics.Enabled = camera.isEnabled();
+                diagnostics.SampleTimestampUs = periodicStartUs;
+            }
             if (!camera.isEnabled()) {
-                CameraDiagnostics diagnostics = cameraDiagnostics.get(camera.getName());
                 if (diagnostics != null) {
-                    diagnostics.clearObservations();
+                    diagnostics.clearObservation(periodicStartUs, false);
                 }
                 continue;
             }
@@ -216,36 +223,37 @@ public class VisionSubsystem extends SubsystemBase {
                     now,
                     fieldLayout.getFieldLength(),
                     fieldLayout.getFieldWidth())) {
+                CameraSnapshot diagnostics = cameraDiagnostics.get(observation.cameraName());
+                if (diagnostics != null) {
+                    diagnostics.Accepted = false;
+                    diagnostics.RejectedObservationCount++;
+                    diagnostics.ReceiptTimestampUs = RobotController.getFPGATime();
+                }
                 continue;
             }
 
             applyVisionMeasurement(observation.cameraName(), observation.estimate());
         }
+        periodicDurationUs = RobotController.getFPGATime() - periodicStartUs;
+        outputTelemetry();
     }
 
     private void applyVisionMeasurement(String cameraName, VisionEstimate observation) {
         Matrix<N3, N1> stdDevs = StdDevCalculator.calculate(observation);
         double timestamp = Utils.fpgaToCurrentTime(observation.timestamp().in(Seconds));
-        String prefix = "Vision/" + cameraName + "/Last";
-
         swerve.addVisionMeasurement(observation.getPose2d(), timestamp, stdDevs);
         latestVisionPose = observation.getPose2d();
-        publishDiagnostics(cameraName, observation);
-
-        SmartDashboard.putNumber(prefix + "TagCount", observation.tagCount());
-        SmartDashboard.putNumber(prefix + "TagDistanceMeters", observation.avgTagDistanceMeters());
-        SmartDashboard.putNumber(prefix + "Ambiguity", observation.avgTagAmbiguity());
-        SmartDashboard.putNumber(prefix + "TagSpanMeters", observation.tagSpanMeters());
-        SmartDashboard.putNumber(prefix + "LatencyMs", observation.latencySeconds() * 1000.0);
-        SmartDashboard.putNumber(prefix + "StdDevX", stdDevs.get(0, 0));
-        SmartDashboard.putNumber(prefix + "StdDevThetaDeg", Math.toDegrees(stdDevs.get(2, 0)));
-        SmartDashboard.putNumber(prefix + "Timestamp", timestamp);
+        updateDiagnostics(cameraName, observation, stdDevs);
     }
 
     private record CameraObservation(String cameraName, VisionEstimate estimate) {}
 
-    private void publishDiagnostics(String cameraName, VisionEstimate observation) {
-        CameraDiagnostics diagnostics = cameraDiagnostics.get(cameraName);
+    private void updateDiagnostics(
+        String cameraName,
+        VisionEstimate observation,
+        Matrix<N3, N1> stdDevs
+    ) {
+        CameraSnapshot diagnostics = cameraDiagnostics.get(cameraName);
         if (diagnostics == null) {
             return;
         }
@@ -256,36 +264,96 @@ public class VisionSubsystem extends SubsystemBase {
             fieldLayout.getTagPose(tagId).ifPresent(tagPoses::add);
         }
 
-        //diagnostics.seenTagIds.set(tagIds);
-        diagnostics.seenTagPoses.set(tagPoses.toArray(Pose3d[]::new));
-        diagnostics.estimatedPose.set(observation.pose().toPose2d());
-        diagnostics.estimatedPose3d.set(observation.pose());
+        diagnostics.SeenTagIds = new long[tagIds.length];
+        for (int i = 0; i < tagIds.length; i++) {
+            diagnostics.SeenTagIds[i] = tagIds[i];
+        }
+        diagnostics.SeenTagPoses = tagPoses.toArray(Pose3d[]::new);
+        diagnostics.EstimatedPose = observation.pose().toPose2d();
+        diagnostics.EstimatedPose3d = observation.pose();
+        diagnostics.TagCount = observation.tagCount();
+        diagnostics.AverageTagDistanceMeters = observation.avgTagDistanceMeters();
+        diagnostics.AverageTagAmbiguity = observation.avgTagAmbiguity();
+        diagnostics.TagSpanMeters = observation.tagSpanMeters();
+        diagnostics.LatencyMs = observation.latencySeconds() * 1000.0;
+        diagnostics.StdDevXMeters = stdDevs.get(0, 0);
+        diagnostics.StdDevThetaDeg = Math.toDegrees(stdDevs.get(2, 0));
+        diagnostics.CaptureTimestampUs = Math.round(observation.timestamp().in(Seconds) * 1_000_000.0);
+        diagnostics.ReceiptTimestampUs = RobotController.getFPGATime();
+        diagnostics.SampleTimestampUs = diagnostics.ReceiptTimestampUs;
+        diagnostics.Enabled = true;
+        diagnostics.Accepted = true;
+        diagnostics.AcceptedObservationCount++;
     }
 
-    private static final class CameraDiagnostics {
-        private final IntegerArrayPublisher seenTagIds;
-        private final StructArrayPublisher<Pose3d> seenTagPoses;
-        private final StructPublisher<Pose2d> estimatedPose;
-        private final StructPublisher<Pose3d> estimatedPose3d;
+    public long getPeriodicDurationUs() {
+        return periodicDurationUs;
+    }
 
-        private CameraDiagnostics(String cameraName) {
-            NetworkTable table = NetworkTableInstance.getDefault()
-                .getTable("Vision")
-                .getSubTable(cameraName);
-
-            seenTagIds = table.getIntegerArrayTopic("SeenTagIds").publish();
-            seenTagPoses = table.getStructArrayTopic("SeenTagPoses", Pose3d.struct).publish();
-            estimatedPose = table.getStructTopic("EstimatedPose", Pose2d.struct).publish();
-            estimatedPose3d = table.getStructTopic("EstimatedPose3d", Pose3d.struct).publish();
-
-            clearObservations();
+    private void outputTelemetry() {
+        LOG.critical.log("PeriodicDurationUs", periodicDurationUs);
+        for (Map.Entry<String, CameraSnapshot> entry : cameraDiagnostics.entrySet()) {
+            Scope cameraLog = cameraLogs.get(entry.getKey());
+            CameraSnapshot camera = entry.getValue();
+            cameraLog.critical.log("SampleTimestampUs", camera.SampleTimestampUs);
+            cameraLog.critical.log("CaptureTimestampUs", camera.CaptureTimestampUs);
+            cameraLog.critical.log("ReceiptTimestampUs", camera.ReceiptTimestampUs);
+            cameraLog.critical.log("Enabled", camera.Enabled);
+            cameraLog.critical.log("Accepted", camera.Accepted);
+            cameraLog.critical.log("AcceptedObservationCount", camera.AcceptedObservationCount);
+            cameraLog.critical.log("RejectedObservationCount", camera.RejectedObservationCount);
+            cameraLog.critical.log("EstimatedPose", camera.EstimatedPose);
+            cameraLog.info.log("TagCount", camera.TagCount);
+            cameraLog.info.log("AverageTagDistanceMeters", camera.AverageTagDistanceMeters);
+            cameraLog.info.log("AverageTagAmbiguity", camera.AverageTagAmbiguity);
+            cameraLog.info.log("TagSpanMeters", camera.TagSpanMeters);
+            cameraLog.info.log("LatencyMs", camera.LatencyMs);
+            cameraLog.info.log("StdDevXMeters", camera.StdDevXMeters);
+            cameraLog.info.log("StdDevThetaDeg", camera.StdDevThetaDeg);
+            cameraLog.debug.log("SeenTagIds", camera.SeenTagIds);
+            cameraLog.debug.log("SeenTagPoses", camera.SeenTagPoses);
+            cameraLog.debug.log("EstimatedPose3d", camera.EstimatedPose3d);
         }
+    }
 
-        private void clearObservations() {
-            seenTagIds.set(new long[0]);
-            seenTagPoses.set(new Pose3d[0]);
-            estimatedPose.set(new Pose2d());
-            estimatedPose3d.set(new Pose3d());
+    private static final class CameraSnapshot {
+        private static final long[] NO_TAG_IDS = new long[0];
+        private static final Pose3d[] NO_TAG_POSES = new Pose3d[0];
+        long SampleTimestampUs;
+        long CaptureTimestampUs;
+        long ReceiptTimestampUs;
+        boolean Enabled;
+        boolean Accepted;
+        long AcceptedObservationCount;
+        long RejectedObservationCount;
+        long[] SeenTagIds = NO_TAG_IDS;
+        Pose3d[] SeenTagPoses = NO_TAG_POSES;
+        Pose2d EstimatedPose = new Pose2d();
+        Pose3d EstimatedPose3d = new Pose3d();
+        long TagCount;
+        double AverageTagDistanceMeters;
+        double AverageTagAmbiguity;
+        double TagSpanMeters;
+        double LatencyMs;
+        double StdDevXMeters;
+        double StdDevThetaDeg;
+
+        void clearObservation(long sampleTimestampUs, boolean enabled) {
+            SampleTimestampUs = sampleTimestampUs;
+            ReceiptTimestampUs = sampleTimestampUs;
+            Enabled = enabled;
+            Accepted = false;
+            SeenTagIds = NO_TAG_IDS;
+            SeenTagPoses = NO_TAG_POSES;
+            EstimatedPose = new Pose2d();
+            EstimatedPose3d = new Pose3d();
+            TagCount = 0;
+            AverageTagDistanceMeters = 0;
+            AverageTagAmbiguity = 0;
+            TagSpanMeters = 0;
+            LatencyMs = 0;
+            StdDevXMeters = 0;
+            StdDevThetaDeg = 0;
         }
     }
 

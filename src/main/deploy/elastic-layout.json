@@ -181,7 +181,7 @@
             "height": 256.0,
             "type": "Graph",
             "properties": {
-              "topic": "/shooter/rps",
+              "topic": "/Telemetry/Mechanisms/Shooter/VelocityRps",
               "period": 0.033,
               "data_type": "double",
               "time_displayed": 3.0,
@@ -197,7 +197,7 @@
             "height": 256.0,
             "type": "Graph",
             "properties": {
-              "topic": "/shooter/setpoint",
+              "topic": "/Telemetry/Mechanisms/Shooter/SetpointRps",
               "period": 0.033,
               "data_type": "double",
               "time_displayed": 3.0,

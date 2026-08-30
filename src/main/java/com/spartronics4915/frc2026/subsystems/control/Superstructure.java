@@ -13,16 +13,15 @@ import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 import com.spartronics4915.frc2026.util.control.FieldRegion;
 import com.spartronics4915.frc2026.util.control.FieldZoneMap;
-
+import com.spartronics4915.frc2026.util.logging.Telemetry;
+import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 import au.grapplerobotics.LaserCan;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.networktables.BooleanPublisher;
-import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.StringPublisher;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -33,6 +32,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  * Tracks the robot's field zone and automatically schedules superstructure behavior.
  */
 public class Superstructure extends SubsystemBase {
+    private static final Scope LOG = Telemetry.scope("Control/Superstructure");
     public enum Zone {
         ALLIANCE_ZONE,
         TRENCH,
@@ -56,9 +56,7 @@ public class Superstructure extends SubsystemBase {
 
     private final FieldZoneMap<Zone> zoneMap;
     private Zone currentZone = Zone.UNKNOWN;
-
-    private final StringPublisher zonePublisher = NetworkTableInstance.getDefault().getStringTopic("superstructure/Current Zone").publish();
-    private final BooleanPublisher ballDetectedPublisher = NetworkTableInstance.getDefault().getBooleanTopic("superstructure/Ball Detect").publish();
+    private long sampleTimestampUs;
 
     public Superstructure(
         SwerveSubsystem swerve,
@@ -185,13 +183,19 @@ public class Superstructure extends SubsystemBase {
 
         if (newZone != currentZone) {
             currentZone = newZone;
-            zonePublisher.accept(currentZone.name());
         }
 
         ballDetectedDebounced =
             ballDebouncer.calculate(ballDetect());
 
-        ballDetectedPublisher.set(ballDetectedDebounced);
+        sampleTimestampUs = RobotController.getFPGATime();
+        outputTelemetry();
+    }
+
+    private void outputTelemetry() {
+        LOG.critical.log("SampleTimestampUs", sampleTimestampUs);
+        LOG.critical.log("CurrentZone", currentZone);
+        LOG.critical.log("BallDetected", ballDetectedDebounced);
     }
 
     private boolean ballDetect() {

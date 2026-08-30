@@ -18,18 +18,17 @@ import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInte
 import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
 import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.LoggedTrapezoidProfile;
 import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
-
+import com.spartronics4915.frc2026.util.logging.Telemetry;
+import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
-import edu.wpi.first.networktables.DoublePublisher;
-import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -37,6 +36,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface {
+    private static final Scope LOG = Telemetry.scope("Mechanisms/Pivot");
 
     // Motion Magic?
 
@@ -51,6 +51,12 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
 
     private Rotation2d currentSetpoint = new Rotation2d();
     private State currentState = new State();
+    private long sampleTimestampUs;
+    private double appliedDutyCycle;
+    private Rotation2d loggedPosition = Rotation2d.kZero;
+    private Rotation2d profileSetpoint = Rotation2d.kZero;
+    private Rotation2d encoderPosition = Rotation2d.kZero;
+    private Pose3d mechanismPose = new Pose3d();
 
     private final PositionTorqueCurrentFOC positionTorqueRequest = new PositionTorqueCurrentFOC(0.0);
 
@@ -76,13 +82,6 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
         )
     );
 
-    private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("pivot").getDoubleTopic("Applied Out").publish();
-    private final StructPublisher<Rotation2d> positionPublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("Position", Rotation2d.struct).publish();
-    private final StructPublisher<Rotation2d> desiredStatePublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("Desired State", Rotation2d.struct).publish();
-    private final StructPublisher<Rotation2d> setpointPublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("Setpoint", Rotation2d.struct).publish();
-    private final StructPublisher<Rotation2d> encoderPositionPublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("encoder position", Rotation2d.struct).publish();
-    private final StructPublisher<Pose3d> pose3dPublisher = NetworkTableInstance.getDefault().getTable("pivot").getStructTopic("Pose3d", Pose3d.struct).publish();
-    
     public PivotSubsystem() {
         TalonFXConfigurator motorConfig = motor.getConfigurator();
             motorConfig.apply(PID_CONFIG);
@@ -112,7 +111,6 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
         SmartDashboard.putData("Pivot Ready", setStateCommand(PivotState.READY));
         SmartDashboard.putData("Pivot Safe", setStateCommand(PivotState.SAFE));
         SmartDashboard.putData("Pivot Stow", setStateCommand(PivotState.STOW));
-        SmartDashboard.putData("Pivot Motor", motor);
     }
 
     @Override
@@ -128,16 +126,24 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
             motor.setControl(positionTorqueRequest);
         }
 
-        appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
-        positionPublisher.accept(getPosition());
-        desiredStatePublisher.accept(Rotation2d.fromRotations(currentState.position));
-        setpointPublisher.accept(currentSetpoint);
+        loggedPosition = getPosition();
+        appliedDutyCycle = motor.getDutyCycle().getValueAsDouble();
+        profileSetpoint = Rotation2d.fromRotations(currentState.position);
+        encoderPosition = Rotation2d.fromRotations(encoder.getAbsolutePosition().getValueAsDouble());
+        mechanismPose = new Pose3d(0.2842, 0, 0.1825,
+            new Rotation3d(0, -loggedPosition.plus(Rotation2d.fromDegrees(-130)).getRadians(), 0));
+        sampleTimestampUs = RobotController.getFPGATime();
+        outputTelemetry();
+    }
 
-        encoderPositionPublisher.accept(Rotation2d.fromRotations(encoder.getAbsolutePosition().getValueAsDouble()));
-        pose3dPublisher.accept(
-            new Pose3d(0.2842, 0, 0.1825, 
-            new Rotation3d(0, -getPosition().plus(Rotation2d.fromDegrees(-130)).getRadians(), 0))
-        );
+    private void outputTelemetry() {
+        LOG.critical.log("SampleTimestampUs", sampleTimestampUs);
+        LOG.critical.log("Position", loggedPosition, Rotation2d.struct);
+        LOG.critical.log("Setpoint", currentSetpoint, Rotation2d.struct);
+        LOG.critical.log("ProfileSetpoint", profileSetpoint, Rotation2d.struct);
+        LOG.info.log("AppliedDutyCycle", appliedDutyCycle);
+        LOG.info.log("EncoderPosition", encoderPosition, Rotation2d.struct);
+        LOG.debug.log("MechanismPose", mechanismPose);
     }
 
     public Rotation2d getPosition() {

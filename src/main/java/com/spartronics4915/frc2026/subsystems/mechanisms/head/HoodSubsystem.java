@@ -10,17 +10,17 @@ import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.TorqueCurrentFOC;
+import com.spartronics4915.frc2026.util.logging.Telemetry;
+import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
-import edu.wpi.first.networktables.DoublePublisher;
-import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -34,6 +34,7 @@ import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
 import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
 
 public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface {
+    private static final Scope LOG = Telemetry.scope("Mechanisms/Hood");
 
     // May need to retune or switch to position + FOC
 
@@ -42,6 +43,13 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
     private State targetState = new State();
+    private long sampleTimestampUs;
+    private double appliedDutyCycle;
+    private Rotation2d loggedPosition = Rotation2d.kZero;
+    private Rotation2d loggedSetpoint = Rotation2d.kZero;
+    private Rotation2d profileSetpoint = Rotation2d.kZero;
+    private Rotation2d encoderPosition = Rotation2d.kZero;
+    private Pose3d mechanismPose = new Pose3d();
     
     private TurretSubsystem turret;
 
@@ -73,11 +81,6 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
     private Rotation2d minAngle;
     private Rotation2d maxAngle;
 
-    private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("hood").getDoubleTopic("applied out").publish();
-    private final StructPublisher<Rotation2d> positionPublisher = NetworkTableInstance.getDefault().getTable("hood").getStructTopic("position", Rotation2d.struct).publish();
-    private final StructPublisher<Rotation2d> setpointPublisher = NetworkTableInstance.getDefault().getTable("hood").getStructTopic("setpoint", Rotation2d.struct).publish();
-    private final StructPublisher<Pose3d> pose3dPublisher = NetworkTableInstance.getDefault().getTable("hood").getStructTopic("Pose3d", Pose3d.struct).publish();
-    
     public HoodSubsystem() {
         TalonFXConfigurator motorConfig = motor.getConfigurator();
             motorConfig.apply(PID_CONFIG);
@@ -101,7 +104,6 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
 
         SmartDashboard.putData("Hood Up", setSetpointCommand(Rotation2d.fromDegrees(19)));
         SmartDashboard.putData("Hood Down", setSetpointCommand(Rotation2d.fromDegrees(0)));
-        SmartDashboard.putData("Hood Motor", motor);
     }
 
     public void setTurretSubsystem(TurretSubsystem turretSubsystem) {
@@ -128,16 +130,29 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
             motor.setControl(positionTorqueRequest);
         }
 
-        appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
-        positionPublisher.accept(getPosition());
-        setpointPublisher.accept(Rotation2d.fromRotations(targetState.position));
-        
-        // Publish 3D pose with turret rotation applied
+        Rotation2d position = getPosition();
+        Rotation2d setpoint = Rotation2d.fromRotations(targetState.position);
         double turretAngle = (turret != null) ? turret.getPosition().getRadians() : 0.0;
-        Rotation3d hoodRotation = new Rotation3d(-getPosition().getRadians(), 0, turretAngle);
-        pose3dPublisher.accept(
-            new Pose3d(-0.1181, -0.0972-0.0453, 0.4953 + getPosition().getTan() * 0.0453, hoodRotation)
-        );
+        Rotation3d hoodRotation = new Rotation3d(-position.getRadians(), 0, turretAngle);
+        appliedDutyCycle = motor.getDutyCycle().getValueAsDouble();
+        loggedPosition = position;
+        loggedSetpoint = setpoint;
+        profileSetpoint = setpoint;
+        encoderPosition = position;
+        mechanismPose = new Pose3d(
+            -0.1181, -0.0972 - 0.0453, 0.4953 + position.getTan() * 0.0453, hoodRotation);
+        sampleTimestampUs = RobotController.getFPGATime();
+        outputTelemetry();
+    }
+
+    private void outputTelemetry() {
+        LOG.critical.log("SampleTimestampUs", sampleTimestampUs);
+        LOG.critical.log("Position", loggedPosition, Rotation2d.struct);
+        LOG.critical.log("Setpoint", loggedSetpoint, Rotation2d.struct);
+        LOG.critical.log("ProfileSetpoint", profileSetpoint, Rotation2d.struct);
+        LOG.info.log("AppliedDutyCycle", appliedDutyCycle);
+        LOG.info.log("EncoderPosition", encoderPosition, Rotation2d.struct);
+        LOG.debug.log("MechanismPose", mechanismPose);
     }
 
     public Rotation2d getPosition() {

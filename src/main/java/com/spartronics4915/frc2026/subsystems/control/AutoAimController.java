@@ -16,7 +16,8 @@ import com.spartronics4915.frc2026.util.control.AutoAim;
 import com.spartronics4915.frc2026.util.control.AutoAim.AutoAimResult;
 import com.spartronics4915.frc2026.util.control.TurretController;
 import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
-
+import com.spartronics4915.frc2026.util.logging.Telemetry;
+import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.filter.MedianFilter;
@@ -25,10 +26,8 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.networktables.BooleanPublisher;
-import edu.wpi.first.networktables.DoublePublisher;
-import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
 
 import static edu.wpi.first.units.Units.InchesPerSecond;
@@ -45,6 +44,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  * Continuously calculates setpoints and applies them to the hood and turret.
  */
 public class AutoAimController extends SubsystemBase {
+    private static final Scope LOG = Telemetry.scope("Control/AutoAim");
 
     private final HoodSubsystem hood;
     private final TurretSubsystem turret;
@@ -54,6 +54,9 @@ public class AutoAimController extends SubsystemBase {
 
     private final FuelSim fuelSim;
     private int simulatedFuelStored = SIM_INITIAL_FUEL;
+    private double loggedSimulatedFuelStored = SIM_INITIAL_FUEL;
+    private double blueFuelScore;
+    private double redFuelScore;
     private double lastSimulatedShotTimestamp = Double.NEGATIVE_INFINITY;
 
     // TODO: The turret setpoint is jittery not becuase of Auto-Aim, but swerve drive tuning
@@ -79,6 +82,10 @@ public class AutoAimController extends SubsystemBase {
 
     private boolean isAimEnabled = false;
     private boolean isAutoShootingEnabled = false;
+    private long sampleTimestampUs;
+    private boolean hasValidResult;
+    private boolean requiresIdealSpeed;
+    private double distanceToTargetMeters;
     private AutoAimResult lastResult = null;
     private Translation3d targetOverride = null;
     private boolean shootOverride = false;
@@ -110,15 +117,6 @@ public class AutoAimController extends SubsystemBase {
     private final MedianFilter accelFilterOmega = new MedianFilter(5);
 
     private final MedianFilter flywheelFilter = new MedianFilter(10);
-
-    private final BooleanPublisher isAimEnabledPublisher = NetworkTableInstance.getDefault().getBooleanTopic("superstructure/AutoAim/AimEnabled").publish();
-    private final BooleanPublisher isShootingEnabledPublisher = NetworkTableInstance.getDefault().getBooleanTopic("superstructure/AutoAim/ShootingEnabled").publish();
-    private final BooleanPublisher hasValidResultPublisher = NetworkTableInstance.getDefault().getBooleanTopic("superstructure/AutoAim/HasValidResult").publish();
-    private final BooleanPublisher requiresIdealSpeedPublisher = NetworkTableInstance.getDefault().getBooleanTopic("superstructure/AutoAim/RequiresIdealSpeed").publish();
-    private final DoublePublisher distanceToTargetPublisher = NetworkTableInstance.getDefault().getDoubleTopic("superstructure/DistanceToTarget").publish();
-    private final DoublePublisher simulatedFuelPublisher = NetworkTableInstance.getDefault().getDoubleTopic("Fuel Simulation/Stored").publish();
-    private final DoublePublisher blueFuelScorePublisher = NetworkTableInstance.getDefault().getDoubleTopic("Fuel Simulation/Blue Score").publish();
-    private final DoublePublisher redFuelScorePublisher = NetworkTableInstance.getDefault().getDoubleTopic("Fuel Simulation/Red Score").publish();
 
     public AutoAimController(
         HoodSubsystem hood,
@@ -163,9 +161,6 @@ public class AutoAimController extends SubsystemBase {
 
     @Override
     public void periodic() {
-        isAimEnabledPublisher.accept(isAimEnabled);
-        isShootingEnabledPublisher.accept(isAutoShootingEnabled);
-
         isPossibleDebouncedValue = possibleDebouncer.calculate(isPhysicallyAligned());
 
         double dt = Math.max(dtCalc.update(), 0.001); // Prevent division by zero
@@ -193,8 +188,7 @@ public class AutoAimController extends SubsystemBase {
         }
 
         boolean hasResult = lastResult != null && lastResult.ToF() != -1;
-        hasValidResultPublisher.accept(hasResult);
-        requiresIdealSpeedPublisher.accept(hasResult && lastResult.requiresIdealSpeed());
+        updateTelemetry(hasResult);
 
         if (activeManualOverride != null) {
             if (shootOverride) {
@@ -216,7 +210,28 @@ public class AutoAimController extends SubsystemBase {
 
         applyAimResult(lastResult);
 
-        distanceToTargetPublisher.accept(getDistanceToTarget());
+    }
+
+    private void updateTelemetry(boolean hasResult) {
+        hasValidResult = hasResult;
+        requiresIdealSpeed = hasResult && lastResult.requiresIdealSpeed();
+        distanceToTargetMeters = hasResult ? getDistanceToTarget() : 0.0;
+        sampleTimestampUs = RobotController.getFPGATime();
+        outputTelemetry();
+    }
+
+    private void outputTelemetry() {
+        LOG.critical.log("SampleTimestampUs", sampleTimestampUs);
+        LOG.critical.log("AimEnabled", isAimEnabled);
+        LOG.critical.log("ShootingEnabled", isAutoShootingEnabled);
+        LOG.critical.log("HasValidResult", hasValidResult);
+        LOG.critical.log("RequiresIdealSpeed", requiresIdealSpeed);
+        LOG.critical.log("DistanceToTargetMeters", distanceToTargetMeters);
+        if (Robot.isSimulation()) {
+            LOG.debug.log("SimulatedFuelStored", loggedSimulatedFuelStored);
+            LOG.debug.log("BlueFuelScore", blueFuelScore);
+            LOG.debug.log("RedFuelScore", redFuelScore);
+        }
     }
 
     private void updateFuelSimulation() {
@@ -225,9 +240,9 @@ public class AutoAimController extends SubsystemBase {
         }
 
         fuelSim.updateSim();
-        simulatedFuelPublisher.set(simulatedFuelStored);
-        blueFuelScorePublisher.set(FuelSim.Hub.BLUE_HUB.getScore());
-        redFuelScorePublisher.set(FuelSim.Hub.RED_HUB.getScore());
+        loggedSimulatedFuelStored = simulatedFuelStored;
+        blueFuelScore = FuelSim.Hub.BLUE_HUB.getScore();
+        redFuelScore = FuelSim.Hub.RED_HUB.getScore();
 
         if (!DriverStation.isEnabled() || !isReadyToShoot() || simulatedFuelStored <= 0) {
             return;

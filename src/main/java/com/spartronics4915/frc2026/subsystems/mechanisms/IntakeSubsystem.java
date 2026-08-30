@@ -8,11 +8,11 @@ import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VoltageOut;
-
+import com.spartronics4915.frc2026.util.logging.Telemetry;
+import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.networktables.DoublePublisher;
-import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -24,12 +24,17 @@ import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInte
 import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
 
 public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterface {
+    private static final Scope LOG = Telemetry.scope("Mechanisms/Intake");
 
     // Enable FOC control and Switch to Velocity Voltage
 
     private LoggedTalonFX leadMotor = new LoggedTalonFX(LEAD_MOTOR_ID, CAN_BUS);
 
     private double currentSetpoint;
+    private long sampleTimestampUs;
+    private double appliedDutyCycle;
+    private double velocityRps;
+    private double profileSetpointRps;
 
     private final VelocityTorqueCurrentFOC velocityTorqueRequest = new VelocityTorqueCurrentFOC(0.0);
 
@@ -55,10 +60,6 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
         )
     );
 
-    private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("applied out").publish();
-    private final DoublePublisher rpsPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("rps").publish();
-    private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("intake").getDoubleTopic("setpoint").publish();
-
     public IntakeSubsystem() {
         TalonFXConfigurator configurator = leadMotor.getConfigurator();
             configurator.apply(PID_CONFIG);
@@ -77,7 +78,6 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         SmartDashboard.putData("Intake On", setStateCommand(IntakeState.INTAKE));
         SmartDashboard.putData("Intake Off", setStateCommand(IntakeState.OFF));
-        SmartDashboard.putData("Intake Motor", leadMotor);
     }
 
     @Override
@@ -97,9 +97,19 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
             }
         }
 
-        appliedOutPublisher.accept(leadMotor.getDutyCycle().getValueAsDouble());
-        rpsPublisher.accept(getCurrentRPS());
-        setpointPublisher.accept(currentSetpoint);
+        appliedDutyCycle = leadMotor.getDutyCycle().getValueAsDouble();
+        velocityRps = getCurrentRPS();
+        profileSetpointRps = currentSetpoint;
+        sampleTimestampUs = RobotController.getFPGATime();
+        outputTelemetry();
+    }
+
+    private void outputTelemetry() {
+        LOG.critical.log("SampleTimestampUs", sampleTimestampUs);
+        LOG.critical.log("VelocityRps", velocityRps);
+        LOG.critical.log("SetpointRps", currentSetpoint);
+        LOG.critical.log("ProfileSetpointRps", profileSetpointRps);
+        LOG.info.log("AppliedDutyCycle", appliedDutyCycle);
     }
 
     public double getCurrentRPS() {

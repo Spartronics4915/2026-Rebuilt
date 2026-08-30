@@ -24,6 +24,8 @@ import com.pathplanner.lib.trajectory.PathPlannerTrajectoryState;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.autos.Autos;
+import com.spartronics4915.frc2026.util.logging.Telemetry;
+import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
 
 import edu.wpi.first.math.Matrix;
@@ -41,12 +43,6 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
-import edu.wpi.first.networktables.BooleanPublisher;
-import edu.wpi.first.networktables.DoublePublisher;
-import edu.wpi.first.networktables.NetworkTable;
-import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.StructArrayPublisher;
-import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
@@ -67,6 +63,8 @@ import frc.robot.lib.BLine.Path;
  */
 public class SwerveSubsystem extends SubsystemBase {
     private static final TimeVarianceAuthority TVA = new TimeVarianceAuthority();
+    private static final Scope LOG = Telemetry.scope("Drive");
+    private static final Scope BLINE_LOG = LOG.child("BLine");
 
     private static SwerveSubsystem instance;
 
@@ -127,7 +125,20 @@ public class SwerveSubsystem extends SubsystemBase {
     /* Trench / movement override controller */
     private final TrapezoidProfileStateController overrideController = new TrapezoidProfileStateController();
 
-    private final SwerveTelemetry telemetry = new SwerveTelemetry();
+    private final double[] driveVelocityMps = new double[4];
+    private final double[] driveTargetMps = new double[4];
+    private final double[] drivePositionMeters = new double[4];
+    private final double[] driveCurrentAmps = new double[4];
+    private final double[] driveVoltageVolts = new double[4];
+    private final double[] driveTemperatureCelsius = new double[4];
+    private final double[] driveClosedLoopError = new double[4];
+    private final double[] driveClosedLoopReference = new double[4];
+    private final double[] steerAngleDeg = new double[4];
+    private final double[] steerTargetDeg = new double[4];
+    private final double[] steerCurrentAmps = new double[4];
+    private final double[] steerVoltageVolts = new double[4];
+    private final double[] steerTemperatureCelsius = new double[4];
+    private final double[] steerClosedLoopError = new double[4];
 
     public SwerveSubsystem(SwerveConfigurations config) {
         configuration = Objects.requireNonNull(config, "config");
@@ -223,7 +234,7 @@ public class SwerveSubsystem extends SubsystemBase {
             stop();
         }
 
-        telemetry.publish(drivetrain.getState(), this);
+        outputTelemetry(drivetrain.getState());
 
         field.setRobotPose(getPose());
 
@@ -506,37 +517,14 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     private void configureBLine() {
-        var targetPosePub = NetworkTableInstance.getDefault()
-            .getStructTopic(
-                "SmartDashboard/BLine/Target Pose",
-                Pose2d.struct
-            )
-            .publish();
-
-        var targetPathPub = NetworkTableInstance.getDefault()
-            .getStructArrayTopic(
-                "SmartDashboard/BLine/Target Path",
-                Pose2d.struct
-            )
-            .publish();
-
         FollowPath.setDoubleLoggingConsumer(pair ->
-            SmartDashboard.putNumber(
-                "BLine/" + pair.getFirst(),
-                pair.getSecond()
-            )
-        );
+            BLINE_LOG.debug.log(pair.getFirst(), pair.getSecond()));
 
         FollowPath.setBooleanLoggingConsumer(pair ->
-            SmartDashboard.putBoolean(
-                "BLine/" + pair.getFirst(),
-                pair.getSecond()
-            )
-        );
+            BLINE_LOG.debug.log(pair.getFirst(), pair.getSecond()));
 
         FollowPath.setPoseLoggingConsumer(pair ->
-            targetPosePub.set(pair.getSecond())
-        );
+            BLINE_LOG.debug.log(pair.getFirst(), pair.getSecond()));
 
         FollowPath.setTranslationListLoggingConsumer(pair -> {
             Translation2d[] translations = pair.getSecond();
@@ -549,7 +537,7 @@ public class SwerveSubsystem extends SubsystemBase {
                 );
             }
 
-            targetPathPub.set(poses);
+            BLINE_LOG.debug.log(pair.getFirst(), poses);
         });
 
         FollowPath.Builder pathBuilder = new FollowPath.Builder(
@@ -698,139 +686,61 @@ public class SwerveSubsystem extends SubsystemBase {
         }
     }
 
-    private final class SwerveTelemetry {
-        private static final String[] MODULE_NAMES = {"FL", "FR", "BL", "BR"};
+    private void outputTelemetry(SwerveDriveState state) {
+        Pose2d rawPose = state.Pose;
+        ChassisSpeeds fieldVelocity = getFieldVelocity();
 
-        private final NetworkTable root = NetworkTableInstance.getDefault().getTable("swerve");
+        LOG.critical.log("EstimatedPose", rawPose);
+        LOG.debug.log("MechanismPose", pose3d);
+        LOG.critical.log("MeasuredSpeeds", state.Speeds);
+        LOG.info.log("FieldRelativeSpeeds", fieldVelocity);
+        LOG.critical.log("ModuleStates", state.ModuleStates);
+        LOG.critical.log("ModuleTargets", state.ModuleTargets);
+        LOG.info.log("ModulePositions", state.ModulePositions);
+        LOG.critical.log("SpeedMps", Math.hypot(
+            fieldVelocity.vxMetersPerSecond, fieldVelocity.vyMetersPerSecond));
+        LOG.info.log("OdometryHz", state.OdometryPeriod > 0.0 ? 1.0 / state.OdometryPeriod : 0.0);
+        LOG.info.log("BatteryVoltage", RobotController.getBatteryVoltage());
+        LOG.critical.log("HeadingDeg", rawPose.getRotation().getDegrees());
+        LOG.info.log("RollDeg", getRoll().getDegrees());
+        LOG.info.log("PitchDeg", getPitch().getDegrees());
+        LOG.info.log("YawRateRadPerSec", state.Speeds.omegaRadiansPerSecond);
+        LOG.critical.log("IsFieldRelative", isFieldRelativeState);
+        LOG.critical.log("IsFlat", isFlatDebouncedValue);
 
-        private final StructPublisher<Pose2d> pose = root.getStructTopic("Pose", Pose2d.struct).publish();
-        private final StructPublisher<Pose3d> pose3dPublisher = root.getStructTopic("Pose3d", Pose3d.struct).publish();
-        private final StructPublisher<ChassisSpeeds> measuredSpeeds = root.getStructTopic("MeasuredSpeeds", ChassisSpeeds.struct).publish();
-        private final StructPublisher<ChassisSpeeds> fieldSpeeds = root.getStructTopic("FieldRelativeSpeeds", ChassisSpeeds.struct).publish();
-
-        private final StructArrayPublisher<SwerveModuleState> moduleStates =
-            root.getStructArrayTopic(
-                "ModuleStates",
-                SwerveModuleState.struct
-            ).publish();
-        private final StructArrayPublisher<SwerveModuleState> moduleTargets =
-            root.getStructArrayTopic(
-                "ModuleTargets",
-                SwerveModuleState.struct
-            ).publish();
-        private final StructArrayPublisher<SwerveModulePosition> modulePositions =
-            root.getStructArrayTopic(
-                "ModulePositions",
-                SwerveModulePosition.struct
-            ).publish();
-
-        private final DoublePublisher speed = root.getDoubleTopic("SpeedMPS").publish();
-        private final DoublePublisher odometryHz = root.getDoubleTopic("OdometryHz").publish();
-        private final DoublePublisher batteryVoltage = root.getDoubleTopic("BatteryVoltage").publish();
-        private final DoublePublisher headingDeg = root.getDoubleTopic("HeadingDeg").publish();
-        private final DoublePublisher rollDeg = root.getDoubleTopic("RollDeg").publish();
-        private final DoublePublisher pitchDeg = root.getDoubleTopic("PitchDeg").publish();
-        private final DoublePublisher yawRateRadS = root.getDoubleTopic("YawRateRadS").publish();
-        private final BooleanPublisher fieldRelative = root.getBooleanTopic("IsFieldRelative").publish();
-        private final BooleanPublisher flat = root.getBooleanTopic("IsFlat").publish();
-
-        private final DoublePublisher[] driveVelocity = new DoublePublisher[4];
-        private final DoublePublisher[] driveTarget = new DoublePublisher[4];
-        private final DoublePublisher[] drivePosition = new DoublePublisher[4];
-        private final DoublePublisher[] driveCurrent = new DoublePublisher[4];
-        private final DoublePublisher[] driveVoltage = new DoublePublisher[4];
-        private final DoublePublisher[] driveTemperature = new DoublePublisher[4];
-        private final DoublePublisher[] driveClosedLoopError = new DoublePublisher[4];
-        private final DoublePublisher[] driveClosedLoopReference = new DoublePublisher[4];
-
-        private final DoublePublisher[] steerAngle = new DoublePublisher[4];
-        private final DoublePublisher[] steerTarget = new DoublePublisher[4];
-        private final DoublePublisher[] steerCurrent = new DoublePublisher[4];
-        private final DoublePublisher[] steerVoltage = new DoublePublisher[4];
-        private final DoublePublisher[] steerTemperature = new DoublePublisher[4];
-        private final DoublePublisher[] steerClosedLoopError = new DoublePublisher[4];
-
-        SwerveTelemetry() {
-            for (int i = 0; i < 4; i++) {
-                NetworkTable table =
-                    root.getSubTable("modules/" + MODULE_NAMES[i]);
-
-                driveVelocity[i] = table.getDoubleTopic("DriveVelocityMPS").publish();
-                driveTarget[i] = table.getDoubleTopic("DriveTargetMPS").publish();
-                drivePosition[i] = table.getDoubleTopic("DrivePositionM").publish();
-                driveCurrent[i] = table.getDoubleTopic("DriveCurrentA").publish();
-                driveVoltage[i] = table.getDoubleTopic("DriveVoltageV").publish();
-                driveTemperature[i] = table.getDoubleTopic("DriveTempC").publish();
-                driveClosedLoopError[i] = table.getDoubleTopic("DriveClosedLoopError").publish();
-                driveClosedLoopReference[i] = table.getDoubleTopic("DriveClosedLoopRef").publish();
-
-                steerAngle[i] = table.getDoubleTopic("SteerAngleDeg").publish();
-                steerTarget[i] = table.getDoubleTopic("SteerTargetDeg").publish();
-                steerCurrent[i] = table.getDoubleTopic("SteerCurrentA").publish();
-                steerVoltage[i] = table.getDoubleTopic("SteerVoltageV").publish();
-                steerTemperature[i] = table.getDoubleTopic("SteerTempC").publish();
-                steerClosedLoopError[i] = table.getDoubleTopic("SteerClosedLoopError").publish();
-            }
+        for (int i = 0; i < 4; i++) {
+            SwerveModule<?, ?, ?> module = drivetrain.getModule(i);
+            TalonFX drive = (TalonFX) module.getDriveMotor();
+            TalonFX steer = (TalonFX) module.getSteerMotor();
+            driveVelocityMps[i] = state.ModuleStates[i].speedMetersPerSecond;
+            driveTargetMps[i] = state.ModuleTargets[i].speedMetersPerSecond;
+            drivePositionMeters[i] = state.ModulePositions[i].distanceMeters;
+            driveCurrentAmps[i] = drive.getStatorCurrent().getValueAsDouble();
+            driveVoltageVolts[i] = drive.getMotorVoltage().getValueAsDouble();
+            driveTemperatureCelsius[i] = drive.getDeviceTemp().getValueAsDouble();
+            driveClosedLoopError[i] = drive.getClosedLoopError().getValueAsDouble();
+            driveClosedLoopReference[i] = drive.getClosedLoopReference().getValueAsDouble();
+            steerAngleDeg[i] = state.ModuleStates[i].angle.getDegrees();
+            steerTargetDeg[i] = state.ModuleTargets[i].angle.getDegrees();
+            steerCurrentAmps[i] = steer.getStatorCurrent().getValueAsDouble();
+            steerVoltageVolts[i] = steer.getMotorVoltage().getValueAsDouble();
+            steerTemperatureCelsius[i] = steer.getDeviceTemp().getValueAsDouble();
+            steerClosedLoopError[i] = steer.getClosedLoopError().getValueAsDouble();
         }
-
-        void publish(
-            SwerveDriveState state,
-            SwerveSubsystem swerve
-        ) {
-            Pose2d rawPose = state.Pose;
-
-            pose.set(rawPose);
-            pose3dPublisher.set(swerve.pose3d);
-            measuredSpeeds.set(state.Speeds);
-            fieldSpeeds.set(swerve.getFieldVelocity());
-
-            moduleStates.set(state.ModuleStates);
-            moduleTargets.set(state.ModuleTargets);
-            modulePositions.set(state.ModulePositions);
-
-            ChassisSpeeds fieldVelocity = swerve.getFieldVelocity();
-            speed.set(
-                Math.hypot(
-                    fieldVelocity.vxMetersPerSecond,
-                    fieldVelocity.vyMetersPerSecond
-                )
-            );
-
-            if (state.OdometryPeriod > 0.0) {
-                odometryHz.set(1.0 / state.OdometryPeriod);
-            }
-
-            batteryVoltage.set(RobotController.getBatteryVoltage());
-            headingDeg.set(rawPose.getRotation().getDegrees());
-            rollDeg.set(swerve.getRoll().getDegrees());
-            pitchDeg.set(swerve.getPitch().getDegrees());
-            yawRateRadS.set(swerve.getRobotVelocity().omegaRadiansPerSecond);
-            fieldRelative.set(swerve.isFieldRelativeState);
-            flat.set(swerve.isFlatDebounced());
-
-            for (int i = 0; i < 4; i++) {
-                SwerveModule<?, ?, ?> module =
-                    swerve.drivetrain.getModule(i);
-
-                TalonFX drive = (TalonFX) module.getDriveMotor();
-                TalonFX steer = (TalonFX) module.getSteerMotor();
-
-                driveVelocity[i].set(state.ModuleStates[i].speedMetersPerSecond);
-                driveTarget[i].set(state.ModuleTargets[i].speedMetersPerSecond);
-                drivePosition[i].set(state.ModulePositions[i].distanceMeters);
-                driveCurrent[i].set(drive.getStatorCurrent().getValueAsDouble());
-                driveVoltage[i].set(drive.getMotorVoltage().getValueAsDouble());
-                driveTemperature[i].set(drive.getDeviceTemp().getValueAsDouble());
-                driveClosedLoopError[i].set(drive.getClosedLoopError().getValueAsDouble());
-                driveClosedLoopReference[i].set(drive.getClosedLoopReference().getValueAsDouble());
-
-                steerAngle[i].set(state.ModuleStates[i].angle.getDegrees());
-                steerTarget[i].set(state.ModuleTargets[i].angle.getDegrees());
-                steerCurrent[i].set(steer.getStatorCurrent().getValueAsDouble());
-                steerVoltage[i].set(steer.getMotorVoltage().getValueAsDouble());
-                steerTemperature[i].set(steer.getDeviceTemp().getValueAsDouble());
-                steerClosedLoopError[i].set(steer.getClosedLoopError().getValueAsDouble());
-            }
-        }
+        LOG.debug.log("DriveVelocityMps", driveVelocityMps);
+        LOG.debug.log("DriveTargetMps", driveTargetMps);
+        LOG.debug.log("DrivePositionMeters", drivePositionMeters);
+        LOG.info.log("DriveCurrentAmps", driveCurrentAmps);
+        LOG.info.log("DriveVoltageVolts", driveVoltageVolts);
+        LOG.debug.log("DriveTemperatureCelsius", driveTemperatureCelsius);
+        LOG.debug.log("DriveClosedLoopError", driveClosedLoopError);
+        LOG.debug.log("DriveClosedLoopReference", driveClosedLoopReference);
+        LOG.debug.log("SteerAngleDeg", steerAngleDeg);
+        LOG.debug.log("SteerTargetDeg", steerTargetDeg);
+        LOG.info.log("SteerCurrentAmps", steerCurrentAmps);
+        LOG.info.log("SteerVoltageVolts", steerVoltageVolts);
+        LOG.debug.log("SteerTemperatureCelsius", steerTemperatureCelsius);
+        LOG.debug.log("SteerClosedLoopError", steerClosedLoopError);
+        LOG.critical.log("SampleTimestampUs", RobotController.getFPGATime());
     }
 }

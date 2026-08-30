@@ -10,17 +10,18 @@ import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInte
 import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
 import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.LoggedTrapezoidProfile;
 import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
-
+import com.spartronics4915.frc2026.util.logging.Telemetry;
+import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
-import edu.wpi.first.networktables.DoublePublisher;
-import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterface {
+    private static final Scope LOG = Telemetry.scope("Mechanisms/Climber");
 
     LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
     LoggedTrapezoidProfile trapProfile = new LoggedTrapezoidProfile(
@@ -31,14 +32,13 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     private double currentSetpoint;
     private State currentState = new State();
+    private long sampleTimestampUs;
+    private double appliedDutyCycle;
+    private double loggedPosition;
+    private double profileSetpoint;
 
     private final PositionVoltage positionVoltage = new PositionVoltage(0.0);
 
-    private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("climber").getDoubleTopic("applied out").publish();
-    private final DoublePublisher positionPublisher = NetworkTableInstance.getDefault().getTable("climber").getDoubleTopic("position").publish();
-    private final DoublePublisher desiredStatePublisher = NetworkTableInstance.getDefault().getTable("climber").getDoubleTopic("desiredState").publish();
-    private final DoublePublisher setpointPublisher = NetworkTableInstance.getDefault().getTable("climber").getDoubleTopic("setpoint").publish();
-    
     public ClimberSubsystem() {
         TalonFXConfigurator motorConfig = motor.getConfigurator();
             motorConfig.apply(PID_CONFIG);
@@ -54,7 +54,6 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
         SmartDashboard.putData("Climber Climb", setStateCommand(ClimberState.JORBIT));
         SmartDashboard.putData("Climber Down", setStateCommand(ClimberState.DOWN));
-        SmartDashboard.putData("Climber Motor", motor);
     }
 
     @Override
@@ -74,10 +73,19 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
         positionVoltage.withEnableFOC(ENABLE_FOC).Position = currentState.position;
         motor.setControl(positionVoltage);
 
-        appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
-        positionPublisher.accept(getPosition());
-        desiredStatePublisher.accept(currentState.position);
-        setpointPublisher.accept(currentSetpoint);
+        appliedDutyCycle = motor.getDutyCycle().getValueAsDouble();
+        loggedPosition = getPosition();
+        profileSetpoint = currentState.position;
+        sampleTimestampUs = RobotController.getFPGATime();
+        outputTelemetry();
+    }
+
+    private void outputTelemetry() {
+        LOG.critical.log("SampleTimestampUs", sampleTimestampUs);
+        LOG.critical.log("Position", loggedPosition);
+        LOG.critical.log("Setpoint", currentSetpoint);
+        LOG.critical.log("ProfileSetpoint", profileSetpoint);
+        LOG.info.log("AppliedDutyCycle", appliedDutyCycle);
     }
 
     public double getPosition() {
