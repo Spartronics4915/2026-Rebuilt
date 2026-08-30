@@ -1,12 +1,11 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
 
-import static edu.wpi.first.units.Units.Volts;
-
 import static com.spartronics4915.frc2026.Constants.IndexerConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
+import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
-import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.spartronics4915.frc2026.util.logging.Telemetry;
@@ -16,13 +15,11 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
@@ -35,6 +32,9 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
     // Enable FOC control and Switch to Velocity Voltage
 
     private LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
+    private final StatusSignal<AngularVelocity> velocitySignal = motor.getVelocity(false);
+    private final StatusSignal<Double> dutyCycleSignal = motor.getDutyCycle(false);
+    private final BaseStatusSignal[] telemetrySignals = {velocitySignal, dutyCycleSignal};
 
     private double currentSetpoint;
     private long sampleTimestampUs;
@@ -43,31 +43,10 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private double profileSetpointRps;
     private Pose3d mechanismPose = new Pose3d();
     private final VelocityTorqueCurrentFOC velocityTorqueRequest = new VelocityTorqueCurrentFOC(0.0);
+    private final VoltageOut stopRequest = new VoltageOut(0.0);
     private final SlewRateLimiter slewRateLimiter = new SlewRateLimiter(50);
     
     private double indexerAngle = 0.0; // Tracks cumulative rotation angle in radians
-
-    private final TorqueCurrentFOC sysIdControl = new TorqueCurrentFOC(0.0);
-    private boolean isCharacterizing = false;
-    private final SysIdRoutine sysIdRoutine = new SysIdRoutine(
-        new SysIdRoutine.Config(
-            null,
-            Volts.of(4),
-            null, 
-            null
-        ),
-        new SysIdRoutine.Mechanism(
-            (Voltage volts) -> motor.setControl(sysIdControl.withOutput(volts.in(Volts))),
-            (log) -> {
-                log.motor("Indexer")
-                    .voltage(Volts.of(motor.getTorqueCurrent().getValueAsDouble()))
-                    .angularVelocity(motor.getVelocity().getValue())
-                    .angularPosition(motor.getPosition().getValue())
-                    .angularAcceleration(motor.getAcceleration().getValue());
-            },
-            this
-        )
-    );
 
     public IndexerSubsystem() {
         TalonFXConfigurator configurator = motor.getConfigurator();
@@ -80,11 +59,6 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         motor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
-
-        SmartDashboard.putData("Indexer Quasistatic Forward", sysIdQuasistatic(Direction.kForward));
-        SmartDashboard.putData("Indexer Quasistatic Reverse", sysIdQuasistatic(Direction.kReverse));
-        SmartDashboard.putData("Indexer Dynamic Forward", sysIdDynamic(Direction.kForward));
-        SmartDashboard.putData("Indexer Dynamic Reverse", sysIdDynamic(Direction.kReverse));
         
         SmartDashboard.putData("Indexer On", setStateCommand(IndexerState.FORWARD));
         SmartDashboard.putData("Indexer Off", setStateCommand(IndexerState.OFF));
@@ -92,6 +66,8 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     @Override
     public void periodic() {
+        BaseStatusSignal.refreshAll(telemetrySignals);
+
         currentSetpoint = MathUtil.clamp(
             currentSetpoint,
             -MAX_RPS,
@@ -100,18 +76,18 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
         double limitedSetpoint = slewRateLimiter.calculate(currentSetpoint);
 
-        if (!isCharacterizing) {
-            if (limitedSetpoint != 0) {
-                velocityTorqueRequest.Velocity = limitedSetpoint;
-                motor.setControl(velocityTorqueRequest);
-            } else {
-                motor.setControl(new VoltageOut(0.0));
-            }
+        if (limitedSetpoint != 0) {
+            velocityTorqueRequest.Velocity = limitedSetpoint;
+            motor.setControl(velocityTorqueRequest);
+        } else {
+            motor.setControl(stopRequest);
         }
         
-        double velocityRps = getCurrentRPS();
+        double velocityRps = Robot.isReal()
+            ? velocitySignal.getValueAsDouble()
+            : getCurrentSetpoint();
         indexerAngle += velocityRps * 2 * Math.PI * 0.02;
-        appliedDutyCycle = motor.getDutyCycle().getValueAsDouble();
+        appliedDutyCycle = dutyCycleSignal.getValueAsDouble();
         this.velocityRps = velocityRps;
         profileSetpointRps = currentSetpoint;
         mechanismPose = new Pose3d(
@@ -132,7 +108,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
     }
 
     public double getCurrentRPS() {
-        return Robot.isReal() ? motor.getVelocity().getValueAsDouble() : getCurrentSetpoint();
+        return Robot.isReal() ? velocityRps : getCurrentSetpoint();
     }
 
     public double getCurrentSetpoint() {
@@ -157,18 +133,6 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     public Command setStateCommand(IndexerState state){
         return setSetpointCommand(state.rps);
-    }
-
-    public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
-        return sysIdRoutine.quasistatic(direction)
-            .beforeStarting(() -> isCharacterizing = true)
-            .finallyDo(() -> isCharacterizing = false);
-    }
-
-    public Command sysIdDynamic(SysIdRoutine.Direction direction) {
-        return sysIdRoutine.dynamic(direction)
-            .beforeStarting(() -> isCharacterizing = true)
-            .finallyDo(() -> isCharacterizing = false);
     }
 
     public enum IndexerState {

@@ -3,6 +3,8 @@ package com.spartronics4915.frc2026.subsystems.mechanisms;
 import static com.spartronics4915.frc2026.Constants.ClimberConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
+import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
@@ -15,6 +17,7 @@ import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -24,6 +27,12 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private static final Scope LOG = Telemetry.scope("Mechanisms/Climber");
 
     LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
+    private final StatusSignal<Angle> motorPositionSignal = motor.getPosition(false);
+    private final StatusSignal<Double> dutyCycleSignal = motor.getDutyCycle(false);
+    private final BaseStatusSignal[] telemetrySignals = {
+        motorPositionSignal,
+        dutyCycleSignal
+    };
     LoggedTrapezoidProfile trapProfile = new LoggedTrapezoidProfile(
 	    new Constraints(MAX_VELOCITY, MAX_ACCELERATION)
     );
@@ -32,6 +41,7 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     private double currentSetpoint;
     private State currentState = new State();
+    private final State goalState = new State();
     private long sampleTimestampUs;
     private double appliedDutyCycle;
     private double loggedPosition;
@@ -46,7 +56,8 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
             motorConfig.apply(FEEDBACK_CONFIG);
             motorConfig.apply(MOTOR_OUTPUT_CONFIG);
 
-        setMechanismPosition(getPosition());
+        BaseStatusSignal.refreshAll(telemetrySignals);
+        setMechanismPosition(motorPositionSignal.getValueAsDouble());
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         motor.addProfile(trapProfile);
@@ -58,6 +69,10 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     @Override
     public void periodic(){
+        BaseStatusSignal.refreshAll(telemetrySignals);
+        goalState.position = currentSetpoint;
+        goalState.velocity = 0.0;
+
         currentSetpoint = MathUtil.clamp(
             currentSetpoint, 
             MIN_HEIGHT, 
@@ -67,14 +82,14 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
         currentState = trapProfile.calculate(
             dtCalc.update(), 
             currentState, 
-            new State(currentSetpoint, 0.0)
+            goalState
         );
 
         positionVoltage.withEnableFOC(ENABLE_FOC).Position = currentState.position;
         motor.setControl(positionVoltage);
 
-        appliedDutyCycle = motor.getDutyCycle().getValueAsDouble();
-        loggedPosition = getPosition();
+        appliedDutyCycle = dutyCycleSignal.getValueAsDouble();
+        loggedPosition = motorPositionSignal.getValueAsDouble();
         profileSetpoint = currentState.position;
         sampleTimestampUs = RobotController.getFPGATime();
         outputTelemetry();
@@ -89,7 +104,7 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
     }
 
     public double getPosition() {
-        return motor.getPosition().getValueAsDouble();
+        return loggedPosition;
     }
 
     public double getCurrentSetpoint() {
@@ -106,6 +121,7 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     private void setMechanismPosition(double position){
         motor.setPosition(position);
+        loggedPosition = position;
         resetMechanism(position);
     }
 

@@ -1,16 +1,15 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms.head;
 
-import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
-import static edu.wpi.first.units.Units.Volts;
 
 import static com.spartronics4915.frc2026.Constants.TurretConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
+import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
-import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
@@ -25,15 +24,13 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import java.util.function.BiConsumer;
 
 public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterface {
@@ -43,6 +40,15 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     private LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
     private CANcoder encoder = new CANcoder(ENCODER_ID, CAN_BUS);
+    private final StatusSignal<Angle> motorPositionSignal = motor.getPosition(false);
+    private final StatusSignal<Angle> encoderAbsolutePositionSignal =
+        encoder.getAbsolutePosition(false);
+    private final StatusSignal<Double> dutyCycleSignal = motor.getDutyCycle(false);
+    private final BaseStatusSignal[] telemetrySignals = {
+        motorPositionSignal,
+        encoderAbsolutePositionSignal,
+        dutyCycleSignal
+    };
     
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
@@ -56,29 +62,6 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private Pose3d mechanismPose = new Pose3d();
 
     private final PositionTorqueCurrentFOC positionTorqueRequest = new PositionTorqueCurrentFOC(0.0);
-
-    private final TorqueCurrentFOC sysIdControl = new TorqueCurrentFOC(0.0);
-    private boolean isCharacterizing = false;
-
-    private final SysIdRoutine sysIdRoutine = new SysIdRoutine(
-        new SysIdRoutine.Config(
-            null,
-            Volts.of(4),
-            null, 
-            null
-        ),
-        new SysIdRoutine.Mechanism(
-            (Voltage volts) -> motor.setControl(sysIdControl.withOutput(volts.in(Volts))),
-            (log) -> {
-                log.motor("Turret")
-                    .voltage(Volts.of(motor.getTorqueCurrent().getValueAsDouble()))
-                    .angularPosition(motor.getPosition().getValue())
-                    .angularVelocity(motor.getVelocity().getValue())
-                    .angularAcceleration(motor.getAcceleration().getValue());
-            },
-            this
-        )
-    );
     
     private TurretClamp currentClamp;
     private Rotation2d minAngle;
@@ -105,15 +88,15 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
             minAngle = currentClamp.minAngle;
             maxAngle = currentClamp.maxAngle;
 
-        setMechanismAngle(Rotation2d.fromDegrees(getEncoderPosition().getDegrees()));
+        encoderAbsolutePositionSignal.refresh();
+        Rotation2d initialAngle = Rotation2d.fromRotations(
+            encoderAbsolutePositionSignal.getValueAsDouble() * ENCODER_MECHANISM_RATIO
+        );
+        encoderPosition = initialAngle;
+        setMechanismAngle(initialAngle);
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         motor.addSetpoint(() -> targetState.position, (setpoint) -> setSetpoint(Rotation2d.fromDegrees(setpoint)));
-
-        SmartDashboard.putData("Turret Quasistatic Forward", sysIdQuasistatic(Direction.kForward));
-        SmartDashboard.putData("Turret Quasistatic Reverse", sysIdQuasistatic(Direction.kReverse));
-        SmartDashboard.putData("Turret Dynamic Forward", sysIdDynamic(Direction.kForward));
-        SmartDashboard.putData("Turret Dynamic Reverse", sysIdDynamic(Direction.kReverse));
 
         SmartDashboard.putData("Turret 0", setSetpointCommand(Rotation2d.fromDegrees(0)));
         SmartDashboard.putData("Turret 180", setSetpointCommand(Rotation2d.fromDegrees(180)));
@@ -121,6 +104,8 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
  
     @Override
     public void periodic(){
+        BaseStatusSignal.refreshAll(telemetrySignals);
+
         targetState.position = MathUtil.clamp(
             targetState.position, 
             minAngle.getRotations(), 
@@ -134,18 +119,20 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
         positionTorqueRequest
             .withPosition(targetState.position)
             .withVelocity(targetState.velocity);
-            
-        if (!isCharacterizing) {
-            motor.setControl(positionTorqueRequest);
-        }
 
-        Rotation2d position = getPosition();
+        motor.setControl(positionTorqueRequest);
+
+        Rotation2d position = Robot.isSimulation()
+            ? Rotation2d.fromRotations(targetState.position)
+            : Rotation2d.fromRotations(motorPositionSignal.getValueAsDouble());
         Rotation2d setpoint = Rotation2d.fromRotations(targetState.position);
-        appliedDutyCycle = motor.getDutyCycle().getValueAsDouble();
+        appliedDutyCycle = dutyCycleSignal.getValueAsDouble();
         loggedPosition = position;
         loggedSetpoint = setpoint;
         profileSetpoint = setpoint;
-        encoderPosition = getEncoderPosition();
+        encoderPosition = Rotation2d.fromRotations(
+            encoderAbsolutePositionSignal.getValueAsDouble() * ENCODER_MECHANISM_RATIO
+        );
         mechanismPose = new Pose3d(
                 -0.118295, -0.143695, 0.362276, 
                 new Rotation3d(0, 0, position.getRadians()));
@@ -172,13 +159,11 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
         if (Robot.isSimulation()) {
             return Rotation2d.fromRotations(targetState.position);
         }
-        double position = motor.getPosition().getValue().in(Rotations);
-        return Rotation2d.fromRotations(position);
+        return loggedPosition;
     }
 
     public Rotation2d getEncoderPosition() {
-        double position = encoder.getAbsolutePosition().getValue().in(Rotations) * ENCODER_MECHANISM_RATIO;
-        return Rotation2d.fromRotations(position);
+        return encoderPosition;
     }
 
     public Rotation2d getCurrentSetpoint() {
@@ -207,6 +192,7 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     private void setMechanismAngle(Rotation2d angle){
         motor.setPosition(angle.getRotations());
+        loggedPosition = angle;
         resetMechanism(angle);
     }
 
@@ -237,18 +223,6 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     public Command setClampCommand(TurretClamp newClamp) {
         return this.runOnce(() -> setClamp(newClamp));
-    }
-
-    public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
-        return sysIdRoutine.quasistatic(direction)
-            .beforeStarting(() -> isCharacterizing = true)
-            .finallyDo(() -> isCharacterizing = false);
-    }
-
-    public Command sysIdDynamic(SysIdRoutine.Direction direction) {
-        return sysIdRoutine.dynamic(direction)
-            .beforeStarting(() -> isCharacterizing = true)
-            .finallyDo(() -> isCharacterizing = false);
     }
 
     //#endregion

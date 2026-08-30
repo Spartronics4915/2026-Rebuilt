@@ -1,15 +1,14 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms.head;
 
-import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
-import static edu.wpi.first.units.Units.Volts;
 
 import static com.spartronics4915.frc2026.Constants.HoodConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
+import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
-import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.spartronics4915.frc2026.util.logging.Telemetry;
 import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 
@@ -18,14 +17,12 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
@@ -39,6 +36,12 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
     // May need to retune or switch to position + FOC
 
     LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
+    private final StatusSignal<Angle> motorPositionSignal = motor.getPosition(false);
+    private final StatusSignal<Double> dutyCycleSignal = motor.getDutyCycle(false);
+    private final BaseStatusSignal[] telemetrySignals = {
+        motorPositionSignal,
+        dutyCycleSignal
+    };
     
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
@@ -54,28 +57,6 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
     private TurretSubsystem turret;
 
     private final PositionTorqueCurrentFOC positionTorqueRequest = new PositionTorqueCurrentFOC(0.0);
-
-    private final TorqueCurrentFOC sysIdControl = new TorqueCurrentFOC(0.0);
-    private boolean isCharacterizing = false;
-    private final SysIdRoutine sysIdRoutine = new SysIdRoutine(
-        new SysIdRoutine.Config(
-            null,
-            Volts.of(4),
-            null, 
-            null
-        ),
-        new SysIdRoutine.Mechanism(
-            (Voltage volts) -> motor.setControl(sysIdControl.withOutput(volts.in(Volts))),
-            (log) -> {
-                log.motor("Hood")
-                    .voltage(Volts.of(motor.getTorqueCurrent().getValueAsDouble()))
-                    .angularPosition(motor.getPosition().getValue())
-                    .angularVelocity(motor.getVelocity().getValue())
-                    .angularAcceleration(motor.getAcceleration().getValue());
-            },
-            this
-        )
-    );
 
     private HoodClamp currentClamp;
     private Rotation2d minAngle;
@@ -97,11 +78,6 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
 
         motor.addSetpoint(() -> targetState.position, (setpoint) -> setSetpoint(Rotation2d.fromDegrees(setpoint)));
 
-        SmartDashboard.putData("Hood Quasistatic Forward", sysIdQuasistatic(Direction.kForward));
-        SmartDashboard.putData("Hood Quasistatic Reverse", sysIdQuasistatic(Direction.kReverse));
-        SmartDashboard.putData("Hood Dynamic Forward", sysIdDynamic(Direction.kForward));
-        SmartDashboard.putData("Hood Dynamic Reverse", sysIdDynamic(Direction.kReverse));
-
         SmartDashboard.putData("Hood Up", setSetpointCommand(Rotation2d.fromDegrees(19)));
         SmartDashboard.putData("Hood Down", setSetpointCommand(Rotation2d.fromDegrees(0)));
     }
@@ -112,6 +88,8 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
 
     @Override
     public void periodic(){
+        BaseStatusSignal.refreshAll(telemetrySignals);
+
         targetState.position = MathUtil.clamp(
             targetState.position, 
             minAngle.getRotations(), 
@@ -125,22 +103,22 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
         positionTorqueRequest
             .withPosition(targetState.position)
             .withVelocity(targetState.velocity);
+            
+        motor.setControl(positionTorqueRequest);
 
-        if (!isCharacterizing) {
-            motor.setControl(positionTorqueRequest);
-        }
-
-        Rotation2d position = getPosition();
+        Rotation2d position = Robot.isSimulation()
+            ? Rotation2d.fromRotations(targetState.position)
+            : Rotation2d.fromRotations(motorPositionSignal.getValueAsDouble());
         Rotation2d setpoint = Rotation2d.fromRotations(targetState.position);
         double turretAngle = (turret != null) ? turret.getPosition().getRadians() : 0.0;
         Rotation3d hoodRotation = new Rotation3d(-position.getRadians(), 0, turretAngle);
-        appliedDutyCycle = motor.getDutyCycle().getValueAsDouble();
+
+        appliedDutyCycle = dutyCycleSignal.getValueAsDouble();
         loggedPosition = position;
         loggedSetpoint = setpoint;
         profileSetpoint = setpoint;
         encoderPosition = position;
-        mechanismPose = new Pose3d(
-            -0.1181, -0.0972 - 0.0453, 0.4953 + position.getTan() * 0.0453, hoodRotation);
+        mechanismPose = new Pose3d(-0.1181, -0.0972 - 0.0453, 0.4953 + position.getTan() * 0.0453, hoodRotation);
         sampleTimestampUs = RobotController.getFPGATime();
         outputTelemetry();
     }
@@ -159,8 +137,7 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
         if (Robot.isSimulation()) {
             return Rotation2d.fromRotations(targetState.position);
         }
-        double position = motor.getPosition().getValue().in(Rotations);
-        return Rotation2d.fromRotations(position);
+        return loggedPosition;
     }
 
     public Rotation2d getCurrentSetpoint() {
@@ -185,6 +162,7 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
 
     private void setMechanismAngle(Rotation2d angle){
         motor.setPosition(angle.getRotations());
+        loggedPosition = angle;
         resetMechanism(angle);
     }
 
@@ -206,18 +184,6 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
 
     public Command setClampCommand(HoodClamp newClamp) {
         return this.runOnce(() -> setClamp(newClamp));
-    }
-
-    public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
-        return sysIdRoutine.quasistatic(direction)
-            .beforeStarting(() -> isCharacterizing = true)
-            .finallyDo(() -> isCharacterizing = false);
-    }
-
-    public Command sysIdDynamic(SysIdRoutine.Direction direction) {
-        return sysIdRoutine.dynamic(direction)
-            .beforeStarting(() -> isCharacterizing = true)
-            .finallyDo(() -> isCharacterizing = false);
     }
  
     public enum HoodClamp {

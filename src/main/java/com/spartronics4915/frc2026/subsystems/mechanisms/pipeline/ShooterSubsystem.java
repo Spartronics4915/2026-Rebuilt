@@ -1,12 +1,12 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms.pipeline;
 
-import static edu.wpi.first.units.Units.Volts;
 import static com.spartronics4915.frc2026.Constants.ShooterConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 
+import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.Follower;
-import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
@@ -14,13 +14,11 @@ import com.spartronics4915.frc2026.util.logging.Telemetry;
 import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
-import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
@@ -34,6 +32,9 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     private LoggedTalonFX leadMotor;
     private LoggedTalonFX followerMotor;
+    private final StatusSignal<AngularVelocity> velocitySignal;
+    private final StatusSignal<Double> dutyCycleSignal;
+    private final BaseStatusSignal[] telemetrySignals;
 
     private double currentSetpoint;
     private long sampleTimestampUs;
@@ -45,27 +46,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private SlewRateLimiter rpsProfile = new SlewRateLimiter(9999, maxShooterDecel, 0);
 
     private final VelocityVoltage velocityVoltage = new VelocityVoltage(0.0).withSlot(0);
-
-    private final TorqueCurrentFOC sysIdControl = new TorqueCurrentFOC(0.0);
-    private boolean isCharacterizing = false;
-
-    private final SysIdRoutine sysIdRoutine = new SysIdRoutine(
-        new SysIdRoutine.Config(null, Volts.of(4), null, null),
-        new SysIdRoutine.Mechanism(
-            (Voltage volts) -> {
-                leadMotor.setControl(sysIdControl.withOutput(volts.in(Volts)));
-                followerMotor.setControl(new Follower(LEAD_MOTOR_ID, MotorAlignmentValue.Aligned)); 
-            },
-            (log) -> {
-                log.motor("Shooter")
-                    .voltage(Volts.of(leadMotor.getTorqueCurrent().getValueAsDouble()))
-                    .angularVelocity(leadMotor.getVelocity().getValue())
-                    .angularPosition(leadMotor.getPosition().getValue())
-                    .angularAcceleration(leadMotor.getAcceleration().getValue());
-            },
-            this
-        )
-    );
+    private final Follower followerRequest = new Follower(LEAD_MOTOR_ID, MotorAlignmentValue.Aligned);
 
     private ShooterClamp RPSClamp;
     private double maxRPS;
@@ -77,9 +58,9 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     public ShooterSubsystem() {
         leadMotor = new LoggedTalonFX(LEAD_MOTOR_ID, CAN_BUS);   
         followerMotor = new LoggedTalonFX(FOLLOWER_MOTOR_ID, CAN_BUS);
-
-        leadMotor.getVelocity().setUpdateFrequency(300);
-        leadMotor.getDutyCycle().setUpdateFrequency(300);
+        velocitySignal = leadMotor.getVelocity(false);
+        dutyCycleSignal = leadMotor.getDutyCycle(false);
+        telemetrySignals = new BaseStatusSignal[] {velocitySignal, dutyCycleSignal};
 
         TalonFXConfigurator configurator = leadMotor.getConfigurator();
             configurator.apply(PID_CONFIG);
@@ -93,7 +74,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
             configurator.apply(FEEDBACK_CONFIG);
             configurator.apply(MOTOR_OUTPUT_CONFIG);
 
-        followerMotor.setControl(new Follower(LEAD_MOTOR_ID, MotorAlignmentValue.Aligned));
+        followerMotor.setControl(followerRequest);
 
         setClamp(ShooterClamp.UNRESTRICTED);
         ModeSwitchHandler.EnableModeSwitchHandler(this);
@@ -101,16 +82,14 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
         leadMotor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
 
         // SmartDashboard Data
-        SmartDashboard.putData("Shooter Quasistatic Forward", sysIdQuasistatic(Direction.kForward));
-        SmartDashboard.putData("Shooter Quasistatic Reverse", sysIdQuasistatic(Direction.kReverse));
-        SmartDashboard.putData("Shooter Dynamic Forward", sysIdDynamic(Direction.kForward));
-        SmartDashboard.putData("Shooter Dynamic Reverse", sysIdDynamic(Direction.kReverse));
         SmartDashboard.putData("Shooter On", setSetpointCommand(55));
         SmartDashboard.putData("Shooter Off", setSetpointCommand(0));
     }
 
     @Override
     public void periodic() {
+        BaseStatusSignal.refreshAll(telemetrySignals);
+
         currentSetpoint = MathUtil.clamp(currentSetpoint, -maxRPS, maxRPS);
         isShooting = currentSetpoint != 0;
 
@@ -121,16 +100,16 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
         double limitedSetpoint = rpsProfile.calculate(workingSetpoint);
 
-        if (!isCharacterizing) {
-            if (limitedSetpoint != 0) {
-                leadMotor.setControl(velocityVoltage.withVelocity(limitedSetpoint));
-            } else {
-                leadMotor.setControl(stopRequest);
-            }
+        if (limitedSetpoint != 0) {
+            leadMotor.setControl(velocityVoltage.withVelocity(limitedSetpoint));
+        } else {
+            leadMotor.setControl(stopRequest);
         }
 
-        appliedDutyCycle = leadMotor.getDutyCycle().getValueAsDouble();
-        velocityRps = getCurrentRPS();
+        appliedDutyCycle = dutyCycleSignal.getValueAsDouble();
+        velocityRps = Robot.isSimulation()
+            ? currentSetpoint
+            : velocitySignal.getValueAsDouble();
         workingSetpointRps = workingSetpoint;
         profileSetpointRps = limitedSetpoint;
         sampleTimestampUs = RobotController.getFPGATime();
@@ -149,7 +128,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
         if (Robot.isSimulation()) {
             return currentSetpoint;
         }
-        return leadMotor.getVelocity().getValueAsDouble();
+        return velocityRps;
     }
 
     public ShooterClamp getShooterClamp() {
@@ -179,18 +158,6 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     public Command setClampCommand(ShooterClamp clamp) {
         return this.runOnce(() -> setClamp(clamp));
-    }
-
-    public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
-        return sysIdRoutine.quasistatic(direction)
-            .beforeStarting(() -> isCharacterizing = true)
-            .finallyDo(() -> isCharacterizing = false);
-    }
-
-    public Command sysIdDynamic(SysIdRoutine.Direction direction) {
-        return sysIdRoutine.dynamic(direction)
-            .beforeStarting(() -> isCharacterizing = true)
-            .finallyDo(() -> isCharacterizing = false);
     }
 
     public enum ShooterClamp {

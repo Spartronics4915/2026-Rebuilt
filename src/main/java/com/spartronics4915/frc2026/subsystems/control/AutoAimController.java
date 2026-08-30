@@ -157,7 +157,8 @@ public class AutoAimController extends SubsystemBase {
     }
 
     // Collision cache
-    private Double cachedCollisionDist = null;
+    private double cachedCollisionDist;
+    private boolean hasCachedCollisionDist;
 
     @Override
     public void periodic() {
@@ -426,7 +427,7 @@ public class AutoAimController extends SubsystemBase {
     }
 
     private boolean checkHubCollision(Rotation2d pitch, double shotSpeed, boolean usePadding) {
-        if (cachedCollisionDist == null) return false;
+        if (!hasCachedCollisionDist) return false;
         double collisionDist = cachedCollisionDist;
 
         if (collisionDist <= 0) return true;
@@ -466,6 +467,7 @@ public class AutoAimController extends SubsystemBase {
 
         double distCenterToWall = (absCos > absSin) ? halfSide / absCos : halfSide / absSin;
         cachedCollisionDist = distToTarget - distCenterToWall;
+        hasCachedCollisionDist = true;
     }
 
     //#endregion
