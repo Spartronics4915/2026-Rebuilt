@@ -108,7 +108,7 @@ public final class Constants {
 
         public static final Matrix<N3, N1> NORMAL_STD_DEVS = VecBuilder.fill(0.06, 0.06, 0.04);
 
-        public static final double HEADING_LOCK_P = 7.0;
+        public static final double HEADING_LOCK_P = 6.0;
         public static final double HEADING_LOCK_D = 0.0;
 
         // Depreciated
@@ -198,24 +198,26 @@ public final class Constants {
                     .withSpeedAt12Volts(MetersPerSecond.of(4.39))
                     .withSlipCurrent(Amps.of(120))
                     .withSteerMotorGains(new Slot0Configs()
-                        .withKP(110.0).withKI(0.0).withKD(5.0)
-                        .withKS(0.1).withKV(2.49).withKA(0.0)
+                        .withKP(100.0).withKI(0.0).withKD(0.0) // 110, 0, 5
+                        .withKS(0.0).withKV(0.0).withKA(0.0) // 0.1, 2.49, 0.0
                         .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseClosedLoopSign))
                     .withDriveMotorGains(new Slot0Configs()
-                        .withKP(9).withKI(0).withKD(0)
-                        .withKS(1).withKV(0.124))
+                        .withKP(2.0).withKI(0).withKD(0.04
+                        )
+                        .withKS(0.6).withKV(0.124))
                     .withSteerMotorClosedLoopOutput(ClosedLoopOutputType.Voltage)
                     .withDriveMotorClosedLoopOutput(ClosedLoopOutputType.TorqueCurrentFOC)
                     .withFeedbackSource(SteerFeedbackType.FusedCANcoder)
                     .withSteerInertia(KilogramSquareMeters.of(0.01))
                     .withDriveInertia(KilogramSquareMeters.of(0.01))
+                    //.withDriveFrictionVoltage(Volts.of(0.2))
                     //.withSteerFrictionVoltage(Volts.of(0.2))
-                    //S.withDriveFrictionVoltage(Volts.of(0.2))
                     .withSteerMotorInitialConfigs(
                         new TalonFXConfiguration()
                             .withCurrentLimits(
                                 new CurrentLimitsConfigs()
-                                    .withStatorCurrentLimit(Amps.of(80))
+                                    .withStatorCurrentLimit(Amps.of(100))
+                                    .withSupplyCurrentLimit(Amps.of(80))
                                     .withStatorCurrentLimitEnable(true)
                             )
                     )
@@ -224,6 +226,7 @@ public final class Constants {
                             .withCurrentLimits(
                                 new CurrentLimitsConfigs()
                                     .withStatorCurrentLimit(Amps.of(120))
+                                    .withSupplyCurrentLimit(Amps.of(100))
                                     .withStatorCurrentLimitEnable(true)
                             )
                     );
