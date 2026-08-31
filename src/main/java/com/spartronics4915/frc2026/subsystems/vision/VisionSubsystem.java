@@ -51,7 +51,7 @@ public class VisionSubsystem extends SubsystemBase {
 
     private final SwerveSubsystem swerve;
     private final AprilTagFieldLayout fieldLayout = Robot.isReal()
-        ? REAL_APRILTAG_FIELD_LAYOUT
+        ? SIM_APRILTAG_FIELD_LAYOUT
         : SIM_APRILTAG_FIELD_LAYOUT;
     private final List<CameraIO> cameras = new ArrayList<>();
     private final Map<String, CameraSnapshot> cameraDiagnostics = new HashMap<>();
