@@ -513,7 +513,7 @@ public final class Constants {
         public static final double turretTolerance = 7.5;
         public static final double hoodTolerance = 4.0;
 
-        public static final double processingCompensation = 0.0;
+        public static final double processingCompensation = 0.02;
 
         public static final Distance HUB_SHOT_PADDING = Meters.of(0.05);
         public static final Distance HUB_IDEAL_SHOT_PADDING = Meters.of(0.2);
@@ -546,7 +546,7 @@ public final class Constants {
         public static final double A = 30000.0;
         public static final double S = 0.22;
 
-        public static final boolean CURRENT_LIMIT_ENABLE = false;
+        public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 80;
 
         public static final double MOTOR_MECHANISM_RATIO = 0.9375;
@@ -556,7 +556,6 @@ public final class Constants {
             .withKI(I)
             .withKD(D)
             .withKV(V)
-            .withKA(A)
             .withKS(S);
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
@@ -668,19 +667,17 @@ public final class Constants {
         
         public static final int MOTOR_ID = 18;
 
-        public static final double P = 30.0;
+        public static final double P = 2.0;
         public static final double I = 0.0;
         public static final double D = 0.0;
-        public static final double V = 0.23073;
-        public static final double A = 100.0303; // 1.0303
+        public static final double V = 0.46073;
+        public static final double S = 1.3;
 
         public static final double MAX_RPS = 100;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 60;
-        public static final double LOWER_LIMIT = 20;
+        public static final double CURRENT_LIMIT = 80;
 
-        public static final double LOWER_TIME = 2;
         public static final double MOTOR_MECHANISM_RATIO = 1.0 / (9.0/34.0);
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
@@ -688,13 +685,11 @@ public final class Constants {
             .withKI(I)
             .withKD(D)
             .withKV(V)
-            .withKA(A);
+            .withKA(S);
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
             .withSupplyCurrentLimit(CURRENT_LIMIT);
-            //.withSupplyCurrentLowerLimit(LOWER_LIMIT)
-            //.withSupplyCurrentLowerTime(LOWER_TIME);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
@@ -721,18 +716,16 @@ public final class Constants {
         
         public static final int MOTOR_ID = 17;
 
-        public static final double P = 90.0;
+        public static final double P = 2.0; // 90
         public static final double I = 0.0;
         public static final double D = 0.0;
-        public static final double V = 0.22226;
-        public static final double A = 37.0318; //0.70318
-        public static final double S = 1.53135;
+        public static final double V = 0.2; // 0l22226
+        public static final double S = 1.5; // 1.53135
 
         public static final double MAX_RPS = 22.0; // 13.238
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 60;
-        public static final double LOWER_LIMIT = 20;
+        public static final double CURRENT_LIMIT = 80;
 
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 5;
@@ -742,13 +735,11 @@ public final class Constants {
             .withKI(I)
             .withKD(D)
             .withKV(V)
-            .withKA(A);
+            .withKS(S);
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
             .withSupplyCurrentLimit(CURRENT_LIMIT);
-            //.withSupplyCurrentLowerLimit(LOWER_LIMIT)
-            //.withSupplyCurrentLowerTime(LOWER_TIME);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);

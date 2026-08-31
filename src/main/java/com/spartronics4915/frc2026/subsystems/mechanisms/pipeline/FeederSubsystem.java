@@ -9,6 +9,7 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
+import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
@@ -42,7 +43,8 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private double appliedDutyCycle;
     private double velocityRps;
     private double profileSetpointRps;
-    private final VelocityTorqueCurrentFOC velocityTorqueRequest = new VelocityTorqueCurrentFOC(0.0);
+
+    private final VelocityVoltage velocityVoltageRequest = new VelocityVoltage(0.0).withEnableFOC(true);
     private final VoltageOut stopRequest = new VoltageOut(0.0);
 
     private DoubleSupplier distanceToTargetSupplier = null;
@@ -86,8 +88,8 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
         );
 
         if (currentSetpoint != 0) {
-            velocityTorqueRequest.Velocity = currentSetpoint;
-            motor.setControl(velocityTorqueRequest);
+            velocityVoltageRequest.Velocity = currentSetpoint;
+            motor.setControl(velocityVoltageRequest);
         } else {
             motor.setControl(stopRequest);
         }

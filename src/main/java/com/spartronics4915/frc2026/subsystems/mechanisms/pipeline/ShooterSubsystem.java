@@ -45,7 +45,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     private SlewRateLimiter rpsProfile = new SlewRateLimiter(9999, maxShooterDecel, 0);
 
-    private final VelocityVoltage velocityVoltage = new VelocityVoltage(0.0).withSlot(0);
+    private final VelocityVoltage velocityVoltage = new VelocityVoltage(0.0).withSlot(0).withEnableFOC(true);
     private final Follower followerRequest = new Follower(LEAD_MOTOR_ID, MotorAlignmentValue.Aligned);
 
     private ShooterClamp RPSClamp;
@@ -58,6 +58,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     public ShooterSubsystem() {
         leadMotor = new LoggedTalonFX(LEAD_MOTOR_ID, CAN_BUS);   
         followerMotor = new LoggedTalonFX(FOLLOWER_MOTOR_ID, CAN_BUS);
+        
         velocitySignal = leadMotor.getVelocity(false);
         dutyCycleSignal = leadMotor.getDutyCycle(false);
         telemetrySignals = new BaseStatusSignal[] {velocitySignal, dutyCycleSignal};

@@ -7,6 +7,7 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
+import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.spartronics4915.frc2026.util.logging.Telemetry;
 import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
@@ -42,7 +43,8 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private double velocityRps;
     private double profileSetpointRps;
     private Pose3d mechanismPose = new Pose3d();
-    private final VelocityTorqueCurrentFOC velocityTorqueRequest = new VelocityTorqueCurrentFOC(0.0);
+
+    private final VelocityVoltage velocityVoltageRequest = new VelocityVoltage(0.0).withEnableFOC(true);
     private final VoltageOut stopRequest = new VoltageOut(0.0);
     private final SlewRateLimiter slewRateLimiter = new SlewRateLimiter(50);
     
@@ -77,8 +79,8 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
         double limitedSetpoint = slewRateLimiter.calculate(currentSetpoint);
 
         if (limitedSetpoint != 0) {
-            velocityTorqueRequest.Velocity = limitedSetpoint;
-            motor.setControl(velocityTorqueRequest);
+            velocityVoltageRequest.Velocity = limitedSetpoint;
+            motor.setControl(velocityVoltageRequest);
         } else {
             motor.setControl(stopRequest);
         }
