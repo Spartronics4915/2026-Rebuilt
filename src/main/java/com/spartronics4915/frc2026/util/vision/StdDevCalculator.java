@@ -93,6 +93,7 @@ public final class StdDevCalculator {
         // Timestamp filtering, at a certain point results take to long to replay, so gating it needed
         if (timestamp <= 0.0
                 || timestamp > nowSeconds + MAX_FUTURE_TIMESTAMP_SECONDS
+                || isStale(estimate, nowSeconds)
                 || latency < 0.0
                 || latency > MAX_CAPTURE_LATENCY_SECONDS
                 || distance > MAX_AVERAGE_TAG_DISTANCE_METERS) {
@@ -112,5 +113,15 @@ public final class StdDevCalculator {
         // Single-tag measurements should always carry a real ambiguity metric. MultiTag estimates
         // don't depend on the per-target ambiguity value, so they will report zero here.
         return estimate.tagCount() > 1 || Double.isFinite(ambiguity);
+    }
+
+    public static boolean isStale(VisionEstimate estimate, double nowSeconds) {
+        if (estimate == null) {
+            return false;
+        }
+        double timestamp = estimate.timestamp().in(Seconds);
+        return Double.isFinite(timestamp)
+            && Double.isFinite(nowSeconds)
+            && nowSeconds - timestamp > MAX_OBSERVATION_AGE_SECONDS;
     }
 }

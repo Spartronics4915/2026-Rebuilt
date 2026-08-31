@@ -14,39 +14,76 @@ import com.spartronics4915.frc2026.util.vision.LimelightHelpers.RawFiducial;
 import com.spartronics4915.frc2026.util.vision.VisionEstimate;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.wpilibj.Timer;
 
 /** Limelight MegaTag1 backend. */
 public class LimelightCameraIO extends CameraIO {
 
     private final AprilTagFieldLayout fieldLayout;
     private double lastTimestampSeconds = Double.NEGATIVE_INFINITY;
+    private static final int CONFIGURATION_HISTORY_CAPACITY = 16; // Magic number pal
+    private final double[] configurationTimestamps = new double[CONFIGURATION_HISTORY_CAPACITY];
+    private final Transform3d[] configuredTransforms = new Transform3d[CONFIGURATION_HISTORY_CAPACITY];
+    private int nextConfigurationIndex;
+    private int configurationCount;
 
     public LimelightCameraIO(CameraConfig config, AprilTagFieldLayout fieldLayout) {
         super(config);
         this.fieldLayout = fieldLayout;
+        Transform3d initialTransform = config.getCurrentTransform();
+        configureCameraPose(initialTransform);
+        recordConfiguredTransform(initialTransform, Timer.getFPGATimestamp());
     }
 
     @Override
     protected List<VisionEstimate> readEstimates() {
-        // MegaTag1 uses the camera pose currently configured in Limelight. This is therefore the
-        // latest available transform, not a historical transform for an already-solved frame.
-        configureCameraPose(config.getCurrentTransform());
-
+        // Read the result before publishing the next transform. The existing botpose was solved
+        // using the transform from the previous update, not the one we are about to send.
         PoseEstimate estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(config.name);
+
+        Transform3d nextTransform = config.getCurrentTransform();
+        configureCameraPose(nextTransform);
+        recordConfiguredTransform(nextTransform, Timer.getFPGATimestamp());
+
         if (estimate == null || estimate.timestampSeconds <= lastTimestampSeconds) {
             return List.of();
         }
 
         lastTimestampSeconds = estimate.timestampSeconds;
+        Transform3d transformUsedForEstimate = findConfiguredTransform(
+            estimate.timestampSeconds);
+        if (transformUsedForEstimate == null) {
+            return List.of();
+        }
 
         return filterPoseEstimate(estimate)
-            .map(this::toVisionEstimate)
+            .map(value -> toVisionEstimate(value, transformUsedForEstimate))
             .map(List::of)
             .orElseGet(List::of);
+    }
+
+    private void recordConfiguredTransform(Transform3d transform, double timestampSeconds) {
+        configurationTimestamps[nextConfigurationIndex] = timestampSeconds;
+        configuredTransforms[nextConfigurationIndex] = transform;
+        nextConfigurationIndex = (nextConfigurationIndex + 1) % CONFIGURATION_HISTORY_CAPACITY;
+        configurationCount = Math.min(configurationCount + 1, CONFIGURATION_HISTORY_CAPACITY);
+    }
+
+    private Transform3d findConfiguredTransform(double captureTimestampSeconds) {
+        for (int offset = 1; offset <= configurationCount; offset++) {
+            int index = Math.floorMod(
+                nextConfigurationIndex - offset,
+                CONFIGURATION_HISTORY_CAPACITY);
+            if (configurationTimestamps[index] <= captureTimestampSeconds) {
+                return configuredTransforms[index];
+            }
+        }
+        return null;
     }
 
     private void configureCameraPose(Transform3d transform) {
@@ -89,21 +126,33 @@ public class LimelightCameraIO extends CameraIO {
         return Optional.of(estimate);
     }
 
-    private VisionEstimate toVisionEstimate(PoseEstimate estimate) {
-        lastTimestampSeconds = estimate.timestampSeconds;
-
+    private VisionEstimate toVisionEstimate(
+        PoseEstimate estimate,
+        Transform3d transformUsedForEstimate
+    ) {
         int[] tagIds = getTagIds(estimate);
         boolean multiTag = tagIds.length >= 2;
+        Transform3d transformAtCapture = config.getTransformAtTimestamp(estimate.timestampSeconds);
 
         return new VisionEstimate(
             tagIds,
-            new Pose3d(estimate.pose),
+            correctRobotPose(estimate.pose, transformUsedForEstimate, transformAtCapture),
             Seconds.of(estimate.timestampSeconds),
             estimate.avgTagDist,
             multiTag ? 0.0 : avgAmbiguity(estimate),
             tagSpanMeters(tagIds),
             estimate.latency / 1000.0,
             multiTag || USE_VISION_ROTATION_FOR_SINGLE_TAG);
+    }
+
+    static Pose3d correctRobotPose(
+        Pose2d reportedRobotPose,
+        Transform3d configuredRobotToCamera,
+        Transform3d robotToCameraAtCapture
+    ) {
+        return new Pose3d(reportedRobotPose)
+            .transformBy(configuredRobotToCamera)
+            .transformBy(robotToCameraAtCapture.inverse());
     }
 
     private int[] getTagIds(PoseEstimate estimate) {

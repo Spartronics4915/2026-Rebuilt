@@ -1,12 +1,13 @@
 package com.spartronics4915.frc2026.subsystems.vision.cameras;
 
-import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.List;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.spartronics4915.frc2026.Constants.VisionConstants.CAMERA_LOOP_PERIOD_SECONDS;
+import static com.spartronics4915.frc2026.Constants.VisionConstants.MAX_PENDING_ESTIMATES_PER_CAMERA;
 
 import com.spartronics4915.frc2026.util.vision.VisionEstimate;
 
@@ -16,6 +17,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.util.sendable.Sendable;
 import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.Notifier;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
 
 /** Common camera I/O layer. Hardware-specific classes produce timestamped estimates. */
@@ -23,10 +25,20 @@ public abstract class CameraIO implements Sendable {
 
     protected final CameraConfig config;
     private CameraPipeline pipeline = CameraPipeline.defaultPipeline();
-    private boolean enabled = true;
+    private volatile boolean enabled = true;
 
-    private final List<VisionEstimate> pendingEstimates = new ArrayList<>();
+    private final Object queueLock = new Object();
+    private final ArrayDeque<VisionEstimate> pendingEstimates = new ArrayDeque<>(MAX_PENDING_ESTIMATES_PER_CAMERA);
     private final Notifier notifier = new Notifier(this::update);
+    
+    private volatile int pendingEstimateCount;
+    private volatile int maxPendingEstimateCount;
+    private volatile long droppedEstimateCount;
+    private volatile long lastReadDurationUs;
+    private volatile long maxReadDurationUs;
+    private volatile long readOverrunCount;
+    private volatile long lastQueueWaitDurationUs;
+    private volatile long maxQueueWaitDurationUs;
 
     protected CameraIO(CameraConfig config) {
         this.config = config;
@@ -43,26 +55,62 @@ public abstract class CameraIO implements Sendable {
     /** Reads every new measurement currently available from the camera backend. */
     protected abstract List<VisionEstimate> readEstimates();
 
-    public final synchronized void update() {
+    public final void update() {
         if (!enabled) {
             return;
         }
 
-        List<VisionEstimate> estimates = readEstimates();
-        if (!estimates.isEmpty()) {
-            pendingEstimates.addAll(estimates);
+        long readStartUs = RobotController.getFPGATime();
+        List<VisionEstimate> estimates;
+        try {
+            estimates = readEstimates();
+        } finally {
+            long durationUs = RobotController.getFPGATime() - readStartUs;
+            lastReadDurationUs = durationUs;
+            maxReadDurationUs = Math.max(maxReadDurationUs, durationUs);
+            if (durationUs > Math.round(CAMERA_LOOP_PERIOD_SECONDS * 1_000_000.0)) {
+                readOverrunCount++;
+            }
+        }
+
+        if (estimates.isEmpty()) {
+            return;
+        }
+
+        synchronized (queueLock) {
+            if (!enabled) {
+                return;
+            }
+
+            for (VisionEstimate estimate : estimates) {
+                if (pendingEstimates.size() == MAX_PENDING_ESTIMATES_PER_CAMERA) {
+                    pendingEstimates.removeFirst();
+                    droppedEstimateCount++;
+                }
+                pendingEstimates.addLast(estimate);
+            }
+            pendingEstimateCount = pendingEstimates.size();
+            maxPendingEstimateCount = Math.max(maxPendingEstimateCount, pendingEstimateCount);
         }
     }
 
     /** Drains every unprocessed estimate, preserving timestamped measurements. */
-    public final synchronized List<VisionEstimate> consumeEstimates() {
-        if (pendingEstimates.isEmpty()) {
-            return List.of();
-        }
+    public final List<VisionEstimate> consumeEstimates() {
+        long waitStartUs = RobotController.getFPGATime();
+        synchronized (queueLock) {
+            long waitDurationUs = RobotController.getFPGATime() - waitStartUs;
+            lastQueueWaitDurationUs = waitDurationUs;
+            maxQueueWaitDurationUs = Math.max(maxQueueWaitDurationUs, waitDurationUs);
 
-        List<VisionEstimate> estimates = List.copyOf(pendingEstimates);
-        pendingEstimates.clear();
-        return estimates;
+            if (pendingEstimates.isEmpty()) {
+                return List.of();
+            }
+
+            List<VisionEstimate> estimates = List.copyOf(pendingEstimates);
+            pendingEstimates.clear();
+            pendingEstimateCount = 0;
+            return estimates;
+        }
     }
 
     public final void start() {
@@ -73,15 +121,50 @@ public abstract class CameraIO implements Sendable {
         notifier.stop();
     }
 
-    public final synchronized void setEnabled(boolean enabled) {
+    public final void setEnabled(boolean enabled) {
         this.enabled = enabled;
         if (!enabled) {
-            pendingEstimates.clear();
+            synchronized (queueLock) {
+                pendingEstimates.clear();
+                pendingEstimateCount = 0;
+            }
         }
     }
 
-    public final synchronized boolean isEnabled() {
+    public final boolean isEnabled() {
         return enabled;
+    }
+
+    public final int getPendingEstimateCount() {
+        return pendingEstimateCount;
+    }
+
+    public final int getMaxPendingEstimateCount() {
+        return maxPendingEstimateCount;
+    }
+
+    public final long getDroppedEstimateCount() {
+        return droppedEstimateCount;
+    }
+
+    public final long getLastReadDurationUs() {
+        return lastReadDurationUs;
+    }
+
+    public final long getMaxReadDurationUs() {
+        return maxReadDurationUs;
+    }
+
+    public final long getReadOverrunCount() {
+        return readOverrunCount;
+    }
+
+    public final long getLastQueueWaitDurationUs() {
+        return lastQueueWaitDurationUs;
+    }
+
+    public final long getMaxQueueWaitDurationUs() {
+        return maxQueueWaitDurationUs;
     }
 
     public final String getName() {

@@ -56,9 +56,12 @@ public class PhotonCameraIO extends CameraIO {
             }
 
             Optional<EstimatedRobotPose> estimate = estimatePose(result);
-            estimate.flatMap(pose -> filterEstimatedPose(pose, result))
-                .map(pose -> toVisionEstimate(pose, result))
-                .ifPresent(estimates::add);
+            if (estimate.isPresent()) {
+                VisionEstimate filteredEstimate = toFilteredVisionEstimate(estimate.get(), result);
+                if (filteredEstimate != null) {
+                    estimates.add(filteredEstimate);
+                }
+            }
         }
 
         return estimates;
@@ -80,12 +83,12 @@ public class PhotonCameraIO extends CameraIO {
         return estimate;
     }
 
-    private Optional<EstimatedRobotPose> filterEstimatedPose(
+    private VisionEstimate toFilteredVisionEstimate(
         EstimatedRobotPose estimate,
         PhotonPipelineResult result
     ) {
         if (estimate == null || estimate.targetsUsed.isEmpty()) {
-            return Optional.empty();
+            return null;
         }
 
         Pose3d pose = estimate.estimatedPose;
@@ -102,35 +105,28 @@ public class PhotonCameraIO extends CameraIO {
                 || !Double.isFinite(estimate.timestampSeconds)
                 || estimate.timestampSeconds <= 0.0
                 || !Double.isFinite(result.metadata.getLatencyMillis())) {
-            return Optional.empty();
+            return null;
         }
 
-        return Optional.of(estimate);
-    }
-
-    private VisionEstimate toVisionEstimate(
-        EstimatedRobotPose estimate,
-        PhotonPipelineResult result
-    ) {
-        int[] tagIds = getTagIds(estimate.targetsUsed);
-        boolean multiTag = tagIds.length >= 2;
         double latencySeconds = result.metadata.getLatencyMillis() / 1000.0;
 
         return new VisionEstimate(
             tagIds,
             estimate.estimatedPose,
             Seconds.of(estimate.timestampSeconds),
-            averageTagDistance(estimate, tagIds),
-            multiTag ? 0.0 : averageAmbiguity(estimate.targetsUsed),
+            distance,
+            ambiguity,
             tagSpanMeters(tagIds),
             latencySeconds,
             multiTag || USE_VISION_ROTATION_FOR_SINGLE_TAG);
     }
 
     private int[] getTagIds(List<PhotonTrackedTarget> targets) {
-        return targets.stream()
-            .mapToInt(PhotonTrackedTarget::getFiducialId)
-            .toArray();
+        int[] tagIds = new int[targets.size()];
+        for (int i = 0; i < targets.size(); i++) {
+            tagIds[i] = targets.get(i).getFiducialId();
+        }
+        return tagIds;
     }
 
     /** Calculates camera-to-tag distance from field geometry, which also works for MultiTag results. */
@@ -155,12 +151,16 @@ public class PhotonCameraIO extends CameraIO {
     }
 
     private double averageAmbiguity(List<PhotonTrackedTarget> targets) {
-        return targets.stream()
-            .mapToDouble(PhotonTrackedTarget::getPoseAmbiguity)
-            .filter(Double::isFinite)
-            .filter(value -> value >= 0.0)
-            .average()
-            .orElse(Double.NaN);
+        double sum = 0.0;
+        int count = 0;
+        for (PhotonTrackedTarget target : targets) {
+            double ambiguity = target.getPoseAmbiguity();
+            if (Double.isFinite(ambiguity) && ambiguity >= 0.0) {
+                sum += ambiguity;
+                count++;
+            }
+        }
+        return count == 0 ? Double.NaN : sum / count;
     }
 
     private double tagSpanMeters(int[] tagIds) {

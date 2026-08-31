@@ -20,7 +20,6 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstant
 import static edu.wpi.first.units.Units.Meters;
 
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import com.spartronics4915.frc2026.commands.DriveCommand;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands;
@@ -46,6 +45,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -168,12 +168,12 @@ public class RobotContainer {
         configureFuelSimIntake();
         configureBindings();
 
-        // Supply the current turret angle to the turreted MegaTag1 Limelight.
-        AtomicReference<Double> turretYawDegrees = new AtomicReference<>(0.0);
-        turretSubsystem.setVisionObserver((turretAngle, timestamp) -> {
-            turretYawDegrees.set(turretAngle.getDegrees());
-        });
-        visionSubsystem.configureDefaultCameras(turretYawDegrees::get);
+        // Preserve turret history so a camera frame uses its capture-time transform.
+        visionSubsystem.recordTurretAngle(
+            turretSubsystem.getPosition(),
+            Timer.getFPGATimestamp());
+        turretSubsystem.setVisionObserver(visionSubsystem::recordTurretAngle);
+        visionSubsystem.configureDefaultCameras();
 
         // Initialize hood with turret reference for 3D visualization
         hoodSubsystem.setTurretSubsystem(turretSubsystem);

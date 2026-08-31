@@ -3,7 +3,6 @@ package com.spartronics4915.frc2026.subsystems.vision;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.DoubleSupplier;
 import java.util.function.DoubleUnaryOperator;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,9 +26,11 @@ import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 import static edu.wpi.first.units.Units.Seconds;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.numbers.N1;
@@ -49,14 +50,20 @@ public class VisionSubsystem extends SubsystemBase {
     private static VisionSubsystem instance;
 
     private final SwerveSubsystem swerve;
-    private final AprilTagFieldLayout fieldLayout = (Robot.isReal()) ? SIM_APRILTAG_FIELD_LAYOUT : SIM_APRILTAG_FIELD_LAYOUT;
+    private final AprilTagFieldLayout fieldLayout = Robot.isReal()
+        ? REAL_APRILTAG_FIELD_LAYOUT
+        : SIM_APRILTAG_FIELD_LAYOUT;
     private final List<CameraIO> cameras = new ArrayList<>();
     private final Map<String, CameraSnapshot> cameraDiagnostics = new HashMap<>();
     private final Map<String, Scope> cameraLogs = new HashMap<>();
     private final VisionSystemSim visionSim;
+    private final TurretAngleHistory turretAngleHistory = new TurretAngleHistory(64);
     private Pose2d latestVisionPose;
     private boolean camerasConfigured;
     private long periodicDurationUs;
+    private long collectionDurationUs;
+    private long validationFusionDurationUs;
+    private long telemetryDurationUs;
 
     private VisionSubsystem(SwerveSubsystem swerve) {
         this.swerve = swerve;
@@ -79,7 +86,7 @@ public class VisionSubsystem extends SubsystemBase {
 
 
     /** Configures the robot's three fixed PhotonVision cameras and turreted MegaTag1 Limelight. */
-    public void configureDefaultCameras(java.util.function.DoubleSupplier turretYawDegrees) {
+    public void configureDefaultCameras() {
         if (camerasConfigured) {
             return;
         }
@@ -96,7 +103,7 @@ public class VisionSubsystem extends SubsystemBase {
             "argos",
             robotToTurret,
             turretToCamera,
-            turretYawDegrees);
+            turretAngleHistory::sampleDegrees);
 
         camerasConfigured = true;
     }
@@ -142,15 +149,20 @@ public class VisionSubsystem extends SubsystemBase {
             String name,
             Transform3d robotToTurret,
             Transform3d turretToCamera,
-            DoubleSupplier turretYawDegrees
+            DoubleUnaryOperator turretYawDegreesAtTimestamp
     ) {
         CameraConfig config = CameraConfig.turreted(
             name,
             robotToTurret,
             turretToCamera,
-            ignoredTimestamp -> TURRET_CAMERA_YAW_SIGN * turretYawDegrees.getAsDouble()
+            timestamp -> TURRET_CAMERA_YAW_SIGN
+                * turretYawDegreesAtTimestamp.applyAsDouble(timestamp)
                 + TURNTABLE_ZERO_OFFSET_DEGREES);
         return addLimelightCamera(config);
+    }
+
+    public void recordTurretAngle(Rotation2d angle, double timestampSeconds) {
+        turretAngleHistory.add(timestampSeconds, angle.getRadians());
     }
 
     /** Adds a PhotonVision camera whose turret angle can be reconstructed at each frame timestamp. */
@@ -194,14 +206,17 @@ public class VisionSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         long periodicStartUs = RobotController.getFPGATime();
+        long collectionStartUs = periodicStartUs;
         List<CameraObservation> observations = new ArrayList<>();
         for (CameraIO camera : cameras) {
             CameraSnapshot diagnostics = cameraDiagnostics.get(camera.getName());
+            boolean enabled = camera.isEnabled();
             if (diagnostics != null) {
-                diagnostics.Enabled = camera.isEnabled();
+                diagnostics.updateCameraHealth(camera);
+                diagnostics.Enabled = enabled;
                 diagnostics.SampleTimestampUs = periodicStartUs;
             }
-            if (!camera.isEnabled()) {
+            if (!enabled) {
                 if (diagnostics != null) {
                     diagnostics.clearObservation(periodicStartUs, false);
                 }
@@ -212,7 +227,9 @@ public class VisionSubsystem extends SubsystemBase {
                 observations.add(new CameraObservation(camera.getName(), estimate));
             }
         }
+        collectionDurationUs = RobotController.getFPGATime() - collectionStartUs;
 
+        long validationFusionStartUs = RobotController.getFPGATime();
         observations.sort(Comparator.comparingDouble(
             observation -> observation.estimate().timestamp().in(Seconds)));
 
@@ -227,6 +244,9 @@ public class VisionSubsystem extends SubsystemBase {
                 if (diagnostics != null) {
                     diagnostics.Accepted = false;
                     diagnostics.RejectedObservationCount++;
+                    if (StdDevCalculator.isStale(observation.estimate(), now)) {
+                        diagnostics.StaleObservationCount++;
+                    }
                     diagnostics.ReceiptTimestampUs = RobotController.getFPGATime();
                 }
                 continue;
@@ -234,15 +254,27 @@ public class VisionSubsystem extends SubsystemBase {
 
             applyVisionMeasurement(observation.cameraName(), observation.estimate());
         }
-        periodicDurationUs = RobotController.getFPGATime() - periodicStartUs;
+        validationFusionDurationUs = RobotController.getFPGATime() - validationFusionStartUs;
+
+        long telemetryStartUs = RobotController.getFPGATime();
         outputTelemetry();
+        telemetryDurationUs = RobotController.getFPGATime() - telemetryStartUs;
+        periodicDurationUs = RobotController.getFPGATime() - periodicStartUs;
+
+        // These final timing writes intentionally sit outside the measured telemetry block so the
+        // current cycle, rather than the previous cycle, is published.
+        LOG.critical.log("PeriodicDurationUs", periodicDurationUs);
+        LOG.critical.log("CollectionDurationUs", collectionDurationUs);
+        LOG.critical.log("ValidationFusionDurationUs", validationFusionDurationUs);
+        LOG.critical.log("TelemetryDurationUs", telemetryDurationUs);
     }
 
     private void applyVisionMeasurement(String cameraName, VisionEstimate observation) {
         Matrix<N3, N1> stdDevs = StdDevCalculator.calculate(observation);
         double timestamp = Utils.fpgaToCurrentTime(observation.timestamp().in(Seconds));
-        swerve.addVisionMeasurement(observation.getPose2d(), timestamp, stdDevs);
-        latestVisionPose = observation.getPose2d();
+        Pose2d pose = observation.getPose2d();
+        swerve.addVisionMeasurement(pose, timestamp, stdDevs);
+        latestVisionPose = pose;
         updateDiagnostics(cameraName, observation, stdDevs);
     }
 
@@ -291,7 +323,6 @@ public class VisionSubsystem extends SubsystemBase {
     }
 
     private void outputTelemetry() {
-        LOG.critical.log("PeriodicDurationUs", periodicDurationUs);
         for (Map.Entry<String, CameraSnapshot> entry : cameraDiagnostics.entrySet()) {
             Scope cameraLog = cameraLogs.get(entry.getKey());
             CameraSnapshot camera = entry.getValue();
@@ -302,7 +333,10 @@ public class VisionSubsystem extends SubsystemBase {
             cameraLog.critical.log("Accepted", camera.Accepted);
             cameraLog.critical.log("AcceptedObservationCount", camera.AcceptedObservationCount);
             cameraLog.critical.log("RejectedObservationCount", camera.RejectedObservationCount);
+            cameraLog.critical.log("StaleObservationCount", camera.StaleObservationCount);
             cameraLog.critical.log("EstimatedPose", camera.EstimatedPose);
+            cameraLog.critical.log("PendingEstimateCount", camera.PendingEstimateCount);
+            cameraLog.critical.log("DroppedEstimateCount", camera.DroppedEstimateCount);
             cameraLog.info.log("TagCount", camera.TagCount);
             cameraLog.info.log("AverageTagDistanceMeters", camera.AverageTagDistanceMeters);
             cameraLog.info.log("AverageTagAmbiguity", camera.AverageTagAmbiguity);
@@ -310,6 +344,12 @@ public class VisionSubsystem extends SubsystemBase {
             cameraLog.info.log("LatencyMs", camera.LatencyMs);
             cameraLog.info.log("StdDevXMeters", camera.StdDevXMeters);
             cameraLog.info.log("StdDevThetaDeg", camera.StdDevThetaDeg);
+            cameraLog.info.log("LastReadDurationUs", camera.LastReadDurationUs);
+            cameraLog.info.log("MaxReadDurationUs", camera.MaxReadDurationUs);
+            cameraLog.info.log("ReadOverrunCount", camera.ReadOverrunCount);
+            cameraLog.info.log("LastQueueWaitDurationUs", camera.LastQueueWaitDurationUs);
+            cameraLog.info.log("MaxQueueWaitDurationUs", camera.MaxQueueWaitDurationUs);
+            cameraLog.debug.log("MaxPendingEstimateCount", camera.MaxPendingEstimateCount);
             cameraLog.debug.log("SeenTagIds", camera.SeenTagIds);
             cameraLog.debug.log("SeenTagPoses", camera.SeenTagPoses);
             cameraLog.debug.log("EstimatedPose3d", camera.EstimatedPose3d);
@@ -326,6 +366,15 @@ public class VisionSubsystem extends SubsystemBase {
         boolean Accepted;
         long AcceptedObservationCount;
         long RejectedObservationCount;
+        long StaleObservationCount;
+        long PendingEstimateCount;
+        long MaxPendingEstimateCount;
+        long DroppedEstimateCount;
+        long LastReadDurationUs;
+        long MaxReadDurationUs;
+        long ReadOverrunCount;
+        long LastQueueWaitDurationUs;
+        long MaxQueueWaitDurationUs;
         long[] SeenTagIds = NO_TAG_IDS;
         Pose3d[] SeenTagPoses = NO_TAG_POSES;
         Pose2d EstimatedPose = new Pose2d();
@@ -337,6 +386,17 @@ public class VisionSubsystem extends SubsystemBase {
         double LatencyMs;
         double StdDevXMeters;
         double StdDevThetaDeg;
+
+        void updateCameraHealth(CameraIO camera) {
+            PendingEstimateCount = camera.getPendingEstimateCount();
+            MaxPendingEstimateCount = camera.getMaxPendingEstimateCount();
+            DroppedEstimateCount = camera.getDroppedEstimateCount();
+            LastReadDurationUs = camera.getLastReadDurationUs();
+            MaxReadDurationUs = camera.getMaxReadDurationUs();
+            ReadOverrunCount = camera.getReadOverrunCount();
+            LastQueueWaitDurationUs = camera.getLastQueueWaitDurationUs();
+            MaxQueueWaitDurationUs = camera.getMaxQueueWaitDurationUs();
+        }
 
         void clearObservation(long sampleTimestampUs, boolean enabled) {
             SampleTimestampUs = sampleTimestampUs;
@@ -384,5 +444,76 @@ public class VisionSubsystem extends SubsystemBase {
             throw new IllegalStateException("A simulated camera can only be added in simulation.");
         }
         return visionSim;
+    }
+
+    /** Fixed-size, allocation-free history used by camera worker threads. */
+    static final class TurretAngleHistory {
+        private final double[] timestampsSeconds;
+        private final double[] yawRadians;
+        private int nextIndex;
+        private int size;
+
+        TurretAngleHistory(int capacity) {
+            if (capacity < 2) {
+                throw new IllegalArgumentException("Turret angle history needs at least two samples.");
+            }
+            timestampsSeconds = new double[capacity];
+            yawRadians = new double[capacity];
+        }
+
+        synchronized void add(double timestampSeconds, double angleRadians) {
+            if (!Double.isFinite(timestampSeconds) || !Double.isFinite(angleRadians)) {
+                return;
+            }
+
+            if (size > 0) {
+                int newestIndex = Math.floorMod(nextIndex - 1, timestampsSeconds.length);
+                double newestTimestamp = timestampsSeconds[newestIndex];
+                if (timestampSeconds < newestTimestamp) {
+                    return;
+                }
+                if (timestampSeconds == newestTimestamp) {
+                    yawRadians[newestIndex] = angleRadians;
+                    return;
+                }
+            }
+
+            timestampsSeconds[nextIndex] = timestampSeconds;
+            yawRadians[nextIndex] = angleRadians;
+            nextIndex = (nextIndex + 1) % timestampsSeconds.length;
+            size = Math.min(size + 1, timestampsSeconds.length);
+        }
+
+        synchronized double sampleDegrees(double timestampSeconds) {
+            if (size == 0) {
+                return 0.0;
+            }
+
+            int oldestIndex = Math.floorMod(nextIndex - size, timestampsSeconds.length);
+            int newestIndex = Math.floorMod(nextIndex - 1, timestampsSeconds.length);
+            if (timestampSeconds <= timestampsSeconds[oldestIndex]) {
+                return Math.toDegrees(yawRadians[oldestIndex]);
+            }
+            if (timestampSeconds >= timestampsSeconds[newestIndex]) {
+                return Math.toDegrees(yawRadians[newestIndex]);
+            }
+
+            int previousIndex = oldestIndex;
+            for (int offset = 1; offset < size; offset++) {
+                int currentIndex = (oldestIndex + offset) % timestampsSeconds.length;
+                double currentTimestamp = timestampsSeconds[currentIndex];
+                if (currentTimestamp >= timestampSeconds) {
+                    double previousTimestamp = timestampsSeconds[previousIndex];
+                    double interpolation = (timestampSeconds - previousTimestamp)
+                        / (currentTimestamp - previousTimestamp);
+                    double deltaRadians = MathUtil.angleModulus(
+                        yawRadians[currentIndex] - yawRadians[previousIndex]);
+                    return Math.toDegrees(yawRadians[previousIndex] + deltaRadians * interpolation);
+                }
+                previousIndex = currentIndex;
+            }
+
+            return Math.toDegrees(yawRadians[newestIndex]);
+        }
     }
 }

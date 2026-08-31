@@ -47,6 +47,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.units.measure.Time;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
 import frc.robot.lib.BLine.Path;
 
@@ -102,7 +103,7 @@ public final class Constants {
 
         public static final Constraints TRENCH_ALIGN_CONSTRAINTS = new Constraints(3, 3);
 
-        public static final double ODOMETRY_FREQUENCY = 120.0; // 250.0
+        public static final double ODOMETRY_FREQUENCY = 150.0; // 250.0
         public static final double STALE_COMMAND_TIMEOUT = 0.1;
 
         public static final Matrix<N3, N1> NORMAL_STD_DEVS = VecBuilder.fill(0.06, 0.06, 0.04);
@@ -197,8 +198,8 @@ public final class Constants {
                     .withSpeedAt12Volts(MetersPerSecond.of(4.39))
                     .withSlipCurrent(Amps.of(120))
                     .withSteerMotorGains(new Slot0Configs()
-                        .withKP(110).withKI(0).withKD(5.0)
-                        .withKS(0.1).withKV(2.49).withKA(0)
+                        .withKP(110.0).withKI(0.0).withKD(5.0)
+                        .withKS(0.1).withKV(2.49).withKA(0.0)
                         .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseClosedLoopSign))
                     .withDriveMotorGains(new Slot0Configs()
                         .withKP(9).withKI(0).withKD(0)
@@ -208,8 +209,8 @@ public final class Constants {
                     .withFeedbackSource(SteerFeedbackType.FusedCANcoder)
                     .withSteerInertia(KilogramSquareMeters.of(0.01))
                     .withDriveInertia(KilogramSquareMeters.of(0.01))
-                    .withSteerFrictionVoltage(Volts.of(0.2))
-                    .withDriveFrictionVoltage(Volts.of(0.2))
+                    //.withSteerFrictionVoltage(Volts.of(0.2))
+                    //S.withDriveFrictionVoltage(Volts.of(0.2))
                     .withSteerMotorInitialConfigs(
                         new TalonFXConfiguration()
                             .withCurrentLimits(
@@ -339,6 +340,8 @@ public final class Constants {
 
         // Measurement validity.
         public static final double MAX_CAPTURE_LATENCY_SECONDS = 0.150;
+        public static final double MAX_OBSERVATION_AGE_SECONDS = 0.250;
+        public static final int MAX_PENDING_ESTIMATES_PER_CAMERA = 8;
         public static final double MAX_FUTURE_TIMESTAMP_SECONDS = 0.020;
         public static final double MAX_AVERAGE_TAG_DISTANCE_METERS = 6.0;
         public static final double FIELD_BOUNDARY_MARGIN_METERS = 0.50;
@@ -348,19 +351,25 @@ public final class Constants {
 
         // Defualt AprilTag field, may want to calibrate with our field.
         public static final AprilTagFieldLayout SIM_APRILTAG_FIELD_LAYOUT = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
-        public static AprilTagFieldLayout REAL_APRILTAG_FIELD_LAYOUT;
+        public static final AprilTagFieldLayout REAL_APRILTAG_FIELD_LAYOUT;
         static {
+            AprilTagFieldLayout realFieldLayout;
             try {
-                REAL_APRILTAG_FIELD_LAYOUT = new AprilTagFieldLayout(Filesystem.getDeployDirectory().getPath() + "/map/field_map_aug_21_13_51_35.json");
+                realFieldLayout = new AprilTagFieldLayout(
+                    Filesystem.getDeployDirectory().getPath() + "/map/field_map_aug_21_13_51_35.json");
             } catch(IOException e) {
-                System.err.println("Error: Could not find real April Tag Field json file");
+                DriverStation.reportError(
+                    "Could not load the calibrated AprilTag field layout; using the WPILib 2026 welded layout.",
+                    e.getStackTrace());
+                realFieldLayout = SIM_APRILTAG_FIELD_LAYOUT;
             }
+            REAL_APRILTAG_FIELD_LAYOUT = realFieldLayout;
         }
         
         // Measurement covariance. The baseline mirrors the structure used by Team 6328:
         // coefficient * distance^2 / tagCount^2.
-        public static final double XY_STD_DEV_COEFFICIENT = 0.06; // 0.01
-        public static final double THETA_STD_DEV_COEFFICIENT = 0.03; // 0.03
+        public static final double XY_STD_DEV_COEFFICIENT = 0.13; // 0.07
+        public static final double THETA_STD_DEV_COEFFICIENT = 0.05; // 0.03
         
         // public static final double CAMERA_STD_DEV_FACTOR = 1.0;
         public static final double TAG_DISTANCE_REFERENCE_METERS = 1.0;
@@ -377,19 +386,19 @@ public final class Constants {
         public static final double MAX_THETA_STD_DEV_RADIANS = Units.degreesToRadians(180.0);
         public static final boolean USE_VISION_ROTATION_FOR_SINGLE_TAG = false;
 
-        public static final double SIM_CAMERA_PIXEL_ERROR_MEAN = 0.25;
+        public static final double SIM_CAMERA_PIXEL_ERROR_MEAN = 0.43;
         public static final double SIM_CAMERA_PIXEL_ERROR_STD_DEV = 0.08;
-        public static final double SIM_CAMERA_FPS = 30.0;
-        public static final double SIM_CAMERA_LATENCY_MEAN_MS = 35.0;
-        public static final double SIM_CAMERA_LATENCY_STD_DEV_MS = 5.0;
+        public static final double SIM_CAMERA_FPS = 83.0;
+        public static final double SIM_CAMERA_LATENCY_MEAN_MS = 43.0;
+        public static final double SIM_CAMERA_LATENCY_STD_DEV_MS = 9.0;
 
         public static SimCameraProperties createSimulationCameraProperties() {
             SimCameraProperties properties = new SimCameraProperties()
-                .setCalibration(1280, 800, Rotation2d.fromDegrees(100))
-                .setCalibError(0.25, 0.08)
-                .setFPS(30)
-                .setAvgLatencyMs(35)
-                .setLatencyStdDevMs(5);
+                .setCalibration(1280, 800, Rotation2d.fromDegrees(91.43))
+                .setCalibError(0.43, 0.08)
+                .setFPS(74)
+                .setAvgLatencyMs(48)
+                .setLatencyStdDevMs(9);
             return properties;
         }
 

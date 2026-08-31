@@ -26,7 +26,6 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -137,12 +136,12 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
                 -0.118295, -0.143695, 0.362276, 
                 new Rotation3d(0, 0, position.getRadians()));
         sampleTimestampUs = RobotController.getFPGATime();
-        outputTelemetry();
 
         // Notify vision of turret angle with accurate FPGA timestamp
         if (visionObserver != null) {
-            visionObserver.accept(position, Timer.getFPGATimestamp());
+            visionObserver.accept(position, sampleTimestampUs / 1_000_000.0);
         }
+        outputTelemetry();
     }
 
     private void outputTelemetry() {
