@@ -59,13 +59,10 @@ public class AutoAimController extends SubsystemBase {
     private double redFuelScore;
     private double lastSimulatedShotTimestamp = Double.NEGATIVE_INFINITY;
 
-    // TODO: The turret setpoint is jittery not becuase of Auto-Aim, but swerve drive tuning
-    // 
-
     private final AutoAim autoAim = new AutoAim(
         20, // 30
         50, // 100
-        0.001,
+        0.0005,
         turretTranslation3D,
         Rotation2d.fromDegrees(50),
         Rotation2d.fromDegrees(90),
@@ -116,7 +113,7 @@ public class AutoAimController extends SubsystemBase {
     private final MedianFilter accelFilterY = new MedianFilter(5);
     private final MedianFilter accelFilterOmega = new MedianFilter(5);
 
-    private final MedianFilter flywheelFilter = new MedianFilter(10);
+    private final MedianFilter flywheelFilter = new MedianFilter(15);
 
     public AutoAimController(
         HoodSubsystem hood,
