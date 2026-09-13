@@ -82,6 +82,8 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
         leadMotor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
 
+        SmartDashboard.putData("shooter motor", leadMotor);
+
         // SmartDashboard Data
         SmartDashboard.putData("Shooter On", setSetpointCommand(55));
         SmartDashboard.putData("Shooter Off", setSetpointCommand(0));
@@ -96,7 +98,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
         double workingSetpoint = currentSetpoint;
         if (currentSetpoint == 0 /*&& !Robot.isPureTeleop*/) {
-            workingSetpoint = 0; // IDLE_SHOOTER_RPS
+            workingSetpoint = 0;
         }
 
         double limitedSetpoint = rpsProfile.calculate(workingSetpoint);
@@ -163,7 +165,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     public enum ShooterClamp {
         RESTRICTED(35),
-        UNRESTRICTED(200);
+        UNRESTRICTED(110);
 
         double maxRPS;
         private ShooterClamp(double maxRPS) {

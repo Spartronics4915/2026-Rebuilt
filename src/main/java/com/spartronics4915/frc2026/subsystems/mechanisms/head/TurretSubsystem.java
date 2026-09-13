@@ -97,6 +97,8 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         motor.addSetpoint(() -> targetState.position, (setpoint) -> setSetpoint(Rotation2d.fromDegrees(setpoint)));
 
+        SmartDashboard.putData("turret motor", motor);
+
         SmartDashboard.putData("Turret 0", setSetpointCommand(Rotation2d.fromDegrees(0)));
         SmartDashboard.putData("Turret 180", setSetpointCommand(Rotation2d.fromDegrees(180)));
     }
@@ -228,7 +230,7 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     public enum TurretClamp {
         RESTRICTED(Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
-        UNRESTRICTED(Rotation2d.fromDegrees(-180), Rotation2d.fromDegrees(230));
+        UNRESTRICTED(Rotation2d.fromDegrees(-170), Rotation2d.fromDegrees(225));
 
         public Rotation2d minAngle;
         public Rotation2d maxAngle;
