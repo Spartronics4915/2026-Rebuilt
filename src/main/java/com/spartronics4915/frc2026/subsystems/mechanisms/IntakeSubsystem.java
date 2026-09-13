@@ -6,7 +6,7 @@ import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
-import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
+import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 
 import edu.wpi.first.math.MathUtil;
@@ -23,13 +23,14 @@ import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInte
 import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
 
 public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterface {
+    
     private static final Scope LOG = Telemetry.scope("Mechanisms/Intake");
 
     // Enable FOC control and Switch to Velocity Voltage
 
-    private LoggedTalonFX leadMotor = new LoggedTalonFX(LEAD_MOTOR_ID, CAN_BUS);
-    private final StatusSignal<AngularVelocity> velocitySignal = leadMotor.getVelocity(false);
-    private final StatusSignal<Double> dutyCycleSignal = leadMotor.getDutyCycle(false);
+    private LoggedTalonFX motor = new LoggedTalonFX(LEAD_MOTOR_ID, CAN_BUS);
+    private final StatusSignal<AngularVelocity> velocitySignal = motor.getVelocity(false);
+    private final StatusSignal<Double> dutyCycleSignal = motor.getDutyCycle(false);
     private final BaseStatusSignal[] telemetrySignals = {velocitySignal, dutyCycleSignal};
 
     private double currentSetpoint;
@@ -38,11 +39,11 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private double velocityRps;
     private double profileSetpointRps;
 
-    private final VelocityTorqueCurrentFOC velocityTorqueRequest = new VelocityTorqueCurrentFOC(0.0);
+    private final VelocityVoltage velocityVoltageRequest = new VelocityVoltage(0.0).withEnableFOC(true);
     private final VoltageOut stopRequest = new VoltageOut(0.0);
 
     public IntakeSubsystem() {
-        TalonFXConfigurator configurator = leadMotor.getConfigurator();
+        TalonFXConfigurator configurator = motor.getConfigurator();
             configurator.apply(PID_CONFIG);
             configurator.apply(CURRENT_LIMITS_CONFIG);
             configurator.apply(FEEDBACK_CONFIG);
@@ -50,10 +51,14 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
-        leadMotor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
+        motor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
+
+        SmartDashboard.putData("intake motor", motor);
 
         SmartDashboard.putData("Intake On", setStateCommand(IntakeState.INTAKE));
         SmartDashboard.putData("Intake Off", setStateCommand(IntakeState.OFF));
+        SmartDashboard.putData("Intake 16", setStateCommand(IntakeState.SLOW));
+        SmartDashboard.putData("Intake 8", setStateCommand(IntakeState.SLOWER));
     }
 
     @Override
@@ -67,10 +72,10 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
         );
 
         if (currentSetpoint != 0) {
-            velocityTorqueRequest.Velocity = currentSetpoint;
-            leadMotor.setControl(velocityTorqueRequest);
+            velocityVoltageRequest.Velocity = currentSetpoint;
+            motor.setControl(velocityVoltageRequest);
         } else {
-            leadMotor.setControl(stopRequest);
+            motor.setControl(stopRequest);
         }
 
         appliedDutyCycle = dutyCycleSignal.getValueAsDouble();
@@ -93,7 +98,7 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
     }
 
     public double getAppliedVoltage() {
-        return leadMotor.getMotorVoltage().getValueAsDouble();
+        return motor.getMotorVoltage().getValueAsDouble();
     }
 
     public double getSetpoint() {
@@ -122,7 +127,9 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     public enum IntakeState {
         INTAKE(22),
-        OUTTAKE(-22),
+        SLOW(18),
+        SLOWER(8),
+        OUTTAKE(-24),
         OFF(0);
 
         double rps;
