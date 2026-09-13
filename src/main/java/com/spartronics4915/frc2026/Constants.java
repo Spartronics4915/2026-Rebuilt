@@ -198,20 +198,19 @@ public final class Constants {
                     .withSpeedAt12Volts(MetersPerSecond.of(4.39))
                     .withSlipCurrent(Amps.of(120))
                     .withSteerMotorGains(new Slot0Configs()
-                        .withKP(100.0).withKI(0.0).withKD(0.0) // 110, 0, 5
+                        .withKP(105.0).withKI(0.0).withKD(0.0) // 110, 0, 5
                         .withKS(0.0).withKV(0.0).withKA(0.0) // 0.1, 2.49, 0.0
                         .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseClosedLoopSign))
                     .withDriveMotorGains(new Slot0Configs()
-                        .withKP(2.0).withKI(0).withKD(0.04
-                        )
-                        .withKS(0.6).withKV(0.124))
+                        .withKP(1.92).withKI(0).withKD(0.037)
+                        .withKS(0.51).withKV(0.114))
                     .withSteerMotorClosedLoopOutput(ClosedLoopOutputType.Voltage)
                     .withDriveMotorClosedLoopOutput(ClosedLoopOutputType.TorqueCurrentFOC)
                     .withFeedbackSource(SteerFeedbackType.FusedCANcoder)
                     .withSteerInertia(KilogramSquareMeters.of(0.01))
                     .withDriveInertia(KilogramSquareMeters.of(0.01))
-                    //.withDriveFrictionVoltage(Volts.of(0.2))
-                    //.withSteerFrictionVoltage(Volts.of(0.2))
+                    .withDriveFrictionVoltage(Volts.of(0.2))
+                    .withSteerFrictionVoltage(Volts.of(0.2))
                     .withSteerMotorInitialConfigs(
                         new TalonFXConfiguration()
                             .withCurrentLimits(
@@ -479,7 +478,7 @@ public final class Constants {
         public static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
         public static final double PIVOT_JOSTLE_FREQUENCY = 1.0; // Hz
 
-        public static final double percentLoss = 0.10695; // Percent loss on shooter to ball transfer, 0.1071
+        public static final double percentLoss = 0.10705; // Percent loss on shooter to ball transfer, 0.1071
 
         public static final int feederLC = 42;
         public static final double detectDistance = 140.0;
@@ -536,14 +535,13 @@ public final class Constants {
         public static final int FOLLOWER_MOTOR_ID = 23;
 
         /** Idle revolutions-per-second to hold when robot is enabled but not actively shooting. */
-        public static final double IDLE_SHOOTER_RPS = 30.0;
+        public static final double IDLE_SHOOTER_RPS = 25.0;
         public static final double maxShooterDecel = -12.0;
 
         public static final double P = 0.46;
         public static final double I = 0.0;
         public static final double D = 0.0;
         public static final double V = 0.115;
-        public static final double A = 30000.0;
         public static final double S = 0.22;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
@@ -576,11 +574,11 @@ public final class Constants {
 
         public static final int MOTOR_ID = 21;
 
-        public static final double P = 14500.0;
+        public static final double P = 14000.0;
         public static final double I = 0.0;
-        public static final double D = 170.0;
+        public static final double D = 185.0;
         public static final double V = 30.0;
-        public static final double S = 37.5;
+        public static final double S = 35;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
@@ -622,11 +620,11 @@ public final class Constants {
         public static final double I = 0.0;
         public static final double D = 85.0;
 
-        public static final double MAX_VELOCITY = 100;
-        public static final double MAX_ACCELERATION = 100;
+        public static final double MAX_VELOCITY = 20;
+        public static final double MAX_ACCELERATION = 20;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 50;
+        public static final double CURRENT_LIMIT = 40;
         public static final double LOWER_LIMIT = 20;
 
         public static final double LOWER_TIME = 1;
@@ -676,7 +674,7 @@ public final class Constants {
         public static final double MAX_RPS = 100;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 80;
+        public static final double CURRENT_LIMIT = 60;
 
         public static final double MOTOR_MECHANISM_RATIO = 1.0 / (9.0/34.0);
 
@@ -725,7 +723,7 @@ public final class Constants {
         public static final double MAX_RPS = 22.0; // 13.238
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 80;
+        public static final double CURRENT_LIMIT = 60;
 
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 5;
@@ -757,9 +755,9 @@ public final class Constants {
         public static final int MOTOR_ID = 19;
         public static final int ENCODER_ID = 20;
 
-        public static final double P = 3010.0;
+        public static final double P = 2950.0;
         public static final double I = 0.0;
-        public static final double D = 95.0;
+        public static final double D = 110.0;
         public static final double V = 0.7;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
@@ -800,17 +798,17 @@ public final class Constants {
 
         public static final int LEAD_MOTOR_ID = 15;
 
-        public static final double MAX_RPS = 40;
+        public static final double MAX_RPS = 25;
 
-        public static final double P = 45.0;
+        public static final double P = 2.0;
         public static final double I = 0.0;
         public static final double D = 0.0;
-        public static final double V = 1.23273; // Maybe increase this?
-        public static final double A = 75.05; // 0.7305 
+        public static final double V = 0.5;
+        public static final double S = 1.3;
 
-        public static final boolean CURRENT_LIMIT_ENABLE = false;
-        public static final double CURRENT_LIMIT = 40;
-        public static final double LOWER_LIMIT = 20;
+        public static final boolean CURRENT_LIMIT_ENABLE = true;
+        public static final double CURRENT_LIMIT = 60;
+        public static final double LOWER_LIMIT = 40;
 
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 4;
@@ -820,14 +818,12 @@ public final class Constants {
             .withKI(I)
             .withKD(D)
             .withKV(V)
-            .withKA(A);
+            .withKA(S);
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
             .withSupplyCurrentLimit(CURRENT_LIMIT)
-            .withStatorCurrentLimit(160)
-            .withSupplyCurrentLowerLimit(LOWER_LIMIT)
-            .withSupplyCurrentLowerTime(LOWER_TIME);
+            .withStatorCurrentLimit(60);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
