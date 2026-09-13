@@ -101,7 +101,7 @@ public final class Constants {
         public static final double TILT_THRESHOLD_DEGREES = 1.0;
         public static final double TILT_DEBOUNCE = 0.05;
 
-        public static final Constraints TRENCH_ALIGN_CONSTRAINTS = new Constraints(3, 3);
+        public static final Constraints TRENCH_ALIGN_CONSTRAINTS = new Constraints(4, 4);
 
         public static final double ODOMETRY_FREQUENCY = 150.0; // 250.0
         public static final double STALE_COMMAND_TIMEOUT = 0.1;
@@ -111,7 +111,7 @@ public final class Constants {
         public static final double HEADING_LOCK_P = 6.0;
         public static final double HEADING_LOCK_D = 0.0;
 
-        // Depreciated
+        // Depreciated:
         public static final double slipThresholdRPS = 2.2;
         public static final double minSpeedDetectMPS = 0.8;
         public static final int slipDebounceCycles = 5;
@@ -183,9 +183,6 @@ public final class Constants {
                 };
             }
 
-            // TODO: Tune Swerve (the goal is to remove the crunchy sound, and to ellimate jitter)
-            // TODO: Add accurate current limits to swerve (Stator, supply, etc...)
-
             /** Shared module constants factory for the competition chassis. */
             private static SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration> compChassisFactory() {
                 return new SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>()
@@ -217,6 +214,7 @@ public final class Constants {
                                 new CurrentLimitsConfigs()
                                     .withStatorCurrentLimit(Amps.of(100))
                                     .withSupplyCurrentLimit(Amps.of(80))
+                                    .withSupplyCurrentLowerTime(0.0)
                                     .withStatorCurrentLimitEnable(true)
                             )
                     )
@@ -226,6 +224,7 @@ public final class Constants {
                                 new CurrentLimitsConfigs()
                                     .withStatorCurrentLimit(Amps.of(120))
                                     .withSupplyCurrentLimit(Amps.of(100))
+                                    .withSupplyCurrentLowerTime(0.0)
                                     .withStatorCurrentLimitEnable(true)
                             )
                     );
@@ -351,7 +350,7 @@ public final class Constants {
         public static final double MAX_ROBOT_Z_METERS = 1.00;
         public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.35;
 
-        // Defualt AprilTag field, may want to calibrate with our field.
+        // Default AprilTag field, may want to calibrate with our field.
         public static final AprilTagFieldLayout SIM_APRILTAG_FIELD_LAYOUT = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
         public static final AprilTagFieldLayout REAL_APRILTAG_FIELD_LAYOUT;
         static {
@@ -547,6 +546,12 @@ public final class Constants {
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 80;
 
+        public static final double SUPPLY_CURRENT_LOWER_TIME = 0.0;
+        public static final double SUPPLY_CURRENT_LOWER_LIMIT = 80.0;
+
+        public static final boolean STATOR_CURRENT_LIMIT_ENABLE = true;
+        public static final double STATOR_CURRENT_LIMIT = 120.0;
+
         public static final double MOTOR_MECHANISM_RATIO = 0.9375;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
@@ -558,7 +563,11 @@ public final class Constants {
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
-            .withSupplyCurrentLimit(CURRENT_LIMIT);
+            .withSupplyCurrentLimit(CURRENT_LIMIT)
+            .withSupplyCurrentLowerLimit(SUPPLY_CURRENT_LOWER_LIMIT)
+            .withSupplyCurrentLowerTime(SUPPLY_CURRENT_LOWER_TIME)
+            .withStatorCurrentLimitEnable(STATOR_CURRENT_LIMIT_ENABLE)
+            .withStatorCurrentLimit(STATOR_CURRENT_LIMIT);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
@@ -582,9 +591,13 @@ public final class Constants {
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
-        public static final double LOWER_LIMIT = 20;
 
-        public static final double LOWER_TIME = 1;
+        public static final double SUPPLY_CURRENT_LOWER_TIME = 0.0;
+        public static final double SUPPLY_CURRENT_LOWER_LIMIT = 20.0;
+
+        public static final boolean STATOR_CURRENT_LIMIT_ENABLE = true;
+        public static final double STATOR_CURRENT_LIMIT = 60.0;
+
         public static final double MOTOR_MECHANISM_RATIO = 85.3333333;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
@@ -597,8 +610,10 @@ public final class Constants {
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
             .withSupplyCurrentLimit(CURRENT_LIMIT)
-            .withSupplyCurrentLowerLimit(LOWER_LIMIT)
-            .withSupplyCurrentLowerTime(LOWER_TIME);
+            .withSupplyCurrentLowerLimit(SUPPLY_CURRENT_LOWER_LIMIT)
+            .withSupplyCurrentLowerTime(SUPPLY_CURRENT_LOWER_TIME)
+            .withStatorCurrentLimitEnable(STATOR_CURRENT_LIMIT_ENABLE)
+            .withStatorCurrentLimit(STATOR_CURRENT_LIMIT);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
@@ -625,11 +640,14 @@ public final class Constants {
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
-        public static final double LOWER_LIMIT = 20;
 
-        public static final double LOWER_TIME = 1;
+        public static final double SUPPLY_CURRENT_LOWER_TIME = 1.0;
+        public static final double SUPPLY_CURRENT_LOWER_LIMIT = 20.0;
+
+        public static final boolean STATOR_CURRENT_LIMIT_ENABLE = true;
+        public static final double STATOR_CURRENT_LIMIT = 60.0;
+
         public static final double MOTOR_MECHANISM_RATIO = 50.625;
-
         public static final double MAGNET_OFFSET = 1.283203;
         public static final SensorDirectionValue ENCODER_SENSOR_DIRECTION = SensorDirectionValue.CounterClockwise_Positive;
 
@@ -643,9 +661,11 @@ public final class Constants {
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
-            .withSupplyCurrentLimit(CURRENT_LIMIT);
-            //.withSupplyCurrentLowerLimit(LOWER_LIMIT)
-            //.withSupplyCurrentLowerTime(LOWER_TIME);
+            .withSupplyCurrentLimit(CURRENT_LIMIT)
+            .withSupplyCurrentLowerLimit(SUPPLY_CURRENT_LOWER_LIMIT)
+            .withSupplyCurrentLowerTime(SUPPLY_CURRENT_LOWER_TIME)
+            .withStatorCurrentLimitEnable(STATOR_CURRENT_LIMIT_ENABLE)
+            .withStatorCurrentLimit(STATOR_CURRENT_LIMIT);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withFeedbackSensorSource(FeedbackSensorSourceValue.FusedCANcoder)
@@ -671,10 +691,16 @@ public final class Constants {
         public static final double V = 0.46073;
         public static final double S = 1.3;
 
-        public static final double MAX_RPS = 100;
+        public static final double MAX_RPS = 30;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 60;
+        public static final double CURRENT_LIMIT = 40;
+
+        public static final double SUPPLY_CURRENT_LOWER_TIME = 0.0;
+        public static final double SUPPLY_CURRENT_LOWER_LIMIT = 40.0;
+
+        public static final boolean STATOR_CURRENT_LIMIT_ENABLE = true;
+        public static final double STATOR_CURRENT_LIMIT = 60.0;
 
         public static final double MOTOR_MECHANISM_RATIO = 1.0 / (9.0/34.0);
 
@@ -687,7 +713,11 @@ public final class Constants {
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
-            .withSupplyCurrentLimit(CURRENT_LIMIT);
+            .withSupplyCurrentLimit(CURRENT_LIMIT)
+            .withSupplyCurrentLowerLimit(SUPPLY_CURRENT_LOWER_LIMIT)
+            .withSupplyCurrentLowerTime(SUPPLY_CURRENT_LOWER_TIME)
+            .withStatorCurrentLimitEnable(STATOR_CURRENT_LIMIT_ENABLE)
+            .withStatorCurrentLimit(STATOR_CURRENT_LIMIT);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
@@ -723,9 +753,14 @@ public final class Constants {
         public static final double MAX_RPS = 22.0; // 13.238
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 60;
+        public static final double CURRENT_LIMIT = 45;
 
-        public static final double LOWER_TIME = 1;
+        public static final double SUPPLY_CURRENT_LOWER_TIME = 0.0;
+        public static final double SUPPLY_CURRENT_LOWER_LIMIT = 45.0;
+
+        public static final boolean STATOR_CURRENT_LIMIT_ENABLE = true;
+        public static final double STATOR_CURRENT_LIMIT = 65.0;
+
         public static final double MOTOR_MECHANISM_RATIO = 5;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
@@ -737,7 +772,11 @@ public final class Constants {
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
-            .withSupplyCurrentLimit(CURRENT_LIMIT);
+            .withSupplyCurrentLimit(CURRENT_LIMIT)
+            .withSupplyCurrentLowerLimit(SUPPLY_CURRENT_LOWER_LIMIT)
+            .withSupplyCurrentLowerTime(SUPPLY_CURRENT_LOWER_TIME)
+            .withStatorCurrentLimitEnable(STATOR_CURRENT_LIMIT_ENABLE)
+            .withStatorCurrentLimit(STATOR_CURRENT_LIMIT);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
@@ -762,9 +801,13 @@ public final class Constants {
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
-        public static final double LOWER_LIMIT = 20;
 
-        public static final double LOWER_TIME = 1;
+        public static final double SUPPLY_CURRENT_LOWER_TIME = 1.0;
+        public static final double SUPPLY_CURRENT_LOWER_LIMIT = 20.0;
+
+        public static final boolean STATOR_CURRENT_LIMIT_ENABLE = true;
+        public static final double STATOR_CURRENT_LIMIT = 45.0;
+
         public static final double MOTOR_MECHANISM_RATIO = 1.0 / ((12.0/38.0) * (18.0/38.0) * (11.0/84.0));
         public static final double ENCODER_MECHANISM_RATIO = 11.0 / 84.0;
         public static final double MAGNET_OFFSET = 0.430664;
@@ -780,8 +823,10 @@ public final class Constants {
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
             .withSupplyCurrentLimit(CURRENT_LIMIT)
-            .withSupplyCurrentLowerLimit(LOWER_LIMIT)
-            .withSupplyCurrentLowerTime(LOWER_TIME);
+            .withSupplyCurrentLowerLimit(SUPPLY_CURRENT_LOWER_LIMIT)
+            .withSupplyCurrentLowerTime(SUPPLY_CURRENT_LOWER_TIME)
+            .withStatorCurrentLimitEnable(STATOR_CURRENT_LIMIT_ENABLE)
+            .withStatorCurrentLimit(STATOR_CURRENT_LIMIT);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
@@ -807,10 +852,14 @@ public final class Constants {
         public static final double S = 1.3;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 60;
-        public static final double LOWER_LIMIT = 40;
+        public static final double CURRENT_LIMIT = 45;
 
-        public static final double LOWER_TIME = 1;
+        public static final double SUPPLY_CURRENT_LOWER_TIME = 0.0;
+        public static final double SUPPLY_CURRENT_LOWER_LIMIT = 45.0;
+
+        public static final boolean STATOR_CURRENT_LIMIT_ENABLE = true;
+        public static final double STATOR_CURRENT_LIMIT = 60.0;
+
         public static final double MOTOR_MECHANISM_RATIO = 4;
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
@@ -823,7 +872,10 @@ public final class Constants {
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
             .withSupplyCurrentLimit(CURRENT_LIMIT)
-            .withStatorCurrentLimit(60);
+            .withSupplyCurrentLowerLimit(SUPPLY_CURRENT_LOWER_LIMIT)
+            .withSupplyCurrentLowerTime(SUPPLY_CURRENT_LOWER_TIME)
+            .withStatorCurrentLimitEnable(STATOR_CURRENT_LIMIT_ENABLE)
+            .withStatorCurrentLimit(STATOR_CURRENT_LIMIT);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);

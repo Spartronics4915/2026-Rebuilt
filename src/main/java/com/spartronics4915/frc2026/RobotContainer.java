@@ -391,6 +391,33 @@ public class RobotContainer {
 
         // Driver nudge defs are in the driverController section
 
+        /*
+            Left trigger: Intake
+            Right trigger: Shoot
+
+            Left bumper: Reverse pipeline
+            Right bumper: Intake eject
+
+            Left stick: Translate
+            Right stick: Rotate
+
+            X: X-Brake
+            Y: 
+            B: Reset heading
+            A: 
+
+            back: Reset dynamics 
+            start: Toggle auto-aim
+
+            Left stick press:
+            Right stick press:
+
+            Pov-up: (Trench presets?) up and down?
+            Pov-down:
+            Pov-right: Shoot preset right
+            Pov-left: Shoot preset left
+        */
+
         debugController.povUp().whileTrue(
             Commands.run(() -> swerveSubsystem.drive(driverNudgeUp), swerveSubsystem)
         );
