@@ -108,7 +108,7 @@ public final class Constants {
 
         public static final Matrix<N3, N1> NORMAL_STD_DEVS = VecBuilder.fill(0.06, 0.06, 0.04);
 
-        public static final double HEADING_LOCK_P = 6.0;
+        public static final double HEADING_LOCK_P = 5.0;
         public static final double HEADING_LOCK_D = 0.0;
 
         // Depreciated
@@ -478,7 +478,7 @@ public final class Constants {
         public static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
         public static final double PIVOT_JOSTLE_FREQUENCY = 1.0; // Hz
 
-        public static final double percentLoss = 0.10705; // Percent loss on shooter to ball transfer, 0.1071
+        public static final double percentLoss = 0.10710; // Percent loss on shooter to ball transfer, 0.1071
 
         public static final int feederLC = 42;
         public static final double detectDistance = 140.0;
@@ -535,14 +535,14 @@ public final class Constants {
         public static final int FOLLOWER_MOTOR_ID = 23;
 
         /** Idle revolutions-per-second to hold when robot is enabled but not actively shooting. */
-        public static final double IDLE_SHOOTER_RPS = 25.0;
-        public static final double maxShooterDecel = -12.0;
+        public static final double IDLE_SHOOTER_RPS = 30.0;
+        public static final double maxShooterDecel = -36.0;
 
-        public static final double P = 0.46;
+        public static final double P = 0.48;
         public static final double I = 0.0;
         public static final double D = 0.0;
-        public static final double V = 0.115;
-        public static final double S = 0.22;
+        public static final double V = 0.114;
+        public static final double S = 0.218;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 80;
@@ -558,7 +558,10 @@ public final class Constants {
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
-            .withSupplyCurrentLimit(CURRENT_LIMIT);
+            .withSupplyCurrentLimit(CURRENT_LIMIT)
+            .withStatorCurrentLimit(100)
+            .withSupplyCurrentLowerLimit(0.0)
+            .withSupplyCurrentLowerTime(20);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
@@ -714,11 +717,11 @@ public final class Constants {
         
         public static final int MOTOR_ID = 17;
 
-        public static final double P = 2.0; // 90
+        public static final double P = 2.13; // 90
         public static final double I = 0.0;
         public static final double D = 0.0;
-        public static final double V = 0.2; // 0l22226
-        public static final double S = 1.5; // 1.53135
+        public static final double V = 0.284; // 0l22226
+        public static final double S = 1.64; // 1.53135
 
         public static final double MAX_RPS = 22.0; // 13.238
 

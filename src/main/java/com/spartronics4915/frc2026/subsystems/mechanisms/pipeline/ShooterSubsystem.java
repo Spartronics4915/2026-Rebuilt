@@ -98,7 +98,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
         double workingSetpoint = currentSetpoint;
         if (currentSetpoint == 0 /*&& !Robot.isPureTeleop*/) {
-            workingSetpoint = 0;
+            workingSetpoint = IDLE_SHOOTER_RPS;
         }
 
         double limitedSetpoint = rpsProfile.calculate(workingSetpoint);

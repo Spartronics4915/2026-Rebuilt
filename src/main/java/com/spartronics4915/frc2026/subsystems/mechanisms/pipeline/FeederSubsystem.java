@@ -78,8 +78,8 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
             //currentSetpoint = feederSpeedMap.get(
             //    distanceToTargetSupplier.getAsDouble()
             //);
-            currentSetpoint = 22.87887 / (1 + Math.exp(
-                -((0.928997 * distanceToTargetSupplier.getAsDouble()) - 1.56251)
+            currentSetpoint = 22.17887 / 
+                (1 + Math.exp(-((0.798997 * distanceToTargetSupplier.getAsDouble()) - 1.66251)
             ));
         }
 

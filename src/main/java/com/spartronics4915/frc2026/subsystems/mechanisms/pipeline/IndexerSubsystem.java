@@ -46,7 +46,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     private final VelocityVoltage velocityVoltageRequest = new VelocityVoltage(0.0).withEnableFOC(true);
     private final VoltageOut stopRequest = new VoltageOut(0.0);
-    private final SlewRateLimiter slewRateLimiter = new SlewRateLimiter(50);
+    private final SlewRateLimiter slewRateLimiter = new SlewRateLimiter(99999); // 50
     
     private double indexerAngle = 0.0; // Tracks cumulative rotation angle in radians
 
@@ -140,8 +140,8 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
     }
 
     public enum IndexerState {
-        FORWARD(22.0),
-        REVERSE(-22.0),
+        FORWARD(17.0),
+        REVERSE(-17.0),
         OFF(0.0);
 
         public double rps;
