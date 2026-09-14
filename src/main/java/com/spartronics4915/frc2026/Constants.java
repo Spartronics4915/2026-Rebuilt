@@ -110,6 +110,7 @@ public final class Constants {
 
         public static final double HEADING_LOCK_P = 5.0;
         public static final double HEADING_LOCK_D = 0.0;
+        public static final double maxSwerveRotationDecel = Units.degreesToRadians(1000.0); // Degrees per second squared
 
         // Depreciated
         public static final double slipThresholdRPS = 2.2;

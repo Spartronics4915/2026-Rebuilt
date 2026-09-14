@@ -290,7 +290,12 @@ public class SwerveSubsystem extends SubsystemBase {
 
         if (driverIsTranslating) {
             if (lockedHeading == null) {
-                lockedHeading = getPose().getRotation().minus(getHeadingOffset());
+                double robotOmega = getFieldVelocity().omegaRadiansPerSecond;
+                double drift = (robotOmega * Math.abs(robotOmega)) / (2 * maxSwerveRotationDecel);
+                
+                lockedHeading = getPose().getRotation()
+                    .minus(getHeadingOffset())
+                    .plus(Rotation2d.fromRadians(drift));
             }
 
             driveFieldCentricFacingAngle(vX, vY, lockedHeading);
