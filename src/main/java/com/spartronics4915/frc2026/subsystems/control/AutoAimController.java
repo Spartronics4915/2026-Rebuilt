@@ -88,8 +88,10 @@ public class AutoAimController extends SubsystemBase {
     private boolean shootOverride = false;
 
     public enum ManualOverride {
-        LEFT(Rotation2d.fromDegrees(-127.885), Rotation2d.fromDegrees(28.12), 8.382),
-        RIGHT(Rotation2d.fromDegrees(-48.015), Rotation2d.fromDegrees(28.78), 8.447);
+        LEFT_CORNER(Rotation2d.fromDegrees(-127.885), Rotation2d.fromDegrees(28.12), 8.382),
+        RIGHT_CORNER(Rotation2d.fromDegrees(-48.015), Rotation2d.fromDegrees(28.78), 8.447),
+        LEFT_TRENCH(Rotation2d.fromDegrees(186), Rotation2d.fromDegrees(27.215), 6.927),
+        RIGHT_TRENCH(Rotation2d.fromDegrees(-7.678), Rotation2d.fromDegrees(27.215), 6.927);
 
         public final Rotation2d yaw;
         public final Rotation2d pitch;
@@ -207,7 +209,6 @@ public class AutoAimController extends SubsystemBase {
         if (lastResult == null) return;
 
         applyAimResult(lastResult);
-
     }
 
     private void updateTelemetry(boolean hasResult) {

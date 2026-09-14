@@ -300,11 +300,11 @@ public class RobotContainer {
         );
 
         operatorController.povLeft().whileTrue(
-            autoAimController.setManualOverride(ManualOverride.LEFT)
+            autoAimController.setManualOverride(ManualOverride.LEFT_CORNER)
         );
 
         operatorController.povRight().whileTrue(
-            autoAimController.setManualOverride(ManualOverride.RIGHT)
+            autoAimController.setManualOverride(ManualOverride.RIGHT_CORNER)
         );
 
         operatorController.povDown().whileTrue(
@@ -391,24 +391,39 @@ public class RobotContainer {
 
         // Driver nudge defs are in the driverController section
 
-        debugController.povUp().whileTrue(
-            Commands.run(() -> swerveSubsystem.drive(driverNudgeUp), swerveSubsystem)
-        );
+        /*
+            Left trigger: Intake
+            Right trigger: Shoot
 
-        debugController.povLeft().whileTrue(
-            Commands.run(() -> swerveSubsystem.drive(driverNudgeLeft), swerveSubsystem)
-        );
+            Left bumper: Reverse pipeline
+            Right bumper: Intake eject
 
-        debugController.povRight().whileTrue(
-            Commands.run(() -> swerveSubsystem.drive(driverNudgeRight), swerveSubsystem)
-        );
+            Left stick: Translate
+            Right stick: Rotate
 
-        debugController.povDown().whileTrue(
-            Commands.run(() -> swerveSubsystem.drive(driverNudgeDown), swerveSubsystem)
-        );
+            X: X-Brake
+            Y: 
+            B: Reset heading
+            A: 
+
+            back: Reset dynamics 
+            start: Toggle auto-aim
+
+            Left stick press:
+            Right stick press:
+
+            Pov-up: (Trench presets?) up and down?
+            Pov-down:
+            Pov-right: Shoot preset right
+            Pov-left: Shoot preset left
+        */
+
+        // Triggers:
 
         debugController.leftTrigger().onTrue(
-            superstructureCommands.intakeOn()
+            Commands.parallel(
+                superstructureCommands.intakeOn(),
+                superstructure.getReturnToZoneCommand())
         ).onFalse(
             superstructureCommands.intakeOff()
         );
@@ -417,61 +432,55 @@ public class RobotContainer {
             autoAimController.overrideShootCommand()
         );
 
+        // Bumpers:
+
         debugController.leftBumper().onTrue(
-            Commands.runOnce(() -> {
-                swerveSubsystem.setMovementOverride(
-                    hubPose.minus(trenchTransform).getY()
-                );
-            })
+            Commands.parallel(
+                feederSubsystem.setStateCommand(FeederState.REVERSE),
+                indexerSubsystem.setStateCommand(IndexerState.REVERSE)
+            )
         ).onFalse(
-            Commands.runOnce(() -> {
-                swerveSubsystem.setMovementOverride(0.0);
-            })
+            Commands.parallel(
+                feederSubsystem.setStateCommand(FeederState.OFF),
+                indexerSubsystem.setStateCommand(IndexerState.OFF)
+            )
         );
 
         debugController.rightBumper().onTrue(
-            Commands.runOnce(() -> {
-                swerveSubsystem.setMovementOverride(
-                    hubPose.plus(trenchTransform).getY()
-                );
-            })
+            intakeSubsystem.setStateCommand(IntakeState.OUTTAKE)
         ).onFalse(
-            Commands.runOnce(() -> {
-                swerveSubsystem.setMovementOverride(0.0);
-            })
+            intakeSubsystem.setStateCommand(IntakeState.OFF)
         );
 
-        debugController.a().onTrue(
+        // Buttons:
+
+        debugController.x().whileTrue(
+            Commands.run(swerveSubsystem::lockModules, swerveSubsystem)
+                .withName("X Brake Swerve")
+        );
+
+        driverController.b().onTrue(
             Commands.runOnce(() -> {
                 swerveSubsystem.resetHeadingOffset();
             })
         );
 
-        debugController.b().onTrue(
-            Commands.runOnce(() -> {
-                swerveSubsystem.toggleFieldRelative();
-            })
+        // D-Pad:
+
+        debugController.povUp().whileTrue(
+            autoAimController.setManualOverride(ManualOverride.LEFT_CORNER)
         );
 
-        debugController.x().onTrue(
-            autoAimController.shootingToggle()
+        debugController.povLeft().whileTrue(
+            autoAimController.setManualOverride(ManualOverride.LEFT_TRENCH)
         );
 
-        // !CLIMBER!
-        // debugController.y().whileTrue(
-        //     POIFactory.generateCommand(POI.TOWER)
-        // );
-
-        debugController.y().onTrue(
-            superstructureCommands.stowed()
+        debugController.povRight().whileTrue(
+            autoAimController.setManualOverride(ManualOverride.RIGHT_TRENCH)
         );
 
-        debugController.back().onTrue(
-            superstructureCommands.resetDynamics()
-        );
-
-        debugController.start().onTrue(
-            autoAimController.aimToggle()
+        debugController.povDown().whileTrue(
+            autoAimController.setManualOverride(ManualOverride.RIGHT_CORNER)
         );
 
         //#endregion
