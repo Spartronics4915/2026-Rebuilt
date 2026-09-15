@@ -4,10 +4,10 @@ import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.*;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
-import java.util.ArrayDeque;
 import java.util.Objects;
-import java.util.OptionalDouble;
 
+import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -41,6 +41,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
@@ -93,10 +94,6 @@ public class SwerveSubsystem extends SubsystemBase {
 
     private final SwerveRequest.SwerveDriveBrake lockRequest = new SwerveRequest.SwerveDriveBrake();
 
-    private final ConcurrentYawRateBuffer yawRateBuffer = new ConcurrentYawRateBuffer(1.0);
-    private double prevYawRad = Double.NaN;
-    private double prevYawTimestamp = Double.NaN;
-
     private final Field2d field = new Field2d();
 
     private final Debouncer flatDebouncer = new Debouncer(TILT_DEBOUNCE);
@@ -122,6 +119,21 @@ public class SwerveSubsystem extends SubsystemBase {
 
     /* Trench / movement override controller */
     private final TrapezoidProfileStateController overrideController = new TrapezoidProfileStateController();
+
+    private final BaseStatusSignal[] driveCurrentSignals = new BaseStatusSignal[4];
+    private final BaseStatusSignal[] driveVoltageSignals = new BaseStatusSignal[4];
+    private final BaseStatusSignal[] driveTemperatureSignals = new BaseStatusSignal[4];
+    private final BaseStatusSignal[] driveErrorSignals = new BaseStatusSignal[4];
+    private final BaseStatusSignal[] driveReferenceSignals = new BaseStatusSignal[4];
+    private final BaseStatusSignal[] steerCurrentSignals = new BaseStatusSignal[4];
+    private final BaseStatusSignal[] steerVoltageSignals = new BaseStatusSignal[4];
+    private final BaseStatusSignal[] steerTemperatureSignals = new BaseStatusSignal[4];
+    private final BaseStatusSignal[] steerErrorSignals = new BaseStatusSignal[4];
+    private final BaseStatusSignal[] telemetrySignals = new BaseStatusSignal[4 * 9];
+    private final StatusSignal<Angle> rollSignal;
+    private final StatusSignal<Angle> pitchSignal;
+
+    private final ChassisSpeeds telemetryFieldVelocity = new ChassisSpeeds();
 
     private final double[] driveVelocityMps = new double[4];
     private final double[] driveTargetMps = new double[4];
@@ -156,6 +168,25 @@ public class SwerveSubsystem extends SubsystemBase {
         drivetrain.setStateStdDevs(NORMAL_STD_DEVS);
         drivetrain.configNeutralMode(NeutralModeValue.Brake);
 
+        // Cache each handle by module and include it in the batch refresh array.
+        int signalIndex = 0;
+        for (int i = 0; i < 4; i++) {
+            SwerveModule<?, ?, ?> module = drivetrain.getModule(i);
+            TalonFX drive = (TalonFX) module.getDriveMotor();
+            TalonFX steer = (TalonFX) module.getSteerMotor();
+            telemetrySignals[signalIndex++] = driveCurrentSignals[i] = drive.getStatorCurrent(false);
+            telemetrySignals[signalIndex++] = driveVoltageSignals[i] = drive.getMotorVoltage(false);
+            telemetrySignals[signalIndex++] = driveTemperatureSignals[i] = drive.getDeviceTemp(false);
+            telemetrySignals[signalIndex++] = driveErrorSignals[i] = drive.getClosedLoopError(false);
+            telemetrySignals[signalIndex++] = driveReferenceSignals[i] = drive.getClosedLoopReference(false);
+            telemetrySignals[signalIndex++] = steerCurrentSignals[i] = steer.getStatorCurrent(false);
+            telemetrySignals[signalIndex++] = steerVoltageSignals[i] = steer.getMotorVoltage(false);
+            telemetrySignals[signalIndex++] = steerTemperatureSignals[i] = steer.getDeviceTemp(false);
+            telemetrySignals[signalIndex++] = steerErrorSignals[i] = steer.getClosedLoopError(false);
+        }
+        rollSignal = drivetrain.getPigeon2().getRoll(false);
+        pitchSignal = drivetrain.getPigeon2().getPitch(false);
+
         headingLockRequest.HeadingController.setPID(HEADING_LOCK_P, 0.0, HEADING_LOCK_D);
         headingLockRequest.HeadingController.enableContinuousInput(-Math.PI, Math.PI);
 
@@ -168,7 +199,6 @@ public class SwerveSubsystem extends SubsystemBase {
             );
         }
 
-        drivetrain.registerTelemetry(this::updateOdometry);
         configureBLine();
 
         SmartDashboard.putData(field);
@@ -197,22 +227,6 @@ public class SwerveSubsystem extends SubsystemBase {
                 appliedAlliance = alliance;
             }
         });
-    }
-
-    private void updateOdometry(SwerveDriveState state) {
-        double nowYaw = state.Pose.getRotation().getRadians();
-        double nowTimestamp = state.Timestamp;
-
-        if (!Double.isNaN(prevYawTimestamp)) {
-            double dt = nowTimestamp - prevYawTimestamp;
-            if (dt > 0.0) {
-                double yawRate = MathUtil.angleModulus(nowYaw - prevYawRad) / dt;
-                yawRateBuffer.addSample(nowTimestamp, yawRate);
-            }
-        }
-
-        prevYawRad = nowYaw;
-        prevYawTimestamp = nowTimestamp;
     }
 
     @Override
@@ -435,9 +449,7 @@ public class SwerveSubsystem extends SubsystemBase {
             return new Rotation2d(pose3d.getRotation().getX());
         }
 
-        return Rotation2d.fromDegrees(
-            drivetrain.getPigeon2().getRoll().getValueAsDouble()
-        );
+        return Rotation2d.fromDegrees(rollSignal.refresh().getValueAsDouble());
     }
 
     public Rotation2d getPitch() {
@@ -445,9 +457,7 @@ public class SwerveSubsystem extends SubsystemBase {
             return new Rotation2d(pose3d.getRotation().getY());
         }
 
-        return Rotation2d.fromDegrees(
-            drivetrain.getPigeon2().getPitch().getValueAsDouble()
-        );
+        return Rotation2d.fromDegrees(pitchSignal.refresh().getValueAsDouble());
     }
 
     public Rotation3d getGyroRotation3d() {
@@ -463,13 +473,6 @@ public class SwerveSubsystem extends SubsystemBase {
             getGyroRotation3d(),
             Timer.getFPGATimestamp()
         );
-    }
-
-    public OptionalDouble getMaxAbsYawRateInRange(
-        double minTime,
-        double maxTime
-    ) {
-        return yawRateBuffer.getMaxAbsValueInRange(minTime, maxTime);
     }
 
     public boolean isFlat() {
@@ -650,48 +653,17 @@ public class SwerveSubsystem extends SubsystemBase {
         }
     }
 
-    /**
-     * Minimal synchronized time-series buffer for yaw-rate history.
-     * Kept local so the drivetrain API doesn't depend on the old slip/vision utility
-     * package solely for this measurement
-     */
-    private static final class ConcurrentYawRateBuffer {
-        private final double retentionSeconds;
-        private final ArrayDeque<double[]> samples = new ArrayDeque<>();
-
-        ConcurrentYawRateBuffer(double retentionSeconds) {
-            this.retentionSeconds = retentionSeconds;
-        }
-
-        synchronized void addSample(double timestamp, double value) {
-            samples.addLast(new double[] {timestamp, value});
-            double cutoff = timestamp - retentionSeconds;
-            while (!samples.isEmpty() && samples.peekFirst()[0] < cutoff) {
-                samples.removeFirst();
-            }
-        }
-
-        synchronized OptionalDouble getMaxAbsValueInRange(
-            double minTime,
-            double maxTime
-        ) {
-            double max = 0.0;
-            boolean found = false;
-
-            for (double[] sample : samples) {
-                if (sample[0] >= minTime && sample[0] <= maxTime) {
-                    max = Math.max(max, Math.abs(sample[1]));
-                    found = true;
-                }
-            }
-
-            return found ? OptionalDouble.of(max) : OptionalDouble.empty();
-        }
-    }
-
     private void outputTelemetry(SwerveDriveState state) {
+        BaseStatusSignal.refreshAll(telemetrySignals);
         Pose2d rawPose = state.Pose;
-        ChassisSpeeds fieldVelocity = getFieldVelocity();
+        ChassisSpeeds fieldVelocity = telemetryFieldVelocity;
+        double vx = state.Speeds.vxMetersPerSecond;
+        double vy = state.Speeds.vyMetersPerSecond;
+        double cos = rawPose.getRotation().getCos();
+        double sin = rawPose.getRotation().getSin();
+        fieldVelocity.vxMetersPerSecond = vx * cos - vy * sin;
+        fieldVelocity.vyMetersPerSecond = vx * sin + vy * cos;
+        fieldVelocity.omegaRadiansPerSecond = state.Speeds.omegaRadiansPerSecond;
 
         LOG.critical.log("EstimatedPose", rawPose);
         LOG.debug.log("MechanismPose", pose3d);
@@ -700,8 +672,7 @@ public class SwerveSubsystem extends SubsystemBase {
         LOG.critical.log("ModuleStates", state.ModuleStates);
         LOG.critical.log("ModuleTargets", state.ModuleTargets);
         LOG.info.log("ModulePositions", state.ModulePositions);
-        LOG.critical.log("SpeedMps", Math.hypot(
-            fieldVelocity.vxMetersPerSecond, fieldVelocity.vyMetersPerSecond));
+        LOG.critical.log("SpeedMps", Math.hypot(fieldVelocity.vxMetersPerSecond, fieldVelocity.vyMetersPerSecond));
         LOG.info.log("OdometryHz", state.OdometryPeriod > 0.0 ? 1.0 / state.OdometryPeriod : 0.0);
         LOG.info.log("BatteryVoltage", RobotController.getBatteryVoltage());
         LOG.critical.log("HeadingDeg", rawPose.getRotation().getDegrees());
@@ -712,24 +683,22 @@ public class SwerveSubsystem extends SubsystemBase {
         LOG.critical.log("IsFlat", isFlatDebouncedValue);
 
         for (int i = 0; i < 4; i++) {
-            SwerveModule<?, ?, ?> module = drivetrain.getModule(i);
-            TalonFX drive = (TalonFX) module.getDriveMotor();
-            TalonFX steer = (TalonFX) module.getSteerMotor();
             driveVelocityMps[i] = state.ModuleStates[i].speedMetersPerSecond;
             driveTargetMps[i] = state.ModuleTargets[i].speedMetersPerSecond;
             drivePositionMeters[i] = state.ModulePositions[i].distanceMeters;
-            driveCurrentAmps[i] = drive.getStatorCurrent().getValueAsDouble();
-            driveVoltageVolts[i] = drive.getMotorVoltage().getValueAsDouble();
-            driveTemperatureCelsius[i] = drive.getDeviceTemp().getValueAsDouble();
-            driveClosedLoopError[i] = drive.getClosedLoopError().getValueAsDouble();
-            driveClosedLoopReference[i] = drive.getClosedLoopReference().getValueAsDouble();
+            driveCurrentAmps[i] = driveCurrentSignals[i].getValueAsDouble();
+            driveVoltageVolts[i] = driveVoltageSignals[i].getValueAsDouble();
+            driveTemperatureCelsius[i] = driveTemperatureSignals[i].getValueAsDouble();
+            driveClosedLoopError[i] = driveErrorSignals[i].getValueAsDouble();
+            driveClosedLoopReference[i] = driveReferenceSignals[i].getValueAsDouble();
             steerAngleDeg[i] = state.ModuleStates[i].angle.getDegrees();
             steerTargetDeg[i] = state.ModuleTargets[i].angle.getDegrees();
-            steerCurrentAmps[i] = steer.getStatorCurrent().getValueAsDouble();
-            steerVoltageVolts[i] = steer.getMotorVoltage().getValueAsDouble();
-            steerTemperatureCelsius[i] = steer.getDeviceTemp().getValueAsDouble();
-            steerClosedLoopError[i] = steer.getClosedLoopError().getValueAsDouble();
+            steerCurrentAmps[i] = steerCurrentSignals[i].getValueAsDouble();
+            steerVoltageVolts[i] = steerVoltageSignals[i].getValueAsDouble();
+            steerTemperatureCelsius[i] = steerTemperatureSignals[i].getValueAsDouble();
+            steerClosedLoopError[i] = steerErrorSignals[i].getValueAsDouble();
         }
+
         LOG.debug.log("DriveVelocityMps", driveVelocityMps);
         LOG.debug.log("DriveTargetMps", driveTargetMps);
         LOG.debug.log("DrivePositionMeters", drivePositionMeters);
