@@ -86,7 +86,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
             ? velocitySignal.getValueAsDouble()
             : getCurrentSetpoint();
 
-        indexerAngle += velocityRps * 2 * Math.PI * 0.02;
+        indexerAngle -= velocityRps * 2 * Math.PI * 0.02;
         appliedDutyCycle = dutyCycleSignal.getValueAsDouble();
 
         this.velocityRps = velocityRps;
