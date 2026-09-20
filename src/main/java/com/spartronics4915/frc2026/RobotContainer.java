@@ -455,10 +455,18 @@ public class RobotContainer {
                 .withName("X Brake Swerve")
         );
 
-        driverController.b().onTrue(
+        debugController.b().onTrue(
             Commands.runOnce(() -> {
                 swerveSubsystem.resetHeadingOffset();
             })
+        );
+
+        debugController.start().onTrue(
+            autoAimController.aimToggle()
+        );
+
+        debugController.back().onTrue(
+            superstructureCommands.resetDynamics()
         );
 
         // D-Pad:
