@@ -240,6 +240,7 @@ public class VisionSubsystem extends SubsystemBase {
 
             applyVisionMeasurement(observation.cameraName(), observation.estimate());
         }
+        
         validationFusionDurationUs = RobotController.getFPGATime() - validationFusionStartUs;
 
         long telemetryStartUs = RobotController.getFPGATime();

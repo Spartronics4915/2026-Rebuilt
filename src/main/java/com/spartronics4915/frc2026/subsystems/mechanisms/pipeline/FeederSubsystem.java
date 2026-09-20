@@ -69,16 +69,14 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
         // When dynamic speed is active, override the static setpoint with the
         // interpolated value from the distance→RPS lookup table.
         if (dynamicSpeedActive && distanceToTargetSupplier != null) {
-            // currentSetpoint = feederSpeedMap.get(
-            // distanceToTargetSupplier.getAsDouble()
-            // );
             currentSetpoint = 22.17887 / (1 + Math.exp(-((0.798997 * distanceToTargetSupplier.getAsDouble()) - 1.66251))); // 22.17887 / (1 + e^-(-0.798997 * distance - 1.66251))
         }
 
         currentSetpoint = MathUtil.clamp(
             currentSetpoint,
             -MAX_RPS,
-            MAX_RPS);
+            MAX_RPS
+        );
 
         if (currentSetpoint != 0) {
             velocityVoltageRequest.Velocity = currentSetpoint;

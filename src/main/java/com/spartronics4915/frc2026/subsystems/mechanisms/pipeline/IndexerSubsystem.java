@@ -72,7 +72,8 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
         currentSetpoint = MathUtil.clamp(
             currentSetpoint,
             -MAX_RPS,
-            MAX_RPS);
+            MAX_RPS
+        );
 
         if (currentSetpoint != 0) {
             velocityVoltageRequest.Velocity = currentSetpoint;

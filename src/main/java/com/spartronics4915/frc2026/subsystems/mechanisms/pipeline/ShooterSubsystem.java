@@ -101,9 +101,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
         }
 
         appliedDutyCycle = dutyCycleSignal.getValueAsDouble();
-        velocityRps = Robot.isSimulation()
-            ? currentSetpoint
-            : velocitySignal.getValueAsDouble();
+        velocityRps = Robot.isSimulation() ? currentSetpoint : velocitySignal.getValueAsDouble();
         workingSetpointRps = workingSetpoint;
         profileSetpointRps = limitedSetpoint;
         sampleTimestampUs = RobotController.getFPGATime();

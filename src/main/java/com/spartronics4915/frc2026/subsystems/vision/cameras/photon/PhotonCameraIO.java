@@ -73,8 +73,7 @@ public class PhotonCameraIO extends CameraIO {
             photonPoseEstimator.setRobotToCameraTransform(transform);
         }
 
-        Optional<EstimatedRobotPose> estimate = photonPoseEstimator
-            .estimateCoprocMultiTagPose(result);
+        Optional<EstimatedRobotPose> estimate = photonPoseEstimator.estimateCoprocMultiTagPose(result);
 
         if (estimate.isEmpty()) {
             estimate = photonPoseEstimator.estimateLowestAmbiguityPose(result);
@@ -118,7 +117,8 @@ public class PhotonCameraIO extends CameraIO {
             ambiguity,
             tagSpanMeters(tagIds),
             latencySeconds,
-            multiTag || USE_VISION_ROTATION_FOR_SINGLE_TAG);
+            multiTag || USE_VISION_ROTATION_FOR_SINGLE_TAG
+        );
     }
 
     private int[] getTagIds(List<PhotonTrackedTarget> targets) {
