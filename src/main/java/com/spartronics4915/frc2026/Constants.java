@@ -96,8 +96,8 @@ public final class Constants {
         // Initial tuning only: retain our existing maximum drive speeds.
         public static final double TELEOP_TRANSLATION_SLEW_RATE = Units.inchesToMeters(600.0);
         public static final double TELEOP_TRANSLATION_RATE_RAMP = Units.inchesToMeters(20000.0);
-        public static final double TELEOP_ROTATION_SLEW_RATE = 16.0 * 2.0 * Math.PI;
-        public static final double TELEOP_ROTATION_RATE_RAMP = 240.0 * 2.0 * Math.PI;
+        public static final double TELEOP_ROTATION_SLEW_RATE = 16.0 * 3.0 * Math.PI;
+        public static final double TELEOP_ROTATION_RATE_RAMP = 240.0 * 3.0 * Math.PI;
         public static final double TILT_THRESHOLD_DEGREES = 1.0;
         public static final double TILT_DEBOUNCE = 0.05;
 
