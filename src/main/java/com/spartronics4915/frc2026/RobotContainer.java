@@ -6,7 +6,6 @@ package com.spartronics4915.frc2026;
 
 import com.spartronics4915.frc2026.Constants.AutoAimConstants;
 import com.spartronics4915.frc2026.Constants.OperatorConstants;
-import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
 import com.spartronics4915.frc2026.autos.Autos;
 import com.spartronics4915.frc2026.autos.ComplexAutoChooser;
@@ -17,7 +16,6 @@ import com.spartronics4915.frc2026.autos.ZoneTransition;
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.hubPose;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.trenchTransform;
-import static edu.wpi.first.units.Units.Meters;
 
 import java.util.Set;
 
@@ -39,7 +37,7 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsyst
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
-import com.spartronics4915.frc2026.util.simulation.FuelSim;
+import com.spartronics4915.frc2026.util.simulation.FuelSimHandler;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -78,15 +76,14 @@ public class RobotContainer {
     private final NeutralZoneAutos neutralZoneFactory = new NeutralZoneAutos(swerveSubsystem);
     private final PreAlignment preAlignmentFactory = new PreAlignment(swerveSubsystem);
 
-    private final FuelSim fuelSim = createFuelSim();
-
     private final AutoAimController autoAimController = new AutoAimController(
         hoodSubsystem,
         turretSubsystem,
         swerveSubsystem,
-        shooterSubsystem,
-        fuelSim
+        shooterSubsystem
     );
+
+    private final FuelSimHandler fuelSimHandler = new FuelSimHandler(swerveSubsystem, intakeSubsystem, autoAimController);
 
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
     private final CommandXboxController operatorController = new CommandXboxController(OperatorConstants.OPERATOR_CONTROLLER_PORT);
@@ -113,55 +110,7 @@ public class RobotContainer {
 
     private final ComplexAutoChooser autoChooser = new ComplexAutoChooser(transitionFactory, POIFactory, neutralZoneFactory, preAlignmentFactory, superstructure, 20);
 
-    private FuelSim createFuelSim() {
-        if (!Robot.isSimulation()) {
-            return null;
-        }
-
-        FuelSim fuelSim = new FuelSim("/Fuel Simulation");
-        fuelSim.setSubticks(20);
-        fuelSim.enableAirResistance();
-        fuelSim.registerRobot(
-            AutoConstants.robotWidth,
-            AutoConstants.robotLength,
-            Meters.of(0.20),
-            () -> {
-                return swerveSubsystem.getPose().rotateAround(
-                    swerveSubsystem.getPose().getTranslation(),
-                    Rotation2d.kCCW_90deg
-                );
-            },
-            () -> ChassisSpeeds.fromRobotRelativeSpeeds(
-                swerveSubsystem.getRobotVelocity(),
-                swerveSubsystem.getPose().getRotation()));
-        fuelSim.spawnStartingFuel();
-        fuelSim.start();
-        return fuelSim;
-    }
-
-    private void configureFuelSimIntake() {
-        if (!Robot.isSimulation() || fuelSim == null) {
-            return;
-        }
-
-        double halfLength = AutoConstants.robotLength.in(Meters) / 2.0;
-        double halfWidth = AutoConstants.robotWidth.in(Meters) / 2.0;
-
-        // One intake mounted along the robot's -Y side.
-        double intakeDepth = 0.18;
-
-        fuelSim.registerIntake(
-            -halfLength,
-            halfLength,
-            -halfWidth - intakeDepth,
-            -halfWidth,
-            autoAimController::isSimulationIntaking,
-            autoAimController::intakeSimulatedFuel);
-    }
-
     public RobotContainer() {
-        autoAimController.setSimulationIntake(intakeSubsystem);
-        configureFuelSimIntake();
         configureBindings();
 
         // Preserve turret history so a camera frame uses its capture-time transform.
@@ -179,8 +128,8 @@ public class RobotContainer {
         SmartDashboard.putData("Auto-Aim Toggle", autoAimController.aimToggle());
         SmartDashboard.putData("Auto-Shoot Toggle", autoAimController.shootingToggle());
         SmartDashboard.putData("Reset Dynamics", superstructureCommands.resetDynamics());
-        SmartDashboard.putData("Fuel Sim/Reset", Commands.runOnce(autoAimController::resetSimulatedFuel));
-        SmartDashboard.putData("Fuel Sim/Add Fuel", Commands.runOnce(autoAimController::intakeSimulatedFuel));
+        SmartDashboard.putData("Fuel Sim/Reset", Commands.runOnce(fuelSimHandler::resetSimulatedFuel));
+        SmartDashboard.putData("Fuel Sim/Add Fuel", Commands.runOnce(fuelSimHandler::intakeSimulatedFuel));
         SmartDashboard.putData("Pipeline On", superstructureCommands.setPipelineState(PipelineState.ON));
         SmartDashboard.putData("Pipeline Off", superstructureCommands.setPipelineState(PipelineState.OFF));
         SmartDashboard.putData("Reset Odometry", Commands.runOnce(

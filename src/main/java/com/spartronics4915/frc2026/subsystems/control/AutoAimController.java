@@ -7,11 +7,9 @@ import static com.spartronics4915.frc2026.Constants.AutoAimConstants.*;
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.HoodSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem;
-import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem.ShooterClamp;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
-import com.spartronics4915.frc2026.util.simulation.FuelSim;
 import com.spartronics4915.frc2026.util.control.AutoAim;
 import com.spartronics4915.frc2026.util.control.TimeVarianceAuthority;
 import com.spartronics4915.frc2026.util.control.AutoAim.AutoAimResult;
@@ -28,12 +26,10 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.Timer;
 
 import static edu.wpi.first.units.Units.InchesPerSecond;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
-import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 import edu.wpi.first.wpilibj2.command.Command;
@@ -50,14 +46,6 @@ public class AutoAimController extends SubsystemBase {
     private final TurretSubsystem turret;
     private final ShooterSubsystem shooter;
     private final SwerveSubsystem swerve;
-    private IntakeSubsystem intake;
-
-    private final FuelSim fuelSim;
-    private int simulatedFuelStored = SIM_INITIAL_FUEL;
-    private double loggedSimulatedFuelStored = SIM_INITIAL_FUEL;
-    private double blueFuelScore;
-    private double redFuelScore;
-    private double lastSimulatedShotTimestamp = Double.NEGATIVE_INFINITY;
 
     private final AutoAim autoAim = new AutoAim(
         20, // 30
@@ -123,21 +111,10 @@ public class AutoAimController extends SubsystemBase {
         SwerveSubsystem swerve,
         ShooterSubsystem shooter
     ) {
-        this(hood, turret, swerve, shooter, null);
-    }
-
-    public AutoAimController(
-        HoodSubsystem hood,
-        TurretSubsystem turret,
-        SwerveSubsystem swerve,
-        ShooterSubsystem shooter,
-        FuelSim fuelSim
-    ) {
         this.hood = hood;
         this.turret = turret;
         this.swerve = swerve;
         this.shooter = shooter;
-        this.fuelSim = fuelSim;
 
         this.turretController = new TurretController(
             turret.getClamp().minAngle.getDegrees(),
@@ -148,11 +125,6 @@ public class AutoAimController extends SubsystemBase {
         );
 
         turretController.reset(turret.getPosition());
-    }
-
-    /** Supplies the intake used by the simulation fuel model. */
-    public void setSimulationIntake(IntakeSubsystem intake) {
-        this.intake = intake;
     }
 
     // Collision cache
@@ -178,7 +150,6 @@ public class AutoAimController extends SubsystemBase {
         lastFieldSpeeds = currentSpeeds;
 
         updateCollisionCache();
-        updateFuelSimulation();
 
         if (isAimEnabled) {
             lastResult = computeAimResult();
@@ -226,87 +197,9 @@ public class AutoAimController extends SubsystemBase {
         LOG.critical.log("HasValidResult", hasValidResult);
         LOG.critical.log("RequiresIdealSpeed", requiresIdealSpeed);
         LOG.critical.log("DistanceToTargetMeters", distanceToTargetMeters);
-        if (Robot.isSimulation()) {
-            LOG.debug.log("SimulatedFuelStored", loggedSimulatedFuelStored);
-            LOG.debug.log("BlueFuelScore", blueFuelScore);
-            LOG.debug.log("RedFuelScore", redFuelScore);
-        }
     }
 
-    private void updateFuelSimulation() {
-        if (!Robot.isSimulation() || fuelSim == null) {
-            return;
-        }
-
-        fuelSim.updateSim();
-        loggedSimulatedFuelStored = simulatedFuelStored;
-        blueFuelScore = FuelSim.Hub.BLUE_HUB.getScore();
-        redFuelScore = FuelSim.Hub.RED_HUB.getScore();
-
-        if (!DriverStation.isEnabled() || !isReadyToShoot() || simulatedFuelStored <= 0) {
-            return;
-        }
-
-        double now = Timer.getFPGATimestamp();
-        if (now - lastSimulatedShotTimestamp < SIM_SHOT_INTERVAL_SECONDS) {
-            return;
-        }
-
-        launchSimulatedFuel();
-    }
-
-    private void launchSimulatedFuel() {
-        double flywheelRps = shooter.getCurrentSetpoint();
-        if (!Double.isFinite(flywheelRps) || flywheelRps <= 0.0) {
-            return;
-        }
-
-        double launchSpeedMps = InchesPerSecond.of(flywheelRps * Math.PI * 1.92).in(MetersPerSecond);
-        double hoodPitchRadians = Rotation2d.kCCW_Pi_2
-            .minus(hood.getCurrentSetpoint())
-            .getRadians();
-
-        fuelSim.launchFuel(
-            MetersPerSecond.of(launchSpeedMps),
-            Radians.of(hoodPitchRadians),
-            Radians.of(turret.getCurrentSetpoint().getRadians()),
-            shooterBaseTranslation
-        );
-
-        simulatedFuelStored--;
-        lastSimulatedShotTimestamp = Timer.getFPGATimestamp();
-    }
-
-    public void resetSimulatedFuel() {
-        if (fuelSim == null) {
-            return;
-        }
-
-        fuelSim.stop();
-        fuelSim.clearFuel();
-        FuelSim.Hub.BLUE_HUB.resetScore();
-        FuelSim.Hub.RED_HUB.resetScore();
-        fuelSim.spawnStartingFuel();
-        simulatedFuelStored = SIM_INITIAL_FUEL;
-        lastSimulatedShotTimestamp = Double.NEGATIVE_INFINITY;
-        fuelSim.start();
-    }
-
-    /** Adds one simulated fuel to the robot inventory, up to capacity. */
-    public void intakeSimulatedFuel() {
-        if (Robot.isSimulation() && simulatedFuelStored < SIM_FUEL_CAPACITY) {
-            simulatedFuelStored++;
-        }
-    }
-
-    /** Returns whether the physical intake is currently running in simulation. */
-    public boolean isSimulationIntaking() {
-        return Robot.isSimulation()
-            && intake != null
-            && intake.getSetpoint() > 5.0;
-    }
-
-        //#endregion
+    //#endregion
     //#region Auto-Aim 
 
     /**
