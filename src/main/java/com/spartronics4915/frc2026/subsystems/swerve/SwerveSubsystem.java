@@ -59,7 +59,9 @@ import frc.robot.lib.BLine.Path;
  * </p>
  */
 public class SwerveSubsystem extends SubsystemBase {
+
     private static final TimeVarianceAuthority TVA = new TimeVarianceAuthority();
+    
     private static final Scope LOG = Telemetry.scope("Drive");
     private static final Scope BLINE_LOG = LOG.child("BLine");
 
@@ -117,12 +119,10 @@ public class SwerveSubsystem extends SubsystemBase {
 
     private final BaseStatusSignal[] driveCurrentSignals = new BaseStatusSignal[4];
     private final BaseStatusSignal[] driveVoltageSignals = new BaseStatusSignal[4];
-    private final BaseStatusSignal[] driveTemperatureSignals = new BaseStatusSignal[4];
     private final BaseStatusSignal[] driveErrorSignals = new BaseStatusSignal[4];
     private final BaseStatusSignal[] driveReferenceSignals = new BaseStatusSignal[4];
     private final BaseStatusSignal[] steerCurrentSignals = new BaseStatusSignal[4];
     private final BaseStatusSignal[] steerVoltageSignals = new BaseStatusSignal[4];
-    private final BaseStatusSignal[] steerTemperatureSignals = new BaseStatusSignal[4];
     private final BaseStatusSignal[] steerErrorSignals = new BaseStatusSignal[4];
     private final BaseStatusSignal[] telemetrySignals = new BaseStatusSignal[4 * 9 + 2];
     private final StatusSignal<Angle> rollSignal;
@@ -135,15 +135,10 @@ public class SwerveSubsystem extends SubsystemBase {
     private final double[] drivePositionMeters = new double[4];
     private final double[] driveCurrentAmps = new double[4];
     private final double[] driveVoltageVolts = new double[4];
-    private final double[] driveTemperatureCelsius = new double[4];
-    private final double[] driveClosedLoopError = new double[4];
-    private final double[] driveClosedLoopReference = new double[4];
     private final double[] steerAngleDeg = new double[4];
     private final double[] steerTargetDeg = new double[4];
     private final double[] steerCurrentAmps = new double[4];
     private final double[] steerVoltageVolts = new double[4];
-    private final double[] steerTemperatureCelsius = new double[4];
-    private final double[] steerClosedLoopError = new double[4];
 
     public SwerveSubsystem(SwerveConfigurations config) {
         configuration = Objects.requireNonNull(config, "config");
@@ -157,7 +152,8 @@ public class SwerveSubsystem extends SubsystemBase {
                 config.modules[0],
                 config.modules[1],
                 config.modules[2],
-                config.modules[3]);
+                config.modules[3]
+        );
 
         drivetrain.setStateStdDevs(NORMAL_STD_DEVS);
         drivetrain.configNeutralMode(NeutralModeValue.Brake);
@@ -170,14 +166,13 @@ public class SwerveSubsystem extends SubsystemBase {
             TalonFX steer = (TalonFX) module.getSteerMotor();
             telemetrySignals[signalIndex++] = driveCurrentSignals[i] = drive.getStatorCurrent(false);
             telemetrySignals[signalIndex++] = driveVoltageSignals[i] = drive.getMotorVoltage(false);
-            telemetrySignals[signalIndex++] = driveTemperatureSignals[i] = drive.getDeviceTemp(false);
             telemetrySignals[signalIndex++] = driveErrorSignals[i] = drive.getClosedLoopError(false);
             telemetrySignals[signalIndex++] = driveReferenceSignals[i] = drive.getClosedLoopReference(false);
             telemetrySignals[signalIndex++] = steerCurrentSignals[i] = steer.getStatorCurrent(false);
             telemetrySignals[signalIndex++] = steerVoltageSignals[i] = steer.getMotorVoltage(false);
-            telemetrySignals[signalIndex++] = steerTemperatureSignals[i] = steer.getDeviceTemp(false);
             telemetrySignals[signalIndex++] = steerErrorSignals[i] = steer.getClosedLoopError(false);
         }
+
         rollSignal = drivetrain.getPigeon2().getRoll(false);
         pitchSignal = drivetrain.getPigeon2().getPitch(false);
         telemetrySignals[signalIndex++] = rollSignal;
@@ -188,9 +183,11 @@ public class SwerveSubsystem extends SubsystemBase {
 
         if (Robot.isSimulation()) {
             drivetrain.resetPose(
-                    new Pose2d(
-                            new Translation2d(14.0, 5.0),
-                            Rotation2d.fromDegrees(180.0)));
+                new Pose2d(
+                    new Translation2d(14.0, 5.0),
+                    Rotation2d.fromDegrees(180.0)
+                )
+            );
         }
 
         configureBLine();
@@ -202,8 +199,7 @@ public class SwerveSubsystem extends SubsystemBase {
         if (instance == null) {
             instance = new SwerveSubsystem(config);
         } else if (instance.configuration != config && !instance.configuration.equals(config)) {
-            throw new IllegalStateException(
-                    "SwerveSubsystem was already initialized with a different configuration.");
+            throw new IllegalStateException("SwerveSubsystem was already initialized with a different configuration.");
         }
 
         return instance;
@@ -213,9 +209,7 @@ public class SwerveSubsystem extends SubsystemBase {
         DriverStation.getAlliance().ifPresent(alliance -> {
             if (DriverStation.isDisabled() || alliance != appliedAlliance) {
                 drivetrain.setOperatorPerspectiveForward(
-                        alliance == DriverStation.Alliance.Red
-                                ? RED_OPERATOR_FORWARD
-                                : BLUE_OPERATOR_FORWARD);
+                        alliance == DriverStation.Alliance.Red ? RED_OPERATOR_FORWARD : BLUE_OPERATOR_FORWARD);
                 appliedAlliance = alliance;
             }
         });
@@ -228,7 +222,7 @@ public class SwerveSubsystem extends SubsystemBase {
         updateOperatorPerspective();
         double now = Utils.getCurrentTimeSeconds();
 
-        isFlatDebouncedValue = flatDebouncer.calculate(isFlat());
+        isFlatDebouncedValue = flatDebouncer.calculate(isRobotLevel());
 
         /*
          * The CTRE drivetrain estimator is the sole planar pose source.
@@ -252,8 +246,9 @@ public class SwerveSubsystem extends SubsystemBase {
     @Override
     public void simulationPeriodic() {
         drivetrain.updateSimState(
-                TVA.update(), // Gets the actual delta time, not predicted
-                RobotController.getBatteryVoltage());
+            TVA.update(), // Gets the actual delta time, not predicted
+            RobotController.getBatteryVoltage()
+        );
 
         /* No independent simulated truth pose is maintained. */
         pose3d = new Pose3d(getPose());
@@ -302,8 +297,8 @@ public class SwerveSubsystem extends SubsystemBase {
                 double drift = (robotOmega * Math.abs(robotOmega)) / (2 * maxSwerveRotationDecel);
 
                 lockedHeading = getPose().getRotation()
-                        .minus(getHeadingOffset())
-                        .plus(Rotation2d.fromRadians(drift));
+                    .minus(getHeadingOffset())
+                    .plus(Rotation2d.fromRadians(drift));
             }
 
             driveFieldCentricFacingAngle(vX, vY, lockedHeading);
@@ -315,8 +310,8 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     private static double shapeJoystick(double value) {
-        double deadbanded = MathUtil.applyDeadband(value, STICK_DEADBAND);
-        return Math.signum(deadbanded) * Math.pow(Math.abs(deadbanded), 1.5);
+        double deadband = MathUtil.applyDeadband(value, STICK_DEADBAND);
+        return Math.signum(deadband) * Math.pow(Math.abs(deadband), 1.5);
     }
 
     private double computeOverrideVY(double overrideY) {
@@ -327,44 +322,44 @@ public class SwerveSubsystem extends SubsystemBase {
         lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
 
         drivetrain.setControl(
-                fieldCentricRequest
-                        .withVelocityX(vX)
-                        .withVelocityY(vY)
-                        .withRotationalRate(omega));
+            fieldCentricRequest
+                .withVelocityX(vX)
+                .withVelocityY(vY)
+                .withRotationalRate(omega));
     }
 
     public void driveFieldCentricFacingAngle(
             double vX,
             double vY,
-            Rotation2d targetHeading) {
+            Rotation2d targetHeading
+    ) {
         lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
         drivetrain.setControl(
-                headingLockRequest
-                        .withVelocityX(vX)
-                        .withVelocityY(vY)
-                        .withTargetDirection(targetHeading));
+            headingLockRequest
+                .withVelocityX(vX)
+                .withVelocityY(vY)
+                .withTargetDirection(targetHeading));
     }
 
     public void driveRobotCentric(double vX, double vY, double omega) {
         lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
         drivetrain.setControl(
-                robotCentricRequest
-                        .withVelocityX(vX)
-                        .withVelocityY(vY)
-                        .withRotationalRate(omega));
+            robotCentricRequest
+                .withVelocityX(vX)
+                .withVelocityY(vY)
+                .withRotationalRate(omega));
     }
 
     public void drive(ChassisSpeeds chassisSpeeds) {
         driveRobotCentric(
-                chassisSpeeds.vxMetersPerSecond,
-                chassisSpeeds.vyMetersPerSecond,
-                chassisSpeeds.omegaRadiansPerSecond);
+            chassisSpeeds.vxMetersPerSecond,
+            chassisSpeeds.vyMetersPerSecond,
+            chassisSpeeds.omegaRadiansPerSecond);
     }
 
     public void stop() {
         lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
-        drivetrain.setControl(
-                autoRequest.withSpeeds(new ChassisSpeeds()));
+        drivetrain.setControl(autoRequest.withSpeeds(new ChassisSpeeds()));
     }
 
     public void lockModules() {
@@ -393,7 +388,8 @@ public class SwerveSubsystem extends SubsystemBase {
     public void addVisionMeasurement(
             Pose2d pose,
             double timestamp,
-            Matrix<N3, N1> stdDevs) {
+            Matrix<N3, N1> stdDevs
+    ) {
         drivetrain.addVisionMeasurement(pose, timestamp, stdDevs);
     }
 
@@ -410,23 +406,19 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public ChassisSpeeds getFieldVelocity() {
-        return ChassisSpeeds.fromRobotRelativeSpeeds(
-                getRobotVelocity(),
-                getPose().getRotation());
+        return ChassisSpeeds.fromRobotRelativeSpeeds(getRobotVelocity(), getPose().getRotation());
     }
 
     public ChassisSpeeds getFieldRelativeVelocity() {
         ChassisSpeeds velocity = getFieldVelocity();
-        return Autos.shouldFlip()
-                ? FlippingUtil.flipFieldSpeeds(velocity)
-                : velocity;
+        return Autos.shouldFlip() ? FlippingUtil.flipFieldSpeeds(velocity) : velocity;
     }
 
     public double getSpeed() {
         ChassisSpeeds velocity = getFieldVelocity();
         return Math.hypot(
-                velocity.vxMetersPerSecond,
-                velocity.vyMetersPerSecond);
+            velocity.vxMetersPerSecond,
+            velocity.vyMetersPerSecond);
     }
 
     public Rotation2d getRoll() {
@@ -455,13 +447,13 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public RobotHeading getHeading() {
         return new RobotHeading(
-                getGyroRotation3d(),
-                Timer.getFPGATimestamp());
+            getGyroRotation3d(),
+            Timer.getFPGATimestamp());
     }
 
-    public boolean isFlat() {
+    public boolean isRobotLevel() {
         return Math.abs(getPitch().getDegrees()) < TILT_THRESHOLD_DEGREES
-                && Math.abs(getRoll().getDegrees()) < TILT_THRESHOLD_DEGREES;
+            && Math.abs(getRoll().getDegrees()) < TILT_THRESHOLD_DEGREES;
     }
 
     public boolean isFlatDebounced() {
@@ -482,8 +474,7 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public Rotation2d getHeadingOffset() {
-        return teleopHeadingOffset.plus(
-                Autos.shouldFlip() ? Rotation2d.kPi : Rotation2d.kZero);
+        return teleopHeadingOffset.plus(Autos.shouldFlip() ? Rotation2d.kPi : Rotation2d.kZero);
     }
 
     public void resetHeadingOffset() {
@@ -499,19 +490,14 @@ public class SwerveSubsystem extends SubsystemBase {
     public void setMovementOverride(double override) {
         if (MathUtil.applyDeadband(override, 1e-9) == 0.0) {
             movementOverride = 0.0;
-            return;
-        }
-
+            return;}
         movementOverride = override;
     }
 
     private void configureBLine() {
         FollowPath.setDoubleLoggingConsumer(pair -> BLINE_LOG.debug.log(pair.getFirst(), pair.getSecond()));
-
         FollowPath.setBooleanLoggingConsumer(pair -> BLINE_LOG.debug.log(pair.getFirst(), pair.getSecond()));
-
         FollowPath.setPoseLoggingConsumer(pair -> BLINE_LOG.debug.log(pair.getFirst(), pair.getSecond()));
-
         FollowPath.setTranslationListLoggingConsumer(pair -> {
             Translation2d[] translations = pair.getSecond();
             Pose2d[] poses = new Pose2d[translations.length];
@@ -526,13 +512,13 @@ public class SwerveSubsystem extends SubsystemBase {
         });
 
         FollowPath.Builder pathBuilder = new FollowPath.Builder(
-                this,
-                this::getPose,
-                this::getRobotVelocity,
-                this::drive,
-                translationPID,
-                rotationPID,
-                crossTrackPID).withDefaultShouldFlip();
+            this,
+            this::getPose,
+            this::getRobotVelocity,
+            this::drive,
+            translationPID,
+            rotationPID,
+            crossTrackPID).withDefaultShouldFlip();
 
         Autos.setPathBuilder(pathBuilder);
         Path.setDefaultGlobalConstraints(defaultPathConstraints);
@@ -540,15 +526,16 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public static ChassisSpeeds rotateLinearChassisSpeeds(
             ChassisSpeeds in,
-            Rotation2d offset) {
+            Rotation2d offset
+    ) {
         Translation2d linear = new Translation2d(
-                in.vxMetersPerSecond,
-                in.vyMetersPerSecond).rotateBy(offset);
+            in.vxMetersPerSecond,
+            in.vyMetersPerSecond).rotateBy(offset);
 
         return new ChassisSpeeds(
-                linear.getX(),
-                linear.getY(),
-                in.omegaRadiansPerSecond);
+            linear.getX(),
+            linear.getY(),
+            in.omegaRadiansPerSecond);
     }
 
     public void configureStdDevsDisabled() {
@@ -573,9 +560,7 @@ public class SwerveSubsystem extends SubsystemBase {
         private TrapezoidProfile.State yState = new TrapezoidProfile.State();
         private boolean initialized;
 
-        private final PPHolonomicDriveController controller = new PPHolonomicDriveController(
-                alignTranslationPID,
-                alignRotationPID);
+        private final PPHolonomicDriveController controller = new PPHolonomicDriveController(alignTranslationPID, alignRotationPID);
 
         double calculate(SwerveSubsystem swerve, double targetY) {
             double dt = dtAuthority.update();
@@ -590,28 +575,22 @@ public class SwerveSubsystem extends SubsystemBase {
             targetState.position = targetY;
             targetState.velocity = 0.0;
 
-            yState = profile.calculate(
-                    dt,
-                    yState,
-                    targetState);
+            yState = profile.calculate(dt, yState, targetState);
 
             Pose2d currentPose = swerve.getRelativePose();
 
-            goalState.pose = new Pose2d(
-                    currentPose.getX(),
-                    yState.position,
-                    currentPose.getRotation());
+            goalState.pose = new Pose2d(currentPose.getX(), yState.position, currentPose.getRotation());
             goalState.fieldSpeeds = new ChassisSpeeds();
 
             ChassisSpeeds robotTarget = controller.calculateRobotRelativeSpeeds(
-                    currentPose,
-                    goalState);
+                currentPose,
+                goalState
+            );
 
             double cosTheta = currentPose.getRotation().getCos();
             double sinTheta = currentPose.getRotation().getSin();
 
-            return robotTarget.vxMetersPerSecond * sinTheta
-                    + robotTarget.vyMetersPerSecond * cosTheta;
+            return robotTarget.vxMetersPerSecond * sinTheta + robotTarget.vyMetersPerSecond * cosTheta;
         }
 
         @SuppressWarnings("unused")
@@ -655,15 +634,10 @@ public class SwerveSubsystem extends SubsystemBase {
             drivePositionMeters[i] = state.ModulePositions[i].distanceMeters;
             driveCurrentAmps[i] = driveCurrentSignals[i].getValueAsDouble();
             driveVoltageVolts[i] = driveVoltageSignals[i].getValueAsDouble();
-            driveTemperatureCelsius[i] = driveTemperatureSignals[i].getValueAsDouble();
-            driveClosedLoopError[i] = driveErrorSignals[i].getValueAsDouble();
-            driveClosedLoopReference[i] = driveReferenceSignals[i].getValueAsDouble();
             steerAngleDeg[i] = state.ModuleStates[i].angle.getDegrees();
             steerTargetDeg[i] = state.ModuleTargets[i].angle.getDegrees();
             steerCurrentAmps[i] = steerCurrentSignals[i].getValueAsDouble();
             steerVoltageVolts[i] = steerVoltageSignals[i].getValueAsDouble();
-            steerTemperatureCelsius[i] = steerTemperatureSignals[i].getValueAsDouble();
-            steerClosedLoopError[i] = steerErrorSignals[i].getValueAsDouble();
         }
 
         LOG.debug.log("DriveVelocityMps", driveVelocityMps);
@@ -671,15 +645,10 @@ public class SwerveSubsystem extends SubsystemBase {
         LOG.debug.log("DrivePositionMeters", drivePositionMeters);
         LOG.info.log("DriveCurrentAmps", driveCurrentAmps);
         LOG.info.log("DriveVoltageVolts", driveVoltageVolts);
-        LOG.debug.log("DriveTemperatureCelsius", driveTemperatureCelsius);
-        LOG.debug.log("DriveClosedLoopError", driveClosedLoopError);
-        LOG.debug.log("DriveClosedLoopReference", driveClosedLoopReference);
         LOG.debug.log("SteerAngleDeg", steerAngleDeg);
         LOG.debug.log("SteerTargetDeg", steerTargetDeg);
         LOG.info.log("SteerCurrentAmps", steerCurrentAmps);
         LOG.info.log("SteerVoltageVolts", steerVoltageVolts);
-        LOG.debug.log("SteerTemperatureCelsius", steerTemperatureCelsius);
-        LOG.debug.log("SteerClosedLoopError", steerClosedLoopError);
         LOG.critical.log("SampleTimestampUs", RobotController.getFPGATime());
     }
 }
