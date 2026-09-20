@@ -1,4 +1,4 @@
-package com.spartronics4915.frc2026.util.mechanism;
+package com.spartronics4915.frc2026.util.control;
 
 import edu.wpi.first.wpilibj.Timer;
 

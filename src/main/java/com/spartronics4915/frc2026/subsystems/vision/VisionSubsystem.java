@@ -10,7 +10,6 @@ import java.util.Map;
 import static com.spartronics4915.frc2026.Constants.VisionConstants.*;
 
 import com.ctre.phoenix6.Utils;
-import com.spartronics4915.frc2026.Constants;
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.cameras.CameraIO;
@@ -31,7 +30,6 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
@@ -50,14 +48,13 @@ public class VisionSubsystem extends SubsystemBase {
     private static VisionSubsystem instance;
 
     private final SwerveSubsystem swerve;
-    private final AprilTagFieldLayout fieldLayout = Robot.isReal()
-        ? SIM_APRILTAG_FIELD_LAYOUT
-        : SIM_APRILTAG_FIELD_LAYOUT;
+    private final AprilTagFieldLayout fieldLayout = Robot.isReal() ? SIM_APRILTAG_FIELD_LAYOUT : SIM_APRILTAG_FIELD_LAYOUT;
     private final List<CameraIO> cameras = new ArrayList<>();
     private final Map<String, CameraSnapshot> cameraDiagnostics = new HashMap<>();
     private final Map<String, Scope> cameraLogs = new HashMap<>();
     private final VisionSystemSim visionSim;
     private final TurretAngleHistory turretAngleHistory = new TurretAngleHistory(64);
+
     private Pose2d latestVisionPose;
     private boolean camerasConfigured;
     private long periodicDurationUs;
@@ -94,16 +91,6 @@ public class VisionSubsystem extends SubsystemBase {
         addPhotonCamera(new CameraConfig("evan", frontCameraTransform));
         addPhotonCamera(new CameraConfig("val", backCameraTransform));
         addPhotonCamera(new CameraConfig("daniil", rioCameraTransform));
-
-        Transform3d robotToTurret = new Transform3d(
-            Constants.SuperstructureConstants.turretTranslation3D,
-            new Rotation3d());
-
-        addTurretedLimelight(
-            "argos",
-            robotToTurret,
-            turretToCamera,
-            turretAngleHistory::sampleDegrees);
 
         camerasConfigured = true;
     }
@@ -247,7 +234,6 @@ public class VisionSubsystem extends SubsystemBase {
                     if (StdDevCalculator.isStale(observation.estimate(), now)) {
                         diagnostics.StaleObservationCount++;
                     }
-                    diagnostics.ReceiptTimestampUs = RobotController.getFPGATime();
                 }
                 continue;
             }
@@ -300,9 +286,9 @@ public class VisionSubsystem extends SubsystemBase {
         for (int i = 0; i < tagIds.length; i++) {
             diagnostics.SeenTagIds[i] = tagIds[i];
         }
+
         diagnostics.SeenTagPoses = tagPoses.toArray(Pose3d[]::new);
         diagnostics.EstimatedPose = observation.pose().toPose2d();
-        diagnostics.EstimatedPose3d = observation.pose();
         diagnostics.TagCount = observation.tagCount();
         diagnostics.AverageTagDistanceMeters = observation.avgTagDistanceMeters();
         diagnostics.AverageTagAmbiguity = observation.avgTagAmbiguity();
@@ -311,8 +297,6 @@ public class VisionSubsystem extends SubsystemBase {
         diagnostics.StdDevXMeters = stdDevs.get(0, 0);
         diagnostics.StdDevThetaDeg = Math.toDegrees(stdDevs.get(2, 0));
         diagnostics.CaptureTimestampUs = Math.round(observation.timestamp().in(Seconds) * 1_000_000.0);
-        diagnostics.ReceiptTimestampUs = RobotController.getFPGATime();
-        diagnostics.SampleTimestampUs = diagnostics.ReceiptTimestampUs;
         diagnostics.Enabled = true;
         diagnostics.Accepted = true;
         diagnostics.AcceptedObservationCount++;
@@ -328,7 +312,6 @@ public class VisionSubsystem extends SubsystemBase {
             CameraSnapshot camera = entry.getValue();
             cameraLog.critical.log("SampleTimestampUs", camera.SampleTimestampUs);
             cameraLog.critical.log("CaptureTimestampUs", camera.CaptureTimestampUs);
-            cameraLog.critical.log("ReceiptTimestampUs", camera.ReceiptTimestampUs);
             cameraLog.critical.log("Enabled", camera.Enabled);
             cameraLog.critical.log("Accepted", camera.Accepted);
             cameraLog.critical.log("AcceptedObservationCount", camera.AcceptedObservationCount);
@@ -352,7 +335,6 @@ public class VisionSubsystem extends SubsystemBase {
             cameraLog.debug.log("MaxPendingEstimateCount", camera.MaxPendingEstimateCount);
             cameraLog.debug.log("SeenTagIds", camera.SeenTagIds);
             cameraLog.debug.log("SeenTagPoses", camera.SeenTagPoses);
-            cameraLog.debug.log("EstimatedPose3d", camera.EstimatedPose3d);
         }
     }
 
@@ -361,7 +343,6 @@ public class VisionSubsystem extends SubsystemBase {
         private static final Pose3d[] NO_TAG_POSES = new Pose3d[0];
         long SampleTimestampUs;
         long CaptureTimestampUs;
-        long ReceiptTimestampUs;
         boolean Enabled;
         boolean Accepted;
         long AcceptedObservationCount;
@@ -378,7 +359,6 @@ public class VisionSubsystem extends SubsystemBase {
         long[] SeenTagIds = NO_TAG_IDS;
         Pose3d[] SeenTagPoses = NO_TAG_POSES;
         Pose2d EstimatedPose = new Pose2d();
-        Pose3d EstimatedPose3d = new Pose3d();
         long TagCount;
         double AverageTagDistanceMeters;
         double AverageTagAmbiguity;
@@ -400,13 +380,11 @@ public class VisionSubsystem extends SubsystemBase {
 
         void clearObservation(long sampleTimestampUs, boolean enabled) {
             SampleTimestampUs = sampleTimestampUs;
-            ReceiptTimestampUs = sampleTimestampUs;
             Enabled = enabled;
             Accepted = false;
             SeenTagIds = NO_TAG_IDS;
             SeenTagPoses = NO_TAG_POSES;
             EstimatedPose = new Pose2d();
-            EstimatedPose3d = new Pose3d();
             TagCount = 0;
             AverageTagDistanceMeters = 0;
             AverageTagAmbiguity = 0;

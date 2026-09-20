@@ -3,9 +3,7 @@ package com.spartronics4915.frc2026.subsystems.swerve;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.*;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.*;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
-
 import java.util.Objects;
-
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.Utils;
@@ -18,15 +16,14 @@ import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
-
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.trajectory.PathPlannerTrajectoryState;
 import com.spartronics4915.frc2026.Constants.SwerveConstants.SwerveConfigurations;
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.autos.Autos;
+import com.spartronics4915.frc2026.util.control.TimeVarianceAuthority;
 import com.spartronics4915.frc2026.util.logging.Telemetry;
 import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
-import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.MathUtil;
@@ -55,10 +52,11 @@ import frc.robot.lib.BLine.Path;
 
 /**
  * Swerve drivetrain subsystem.
- *
- * <p>CTRE owns the hardware-level drivetrain and pose estimator. This class owns
+ * <p>
+ * CTRE owns the hardware-level drivetrain and pose estimator. This class owns
  * robot-level drivetrain policy: teleop input shaping, operator perspective,
- * CTRE heading control, autonomous requests, vision integration, and telemetry.</p>
+ * CTRE heading control, autonomous requests, vision integration, and telemetry.
+ * </p>
  */
 public class SwerveSubsystem extends SubsystemBase {
     private static final TimeVarianceAuthority TVA = new TimeVarianceAuthority();
@@ -71,24 +69,21 @@ public class SwerveSubsystem extends SubsystemBase {
     private final SwerveDrivetrain<?, ?, ?> drivetrain;
     private Alliance appliedAlliance = null;
 
-    private final SwerveRequest.FieldCentric fieldCentricRequest =
-        new SwerveRequest.FieldCentric()
+    private final SwerveRequest.FieldCentric fieldCentricRequest = new SwerveRequest.FieldCentric()
             .withForwardPerspective(SwerveRequest.ForwardPerspectiveValue.OperatorPerspective)
             .withDriveRequestType(DriveRequestType.Velocity)
             .withSteerRequestType(SteerRequestType.Position);
 
-    private final SwerveRequest.FieldCentricFacingAngle headingLockRequest =
-        new SwerveRequest.FieldCentricFacingAngle().withForwardPerspective(SwerveRequest.ForwardPerspectiveValue.OperatorPerspective)
+    private final SwerveRequest.FieldCentricFacingAngle headingLockRequest = new SwerveRequest.FieldCentricFacingAngle()
+            .withForwardPerspective(SwerveRequest.ForwardPerspectiveValue.OperatorPerspective)
             .withDriveRequestType(DriveRequestType.Velocity)
             .withSteerRequestType(SteerRequestType.Position);
 
-    private final SwerveRequest.RobotCentric robotCentricRequest =
-        new SwerveRequest.RobotCentric()
+    private final SwerveRequest.RobotCentric robotCentricRequest = new SwerveRequest.RobotCentric()
             .withDriveRequestType(DriveRequestType.Velocity)
             .withSteerRequestType(SteerRequestType.Position);
 
-    private final SwerveRequest.ApplyRobotSpeeds autoRequest =
-        new SwerveRequest.ApplyRobotSpeeds()
+    private final SwerveRequest.ApplyRobotSpeeds autoRequest = new SwerveRequest.ApplyRobotSpeeds()
             .withDriveRequestType(DriveRequestType.Velocity)
             .withSteerRequestType(SteerRequestType.Position);
 
@@ -129,7 +124,7 @@ public class SwerveSubsystem extends SubsystemBase {
     private final BaseStatusSignal[] steerVoltageSignals = new BaseStatusSignal[4];
     private final BaseStatusSignal[] steerTemperatureSignals = new BaseStatusSignal[4];
     private final BaseStatusSignal[] steerErrorSignals = new BaseStatusSignal[4];
-    private final BaseStatusSignal[] telemetrySignals = new BaseStatusSignal[4 * 9];
+    private final BaseStatusSignal[] telemetrySignals = new BaseStatusSignal[4 * 9 + 2];
     private final StatusSignal<Angle> rollSignal;
     private final StatusSignal<Angle> pitchSignal;
 
@@ -154,16 +149,15 @@ public class SwerveSubsystem extends SubsystemBase {
         configuration = Objects.requireNonNull(config, "config");
 
         drivetrain = new SwerveDrivetrain<>(
-            TalonFX::new,
-            TalonFX::new,
-            CANcoder::new,
-            config.drivetrainConstants,
-            ODOMETRY_FREQUENCY,
-            config.modules[0],
-            config.modules[1],
-            config.modules[2],
-            config.modules[3]
-        );
+                TalonFX::new,
+                TalonFX::new,
+                CANcoder::new,
+                config.drivetrainConstants,
+                ODOMETRY_FREQUENCY,
+                config.modules[0],
+                config.modules[1],
+                config.modules[2],
+                config.modules[3]);
 
         drivetrain.setStateStdDevs(NORMAL_STD_DEVS);
         drivetrain.configNeutralMode(NeutralModeValue.Brake);
@@ -186,17 +180,17 @@ public class SwerveSubsystem extends SubsystemBase {
         }
         rollSignal = drivetrain.getPigeon2().getRoll(false);
         pitchSignal = drivetrain.getPigeon2().getPitch(false);
+        telemetrySignals[signalIndex++] = rollSignal;
+        telemetrySignals[signalIndex++] = pitchSignal;
 
         headingLockRequest.HeadingController.setPID(HEADING_LOCK_P, 0.0, HEADING_LOCK_D);
         headingLockRequest.HeadingController.enableContinuousInput(-Math.PI, Math.PI);
 
         if (Robot.isSimulation()) {
             drivetrain.resetPose(
-                new Pose2d(
-                    new Translation2d(14.0, 5.0),
-                    Rotation2d.fromDegrees(180.0)
-                )
-            );
+                    new Pose2d(
+                            new Translation2d(14.0, 5.0),
+                            Rotation2d.fromDegrees(180.0)));
         }
 
         configureBLine();
@@ -209,8 +203,7 @@ public class SwerveSubsystem extends SubsystemBase {
             instance = new SwerveSubsystem(config);
         } else if (instance.configuration != config && !instance.configuration.equals(config)) {
             throw new IllegalStateException(
-                "SwerveSubsystem was already initialized with a different configuration."
-            );
+                    "SwerveSubsystem was already initialized with a different configuration.");
         }
 
         return instance;
@@ -220,10 +213,9 @@ public class SwerveSubsystem extends SubsystemBase {
         DriverStation.getAlliance().ifPresent(alliance -> {
             if (DriverStation.isDisabled() || alliance != appliedAlliance) {
                 drivetrain.setOperatorPerspectiveForward(
-                    alliance == DriverStation.Alliance.Red
-                        ? RED_OPERATOR_FORWARD
-                        : BLUE_OPERATOR_FORWARD
-                );
+                        alliance == DriverStation.Alliance.Red
+                                ? RED_OPERATOR_FORWARD
+                                : BLUE_OPERATOR_FORWARD);
                 appliedAlliance = alliance;
             }
         });
@@ -231,6 +223,8 @@ public class SwerveSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
+        // One acquisition phase for module diagnostics and the tilt used by control/telemetry.
+        BaseStatusSignal.refreshAll(telemetrySignals);
         updateOperatorPerspective();
         double now = Utils.getCurrentTimeSeconds();
 
@@ -258,9 +252,8 @@ public class SwerveSubsystem extends SubsystemBase {
     @Override
     public void simulationPeriodic() {
         drivetrain.updateSimState(
-            TVA.update(), // Gets the actual delta time, not predicted
-            RobotController.getBatteryVoltage()
-        );
+                TVA.update(), // Gets the actual delta time, not predicted
+                RobotController.getBatteryVoltage());
 
         /* No independent simulated truth pose is maintained. */
         pose3d = new Pose3d(getPose());
@@ -268,9 +261,10 @@ public class SwerveSubsystem extends SubsystemBase {
 
     /**
      * Converts raw normalized Xbox inputs into the robot's teleop drive behavior.
-     *
-     * <p>This is intentionally the single entry point for human-driven swerve
-     * control. The command layer should only provide controller inputs.</p>
+     * <p>
+     * This is intentionally the single entry point for human-driven swerve
+     * control. The command layer should only provide controller inputs.
+     * </p>
      */
     public void acceptTeleopInput(double rawVX, double rawVY, double rawOmega) {
         double vX = shapeJoystick(rawVX) * MAX_VELOCITY;
@@ -306,10 +300,10 @@ public class SwerveSubsystem extends SubsystemBase {
             if (lockedHeading == null) {
                 double robotOmega = getFieldVelocity().omegaRadiansPerSecond;
                 double drift = (robotOmega * Math.abs(robotOmega)) / (2 * maxSwerveRotationDecel);
-                
+
                 lockedHeading = getPose().getRotation()
-                    .minus(getHeadingOffset())
-                    .plus(Rotation2d.fromRadians(drift));
+                        .minus(getHeadingOffset())
+                        .plus(Rotation2d.fromRadians(drift));
             }
 
             driveFieldCentricFacingAngle(vX, vY, lockedHeading);
@@ -333,50 +327,44 @@ public class SwerveSubsystem extends SubsystemBase {
         lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
 
         drivetrain.setControl(
-            fieldCentricRequest
-                .withVelocityX(vX)
-                .withVelocityY(vY)
-                .withRotationalRate(omega)
-        );
+                fieldCentricRequest
+                        .withVelocityX(vX)
+                        .withVelocityY(vY)
+                        .withRotationalRate(omega));
     }
 
     public void driveFieldCentricFacingAngle(
-        double vX,
-        double vY,
-        Rotation2d targetHeading
-    ) {
+            double vX,
+            double vY,
+            Rotation2d targetHeading) {
         lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
         drivetrain.setControl(
-            headingLockRequest
-                .withVelocityX(vX)
-                .withVelocityY(vY)
-                .withTargetDirection(targetHeading)
-        );
+                headingLockRequest
+                        .withVelocityX(vX)
+                        .withVelocityY(vY)
+                        .withTargetDirection(targetHeading));
     }
 
     public void driveRobotCentric(double vX, double vY, double omega) {
         lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
         drivetrain.setControl(
-            robotCentricRequest
-                .withVelocityX(vX)
-                .withVelocityY(vY)
-                .withRotationalRate(omega)
-        );
+                robotCentricRequest
+                        .withVelocityX(vX)
+                        .withVelocityY(vY)
+                        .withRotationalRate(omega));
     }
 
     public void drive(ChassisSpeeds chassisSpeeds) {
         driveRobotCentric(
-            chassisSpeeds.vxMetersPerSecond,
-            chassisSpeeds.vyMetersPerSecond,
-            chassisSpeeds.omegaRadiansPerSecond
-        );
+                chassisSpeeds.vxMetersPerSecond,
+                chassisSpeeds.vyMetersPerSecond,
+                chassisSpeeds.omegaRadiansPerSecond);
     }
 
     public void stop() {
         lastDriveCommandTimestamp = Utils.getCurrentTimeSeconds();
         drivetrain.setControl(
-            autoRequest.withSpeeds(new ChassisSpeeds())
-        );
+                autoRequest.withSpeeds(new ChassisSpeeds()));
     }
 
     public void lockModules() {
@@ -403,10 +391,9 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     public void addVisionMeasurement(
-        Pose2d pose,
-        double timestamp,
-        Matrix<N3, N1> stdDevs
-    ) {
+            Pose2d pose,
+            double timestamp,
+            Matrix<N3, N1> stdDevs) {
         drivetrain.addVisionMeasurement(pose, timestamp, stdDevs);
     }
 
@@ -424,24 +411,22 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public ChassisSpeeds getFieldVelocity() {
         return ChassisSpeeds.fromRobotRelativeSpeeds(
-            getRobotVelocity(),
-            getPose().getRotation()
-        );
+                getRobotVelocity(),
+                getPose().getRotation());
     }
 
     public ChassisSpeeds getFieldRelativeVelocity() {
         ChassisSpeeds velocity = getFieldVelocity();
         return Autos.shouldFlip()
-            ? FlippingUtil.flipFieldSpeeds(velocity)
-            : velocity;
+                ? FlippingUtil.flipFieldSpeeds(velocity)
+                : velocity;
     }
 
     public double getSpeed() {
         ChassisSpeeds velocity = getFieldVelocity();
         return Math.hypot(
-            velocity.vxMetersPerSecond,
-            velocity.vyMetersPerSecond
-        );
+                velocity.vxMetersPerSecond,
+                velocity.vyMetersPerSecond);
     }
 
     public Rotation2d getRoll() {
@@ -449,7 +434,7 @@ public class SwerveSubsystem extends SubsystemBase {
             return new Rotation2d(pose3d.getRotation().getX());
         }
 
-        return Rotation2d.fromDegrees(rollSignal.refresh().getValueAsDouble());
+        return Rotation2d.fromDegrees(rollSignal.getValueAsDouble());
     }
 
     public Rotation2d getPitch() {
@@ -457,7 +442,7 @@ public class SwerveSubsystem extends SubsystemBase {
             return new Rotation2d(pose3d.getRotation().getY());
         }
 
-        return Rotation2d.fromDegrees(pitchSignal.refresh().getValueAsDouble());
+        return Rotation2d.fromDegrees(pitchSignal.getValueAsDouble());
     }
 
     public Rotation3d getGyroRotation3d() {
@@ -470,14 +455,13 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public RobotHeading getHeading() {
         return new RobotHeading(
-            getGyroRotation3d(),
-            Timer.getFPGATimestamp()
-        );
+                getGyroRotation3d(),
+                Timer.getFPGATimestamp());
     }
 
     public boolean isFlat() {
         return Math.abs(getPitch().getDegrees()) < TILT_THRESHOLD_DEGREES
-            && Math.abs(getRoll().getDegrees()) < TILT_THRESHOLD_DEGREES;
+                && Math.abs(getRoll().getDegrees()) < TILT_THRESHOLD_DEGREES;
     }
 
     public boolean isFlatDebounced() {
@@ -499,8 +483,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public Rotation2d getHeadingOffset() {
         return teleopHeadingOffset.plus(
-            Autos.shouldFlip() ? Rotation2d.kPi : Rotation2d.kZero
-        );
+                Autos.shouldFlip() ? Rotation2d.kPi : Rotation2d.kZero);
     }
 
     public void resetHeadingOffset() {
@@ -523,14 +506,11 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     private void configureBLine() {
-        FollowPath.setDoubleLoggingConsumer(pair ->
-            BLINE_LOG.debug.log(pair.getFirst(), pair.getSecond()));
+        FollowPath.setDoubleLoggingConsumer(pair -> BLINE_LOG.debug.log(pair.getFirst(), pair.getSecond()));
 
-        FollowPath.setBooleanLoggingConsumer(pair ->
-            BLINE_LOG.debug.log(pair.getFirst(), pair.getSecond()));
+        FollowPath.setBooleanLoggingConsumer(pair -> BLINE_LOG.debug.log(pair.getFirst(), pair.getSecond()));
 
-        FollowPath.setPoseLoggingConsumer(pair ->
-            BLINE_LOG.debug.log(pair.getFirst(), pair.getSecond()));
+        FollowPath.setPoseLoggingConsumer(pair -> BLINE_LOG.debug.log(pair.getFirst(), pair.getSecond()));
 
         FollowPath.setTranslationListLoggingConsumer(pair -> {
             Translation2d[] translations = pair.getSecond();
@@ -538,48 +518,42 @@ public class SwerveSubsystem extends SubsystemBase {
 
             for (int i = 0; i < translations.length; i++) {
                 poses[i] = new Pose2d(
-                    translations[i],
-                    Rotation2d.kZero
-                );
+                        translations[i],
+                        Rotation2d.kZero);
             }
 
             BLINE_LOG.debug.log(pair.getFirst(), poses);
         });
 
         FollowPath.Builder pathBuilder = new FollowPath.Builder(
-            this,
-            this::getPose,
-            this::getRobotVelocity,
-            this::drive,
-            translationPID,
-            rotationPID,
-            crossTrackPID
-        ).withDefaultShouldFlip();
+                this,
+                this::getPose,
+                this::getRobotVelocity,
+                this::drive,
+                translationPID,
+                rotationPID,
+                crossTrackPID).withDefaultShouldFlip();
 
         Autos.setPathBuilder(pathBuilder);
         Path.setDefaultGlobalConstraints(defaultPathConstraints);
     }
 
     public static ChassisSpeeds rotateLinearChassisSpeeds(
-        ChassisSpeeds in,
-        Rotation2d offset
-    ) {
+            ChassisSpeeds in,
+            Rotation2d offset) {
         Translation2d linear = new Translation2d(
-            in.vxMetersPerSecond,
-            in.vyMetersPerSecond
-        ).rotateBy(offset);
+                in.vxMetersPerSecond,
+                in.vyMetersPerSecond).rotateBy(offset);
 
         return new ChassisSpeeds(
-            linear.getX(),
-            linear.getY(),
-            in.omegaRadiansPerSecond
-        );
+                linear.getX(),
+                linear.getY(),
+                in.omegaRadiansPerSecond);
     }
 
     public void configureStdDevsDisabled() {
         drivetrain.setStateStdDevs(
-            VecBuilder.fill(1.0, 1.0, 1.0)
-        );
+                VecBuilder.fill(1.0, 1.0, 1.0));
     }
 
     public void configureStdDevsEnabled() {
@@ -599,11 +573,9 @@ public class SwerveSubsystem extends SubsystemBase {
         private TrapezoidProfile.State yState = new TrapezoidProfile.State();
         private boolean initialized;
 
-        private final PPHolonomicDriveController controller =
-            new PPHolonomicDriveController(
+        private final PPHolonomicDriveController controller = new PPHolonomicDriveController(
                 alignTranslationPID,
-                alignRotationPID
-            );
+                alignRotationPID);
 
         double calculate(SwerveSubsystem swerve, double targetY) {
             double dt = dtAuthority.update();
@@ -619,31 +591,27 @@ public class SwerveSubsystem extends SubsystemBase {
             targetState.velocity = 0.0;
 
             yState = profile.calculate(
-                dt,
-                yState,
-                targetState
-            );
+                    dt,
+                    yState,
+                    targetState);
 
             Pose2d currentPose = swerve.getRelativePose();
 
             goalState.pose = new Pose2d(
-                currentPose.getX(),
-                yState.position,
-                currentPose.getRotation()
-            );
+                    currentPose.getX(),
+                    yState.position,
+                    currentPose.getRotation());
             goalState.fieldSpeeds = new ChassisSpeeds();
 
-            ChassisSpeeds robotTarget =
-                controller.calculateRobotRelativeSpeeds(
+            ChassisSpeeds robotTarget = controller.calculateRobotRelativeSpeeds(
                     currentPose,
-                    goalState
-                );
+                    goalState);
 
             double cosTheta = currentPose.getRotation().getCos();
             double sinTheta = currentPose.getRotation().getSin();
 
             return robotTarget.vxMetersPerSecond * sinTheta
-                + robotTarget.vyMetersPerSecond * cosTheta;
+                    + robotTarget.vyMetersPerSecond * cosTheta;
         }
 
         @SuppressWarnings("unused")
@@ -654,7 +622,6 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
     private void outputTelemetry(SwerveDriveState state) {
-        BaseStatusSignal.refreshAll(telemetrySignals);
         Pose2d rawPose = state.Pose;
         ChassisSpeeds fieldVelocity = telemetryFieldVelocity;
         double vx = state.Speeds.vxMetersPerSecond;

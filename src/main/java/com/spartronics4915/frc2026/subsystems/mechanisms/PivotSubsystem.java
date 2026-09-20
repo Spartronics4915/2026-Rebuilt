@@ -2,23 +2,20 @@ package com.spartronics4915.frc2026.subsystems.mechanisms;
 
 import static com.spartronics4915.frc2026.Constants.PivotConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
-
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
 import com.ctre.phoenix6.hardware.CANcoder;
-
 import com.spartronics4915.frc2026.Robot;
+import com.spartronics4915.frc2026.util.control.TimeVarianceAuthority;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
-import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
-import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.LoggedTrapezoidProfile;
-import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
 import com.spartronics4915.frc2026.util.logging.Telemetry;
+import com.spartronics4915.frc2026.util.logging.MotorHelpers.LoggedTrapezoidProfile;
+import com.spartronics4915.frc2026.util.logging.MotorHelpers.CTRE.LoggedTalonFX;
 import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
-
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -32,31 +29,23 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface {
-    private static final Scope LOG = Telemetry.scope("Mechanisms/Pivot");
 
-    // Motion Magic?
+    private static final Scope LOG = Telemetry.scope("Mechanisms/Pivot");
 
     LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
     CANcoder encoder = new CANcoder(ENCODER_ID, CAN_BUS);
     private final StatusSignal<Angle> motorPositionSignal = motor.getPosition(false);
-    private final StatusSignal<Angle> encoderAbsolutePositionSignal =
-        encoder.getAbsolutePosition(false);
+    private final StatusSignal<Angle> encoderAbsolutePositionSignal = encoder.getAbsolutePosition(false);
     private final StatusSignal<Double> dutyCycleSignal = motor.getDutyCycle(false);
-    private final BaseStatusSignal[] telemetrySignals = {
-        motorPositionSignal,
-        encoderAbsolutePositionSignal,
-        dutyCycleSignal
-    };
-    
-    LoggedTrapezoidProfile trapProfile = new LoggedTrapezoidProfile(
-        new Constraints(MAX_VELOCITY, MAX_ACCELERATION)
-    );
+    private final BaseStatusSignal[] telemetrySignals = motor.createTelemetrySignalGroup(motorPositionSignal, encoderAbsolutePositionSignal, dutyCycleSignal);
 
+    LoggedTrapezoidProfile trapProfile = new LoggedTrapezoidProfile(new Constraints(MAX_VELOCITY, MAX_ACCELERATION));
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
     private Rotation2d currentSetpoint = new Rotation2d();
     private State currentState = new State();
     private final State goalState = new State();
+
     private long sampleTimestampUs;
     private double appliedDutyCycle;
     private Rotation2d loggedPosition = Rotation2d.kZero;
@@ -77,7 +66,7 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
             cancoderConfiguration.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 0.5;
             cancoderConfiguration.MagnetSensor.SensorDirection = ENCODER_SENSOR_DIRECTION;
             cancoderConfiguration.MagnetSensor.MagnetOffset = MAGNET_OFFSET;
-            encoder.getConfigurator().apply(cancoderConfiguration);
+        encoder.getConfigurator().apply(cancoderConfiguration);
 
         encoderAbsolutePositionSignal.waitForUpdate(0.5);
         Rotation2d initialAngle = Rotation2d.fromRotations(encoderAbsolutePositionSignal.getValueAsDouble());
@@ -97,29 +86,28 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
     }
 
     @Override
-    public void periodic(){
+    public void periodic() {
         BaseStatusSignal.refreshAll(telemetrySignals);
         goalState.position = currentSetpoint.getRotations();
         goalState.velocity = 0.0;
 
         currentState = trapProfile.calculate(
-            dtCalc.update(), 
-            currentState, 
+            dtCalc.update(),
+            currentState,
             goalState
         );
 
         positionTorqueRequest.Position = currentState.position;
         motor.setControl(positionTorqueRequest);
 
-        loggedPosition = Robot.isSimulation()
-            ? currentSetpoint
-            : Rotation2d.fromRotations(motorPositionSignal.getValueAsDouble());
+        loggedPosition = Robot.isSimulation() ? currentSetpoint : Rotation2d.fromRotations(motorPositionSignal.getValueAsDouble());
         appliedDutyCycle = dutyCycleSignal.getValueAsDouble();
         profileSetpoint = Rotation2d.fromRotations(currentState.position);
-        encoderPosition =
-            Rotation2d.fromRotations(encoderAbsolutePositionSignal.getValueAsDouble());
+        encoderPosition = Rotation2d.fromRotations(encoderAbsolutePositionSignal.getValueAsDouble());
         mechanismPose = new Pose3d(0.2842, 0, 0.1825,
-            new Rotation3d(0, -loggedPosition.plus(Rotation2d.fromDegrees(-130)).getRadians(), 0));
+                new Rotation3d(0, -loggedPosition.plus(Rotation2d.fromDegrees(-130)).getRadians(), 0)
+        );
+
         sampleTimestampUs = RobotController.getFPGATime();
         outputTelemetry();
     }
@@ -141,31 +129,29 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
         return loggedPosition;
     }
 
-    public void setSetpoint(Rotation2d setpoint){
+    public void setSetpoint(Rotation2d setpoint) {
         currentSetpoint = Rotation2d.fromRotations(
             MathUtil.clamp(
-                setpoint.getRotations(), 
-                MIN_ANGLE.getRotations(), 
-                MAX_ANGLE.getRotations()
-            )
-        );
+                setpoint.getRotations(),
+                MIN_ANGLE.getRotations(),
+                MAX_ANGLE.getRotations()));
     }
 
     public Rotation2d getSetpoint() {
         return currentSetpoint;
     }
 
-    public void setState(PivotState state){
+    public void setState(PivotState state) {
         setSetpoint(state.angle);
     }
 
-    private void setMechanismAngle(Rotation2d angle){
+    private void setMechanismAngle(Rotation2d angle) {
         motor.setPosition(angle.getRotations());
         loggedPosition = angle;
         resetMechanism(angle);
     }
 
-    public void resetMechanism(){
+    public void resetMechanism() {
         resetMechanism(getPosition());
     }
 
@@ -179,24 +165,22 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
         currentSetpoint = Rotation2d.fromDegrees(getSetpoint().getDegrees() + delta.getDegrees());
     }
 
-    //#endregion
+    // #endregion
 
-    //#region Commands
+    // #region Commands
 
-    public Command setSetpointCommand(Rotation2d newSetpoint){
+    public Command setSetpointCommand(Rotation2d newSetpoint) {
         return this.runOnce(() -> setSetpoint(newSetpoint));
     }
 
-    public Command setStateCommand(PivotState state){
+    public Command setStateCommand(PivotState state) {
         return setSetpointCommand(state.angle);
     }
 
-    //#endregion
- 
+    // #endregion
+
     public enum PivotState {
-        READY(Rotation2d.fromDegrees(-0.1)),
-        SAFE(Rotation2d.fromDegrees(60)),
-        STOW(Rotation2d.fromDegrees(130));
+        READY(Rotation2d.fromDegrees(-0.1)), SAFE(Rotation2d.fromDegrees(60)), STOW(Rotation2d.fromDegrees(130));
 
         Rotation2d angle;
 

@@ -6,14 +6,14 @@ import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
-import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
+
 import com.spartronics4915.frc2026.util.logging.Telemetry;
+import com.spartronics4915.frc2026.util.logging.MotorHelpers.CTRE.LoggedTalonFX;
 import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -25,17 +25,15 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
-import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
 
 public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterface {
+
     private static final Scope LOG = Telemetry.scope("Mechanisms/Indexer");
-    
-    // Enable FOC control and Switch to Velocity Voltage
 
     private LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
     private final StatusSignal<AngularVelocity> velocitySignal = motor.getVelocity(false);
     private final StatusSignal<Double> dutyCycleSignal = motor.getDutyCycle(false);
-    private final BaseStatusSignal[] telemetrySignals = {velocitySignal, dutyCycleSignal};
+    private final BaseStatusSignal[] telemetrySignals = motor.createTelemetrySignalGroup(velocitySignal, dutyCycleSignal);
 
     private double currentSetpoint;
     private long sampleTimestampUs;
@@ -46,8 +44,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     private final VelocityVoltage velocityVoltageRequest = new VelocityVoltage(0.0).withEnableFOC(true);
     private final VoltageOut stopRequest = new VoltageOut(0.0);
-    private final SlewRateLimiter slewRateLimiter = new SlewRateLimiter(99999); // 50
-    
+
     private double indexerAngle = 0.0; // Tracks cumulative rotation angle in radians
 
     public IndexerSubsystem() {
@@ -63,7 +60,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
         motor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
 
         SmartDashboard.putData("indexer motor", motor);
-        
+
         SmartDashboard.putData("Indexer On", setStateCommand(IndexerState.FORWARD));
         SmartDashboard.putData("Indexer Off", setStateCommand(IndexerState.OFF));
     }
@@ -75,29 +72,29 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
         currentSetpoint = MathUtil.clamp(
             currentSetpoint,
             -MAX_RPS,
-            MAX_RPS
-        );
+            MAX_RPS);
 
-        double limitedSetpoint = slewRateLimiter.calculate(currentSetpoint);
-
-        if (limitedSetpoint != 0) {
-            velocityVoltageRequest.Velocity = limitedSetpoint;
+        if (currentSetpoint != 0) {
+            velocityVoltageRequest.Velocity = currentSetpoint;
             motor.setControl(velocityVoltageRequest);
         } else {
             motor.setControl(stopRequest);
         }
-        
+
         double velocityRps = Robot.isReal()
             ? velocitySignal.getValueAsDouble()
             : getCurrentSetpoint();
+
         indexerAngle += velocityRps * 2 * Math.PI * 0.02;
         appliedDutyCycle = dutyCycleSignal.getValueAsDouble();
+
         this.velocityRps = velocityRps;
         profileSetpointRps = currentSetpoint;
         mechanismPose = new Pose3d(
-                0.0472, -0.0002, 0.0619, 
-                new Rotation3d(0, 0, indexerAngle)
-            );
+            0.0472, -0.0002, 0.0619,
+            new Rotation3d(0, 0, indexerAngle)
+        );
+
         sampleTimestampUs = RobotController.getFPGATime();
         outputTelemetry();
     }
@@ -119,7 +116,7 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
         return currentSetpoint;
     }
 
-    public void setSetpoint(double setpoint){
+    public void setSetpoint(double setpoint) {
         currentSetpoint = setpoint;
     }
 
@@ -127,25 +124,24 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
         setSetpoint(state.rps);
     }
 
-    //#endregion
+    // #endregion
 
-    //#region Commands
+    // #region Commands
 
-    public Command setSetpointCommand(double setpoint){
+    public Command setSetpointCommand(double setpoint) {
         return this.runOnce(() -> setSetpoint(setpoint));
     }
 
-    public Command setStateCommand(IndexerState state){
+    public Command setStateCommand(IndexerState state) {
         return setSetpointCommand(state.rps);
     }
 
     public enum IndexerState {
-        FORWARD(17.0),
-        REVERSE(-17.0),
-        OFF(0.0);
+        FORWARD(17.0), REVERSE(-17.0), OFF(0.0);
 
         public double rps;
-        private IndexerState(double rps) { 
+
+        private IndexerState(double rps) {
             this.rps = rps;
         }
     }
@@ -156,4 +152,3 @@ public class IndexerSubsystem extends SubsystemBase implements ModeSwitchInterfa
     }
 
 }
-

@@ -10,12 +10,13 @@ import com.spartronics4915.frc2026.autos.Autos;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands;
 import com.spartronics4915.frc2026.commands.SuperstructureCommands.PipelineState;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
-import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
 import com.spartronics4915.frc2026.util.control.FieldRegion;
 import com.spartronics4915.frc2026.util.control.FieldZoneMap;
 import com.spartronics4915.frc2026.util.logging.Telemetry;
 import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
+
 import au.grapplerobotics.LaserCan;
+
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -46,7 +47,6 @@ public class Superstructure extends SubsystemBase {
     private final SwerveSubsystem swerve;
     private final AutoAimController controller;
     private final SuperstructureCommands superCommands;
-    private final VisionSubsystem vision;
 
     private final LaserCan laserCan;
 
@@ -61,13 +61,11 @@ public class Superstructure extends SubsystemBase {
     public Superstructure(
         SwerveSubsystem swerve,
         AutoAimController controller,
-        SuperstructureCommands superCommands,
-        VisionSubsystem vision
+        SuperstructureCommands superCommands
     ) {
         this.swerve = swerve;
         this.controller = controller;
         this.superCommands = superCommands;
-        this.vision = vision;
         this.zoneMap = buildZoneMap();
 
         this.laserCan = new LaserCan(feederLC);

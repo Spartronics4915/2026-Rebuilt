@@ -19,7 +19,6 @@ import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.photonvision.simulation.SimCameraProperties;

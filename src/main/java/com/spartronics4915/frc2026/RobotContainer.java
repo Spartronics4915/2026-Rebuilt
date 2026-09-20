@@ -59,8 +59,6 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  */
 public class RobotContainer {
 
-    // TODO: LOOP OVERRUNS
-
     public final HoodSubsystem hoodSubsystem = new HoodSubsystem();
     public final TurretSubsystem turretSubsystem = new TurretSubsystem();
 
@@ -72,8 +70,7 @@ public class RobotContainer {
     public final FeederSubsystem feederSubsystem = new FeederSubsystem();
     public final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
     
-    public final SwerveSubsystem swerveSubsystem =
-        SwerveSubsystem.getInstance(SwerveConfigurations.COMP_CHASSIS);
+    public final SwerveSubsystem swerveSubsystem = SwerveSubsystem.getInstance(SwerveConfigurations.COMP_CHASSIS);
     public final VisionSubsystem visionSubsystem = VisionSubsystem.getInstance(swerveSubsystem);
     
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
@@ -111,8 +108,7 @@ public class RobotContainer {
     public final Superstructure superstructure = new Superstructure(
         swerveSubsystem, 
         autoAimController, 
-        superstructureCommands,
-        visionSubsystem
+        superstructureCommands
     );
 
     private final ComplexAutoChooser autoChooser = new ComplexAutoChooser(transitionFactory, POIFactory, neutralZoneFactory, preAlignmentFactory, superstructure, 20);

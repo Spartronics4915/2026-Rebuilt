@@ -10,6 +10,7 @@ import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
 import com.spartronics4915.frc2026.util.logging.Telemetry;
+import com.spartronics4915.frc2026.util.logging.MotorHelpers.CTRE.LoggedTalonFX;
 import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 
 import edu.wpi.first.math.MathUtil;
@@ -25,23 +26,18 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import com.spartronics4915.frc2026.Robot;
+import com.spartronics4915.frc2026.util.control.TimeVarianceAuthority;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
-import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
-import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
 
 public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface {
-    private static final Scope LOG = Telemetry.scope("Mechanisms/Hood");
 
-    // May need to retune or switch to position + FOC
+    private static final Scope LOG = Telemetry.scope("Mechanisms/Hood");
 
     LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
     private final StatusSignal<Angle> motorPositionSignal = motor.getPosition(false);
     private final StatusSignal<Double> dutyCycleSignal = motor.getDutyCycle(false);
-    private final BaseStatusSignal[] telemetrySignals = {
-        motorPositionSignal,
-        dutyCycleSignal
-    };
+    private final BaseStatusSignal[] telemetrySignals = motor.createTelemetrySignalGroup(motorPositionSignal, dutyCycleSignal);
     
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 

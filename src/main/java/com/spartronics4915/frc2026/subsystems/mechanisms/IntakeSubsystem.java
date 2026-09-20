@@ -2,36 +2,33 @@ package com.spartronics4915.frc2026.subsystems.mechanisms;
 
 import static com.spartronics4915.frc2026.Constants.IntakeConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
-
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
-
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-
 import com.spartronics4915.frc2026.util.logging.Telemetry;
+import com.spartronics4915.frc2026.util.logging.MotorHelpers.CTRE.LoggedTalonFX;
 import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
-import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
 
 public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterface {
-    
-    private static final Scope LOG = Telemetry.scope("Mechanisms/Intake");
 
-    // Enable FOC control and Switch to Velocity Voltage
+    private static final Scope LOG = Telemetry.scope("Mechanisms/Intake");
 
     private LoggedTalonFX motor = new LoggedTalonFX(LEAD_MOTOR_ID, CAN_BUS);
     private final StatusSignal<AngularVelocity> velocitySignal = motor.getVelocity(false);
     private final StatusSignal<Double> dutyCycleSignal = motor.getDutyCycle(false);
-    private final BaseStatusSignal[] telemetrySignals = {velocitySignal, dutyCycleSignal};
+    private final StatusSignal<Voltage> voltageSignal = motor.getMotorVoltage(false);
+    private final BaseStatusSignal[] telemetrySignals = motor.createTelemetrySignalGroup(velocitySignal, dutyCycleSignal,voltageSignal);
 
     private double currentSetpoint;
     private long sampleTimestampUs;
@@ -57,8 +54,6 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         SmartDashboard.putData("Intake On", setStateCommand(IntakeState.INTAKE));
         SmartDashboard.putData("Intake Off", setStateCommand(IntakeState.OFF));
-        SmartDashboard.putData("Intake 16", setStateCommand(IntakeState.SLOW));
-        SmartDashboard.putData("Intake 8", setStateCommand(IntakeState.SLOWER));
     }
 
     @Override
@@ -98,14 +93,14 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
     }
 
     public double getAppliedVoltage() {
-        return motor.getMotorVoltage().getValueAsDouble();
+        return voltageSignal.getValueAsDouble();
     }
 
     public double getSetpoint() {
         return currentSetpoint;
     }
 
-    public void setSetpoint(double newSetpoint){
+    public void setSetpoint(double newSetpoint) {
         currentSetpoint = newSetpoint;
     }
 
@@ -113,24 +108,20 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
         setSetpoint(newState.rps);
     }
 
-    //#endregion
+    // #endregion
 
-    //#region Commands
+    // #region Commands
 
-    public Command setSetpointCommand(double setpoint){
+    public Command setSetpointCommand(double setpoint) {
         return this.runOnce(() -> setSetpoint(setpoint));
     }
 
-    public Command setStateCommand(IntakeState state){
+    public Command setStateCommand(IntakeState state) {
         return setSetpointCommand(state.rps);
     }
 
     public enum IntakeState {
-        INTAKE(22),
-        SLOW(18),
-        SLOWER(8),
-        OUTTAKE(-24),
-        OFF(0);
+        INTAKE(22), OUTTAKE(-24), OFF(0);
 
         double rps;
 
@@ -143,5 +134,5 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
     public void onModeSwitch() {
         setState(IntakeState.OFF);
     }
-    
+
 }

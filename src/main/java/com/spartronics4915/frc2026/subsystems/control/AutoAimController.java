@@ -13,9 +13,9 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsyst
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.util.simulation.FuelSim;
 import com.spartronics4915.frc2026.util.control.AutoAim;
+import com.spartronics4915.frc2026.util.control.TimeVarianceAuthority;
 import com.spartronics4915.frc2026.util.control.AutoAim.AutoAimResult;
 import com.spartronics4915.frc2026.util.control.TurretController;
-import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
 import com.spartronics4915.frc2026.util.logging.Telemetry;
 import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 import edu.wpi.first.math.filter.Debouncer;

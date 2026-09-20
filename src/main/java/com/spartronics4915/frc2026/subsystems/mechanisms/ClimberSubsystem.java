@@ -2,17 +2,16 @@ package com.spartronics4915.frc2026.subsystems.mechanisms;
 
 import static com.spartronics4915.frc2026.Constants.ClimberConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
-
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionVoltage;
+import com.spartronics4915.frc2026.util.control.TimeVarianceAuthority;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
-import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
-import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.LoggedTrapezoidProfile;
-import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
 import com.spartronics4915.frc2026.util.logging.Telemetry;
+import com.spartronics4915.frc2026.util.logging.MotorHelpers.LoggedTrapezoidProfile;
+import com.spartronics4915.frc2026.util.logging.MotorHelpers.CTRE.LoggedTalonFX;
 import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
@@ -29,14 +28,10 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
     LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
     private final StatusSignal<Angle> motorPositionSignal = motor.getPosition(false);
     private final StatusSignal<Double> dutyCycleSignal = motor.getDutyCycle(false);
-    private final BaseStatusSignal[] telemetrySignals = {
-        motorPositionSignal,
-        dutyCycleSignal
-    };
+    private final BaseStatusSignal[] telemetrySignals = motor.createTelemetrySignalGroup(motorPositionSignal, dutyCycleSignal);
     LoggedTrapezoidProfile trapProfile = new LoggedTrapezoidProfile(
-	    new Constraints(MAX_VELOCITY, MAX_ACCELERATION)
-    );
-    
+            new Constraints(MAX_VELOCITY, MAX_ACCELERATION));
+
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
     private double currentSetpoint;
@@ -51,10 +46,10 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     public ClimberSubsystem() {
         TalonFXConfigurator motorConfig = motor.getConfigurator();
-            motorConfig.apply(PID_CONFIG);
-            motorConfig.apply(CURRENT_LIMITS_CONFIG);
-            motorConfig.apply(FEEDBACK_CONFIG);
-            motorConfig.apply(MOTOR_OUTPUT_CONFIG);
+        motorConfig.apply(PID_CONFIG);
+        motorConfig.apply(CURRENT_LIMITS_CONFIG);
+        motorConfig.apply(FEEDBACK_CONFIG);
+        motorConfig.apply(MOTOR_OUTPUT_CONFIG);
 
         BaseStatusSignal.refreshAll(telemetrySignals);
         setMechanismPosition(motorPositionSignal.getValueAsDouble());
@@ -68,22 +63,20 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
     }
 
     @Override
-    public void periodic(){
+    public void periodic() {
         BaseStatusSignal.refreshAll(telemetrySignals);
         goalState.position = currentSetpoint;
         goalState.velocity = 0.0;
 
         currentSetpoint = MathUtil.clamp(
-            currentSetpoint, 
-            MIN_HEIGHT, 
-            MAX_HEIGHT
-        );
+                currentSetpoint,
+                MIN_HEIGHT,
+                MAX_HEIGHT);
 
         currentState = trapProfile.calculate(
-            dtCalc.update(), 
-            currentState, 
-            goalState
-        );
+                dtCalc.update(),
+                currentState,
+                goalState);
 
         positionVoltage.withEnableFOC(ENABLE_FOC).Position = currentState.position;
         motor.setControl(positionVoltage);
@@ -111,46 +104,45 @@ public class ClimberSubsystem extends SubsystemBase implements ModeSwitchInterfa
         return currentSetpoint;
     }
 
-    public void setSetpoint(double setpoint){
+    public void setSetpoint(double setpoint) {
         currentSetpoint = setpoint;
     }
 
-    public void setState(ClimberState state){
+    public void setState(ClimberState state) {
         currentSetpoint = state.position;
     }
 
-    private void setMechanismPosition(double position){
+    private void setMechanismPosition(double position) {
         motor.setPosition(position);
         loggedPosition = position;
         resetMechanism(position);
     }
 
-    public void resetMechanism(){
+    public void resetMechanism() {
         resetMechanism(getPosition());
     }
 
-    public void resetMechanism(double position){
+    public void resetMechanism(double position) {
         currentSetpoint = position;
         currentState = new State(position, 0.0);
     }
 
-    //#endregion
+    // #endregion
 
-    //#region Commands
+    // #region Commands
 
-    public Command setSetpointCommand(double newSetpoint){
+    public Command setSetpointCommand(double newSetpoint) {
         return this.runOnce(() -> setSetpoint(newSetpoint));
     }
 
-    public Command setStateCommand(ClimberState state){
+    public Command setStateCommand(ClimberState state) {
         return setSetpointCommand(state.position);
     }
 
-    //#endregion
- 
+    // #endregion
+
     public enum ClimberState {
-        DOWN(0),
-        JORBIT(2.6);
+        DOWN(0), JORBIT(2.6);
 
         double position;
 

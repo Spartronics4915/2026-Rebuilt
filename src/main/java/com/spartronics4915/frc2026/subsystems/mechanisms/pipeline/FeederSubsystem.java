@@ -8,36 +8,30 @@ import java.util.function.DoubleSupplier;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
-import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
-import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
-
-import au.grapplerobotics.LaserCan;
 import com.spartronics4915.frc2026.util.logging.Telemetry;
+import com.spartronics4915.frc2026.util.logging.MotorHelpers.CTRE.LoggedTalonFX;
 import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
+
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterface {
+
     private static final Scope LOG = Telemetry.scope("Mechanisms/Feeder");
 
-    // Enable FOC control and Switch to Velocity Voltage
-    
     private LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
     private final StatusSignal<AngularVelocity> velocitySignal = motor.getVelocity(false);
     private final StatusSignal<Double> dutyCycleSignal = motor.getDutyCycle(false);
-    private final BaseStatusSignal[] telemetrySignals = {velocitySignal, dutyCycleSignal};
-    
+    private final BaseStatusSignal[] telemetrySignals = motor.createTelemetrySignalGroup(velocitySignal, dutyCycleSignal);
+
     private double currentSetpoint;
     private long sampleTimestampUs;
     private double appliedDutyCycle;
@@ -56,7 +50,7 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
             configurator.apply(CURRENT_LIMITS_CONFIG);
             configurator.apply(FEEDBACK_CONFIG);
             configurator.apply(MOTOR_OUTPUT_CONFIG);
-        
+
         setState(FeederState.OFF);
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
@@ -67,7 +61,7 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
         SmartDashboard.putData("Feeder On", setStateCommand(FeederState.FORWARD));
         SmartDashboard.putData("Feeder Off", setStateCommand(FeederState.OFF));
     }
-    
+
     @Override
     public void periodic() {
         BaseStatusSignal.refreshAll(telemetrySignals);
@@ -75,19 +69,16 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
         // When dynamic speed is active, override the static setpoint with the
         // interpolated value from the distance→RPS lookup table.
         if (dynamicSpeedActive && distanceToTargetSupplier != null) {
-            //currentSetpoint = feederSpeedMap.get(
-            //    distanceToTargetSupplier.getAsDouble()
-            //);
-            currentSetpoint = 22.17887 / 
-                (1 + Math.exp(-((0.798997 * distanceToTargetSupplier.getAsDouble()) - 1.66251)
-            ));
+            // currentSetpoint = feederSpeedMap.get(
+            // distanceToTargetSupplier.getAsDouble()
+            // );
+            currentSetpoint = 22.17887 / (1 + Math.exp(-((0.798997 * distanceToTargetSupplier.getAsDouble()) - 1.66251))); // 22.17887 / (1 + e^-(-0.798997 * distance - 1.66251))
         }
 
         currentSetpoint = MathUtil.clamp(
             currentSetpoint,
             -MAX_RPS,
-            MAX_RPS
-        );
+            MAX_RPS);
 
         if (currentSetpoint != 0) {
             velocityVoltageRequest.Velocity = currentSetpoint;
@@ -115,7 +106,7 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
         return velocityRps;
     }
 
-    public void setSetpoint(double setpoint){
+    public void setSetpoint(double setpoint) {
         currentSetpoint = setpoint;
     }
 
@@ -130,22 +121,20 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
         this.distanceToTargetSupplier = supplier;
     }
 
-    //#endregion
+    // #endregion
 
-    //#region Commands
+    // #region Commands
 
-    public Command setSetpointCommand(double setpoint){
+    public Command setSetpointCommand(double setpoint) {
         return this.runOnce(() -> setSetpoint(setpoint));
     }
 
-    public Command setStateCommand(FeederState state){
+    public Command setStateCommand(FeederState state) {
         return this.runOnce(() -> setState(state));
     }
 
-    public enum FeederState{
-        FORWARD(22.0),
-        REVERSE(-22.0),
-        OFF(0);
+    public enum FeederState {
+        FORWARD(22.0), REVERSE(-22.0), OFF(0);
 
         double rps;
 
