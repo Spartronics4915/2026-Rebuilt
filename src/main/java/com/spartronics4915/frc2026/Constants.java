@@ -50,6 +50,7 @@ import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
+import com.ctre.phoenix6.configs.Slot1Configs;
 import com.ctre.phoenix6.configs.SlotConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.signals.InvertedValue;
@@ -103,8 +104,8 @@ public final class Constants {
 
         public static final Constraints TRENCH_ALIGN_CONSTRAINTS = new Constraints(3, 3);
 
-        public static final double ODOMETRY_FREQUENCY = 250.0; // 250.0
-        public static final double STALE_COMMAND_TIMEOUT = 0.1;
+        public static final double ODOMETRY_FREQUENCY = 150.0; // 250.0
+        public static final double STALE_COMMAND_TIMEOUT = 0.2;
 
         public static final Matrix<N3, N1> NORMAL_STD_DEVS = VecBuilder.fill(0.06, 0.06, 0.04);
 
@@ -343,15 +344,15 @@ public final class Constants {
         public static final double CAMERA_LOOP_PERIOD_SECONDS = 0.02; // 0.01
 
         // Measurement validity.
-        public static final double MAX_CAPTURE_LATENCY_SECONDS = 0.150;
+        public static final double MAX_CAPTURE_LATENCY_SECONDS = 0.110;
         public static final double MAX_OBSERVATION_AGE_SECONDS = 0.250;
-        public static final int MAX_PENDING_ESTIMATES_PER_CAMERA = 8;
+        public static final int MAX_PENDING_ESTIMATES_PER_CAMERA = 4;
         public static final double MAX_FUTURE_TIMESTAMP_SECONDS = 0.020;
         public static final double MAX_AVERAGE_TAG_DISTANCE_METERS = 6.0;
         public static final double FIELD_BOUNDARY_MARGIN_METERS = 0.50;
         public static final double MIN_ROBOT_Z_METERS = -0.50;
         public static final double MAX_ROBOT_Z_METERS = 1.00;
-        public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.35;
+        public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.16;
 
         // Default AprilTag field, may want to calibrate with our field.
         public static final AprilTagFieldLayout SIM_APRILTAG_FIELD_LAYOUT = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
@@ -476,7 +477,7 @@ public final class Constants {
         public static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
         public static final double PIVOT_JOSTLE_FREQUENCY = 1.0; // Hz
 
-        public static final double percentLoss = 0.10710; // Percent loss on shooter to ball transfer, 0.1071
+        public static final double percentLoss = 0.10720; // Percent loss on shooter to ball transfer, 0.1071
 
         public static final int feederLC = 42;
         public static final double detectDistance = 140.0;
@@ -535,13 +536,19 @@ public final class Constants {
 
         /** Idle revolutions-per-second to hold when robot is enabled but not actively shooting. */
         public static final double IDLE_SHOOTER_RPS = 30.0;
-        public static final double maxShooterDecel = -36.0;
+        public static final double maxShooterDecel = -12.0;
 
-        public static final double P = 0.48;
-        public static final double I = 0.0;
+        // public static final double P = 10.0; // 0.48
+        // public static final double D = 0.0; // 0.0
+        // public static final double V = 0.0298; // 0.114
+        // public static final double S = 2.84; // 0.218
+        // public static final double A = 0.0;
+
+        public static final double P = 0.1; 
         public static final double D = 0.0;
-        public static final double V = 0.114;
-        public static final double S = 0.218;
+        public static final double V = 0.108;
+        public static final double S = 0.32;
+        public static final double A = 0.0;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 80;
@@ -550,17 +557,17 @@ public final class Constants {
 
         public static final SlotConfigs PID_CONFIG = new SlotConfigs()
             .withKP(P)
-            .withKI(I)
             .withKD(D)
             .withKV(V)
-            .withKS(S);
+            .withKS(S)
+            .withKA(A);
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
             .withSupplyCurrentLimit(CURRENT_LIMIT)
-            .withStatorCurrentLimit(100)
-            .withSupplyCurrentLowerLimit(0.0)
-            .withSupplyCurrentLowerTime(20);
+            .withStatorCurrentLimit(120)
+            .withSupplyCurrentLowerLimit(80.0)
+            .withSupplyCurrentLowerTime(1.0);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
@@ -714,16 +721,16 @@ public final class Constants {
 
         public static final int MOTOR_ID = 17;
 
-        public static final double P = 2.13; // 90
+        public static final double P = 2.19; // 90
         public static final double I = 0.0;
         public static final double D = 0.0;
-        public static final double V = 0.284; // 0l22226
-        public static final double S = 1.64; // 1.53135
+        public static final double V = 0.288; // 0l22226
+        public static final double S = 1.66; // 1.53135
 
         public static final double MAX_RPS = 22.0; // 13.238
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 60;
+        public static final double CURRENT_LIMIT = 80;
 
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 5;
@@ -737,7 +744,8 @@ public final class Constants {
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
-            .withSupplyCurrentLimit(CURRENT_LIMIT);
+            .withSupplyCurrentLimit(CURRENT_LIMIT)
+            .withStatorCurrentLimit(120);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
@@ -800,15 +808,15 @@ public final class Constants {
 
         public static final double MAX_RPS = 25;
 
-        public static final double P = 2.0;
+        public static final double P = 2.2;
         public static final double I = 0.0;
         public static final double D = 0.0;
-        public static final double V = 0.5;
-        public static final double S = 1.3;
+        public static final double V = 0.53;
+        public static final double S = 1.35;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 60;
-        public static final double LOWER_LIMIT = 40;
+        public static final double CURRENT_LIMIT = 50;
+        public static final double LOWER_LIMIT = 30;
 
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 4;
@@ -823,7 +831,7 @@ public final class Constants {
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
             .withSupplyCurrentLimit(CURRENT_LIMIT)
-            .withStatorCurrentLimit(60);
+            .withStatorCurrentLimit(100);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);

@@ -40,6 +40,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  * Continuously calculates setpoints and applies them to the hood and turret.
  */
 public class AutoAimController extends SubsystemBase {
+
     private static final Scope LOG = Telemetry.scope("Control/AutoAim");
 
     private final HoodSubsystem hood;
@@ -103,7 +104,7 @@ public class AutoAimController extends SubsystemBase {
     private final MedianFilter accelFilterY = new MedianFilter(5);
     private final MedianFilter accelFilterOmega = new MedianFilter(5);
 
-    private final MedianFilter flywheelFilter = new MedianFilter(15);
+    private final MedianFilter flywheelFilter = new MedianFilter(5);
 
     public AutoAimController(
         HoodSubsystem hood,
