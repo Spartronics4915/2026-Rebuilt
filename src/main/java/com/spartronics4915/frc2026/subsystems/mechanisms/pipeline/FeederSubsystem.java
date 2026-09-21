@@ -56,8 +56,6 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         motor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
 
-        SmartDashboard.putData("feeder motor", motor);
-
         SmartDashboard.putData("Feeder On", setStateCommand(FeederState.FORWARD));
         SmartDashboard.putData("Feeder Off", setStateCommand(FeederState.OFF));
     }
@@ -69,7 +67,7 @@ public class FeederSubsystem extends SubsystemBase implements ModeSwitchInterfac
         // When dynamic speed is active, override the static setpoint with the
         // interpolated value from the distance→RPS lookup table.
         if (dynamicSpeedActive && distanceToTargetSupplier != null) {
-            currentSetpoint = 22.17887 / (1 + Math.exp(-((0.798997 * distanceToTargetSupplier.getAsDouble()) - 1.66251))); // 22.17887 / (1 + e^-(-0.798997 * distance - 1.66251))
+            currentSetpoint = 22.887 / (1 + Math.exp(-((0.998997 * distanceToTargetSupplier.getAsDouble()) - 1.56251))); // 22.17887 / (1 + e^-(-0.798997 * distance - 1.66251))
         }
 
         currentSetpoint = MathUtil.clamp(

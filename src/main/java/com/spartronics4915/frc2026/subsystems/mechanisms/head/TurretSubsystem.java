@@ -87,8 +87,6 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         motor.addSetpoint(() -> targetState.position, (setpoint) -> setSetpoint(Rotation2d.fromDegrees(setpoint)));
 
-        SmartDashboard.putData("turret motor", motor);
-
         SmartDashboard.putData("Turret 0", setSetpointCommand(Rotation2d.fromDegrees(0)));
         SmartDashboard.putData("Turret 180", setSetpointCommand(Rotation2d.fromDegrees(180)));
     }

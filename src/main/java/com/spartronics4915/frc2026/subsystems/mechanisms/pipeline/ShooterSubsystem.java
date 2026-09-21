@@ -6,6 +6,7 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
@@ -43,6 +44,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private SlewRateLimiter rpsProfile = new SlewRateLimiter(9999, maxShooterDecel, 0);
 
     private final VelocityVoltage velocityVoltage = new VelocityVoltage(0.0).withSlot(0).withEnableFOC(true);
+    private final VelocityTorqueCurrentFOC velocityTorqueRequest = new VelocityTorqueCurrentFOC(0.0).withSlot(0);
     private final Follower followerRequest = new Follower(LEAD_MOTOR_ID, MotorAlignmentValue.Aligned);
     private final VoltageOut stopRequest = new VoltageOut(0.0);
 
@@ -75,7 +77,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
         leadMotor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
 
-        SmartDashboard.putData("shooter motor", leadMotor);
+        SmartDashboard.putData("Shooter Motor", leadMotor);
 
         SmartDashboard.putData("Shooter On", setSetpointCommand(55));
         SmartDashboard.putData("Shooter Off", setSetpointCommand(0));
