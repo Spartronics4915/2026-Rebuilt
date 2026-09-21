@@ -190,9 +190,11 @@ public class SwerveSubsystem extends SubsystemBase {
 
         if (Robot.isSimulation()) {
             drivetrain.resetPose(
-                    new Pose2d(
-                            new Translation2d(14.0, 5.0),
-                            Rotation2d.fromDegrees(180.0)));
+                new Pose2d(
+                    new Translation2d(14.0, 5.0),
+                    Rotation2d.fromDegrees(180.0)
+                )
+            );
         }
 
         configureBLine();
@@ -237,9 +239,9 @@ public class SwerveSubsystem extends SubsystemBase {
          */
         pose3d = new Pose3d(getPose());
 
-        if ((now - lastDriveCommandTimestamp) > STALE_COMMAND_TIMEOUT) {
-            stop();
-        }
+        //if ((now - lastDriveCommandTimestamp) > STALE_COMMAND_TIMEOUT) {
+        //    stop();
+        //}
 
         outputTelemetry(drivetrain.getState());
 
