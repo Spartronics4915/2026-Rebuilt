@@ -360,7 +360,7 @@ public final class Constants {
         static {
             AprilTagFieldLayout realFieldLayout;
             try {
-                realFieldLayout = new AprilTagFieldLayout(Filesystem.getDeployDirectory().getPath() + "/map/field_map_aug_21_13_51_35.json");
+                realFieldLayout = new AprilTagFieldLayout(Filesystem.getDeployDirectory().getPath() + "/map/field_map_sep_25_17_47_22.json");
             } catch (IOException e) {
                 DriverStation.reportError(
                     "Could not load the calibrated AprilTag field layout; using the WPILib 2026 welded layout.",
@@ -514,8 +514,8 @@ public final class Constants {
 
         public static final double processingCompensation = Robot.isReal() ? 0.02 : 0.0;
 
-        public static final Distance HUB_SHOT_PADDING = Meters.of(0.05);
-        public static final Distance HUB_IDEAL_SHOT_PADDING = Meters.of(0.2);
+        public static final Distance HUB_SHOT_PADDING = Meters.of(0.04); // 0.05
+        public static final Distance HUB_IDEAL_SHOT_PADDING = Meters.of(0.1); // 0.2
 
         public static final double alliancePassOffset = 2.135;
 
@@ -535,7 +535,7 @@ public final class Constants {
         public static final int FOLLOWER_MOTOR_ID = 23;
 
         /** Idle revolutions-per-second to hold when robot is enabled but not actively shooting. */
-        public static final double IDLE_SHOOTER_RPS = 30.0;
+        public static final double IDLE_SHOOTER_RPS = 0.0;
         public static final double maxShooterDecel = -12.0;
 
         // public static final double P = 10.0; // 0.48
@@ -544,10 +544,10 @@ public final class Constants {
         // public static final double S = 2.84; // 0.218
         // public static final double A = 0.0;
 
-        public static final double P = 0.1; 
+        public static final double P = 0.42; 
         public static final double D = 0.0;
-        public static final double V = 0.108;
-        public static final double S = 0.32;
+        public static final double V = 0.11; // 0.108, 0.128
+        public static final double S = 0.2; // 0.32
         public static final double A = 0.0;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
@@ -565,7 +565,7 @@ public final class Constants {
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
             .withSupplyCurrentLimit(CURRENT_LIMIT)
-            .withStatorCurrentLimit(120)
+            .withStatorCurrentLimit(140)
             .withSupplyCurrentLowerLimit(80.0)
             .withSupplyCurrentLowerTime(1.0);
 
@@ -672,11 +672,11 @@ public final class Constants {
 
         public static final int MOTOR_ID = 18;
 
-        public static final double P = 2.0;
+        public static final double P = 2.5;
         public static final double I = 0.0;
         public static final double D = 0.0;
-        public static final double V = 0.46073;
-        public static final double S = 1.3;
+        public static final double V = 0.452;
+        public static final double S = 0.3;
 
         public static final double MAX_RPS = 100;
 
@@ -690,7 +690,7 @@ public final class Constants {
                 .withKI(I)
                 .withKD(D)
                 .withKV(V)
-                .withKA(S);
+                .withKS(S);
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
@@ -721,11 +721,11 @@ public final class Constants {
 
         public static final int MOTOR_ID = 17;
 
-        public static final double P = 2.19; // 90
+        public static final double P = 3.0; // 90
         public static final double I = 0.0;
         public static final double D = 0.0;
-        public static final double V = 0.288; // 0l22226
-        public static final double S = 1.66; // 1.53135
+        public static final double V = 0.578; // 0l22226
+        public static final double S = 1.5; // 1.53135
 
         public static final double MAX_RPS = 22.0; // 13.238
 
@@ -745,7 +745,7 @@ public final class Constants {
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
             .withSupplyCurrentLimit(CURRENT_LIMIT)
-            .withStatorCurrentLimit(120);
+            .withStatorCurrentLimit(160);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
@@ -806,7 +806,7 @@ public final class Constants {
 
         public static final int LEAD_MOTOR_ID = 15;
 
-        public static final double MAX_RPS = 25;
+        public static final double MAX_RPS = 26;
 
         public static final double P = 2.2;
         public static final double I = 0.0;

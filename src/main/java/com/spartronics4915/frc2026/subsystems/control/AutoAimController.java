@@ -104,7 +104,7 @@ public class AutoAimController extends SubsystemBase {
     private final MedianFilter accelFilterY = new MedianFilter(5);
     private final MedianFilter accelFilterOmega = new MedianFilter(5);
 
-    private final MedianFilter flywheelFilter = new MedianFilter(5);
+    private final MedianFilter flywheelFilter = new MedianFilter(2);
 
     public AutoAimController(
         HoodSubsystem hood,
