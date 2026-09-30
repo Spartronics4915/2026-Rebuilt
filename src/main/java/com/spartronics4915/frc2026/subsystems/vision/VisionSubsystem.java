@@ -43,6 +43,7 @@ import org.photonvision.simulation.VisionSystemSim;
 
 /** Common AprilTag localization pipeline. */
 public class VisionSubsystem extends SubsystemBase {
+    
     private static final Scope LOG = Telemetry.scope("Vision");
 
     private static VisionSubsystem instance;
@@ -342,6 +343,7 @@ public class VisionSubsystem extends SubsystemBase {
     private static final class CameraSnapshot {
         private static final long[] NO_TAG_IDS = new long[0];
         private static final Pose3d[] NO_TAG_POSES = new Pose3d[0];
+        
         long SampleTimestampUs;
         long CaptureTimestampUs;
         boolean Enabled;

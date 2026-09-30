@@ -488,6 +488,7 @@ public final class Constants {
     // #region Auto-Aim
 
     public static final class AutoAimConstants {
+        
         /** Throttle rate for simulation projectile spawning (seconds between shots). */
         public static final double SIM_SHOT_INTERVAL_SECONDS = 0.094915;
         public static final int SIM_FUEL_CAPACITY = 500;
