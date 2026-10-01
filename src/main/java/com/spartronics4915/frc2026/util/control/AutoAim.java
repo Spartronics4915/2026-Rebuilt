@@ -80,22 +80,27 @@ public class AutoAim {
      *   <li>{@code pitchOmega} — the angular velocity of the pitch ({@link AngularVelocity}).</li>
      *   <li>{@code ToF} — time of flight in seconds, or {@code -1} when the solver signals the shot cannot land.</li>
      *   <li>{@code recommendedShotSpeed} — a recommended projectile speed in meters per second, or {@code -1} when not applicable.</li>
+     *   <li>{@code flywheelAccel} — temp var for flywheel acceleration in meters per second^2</li>
      *   <li>{@code requiresIdealSpeed} — {@code true} when the shot is impossible at the provided flywheel speed (i.e. the returned
      *       {@code yaw}/{@code pitch} require a higher/ideal speed); {@code false} when the shot is achievable with the supplied speed.</li>
      * </ul>
      */
-    public record AutoAimResult(Rotation2d yaw, AngularVelocity yawOmega, Rotation2d pitch, AngularVelocity pitchOmega, double ToF, double recommendedShotSpeed, boolean requiresIdealSpeed) {
+    public record AutoAimResult(Rotation2d yaw, AngularVelocity yawOmega, Rotation2d pitch, AngularVelocity pitchOmega, double ToF, double recommendedShotSpeed, double flywheelAccel, boolean requiresIdealSpeed) {
         
         public static AutoAimResult withoutOmega(Rotation2d yaw, Rotation2d pitch, double ToF, double recommendedShotSpeed, boolean requiresIdealSpeed) {
-            return new AutoAimResult(yaw, DegreesPerSecond.of(0), pitch, DegreesPerSecond.of(0), ToF, recommendedShotSpeed, requiresIdealSpeed);
+            return new AutoAimResult(yaw, DegreesPerSecond.of(0), pitch, DegreesPerSecond.of(0), ToF, recommendedShotSpeed, 0.0, requiresIdealSpeed);
         }
 
         public AutoAimResult withYawOmega(AngularVelocity newYawOmega) {
-            return new AutoAimResult(yaw, newYawOmega, pitch, pitchOmega, ToF, recommendedShotSpeed, requiresIdealSpeed);
+            return new AutoAimResult(yaw, newYawOmega, pitch, pitchOmega, ToF, recommendedShotSpeed, flywheelAccel, requiresIdealSpeed);
         }
 
         public AutoAimResult withPitchOmega(AngularVelocity newPitchOmega) {
-            return new AutoAimResult(yaw, yawOmega, pitch, newPitchOmega, ToF, recommendedShotSpeed, requiresIdealSpeed);
+            return new AutoAimResult(yaw, yawOmega, pitch, newPitchOmega, ToF, recommendedShotSpeed, flywheelAccel, requiresIdealSpeed);
+        }
+
+        public AutoAimResult withFlywheelAccel(double newFlywheelAccel) {
+            return new AutoAimResult(yaw, yawOmega, pitch, pitchOmega, ToF, recommendedShotSpeed, newFlywheelAccel, requiresIdealSpeed);
         }
     }
 
@@ -237,6 +242,10 @@ public class AutoAim {
                         lookaheadResult.pitch().minus(result.pitch()).getDegrees() / lookaheadTime
                     )
                 );
+            }
+
+            if (lookaheadResult.recommendedShotSpeed != -1) {
+                result = result.withFlywheelAccel(lookaheadResult.recommendedShotSpeed / lookaheadTime);
             }
         }
 

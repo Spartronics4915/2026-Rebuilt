@@ -35,6 +35,7 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
     private final BaseStatusSignal[] telemetrySignals;
 
     private double currentSetpoint;
+    private double flywheelAccel;
     private long sampleTimestampUs;
     private double appliedDutyCycle;
     private double velocityRps;
@@ -97,7 +98,11 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
         double limitedSetpoint = rpsProfile.calculate(workingSetpoint);
 
         if (limitedSetpoint != 0) {
-            leadMotor.setControl(velocityVoltage.withVelocity(limitedSetpoint));
+            leadMotor.setControl(
+                velocityVoltage
+                    .withVelocity(limitedSetpoint)
+                    .withAcceleration(flywheelAccel)
+            );
         } else {
             leadMotor.setControl(stopRequest);
         }
@@ -135,6 +140,12 @@ public class ShooterSubsystem extends SubsystemBase implements ModeSwitchInterfa
 
     public void setSetpoint(double setpoint) {
         currentSetpoint = setpoint;
+        this.flywheelAccel = 0;
+    }
+
+    public void setComplexSetpoint(double setpoint, double flywheelAccel) {
+        currentSetpoint = setpoint;
+        this.flywheelAccel = flywheelAccel;
     }
 
     public void setClamp(ShooterClamp clamp) {

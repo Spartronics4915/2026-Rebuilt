@@ -256,7 +256,10 @@ public class AutoAimController extends SubsystemBase {
     private void applyAimResult(AutoAimResult result) {
         boolean readyToShoot = meetsFiringConditions(result);
         if (readyToShoot) {
-            shooter.setSetpoint(MPSToRPS(result.recommendedShotSpeed() * (isPassTarget() ? 1.05 : 1)));
+            shooter.setComplexSetpoint(
+                MPSToRPS(result.recommendedShotSpeed() * (isPassTarget() ? 1.05 : 1)),
+                MPSToRPS(result.flywheelAccel())
+            );
         } else {
             shooter.setSetpoint(0);
         }
