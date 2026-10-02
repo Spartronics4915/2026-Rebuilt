@@ -31,6 +31,8 @@ import java.util.function.BiConsumer;
 
 public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
+    // TODO: Change to pure position based control
+
     private static final Scope LOG = Telemetry.scope("Mechanisms/Turret");
 
     private LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);

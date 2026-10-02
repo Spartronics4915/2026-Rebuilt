@@ -22,6 +22,8 @@ import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInte
 
 public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
+    // TODO: This needs to be tuned like the feeder and indexer
+
     private static final Scope LOG = Telemetry.scope("Mechanisms/Intake");
 
     private LoggedTalonFX motor = new LoggedTalonFX(LEAD_MOTOR_ID, CAN_BUS);
