@@ -32,6 +32,8 @@ import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInte
 
 public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
+    // TODO: Change to pure position based control
+
     private static final Scope LOG = Telemetry.scope("Mechanisms/Hood");
 
     LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
