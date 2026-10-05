@@ -541,7 +541,7 @@ public final class Constants {
         public static final int FOLLOWER_MOTOR_ID = 23;
 
         /** Idle revolutions-per-second to hold when robot is enabled but not actively shooting. */
-        public static final double IDLE_SHOOTER_RPS = 0.0; // 30.0
+        public static final double IDLE_SHOOTER_RPS = 30.0; // 30.0
         public static final double maxShooterDecel = -12.0;
 
         // public static final double P = 10.0; // 0.48
