@@ -550,7 +550,7 @@ public final class Constants {
         // public static final double S = 2.84; // 0.218
         // public static final double A = 0.0;
 
-        public static final double P = 0.42; 
+        public static final double P = 0.44; 
         public static final double D = 0.0;
         public static final double V = 0.11; // 0.108, 0.128
         public static final double S = 0.2; // 0.32
