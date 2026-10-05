@@ -112,7 +112,7 @@ public final class Constants {
         public static final double ODOMETRY_FREQUENCY = 150.0; // 250.0
         public static final double STALE_COMMAND_TIMEOUT = 0.2;
 
-        public static final Matrix<N3, N1> NORMAL_STD_DEVS = VecBuilder.fill(0.06, 0.06, 0.04);
+        public static final Matrix<N3, N1> NORMAL_STD_DEVS = VecBuilder.fill(0.06, 0.06, 0.02);
 
         public static final double HEADING_LOCK_P = 5.0;
         public static final double HEADING_LOCK_D = 0.0;
@@ -466,7 +466,7 @@ public final class Constants {
         public static final Rotation2d turretMaxSafeThreshold = Rotation2d.fromDegrees(10);
 
         public static final Distance bumpLength = Inches.of(48.93);
-        public static final Distance trenchLength = Inches.of(32);
+        public static final Distance trenchLength = Inches.of(32); // 28
 
         public static final double towerXTransform = 0.5305;
         public static final double towerYTransform = 0.49075;
@@ -520,7 +520,7 @@ public final class Constants {
 
         public static final double processingCompensation = Robot.isReal() ? 0.02 : 0.0;
 
-        public static final Distance HUB_SHOT_PADDING = Meters.of(0.04); // 0.05
+        public static final Distance HUB_SHOT_PADDING = Meters.of(0.06); // 0.05
         public static final Distance HUB_IDEAL_SHOT_PADDING = Meters.of(0.1); // 0.2
 
         public static final double alliancePassOffset = 2.135;
@@ -541,7 +541,7 @@ public final class Constants {
         public static final int FOLLOWER_MOTOR_ID = 23;
 
         /** Idle revolutions-per-second to hold when robot is enabled but not actively shooting. */
-        public static final double IDLE_SHOOTER_RPS = 30.0;
+        public static final double IDLE_SHOOTER_RPS = 0.0; // 30.0
         public static final double maxShooterDecel = -12.0;
 
         // public static final double P = 10.0; // 0.48
@@ -550,7 +550,7 @@ public final class Constants {
         // public static final double S = 2.84; // 0.218
         // public static final double A = 0.0;
 
-        public static final double P = 0.42; 
+        public static final double P = 0.44; 
         public static final double D = 0.0;
         public static final double V = 0.11; // 0.108, 0.128
         public static final double S = 0.2; // 0.32
@@ -571,7 +571,7 @@ public final class Constants {
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
             .withSupplyCurrentLimit(CURRENT_LIMIT)
-            .withStatorCurrentLimit(140)
+            .withStatorCurrentLimit(160)
             .withSupplyCurrentLowerLimit(80.0)
             .withSupplyCurrentLowerTime(1.0);
 
@@ -589,11 +589,11 @@ public final class Constants {
 
         public static final int MOTOR_ID = 21;
 
-        public static final double P = 14000.0;
+        public static final double P = 800.0;
         public static final double I = 0.0;
-        public static final double D = 185.0;
-        public static final double V = 30.0;
-        public static final double S = 35;
+        public static final double D = 10.0;
+        public static final double V = 1.2;
+        public static final double S = 2.0;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
@@ -769,10 +769,11 @@ public final class Constants {
         public static final int MOTOR_ID = 19;
         public static final int ENCODER_ID = 20;
 
-        public static final double P = 2950.0;
+        public static final double P = 100.0;
         public static final double I = 0.0;
-        public static final double D = 110.0;
-        public static final double V = 0.7;
+        public static final double D = 3.0; // TODO: A P Too High?
+        public static final double V = 14.0;
+        public static final double S = 0.6;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
@@ -789,7 +790,8 @@ public final class Constants {
             .withKP(P)
             .withKI(I)
             .withKD(D)
-            .withKV(V);
+            .withKV(V)
+            .withKS(S);
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
@@ -814,15 +816,15 @@ public final class Constants {
 
         public static final double MAX_RPS = 26;
 
-        public static final double P = 2.2;
+        public static final double P = 3.0;
         public static final double I = 0.0;
         public static final double D = 0.0;
-        public static final double V = 0.53;
-        public static final double S = 1.35;
+        public static final double V = 0.48;
+        public static final double S = 0.3;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 50;
-        public static final double LOWER_LIMIT = 30;
+        public static final double CURRENT_LIMIT = 60;
+        public static final double LOWER_LIMIT = 40;
 
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 4;
@@ -837,7 +839,7 @@ public final class Constants {
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
             .withSupplyCurrentLimit(CURRENT_LIMIT)
-            .withStatorCurrentLimit(100);
+            .withStatorCurrentLimit(140);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);

@@ -9,6 +9,7 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
+import com.ctre.phoenix6.controls.PositionVoltage;
 import com.spartronics4915.frc2026.util.logging.Telemetry;
 import com.spartronics4915.frc2026.util.logging.MotorHelpers.CTRE.LoggedTalonFX;
 import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
@@ -55,6 +56,7 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
     private TurretSubsystem turret;
 
     private final PositionTorqueCurrentFOC positionTorqueRequest = new PositionTorqueCurrentFOC(0.0);
+    private final PositionVoltage positionVoltageRequest = new PositionVoltage(0.0).withEnableFOC(true);
 
     private HoodClamp currentClamp;
     private Rotation2d minAngle;
@@ -75,6 +77,8 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         motor.addSetpoint(() -> targetState.position, (setpoint) -> setSetpoint(Rotation2d.fromDegrees(setpoint)));
+
+        SmartDashboard.putData("Hood Motor", motor);
         
         SmartDashboard.putData("Hood Up", setSetpointCommand(Rotation2d.fromDegrees(19)));
         SmartDashboard.putData("Hood Down", setSetpointCommand(Rotation2d.fromDegrees(0)));
@@ -98,11 +102,11 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
             targetState.velocity = 0;
         }
         
-        positionTorqueRequest
+        positionVoltageRequest
             .withPosition(targetState.position)
             .withVelocity(targetState.velocity);
             
-        motor.setControl(positionTorqueRequest);
+        motor.setControl(positionVoltageRequest);
 
         Rotation2d position = Robot.isSimulation()
             ? Rotation2d.fromRotations(targetState.position)

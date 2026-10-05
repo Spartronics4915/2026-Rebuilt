@@ -160,7 +160,7 @@ public class Robot extends TimedRobot {
 
             currentAllianceSelected ^= DriverStation.getAlliance().orElse(Alliance.Red) == Alliance.Blue;
 
-            double matchTime = DriverStation.getMatchTime();
+            double matchTime = Math.ceil(DriverStation.getMatchTime());
 
             if (matchTime > 130.0) { // (2:20 - 2:10) Transition shift, both hubs are enabled
                 hubEnabled = true;

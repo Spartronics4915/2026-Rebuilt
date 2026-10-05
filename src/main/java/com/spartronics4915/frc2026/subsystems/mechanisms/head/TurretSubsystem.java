@@ -8,6 +8,7 @@ import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
+import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.util.control.TimeVarianceAuthority;
@@ -54,6 +55,7 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private Pose3d mechanismPose = new Pose3d();
 
     private final PositionTorqueCurrentFOC positionTorqueRequest = new PositionTorqueCurrentFOC(0.0);
+    private final PositionVoltage positionVoltageRequest = new PositionVoltage(0.0).withEnableFOC(true);
 
     private TurretClamp currentClamp;
     private Rotation2d minAngle;
@@ -89,6 +91,8 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         motor.addSetpoint(() -> targetState.position, (setpoint) -> setSetpoint(Rotation2d.fromDegrees(setpoint)));
 
+        SmartDashboard.putData("Turret Motor", motor);
+
         SmartDashboard.putData("Turret 0", setSetpointCommand(Rotation2d.fromDegrees(0)));
         SmartDashboard.putData("Turret 180", setSetpointCommand(Rotation2d.fromDegrees(180)));
     }
@@ -107,11 +111,11 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
             targetState.velocity = 0;
         }
 
-        positionTorqueRequest
+        positionVoltageRequest
             .withPosition(targetState.position)
             .withVelocity(targetState.velocity);
 
-        motor.setControl(positionTorqueRequest);
+        motor.setControl(positionVoltageRequest);
 
         Rotation2d position = Robot.isSimulation()? Rotation2d.fromRotations(targetState.position) : Rotation2d.fromRotations(motorPositionSignal.getValueAsDouble());
         Rotation2d setpoint = Rotation2d.fromRotations(targetState.position);

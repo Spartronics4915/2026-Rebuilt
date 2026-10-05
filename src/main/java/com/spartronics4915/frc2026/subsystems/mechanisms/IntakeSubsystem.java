@@ -52,6 +52,8 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         motor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
 
+        SmartDashboard.putData("Intake Motor", motor);
+
         SmartDashboard.putData("Intake On", setStateCommand(IntakeState.INTAKE));
         SmartDashboard.putData("Intake Off", setStateCommand(IntakeState.OFF));
     }
@@ -121,7 +123,7 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
     }
 
     public enum IntakeState {
-        INTAKE(24), OUTTAKE(-24), OFF(0);
+        INTAKE(25), OUTTAKE(-25), OFF(0);
 
         double rps;
 

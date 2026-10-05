@@ -394,7 +394,7 @@ public class RobotContainer {
         debugController.rightBumper().onTrue(
             intakeSubsystem.setStateCommand(IntakeState.OUTTAKE)
         ).onFalse(
-            intakeSubsystem.setStateCommand(IntakeState.OFF)
+            intakeSubsystem.setStateCommand(IntakeState.INTAKE)
         );
 
         // Buttons:
