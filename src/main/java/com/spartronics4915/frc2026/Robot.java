@@ -28,6 +28,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
  * this project, you must also update the Main.java file in the project.
  */
 public class Robot extends TimedRobot {
+    
     private static final Scope MATCH_LOG = Telemetry.scope("Match");
     private static final Scope PERFORMANCE_LOG = Telemetry.scope("Performance");
 
@@ -128,7 +129,8 @@ public class Robot extends TimedRobot {
         if (autonomousCommand != null) {
             autonomousCommand.cancel();
         }
-
+        
+        
         robotContainer.swerveSubsystem.configureStdDevsEnabled();
 
         // If match time is near zero (or negative), we are likely in pure Teleop mode (counting up)

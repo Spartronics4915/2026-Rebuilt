@@ -410,6 +410,10 @@ public class RobotContainer {
             })
         );
 
+        debugController.a().onTrue(
+            autoAimController.setShootingState(false)
+        );
+
         debugController.start().onTrue(
             autoAimController.aimToggle()
         );

@@ -589,11 +589,11 @@ public final class Constants {
 
         public static final int MOTOR_ID = 21;
 
-        public static final double P = 800.0;
+        public static final double P = 580.0;
         public static final double I = 0.0;
-        public static final double D = 10.0;
-        public static final double V = 1.2;
-        public static final double S = 2.0;
+        public static final double D = 0.0;
+        public static final double V = 5.0;
+        public static final double S = 20.0;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 40;
@@ -727,16 +727,16 @@ public final class Constants {
 
         public static final int MOTOR_ID = 17;
 
-        public static final double P = 3.0; // 90
+        public static final double P = 1.8;
         public static final double I = 0.0;
         public static final double D = 0.0;
-        public static final double V = 0.578; // 0l22226
-        public static final double S = 1.5; // 1.53135
+        public static final double V = 0.57;
+        public static final double S = 0.28;
 
-        public static final double MAX_RPS = 22.0; // 13.238
+        public static final double MAX_RPS = 22.0;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 80;
+        public static final double CURRENT_LIMIT = 60;
 
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 5;
@@ -771,7 +771,7 @@ public final class Constants {
 
         public static final double P = 100.0;
         public static final double I = 0.0;
-        public static final double D = 3.0; // TODO: A P Too High?
+        public static final double D = 0.0;
         public static final double V = 14.0;
         public static final double S = 0.6;
 
