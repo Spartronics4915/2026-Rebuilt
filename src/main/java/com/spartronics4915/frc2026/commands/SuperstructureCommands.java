@@ -116,16 +116,21 @@ public class SuperstructureCommands {
     }
 
     public Command intakeOn() {
-        return Commands.parallel(
+        return Commands.sequence(
             pivot.setStateCommand(PivotState.READY),
+            Commands.waitUntil(() -> pivot.getPosition().getDegrees() < 30),
             intake.setStateCommand(IntakeState.INTAKE)
         );
     }
 
     public Command intakeOff() {
-        return Commands.parallel(
-            pivot.setStateCommand(PivotState.SAFE),
-            intake.setStateCommand(IntakeState.OFF)
+        return Commands.sequence(
+            Commands.parallel(
+                pivot.setStateCommand(PivotState.CRUSH),
+                intake.setStateCommand(IntakeState.OFF)
+            ),
+            Commands.waitSeconds(0.5),
+            pivot.setStateCommand(PivotState.SAFE)
         );
     }
 
@@ -148,13 +153,23 @@ public class SuperstructureCommands {
             DriverStation::isAutonomous
         );
     }
+
+    public Command conditionalPivotCrush() {
+        return Commands.either(
+                pivot.setStateCommand(PivotSubsystem.PivotState.CRUSH),
+                Commands.none(),
+                DriverStation::isAutonomous);
+    }
     
     /** Turns the intake ON only during autonomous; no-ops in teleop. */
     private Command conditionalIntakeOn() {
-        return Commands.either(
-            intake.setStateCommand(IntakeSubsystem.IntakeState.INTAKE),
-            Commands.none(),
-            DriverStation::isAutonomous
+        return Commands.sequence(
+            Commands.waitUntil(() -> pivot.getPosition().getDegrees() < 30),
+            Commands.either(
+                intake.setStateCommand(IntakeSubsystem.IntakeState.INTAKE),
+                Commands.none(),
+                DriverStation::isAutonomous
+            )
         );
     }
 

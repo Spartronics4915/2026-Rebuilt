@@ -52,7 +52,7 @@ public class IntakeSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         motor.addSetpoint(() -> currentSetpoint, this::setSetpoint);
 
-        SmartDashboard.putData("Intake Motor", motor);
+        //SmartDashboard.putData("Intake Motor", motor);
 
         SmartDashboard.putData("Intake On", setStateCommand(IntakeState.INTAKE));
         SmartDashboard.putData("Intake Off", setStateCommand(IntakeState.OFF));

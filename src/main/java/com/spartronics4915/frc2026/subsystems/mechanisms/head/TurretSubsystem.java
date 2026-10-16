@@ -7,7 +7,6 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
-import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.spartronics4915.frc2026.Robot;
@@ -32,8 +31,6 @@ import java.util.function.BiConsumer;
 
 public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
-    // TODO: Change to pure position based control
-
     private static final Scope LOG = Telemetry.scope("Mechanisms/Turret");
 
     private LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
@@ -54,7 +51,6 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
     private Rotation2d encoderPosition = Rotation2d.kZero;
     private Pose3d mechanismPose = new Pose3d();
 
-    private final PositionTorqueCurrentFOC positionTorqueRequest = new PositionTorqueCurrentFOC(0.0);
     private final PositionVoltage positionVoltageRequest = new PositionVoltage(0.0).withEnableFOC(true);
 
     private TurretClamp currentClamp;
@@ -91,7 +87,7 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
         motor.addSetpoint(() -> targetState.position, (setpoint) -> setSetpoint(Rotation2d.fromDegrees(setpoint)));
 
-        SmartDashboard.putData("Turret Motor", motor);
+        //SmartDashboard.putData("Turret Motor", motor);
 
         SmartDashboard.putData("Turret 0", setSetpointCommand(Rotation2d.fromDegrees(0)));
         SmartDashboard.putData("Turret 180", setSetpointCommand(Rotation2d.fromDegrees(180)));
@@ -226,7 +222,7 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
 
     public enum TurretClamp {
         RESTRICTED(Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)), 
-        UNRESTRICTED(Rotation2d.fromDegrees(-170), Rotation2d.fromDegrees(225));
+        UNRESTRICTED(Rotation2d.fromDegrees(-172), Rotation2d.fromDegrees(220));
 
         public Rotation2d minAngle;
         public Rotation2d maxAngle;

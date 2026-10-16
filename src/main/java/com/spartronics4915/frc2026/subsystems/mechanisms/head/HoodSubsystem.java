@@ -8,8 +8,8 @@ import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
-import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.PositionVoltage;
+
 import com.spartronics4915.frc2026.util.logging.Telemetry;
 import com.spartronics4915.frc2026.util.logging.MotorHelpers.CTRE.LoggedTalonFX;
 import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
@@ -55,7 +55,6 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
     
     private TurretSubsystem turret;
 
-    private final PositionTorqueCurrentFOC positionTorqueRequest = new PositionTorqueCurrentFOC(0.0);
     private final PositionVoltage positionVoltageRequest = new PositionVoltage(0.0).withEnableFOC(true);
 
     private HoodClamp currentClamp;
@@ -78,7 +77,7 @@ public class HoodSubsystem extends SubsystemBase implements ModeSwitchInterface 
 
         motor.addSetpoint(() -> targetState.position, (setpoint) -> setSetpoint(Rotation2d.fromDegrees(setpoint)));
 
-        SmartDashboard.putData("Hood Motor", motor);
+        //SmartDashboard.putData("Hood Motor", motor);
         
         SmartDashboard.putData("Hood Up", setSetpointCommand(Rotation2d.fromDegrees(19)));
         SmartDashboard.putData("Hood Down", setSetpointCommand(Rotation2d.fromDegrees(0)));

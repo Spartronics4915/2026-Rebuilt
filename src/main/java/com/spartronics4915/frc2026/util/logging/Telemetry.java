@@ -15,7 +15,9 @@ import edu.wpi.first.util.struct.Struct;
 public final class Telemetry {
     private static final EpilogueBackend ROOT =
         new NTEpilogueBackend(NetworkTableInstance.getDefault()).getNested("/Telemetry");
-    private static volatile Logged.Importance minimumImportance = Logged.Importance.DEBUG;
+    // INFO is the normal on-robot setting.  DEBUG can be enabled explicitly while
+    // diagnosing an issue, without continuously publishing large diagnostic arrays.
+    private static volatile Logged.Importance minimumImportance = Logged.Importance.INFO;
 
     private Telemetry() {}
 
@@ -54,24 +56,24 @@ public final class Telemetry {
             this.importance = importance;
         }
 
-        private boolean enabled() {
+        public boolean isEnabled() {
             return importance.compareTo(minimumImportance) >= 0;
         }
 
-        public void log(String key, int value) { if (enabled()) backend.log(key, value); }
-        public void log(String key, long value) { if (enabled()) backend.log(key, value); }
-        public void log(String key, float value) { if (enabled()) backend.log(key, value); }
-        public void log(String key, double value) { if (enabled()) backend.log(key, value); }
-        public void log(String key, boolean value) { if (enabled()) backend.log(key, value); }
-        public void log(String key, String value) { if (enabled()) backend.log(key, value); }
-        public void log(String key, Enum<?> value) { if (enabled()) backend.log(key, value); }
-        public void log(String key, byte[] value) { if (enabled()) backend.log(key, value); }
-        public void log(String key, int[] value) { if (enabled()) backend.log(key, value); }
-        public void log(String key, long[] value) { if (enabled()) backend.log(key, value); }
-        public void log(String key, float[] value) { if (enabled()) backend.log(key, value); }
-        public void log(String key, double[] value) { if (enabled()) backend.log(key, value); }
-        public void log(String key, boolean[] value) { if (enabled()) backend.log(key, value); }
-        public void log(String key, String[] value) { if (enabled()) backend.log(key, value); }
+        public void log(String key, int value) { if (isEnabled()) backend.log(key, value); }
+        public void log(String key, long value) { if (isEnabled()) backend.log(key, value); }
+        public void log(String key, float value) { if (isEnabled()) backend.log(key, value); }
+        public void log(String key, double value) { if (isEnabled()) backend.log(key, value); }
+        public void log(String key, boolean value) { if (isEnabled()) backend.log(key, value); }
+        public void log(String key, String value) { if (isEnabled()) backend.log(key, value); }
+        public void log(String key, Enum<?> value) { if (isEnabled()) backend.log(key, value); }
+        public void log(String key, byte[] value) { if (isEnabled()) backend.log(key, value); }
+        public void log(String key, int[] value) { if (isEnabled()) backend.log(key, value); }
+        public void log(String key, long[] value) { if (isEnabled()) backend.log(key, value); }
+        public void log(String key, float[] value) { if (isEnabled()) backend.log(key, value); }
+        public void log(String key, double[] value) { if (isEnabled()) backend.log(key, value); }
+        public void log(String key, boolean[] value) { if (isEnabled()) backend.log(key, value); }
+        public void log(String key, String[] value) { if (isEnabled()) backend.log(key, value); }
         public void log(String key, Pose2d value) { log(key, value, Pose2d.struct); }
         public void log(String key, Pose3d value) { log(key, value, Pose3d.struct); }
         public void log(String key, ChassisSpeeds value) { log(key, value, ChassisSpeeds.struct); }
@@ -85,11 +87,11 @@ public final class Telemetry {
         }
 
         public <S> void log(String key, S value, Struct<S> struct) {
-            if (enabled()) backend.log(key, value, struct);
+            if (isEnabled()) backend.log(key, value, struct);
         }
 
         public <S> void log(String key, S[] value, Struct<S> struct) {
-            if (enabled()) backend.log(key, value, struct);
+            if (isEnabled()) backend.log(key, value, struct);
         }
     }
 }

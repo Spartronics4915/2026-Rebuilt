@@ -126,13 +126,12 @@ public class SwerveSubsystem extends SubsystemBase {
 
     private final BaseStatusSignal[] driveCurrentSignals = new BaseStatusSignal[4];
     private final BaseStatusSignal[] driveVoltageSignals = new BaseStatusSignal[4];
-    private final BaseStatusSignal[] driveErrorSignals = new BaseStatusSignal[4];
-    private final BaseStatusSignal[] driveReferenceSignals = new BaseStatusSignal[4];
     private final BaseStatusSignal[] steerCurrentSignals = new BaseStatusSignal[4];
     private final BaseStatusSignal[] steerVoltageSignals = new BaseStatusSignal[4];
-    private final BaseStatusSignal[] steerErrorSignals = new BaseStatusSignal[4];
-    // Seven diagnostics per module, plus pitch and roll; no unused/null slots.
-    private final BaseStatusSignal[] telemetrySignals = new BaseStatusSignal[4 * 7 + 2];
+    // Four electrical diagnostics per module. Tilt is refreshed separately because
+    // it is needed for control even when electrical telemetry is disabled.
+    private final BaseStatusSignal[] electricalTelemetrySignals = new BaseStatusSignal[4 * 4];
+    private final BaseStatusSignal[] tiltSignals = new BaseStatusSignal[2];
     private final StatusSignal<Angle> rollSignal;
     private final StatusSignal<Angle> pitchSignal;
 
@@ -171,19 +170,16 @@ public class SwerveSubsystem extends SubsystemBase {
             SwerveModule<?, ?, ?> module = drivetrain.getModule(i);
             TalonFX drive = (TalonFX) module.getDriveMotor();
             TalonFX steer = (TalonFX) module.getSteerMotor();
-            telemetrySignals[signalIndex++] = driveCurrentSignals[i] = drive.getStatorCurrent(false);
-            telemetrySignals[signalIndex++] = driveVoltageSignals[i] = drive.getMotorVoltage(false);
-            telemetrySignals[signalIndex++] = driveErrorSignals[i] = drive.getClosedLoopError(false);
-            telemetrySignals[signalIndex++] = driveReferenceSignals[i] = drive.getClosedLoopReference(false);
-            telemetrySignals[signalIndex++] = steerCurrentSignals[i] = steer.getStatorCurrent(false);
-            telemetrySignals[signalIndex++] = steerVoltageSignals[i] = steer.getMotorVoltage(false);
-            telemetrySignals[signalIndex++] = steerErrorSignals[i] = steer.getClosedLoopError(false);
+            electricalTelemetrySignals[signalIndex++] = driveCurrentSignals[i] = drive.getStatorCurrent(false);
+            electricalTelemetrySignals[signalIndex++] = driveVoltageSignals[i] = drive.getMotorVoltage(false);
+            electricalTelemetrySignals[signalIndex++] = steerCurrentSignals[i] = steer.getStatorCurrent(false);
+            electricalTelemetrySignals[signalIndex++] = steerVoltageSignals[i] = steer.getMotorVoltage(false);
         }
 
         rollSignal = drivetrain.getPigeon2().getRoll(false);
         pitchSignal = drivetrain.getPigeon2().getPitch(false);
-        telemetrySignals[signalIndex++] = rollSignal;
-        telemetrySignals[signalIndex++] = pitchSignal;
+        tiltSignals[0] = rollSignal;
+        tiltSignals[1] = pitchSignal;
 
         headingLockRequest.HeadingController.setPID(HEADING_LOCK_P, 0.0, HEADING_LOCK_D);
         headingLockRequest.HeadingController.enableContinuousInput(-Math.PI, Math.PI);
@@ -226,11 +222,13 @@ public class SwerveSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // One acquisition phase for module diagnostics and the tilt used by control/telemetry.
-        BaseStatusSignal.refreshAll(telemetrySignals);
+        // Tilt is required by the control loop.  Electrical signals are only
+        // requested when the telemetry that consumes them is enabled.
+        BaseStatusSignal.refreshAll(tiltSignals);
+        if (LOG.info.isEnabled()) {
+            BaseStatusSignal.refreshAll(electricalTelemetrySignals);
+        }
         updateOperatorPerspective();
-        double now = Utils.getCurrentTimeSeconds();
-
         isFlatDebouncedValue = flatDebouncer.calculate(isRobotLevel());
 
         /*
@@ -411,6 +409,10 @@ public class SwerveSubsystem extends SubsystemBase {
             double timestamp,
             Matrix<N3, N1> stdDevs) {
         drivetrain.addVisionMeasurement(pose, timestamp, stdDevs);
+    }
+
+    public void resetOdometry(Pose2d pose) {
+        drivetrain.resetPose(pose);
     }
 
     public void resetPose(Pose2d pose) {

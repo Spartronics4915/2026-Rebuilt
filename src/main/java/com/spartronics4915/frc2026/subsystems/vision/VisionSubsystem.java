@@ -211,6 +211,12 @@ public class VisionSubsystem extends SubsystemBase {
                 continue;
             }
 
+            // A camera running slower than the scheduler must not keep reporting
+            // a prior frame as a fresh accepted measurement.
+            if (diagnostics != null) {
+                diagnostics.clearObservation(periodicStartUs, true);
+            }
+
             for (VisionEstimate estimate : camera.consumeEstimates()) {
                 observations.add(new CameraObservation(camera.getName(), estimate));
             }
@@ -232,9 +238,6 @@ public class VisionSubsystem extends SubsystemBase {
                 if (diagnostics != null) {
                     diagnostics.Accepted = false;
                     diagnostics.RejectedObservationCount++;
-                    if (StdDevCalculator.isStale(observation.estimate(), now)) {
-                        diagnostics.StaleObservationCount++;
-                    }
                 }
                 continue;
             }
@@ -278,18 +281,19 @@ public class VisionSubsystem extends SubsystemBase {
             return;
         }
 
-        int[] tagIds = observation.tagIds();
-        List<Pose3d> tagPoses = new ArrayList<>();
-        for (int tagId : tagIds) {
-            fieldLayout.getTagPose(tagId).ifPresent(tagPoses::add);
-        }
+        if (cameraLogs.get(cameraName).debug.isEnabled()) {
+            int[] tagIds = observation.tagIds();
+            List<Pose3d> tagPoses = new ArrayList<>();
+            for (int tagId : tagIds) {
+                fieldLayout.getTagPose(tagId).ifPresent(tagPoses::add);
+            }
 
-        diagnostics.SeenTagIds = new long[tagIds.length];
-        for (int i = 0; i < tagIds.length; i++) {
-            diagnostics.SeenTagIds[i] = tagIds[i];
+            diagnostics.SeenTagIds = new long[tagIds.length];
+            for (int i = 0; i < tagIds.length; i++) {
+                diagnostics.SeenTagIds[i] = tagIds[i];
+            }
+            diagnostics.SeenTagPoses = tagPoses.toArray(Pose3d[]::new);
         }
-
-        diagnostics.SeenTagPoses = tagPoses.toArray(Pose3d[]::new);
         diagnostics.EstimatedPose = observation.pose().toPose2d();
         diagnostics.TagCount = observation.tagCount();
         diagnostics.AverageTagDistanceMeters = observation.avgTagDistanceMeters();
@@ -318,9 +322,7 @@ public class VisionSubsystem extends SubsystemBase {
             cameraLog.critical.log("Accepted", camera.Accepted);
             cameraLog.critical.log("AcceptedObservationCount", camera.AcceptedObservationCount);
             cameraLog.critical.log("RejectedObservationCount", camera.RejectedObservationCount);
-            cameraLog.critical.log("StaleObservationCount", camera.StaleObservationCount);
             cameraLog.critical.log("EstimatedPose", camera.EstimatedPose);
-            cameraLog.critical.log("PendingEstimateCount", camera.PendingEstimateCount);
             cameraLog.critical.log("DroppedEstimateCount", camera.DroppedEstimateCount);
             cameraLog.info.log("TagCount", camera.TagCount);
             cameraLog.info.log("AverageTagDistanceMeters", camera.AverageTagDistanceMeters);
@@ -329,12 +331,6 @@ public class VisionSubsystem extends SubsystemBase {
             cameraLog.info.log("LatencyMs", camera.LatencyMs);
             cameraLog.info.log("StdDevXMeters", camera.StdDevXMeters);
             cameraLog.info.log("StdDevThetaDeg", camera.StdDevThetaDeg);
-            cameraLog.info.log("LastReadDurationUs", camera.LastReadDurationUs);
-            cameraLog.info.log("MaxReadDurationUs", camera.MaxReadDurationUs);
-            cameraLog.info.log("ReadOverrunCount", camera.ReadOverrunCount);
-            cameraLog.info.log("LastQueueWaitDurationUs", camera.LastQueueWaitDurationUs);
-            cameraLog.info.log("MaxQueueWaitDurationUs", camera.MaxQueueWaitDurationUs);
-            cameraLog.debug.log("MaxPendingEstimateCount", camera.MaxPendingEstimateCount);
             cameraLog.debug.log("SeenTagIds", camera.SeenTagIds);
             cameraLog.debug.log("SeenTagPoses", camera.SeenTagPoses);
         }
@@ -350,15 +346,7 @@ public class VisionSubsystem extends SubsystemBase {
         boolean Accepted;
         long AcceptedObservationCount;
         long RejectedObservationCount;
-        long StaleObservationCount;
-        long PendingEstimateCount;
-        long MaxPendingEstimateCount;
         long DroppedEstimateCount;
-        long LastReadDurationUs;
-        long MaxReadDurationUs;
-        long ReadOverrunCount;
-        long LastQueueWaitDurationUs;
-        long MaxQueueWaitDurationUs;
         long[] SeenTagIds = NO_TAG_IDS;
         Pose3d[] SeenTagPoses = NO_TAG_POSES;
         Pose2d EstimatedPose = new Pose2d();
@@ -371,18 +359,12 @@ public class VisionSubsystem extends SubsystemBase {
         double StdDevThetaDeg;
 
         void updateCameraHealth(CameraIO camera) {
-            PendingEstimateCount = camera.getPendingEstimateCount();
-            MaxPendingEstimateCount = camera.getMaxPendingEstimateCount();
             DroppedEstimateCount = camera.getDroppedEstimateCount();
-            LastReadDurationUs = camera.getLastReadDurationUs();
-            MaxReadDurationUs = camera.getMaxReadDurationUs();
-            ReadOverrunCount = camera.getReadOverrunCount();
-            LastQueueWaitDurationUs = camera.getLastQueueWaitDurationUs();
-            MaxQueueWaitDurationUs = camera.getMaxQueueWaitDurationUs();
         }
 
         void clearObservation(long sampleTimestampUs, boolean enabled) {
             SampleTimestampUs = sampleTimestampUs;
+            CaptureTimestampUs = 0;
             Enabled = enabled;
             Accepted = false;
             SeenTagIds = NO_TAG_IDS;

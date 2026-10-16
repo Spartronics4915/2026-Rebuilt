@@ -15,10 +15,6 @@ import com.spartronics4915.frc2026.util.control.FieldZoneMap;
 import com.spartronics4915.frc2026.util.logging.Telemetry;
 import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 
-import au.grapplerobotics.LaserCan;
-
-import edu.wpi.first.math.filter.Debouncer;
-import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -33,7 +29,9 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  * Tracks the robot's field zone and automatically schedules superstructure behavior.
  */
 public class Superstructure extends SubsystemBase {
+
     private static final Scope LOG = Telemetry.scope("Control/Superstructure");
+
     public enum Zone {
         ALLIANCE_ZONE,
         TRENCH,
@@ -48,12 +46,6 @@ public class Superstructure extends SubsystemBase {
     private final AutoAimController controller;
     private final SuperstructureCommands superCommands;
 
-    private final LaserCan laserCan;
-
-    private final Debouncer ballDebouncer = new Debouncer(noBallsDebounce, DebounceType.kFalling);
-
-    private boolean ballDetectedDebounced = false;
-
     private final FieldZoneMap<Zone> zoneMap;
     private Zone currentZone = Zone.UNKNOWN;
     private long sampleTimestampUs;
@@ -67,18 +59,6 @@ public class Superstructure extends SubsystemBase {
         this.controller = controller;
         this.superCommands = superCommands;
         this.zoneMap = buildZoneMap();
-
-        this.laserCan = new LaserCan(feederLC);
-
-        try {
-            laserCan.setRangingMode(LaserCan.RangingMode.SHORT);
-            laserCan.setRegionOfInterest(new LaserCan.RegionOfInterest(8, 8, 16, 16));
-            laserCan.setTimingBudget(LaserCan.TimingBudget.TIMING_BUDGET_33MS);
-        } catch (Exception e) {
-            System.err.println(
-                "Error initializing LaserCan: " + e.getMessage()
-            );
-        }
 
         configureTriggers();
     }
@@ -183,9 +163,6 @@ public class Superstructure extends SubsystemBase {
             currentZone = newZone;
         }
 
-        ballDetectedDebounced =
-            ballDebouncer.calculate(ballDetect());
-
         sampleTimestampUs = RobotController.getFPGATime();
         outputTelemetry();
     }
@@ -193,26 +170,6 @@ public class Superstructure extends SubsystemBase {
     private void outputTelemetry() {
         LOG.critical.log("SampleTimestampUs", sampleTimestampUs);
         LOG.critical.log("CurrentZone", currentZone);
-        LOG.critical.log("BallDetected", ballDetectedDebounced);
-    }
-
-    private boolean ballDetect() {
-        LaserCan.Measurement measurement =
-            laserCan.getMeasurement();
-
-        if (
-            measurement == null
-            || measurement.status
-                != LaserCan.LASERCAN_STATUS_VALID_MEASUREMENT
-        ) {
-            return true;
-        }
-
-        return measurement.distance_mm < detectDistance;
-    }
-
-    public boolean isBallDetectedDebounced() {
-        return ballDetectedDebounced;
     }
 
     private void configureTriggers() {
@@ -267,7 +224,7 @@ public class Superstructure extends SubsystemBase {
                 case TRENCH -> superCommands.trench();
                 case NEUTRAL_ZONE -> superCommands.traversal();
                 case BUMP, OPPONENT_ZONE -> superCommands.cruise();
-                default -> superCommands.idle();
+                default -> superCommands.traversal();
             };
         }, Set.of()).withName("Restore Zone State");
     }
@@ -285,7 +242,7 @@ public class Superstructure extends SubsystemBase {
             Commands.deadline(
                 Autos.wait(duration - 0.5),
                 Commands.sequence(
-                    superCommands.conditionalPivotSafe(),
+                    superCommands.conditionalPivotCrush(),
                     Commands.waitSeconds(0.5 / PIVOT_JOSTLE_FREQUENCY),
                     superCommands.conditionalPivotReady(),
                     Commands.waitSeconds(0.5 / PIVOT_JOSTLE_FREQUENCY)

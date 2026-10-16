@@ -78,6 +78,8 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
         motor.addProfile(trapProfile);
         motor.addSetpoint(() -> currentSetpoint.getDegrees(), (setpoint) -> setSetpoint(Rotation2d.fromDegrees(setpoint)));
 
+        SmartDashboard.putData("Pivot Motor", motor);
+
         SmartDashboard.putData("Pivot Ready", setStateCommand(PivotState.READY));
         SmartDashboard.putData("Pivot Safe", setStateCommand(PivotState.SAFE));
         SmartDashboard.putData("Pivot Stow", setStateCommand(PivotState.STOW));
@@ -178,7 +180,10 @@ public class PivotSubsystem extends SubsystemBase implements ModeSwitchInterface
     // #endregion
 
     public enum PivotState {
-        READY(Rotation2d.fromDegrees(-0.1)), SAFE(Rotation2d.fromDegrees(60)), STOW(Rotation2d.fromDegrees(130));
+        READY(Rotation2d.fromDegrees(-0.1)), 
+        SAFE(Rotation2d.fromDegrees(20)), 
+        STOW(Rotation2d.fromDegrees(130)),
+        CRUSH(Rotation2d.fromDegrees(60));
 
         Rotation2d angle;
 

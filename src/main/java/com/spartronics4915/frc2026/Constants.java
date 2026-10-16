@@ -112,7 +112,7 @@ public final class Constants {
         public static final double ODOMETRY_FREQUENCY = 150.0; // 250.0
         public static final double STALE_COMMAND_TIMEOUT = 0.2;
 
-        public static final Matrix<N3, N1> NORMAL_STD_DEVS = VecBuilder.fill(0.06, 0.06, 0.02);
+        public static final Matrix<N3, N1> NORMAL_STD_DEVS = VecBuilder.fill(0.07, 0.07, 0.02);
 
         public static final double HEADING_LOCK_P = 5.0;
         public static final double HEADING_LOCK_D = 0.0;
@@ -145,7 +145,7 @@ public final class Constants {
                     false),
                 // Front Right
                 new ModuleConfig(4, 5, 6,
-                    Rotations.of(0.15380859375),
+                    Rotations.of(0.161377),
                     Inches.of(9.585892), Inches.of(-12.1640885),
                     true),
                 // Back Left
@@ -224,14 +224,14 @@ public final class Constants {
                         new TalonFXConfiguration()
                             .withCurrentLimits(
                                 new CurrentLimitsConfigs()
-                                    .withStatorCurrentLimit(Amps.of(100))
+                                    .withStatorCurrentLimit(Amps.of(60))
                                     .withSupplyCurrentLimit(Amps.of(80))
                                     .withStatorCurrentLimitEnable(true)))
                     .withDriveMotorInitialConfigs(
                         new TalonFXConfiguration()
                             .withCurrentLimits(
                                 new CurrentLimitsConfigs()
-                                    .withStatorCurrentLimit(Amps.of(120))
+                                    .withStatorCurrentLimit(Amps.of(110))
                                     .withSupplyCurrentLimit(Amps.of(100))
                                     .withStatorCurrentLimitEnable(true)
                             )
@@ -479,10 +479,10 @@ public final class Constants {
          */
         public static final double TRENCH_LOOKAHEAD_SEC = 0.5;
 
-        public static final double PIPELINE_RATE_LIMIT_SEC = 0.2;
+        public static final double PIPELINE_RATE_LIMIT_SEC = 0.4;
         public static final double PIVOT_JOSTLE_FREQUENCY = 1.0; // Hz
 
-        public static final double percentLoss = 0.10720; // Percent loss on shooter to ball transfer, 0.1071
+        public static final double percentLoss = 0.10724; // Percent loss on shooter to ball transfer, 0.1071
 
         public static final int feederLC = 42;
         public static final double detectDistance = 140.0;
@@ -520,8 +520,8 @@ public final class Constants {
 
         public static final double processingCompensation = Robot.isReal() ? 0.02 : 0.0;
 
-        public static final Distance HUB_SHOT_PADDING = Meters.of(0.06); // 0.05
-        public static final Distance HUB_IDEAL_SHOT_PADDING = Meters.of(0.1); // 0.2
+        public static final Distance HUB_SHOT_PADDING = Meters.of(0.07); // 0.05
+        public static final Distance HUB_IDEAL_SHOT_PADDING = Meters.of(0.12); // 0.2
 
         public static final double alliancePassOffset = 2.135;
 
@@ -552,9 +552,9 @@ public final class Constants {
 
         public static final double P = 0.44; 
         public static final double D = 0.0;
-        public static final double V = 0.11; // 0.108, 0.128
-        public static final double S = 0.2; // 0.32
-        public static final double A = 0.0;
+        public static final double V = 0.12; // 0.108, 0.128
+        public static final double S = 0.21; // 0.32
+        public static final double A = 0.05;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
         public static final double CURRENT_LIMIT = 80;
@@ -571,7 +571,7 @@ public final class Constants {
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
             .withSupplyCurrentLimit(CURRENT_LIMIT)
-            .withStatorCurrentLimit(160)
+            .withStatorCurrentLimit(180)
             .withSupplyCurrentLowerLimit(80.0)
             .withSupplyCurrentLowerTime(1.0);
 
@@ -633,7 +633,7 @@ public final class Constants {
 
         public static final double P = 1200.0;
         public static final double I = 0.0;
-        public static final double D = 85.0;
+        public static final double D = 70.0;
 
         public static final double MAX_VELOCITY = 20;
         public static final double MAX_ACCELERATION = 20;
@@ -687,7 +687,7 @@ public final class Constants {
         public static final double MAX_RPS = 100;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 60;
+        public static final double CURRENT_LIMIT = 70;
 
         public static final double MOTOR_MECHANISM_RATIO = 1.0 / (9.0 / 34.0);
 
@@ -700,7 +700,8 @@ public final class Constants {
 
         public static final CurrentLimitsConfigs CURRENT_LIMITS_CONFIG = new CurrentLimitsConfigs()
             .withSupplyCurrentLimitEnable(CURRENT_LIMIT_ENABLE)
-            .withSupplyCurrentLimit(CURRENT_LIMIT);
+            .withSupplyCurrentLimit(CURRENT_LIMIT)
+            .withStatorCurrentLimit(140);
 
         public static final FeedbackConfigs FEEDBACK_CONFIG = new FeedbackConfigs()
             .withSensorToMechanismRatio(MOTOR_MECHANISM_RATIO);
@@ -736,7 +737,7 @@ public final class Constants {
         public static final double MAX_RPS = 22.0;
 
         public static final boolean CURRENT_LIMIT_ENABLE = true;
-        public static final double CURRENT_LIMIT = 60;
+        public static final double CURRENT_LIMIT = 80;
 
         public static final double LOWER_TIME = 1;
         public static final double MOTOR_MECHANISM_RATIO = 5;

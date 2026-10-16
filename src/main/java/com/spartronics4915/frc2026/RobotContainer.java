@@ -365,11 +365,11 @@ public class RobotContainer {
 
         // Triggers:
 
-        debugController.leftTrigger().onTrue(
+        debugController.leftTrigger().whileTrue(
             Commands.parallel(
                 superstructureCommands.intakeOn(),
                 superstructure.getReturnToZoneCommand())
-        ).onFalse(
+        ).whileFalse(
             superstructureCommands.intakeOff()
         );
 
@@ -412,6 +412,12 @@ public class RobotContainer {
 
         debugController.a().onTrue(
             autoAimController.setShootingState(false)
+        );
+
+        debugController.y().onTrue(
+            Commands.runOnce(() -> {
+                swerveSubsystem.resetOdometry(visionSubsystem.getVisionPose());
+            })
         );
 
         debugController.start().onTrue(

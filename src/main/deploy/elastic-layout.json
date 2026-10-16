@@ -3,240 +3,6 @@
   "grid_size": 32,
   "tabs": [
     {
-      "name": "debug",
-      "grid_layout": {
-        "layouts": [],
-        "containers": [
-          {
-            "title": "Pivot Stow",
-            "x": 512.0,
-            "y": 256.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Pivot Stow",
-              "period": 0.06,
-              "show_type": true,
-              "maximize_button_space": false
-            }
-          },
-          {
-            "title": "Auto-Aim Toggle",
-            "x": 256.0,
-            "y": 0.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Auto-Aim Toggle",
-              "period": 0.06,
-              "show_type": true,
-              "maximize_button_space": false
-            }
-          },
-          {
-            "title": "Auto-Shoot Toggle",
-            "x": 256.0,
-            "y": 128.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Auto-Shoot Toggle",
-              "period": 0.06,
-              "show_type": true,
-              "maximize_button_space": false
-            }
-          },
-          {
-            "title": "Toggle Testing",
-            "x": 768.0,
-            "y": 256.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Toggle Testing",
-              "period": 0.06,
-              "show_type": true,
-              "maximize_button_space": false
-            }
-          },
-          {
-            "title": "Reset Dynamics",
-            "x": 1024.0,
-            "y": 256.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Reset Dynamics",
-              "period": 0.06,
-              "show_type": true,
-              "maximize_button_space": false
-            }
-          },
-          {
-            "title": "AimEnabled",
-            "x": 1024.0,
-            "y": 0.0,
-            "width": 128.0,
-            "height": 128.0,
-            "type": "Boolean Box",
-            "properties": {
-              "topic": "superstructure/AutoAim/AimEnabled",
-              "period": 0.06,
-              "data_type": "boolean",
-              "true_color": 4283215696,
-              "false_color": 4294198070,
-              "true_icon": "None",
-              "false_icon": "None"
-            }
-          },
-          {
-            "title": "ShootingEnabled",
-            "x": 1024.0,
-            "y": 128.0,
-            "width": 128.0,
-            "height": 128.0,
-            "type": "Boolean Box",
-            "properties": {
-              "topic": "superstructure/AutoAim/ShootingEnabled",
-              "period": 0.06,
-              "data_type": "boolean",
-              "true_color": 4283215696,
-              "false_color": 4294198070,
-              "true_icon": "None",
-              "false_icon": "None"
-            }
-          },
-          {
-            "title": "Pipeline On",
-            "x": 256.0,
-            "y": 256.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Pipeline On",
-              "period": 0.06,
-              "show_type": true,
-              "maximize_button_space": false
-            }
-          },
-          {
-            "title": "Pipeline Off",
-            "x": 0.0,
-            "y": 256.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Pipeline Off",
-              "period": 0.06,
-              "show_type": true,
-              "maximize_button_space": false
-            }
-          },
-          {
-            "title": "RequiresIdealSpeed",
-            "x": 1152.0,
-            "y": 0.0,
-            "width": 128.0,
-            "height": 128.0,
-            "type": "Boolean Box",
-            "properties": {
-              "topic": "superstructure/AutoAim/RequiresIdealSpeed",
-              "period": 0.06,
-              "data_type": "boolean",
-              "true_color": 4283215696,
-              "false_color": 4294198070,
-              "true_icon": "None",
-              "false_icon": "None"
-            }
-          },
-          {
-            "title": "HasValidResult",
-            "x": 1152.0,
-            "y": 128.0,
-            "width": 128.0,
-            "height": 128.0,
-            "type": "Boolean Box",
-            "properties": {
-              "topic": "superstructure/AutoAim/HasValidResult",
-              "period": 0.06,
-              "data_type": "boolean",
-              "true_color": 4283215696,
-              "false_color": 4294198070,
-              "true_icon": "None",
-              "false_icon": "None"
-            }
-          },
-          {
-            "title": "rps",
-            "x": 512.0,
-            "y": 0.0,
-            "width": 256.0,
-            "height": 256.0,
-            "type": "Graph",
-            "properties": {
-              "topic": "/Telemetry/Mechanisms/Shooter/VelocityRps",
-              "period": 0.033,
-              "data_type": "double",
-              "time_displayed": 3.0,
-              "color": 4278238420,
-              "line_width": 5.0
-            }
-          },
-          {
-            "title": "setpoint",
-            "x": 768.0,
-            "y": 0.0,
-            "width": 256.0,
-            "height": 256.0,
-            "type": "Graph",
-            "properties": {
-              "topic": "/Telemetry/Mechanisms/Shooter/SetpointRps",
-              "period": 0.033,
-              "data_type": "double",
-              "time_displayed": 3.0,
-              "color": 4278238420,
-              "line_width": 5.0
-            }
-          },
-          {
-            "title": "Climber Climb",
-            "x": 0.0,
-            "y": 0.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Climber Climb",
-              "period": 0.06,
-              "show_type": true,
-              "maximize_button_space": false
-            }
-          },
-          {
-            "title": "Climber Down",
-            "x": 0.0,
-            "y": 128.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Climber Down",
-              "period": 0.06,
-              "show_type": true,
-              "maximize_button_space": false
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "Auto",
       "grid_layout": {
         "layouts": [
@@ -244,11 +10,11 @@
             "title": "Auto Chooser",
             "x": 0.0,
             "y": 0.0,
-            "width": 768.0,
-            "height": 640.0,
+            "width": 704.0,
+            "height": 896.0,
             "type": "List Layout",
             "properties": {
-              "label_position": "TOP"
+              "label_position": "LEFT"
             },
             "children": [
               {
@@ -497,10 +263,10 @@
         "containers": [
           {
             "title": "Outpost Wait Time",
-            "x": 768.0,
+            "x": 704.0,
             "y": 0.0,
-            "width": 160.0,
-            "height": 128.0,
+            "width": 224.0,
+            "height": 160.0,
             "type": "Text Display",
             "properties": {
               "topic": "/SmartDashboard/Auto Chooser/Outpost Wait Time",
@@ -513,8 +279,8 @@
             "title": "Pause Time",
             "x": 928.0,
             "y": 0.0,
-            "width": 160.0,
-            "height": 128.0,
+            "width": 288.0,
+            "height": 160.0,
             "type": "Text Display",
             "properties": {
               "topic": "/SmartDashboard/Auto Chooser/Pause Time",
@@ -525,10 +291,10 @@
           },
           {
             "title": "Survey Field",
-            "x": 768.0,
-            "y": 128.0,
-            "width": 480.0,
-            "height": 256.0,
+            "x": 704.0,
+            "y": 480.0,
+            "width": 832.0,
+            "height": 416.0,
             "type": "Field",
             "properties": {
               "topic": "/SmartDashboard/Auto Chooser/Survey Field",
@@ -545,17 +311,68 @@
             }
           },
           {
-            "title": "Alt Pause Time",
-            "x": 1088.0,
+            "title": "Alt - Pause Time",
+            "x": 1216.0,
             "y": 0.0,
-            "width": 160.0,
-            "height": 128.0,
+            "width": 320.0,
+            "height": 160.0,
             "type": "Text Display",
             "properties": {
               "topic": "/SmartDashboard/Auto Chooser/Alt Pause Time",
               "period": 0.06,
               "data_type": "double",
               "show_submit_button": true
+            }
+          },
+          {
+            "title": "Daniil: Accepted",
+            "x": 704.0,
+            "y": 160.0,
+            "width": 288.0,
+            "height": 320.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/Telemetry/Vision/daniil/Accepted",
+              "period": 0.02,
+              "data_type": "boolean",
+              "true_color": 4283215696,
+              "false_color": 4294198070,
+              "true_icon": "None",
+              "false_icon": "None"
+            }
+          },
+          {
+            "title": "Evan: Accepted",
+            "x": 992.0,
+            "y": 160.0,
+            "width": 256.0,
+            "height": 320.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/Telemetry/Vision/evan/Accepted",
+              "period": 0.02,
+              "data_type": "boolean",
+              "true_color": 4283215696,
+              "false_color": 4294198070,
+              "true_icon": "None",
+              "false_icon": "None"
+            }
+          },
+          {
+            "title": "Val: Accepted",
+            "x": 1248.0,
+            "y": 160.0,
+            "width": 288.0,
+            "height": 320.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/Telemetry/Vision/val/Accepted",
+              "period": 0.02,
+              "data_type": "boolean",
+              "true_color": 4283215696,
+              "false_color": 4294198070,
+              "true_icon": "None",
+              "false_icon": "None"
             }
           }
         ]
@@ -571,10 +388,10 @@
             "x": 0.0,
             "y": 0.0,
             "width": 384.0,
-            "height": 512.0,
+            "height": 896.0,
             "type": "Boolean Box",
             "properties": {
-              "topic": "IO/Hub Enabled",
+              "topic": "/Telemetry/Match/HubEnabled",
               "period": 0.06,
               "data_type": "boolean",
               "true_color": 4283215696,
@@ -584,110 +401,78 @@
             }
           },
           {
-            "title": "hasTarget",
-            "x": 640.0,
-            "y": 0.0,
-            "width": 96.0,
-            "height": 128.0,
-            "type": "Boolean Box",
-            "properties": {
-              "topic": "/photonvision/daniil/hasTarget",
-              "period": 0.06,
-              "data_type": "boolean",
-              "true_color": 4283215696,
-              "false_color": 4294198070,
-              "true_icon": "None",
-              "false_icon": "None"
-            }
-          },
-          {
-            "title": "hasTarget",
-            "x": 736.0,
-            "y": 0.0,
-            "width": 96.0,
-            "height": 128.0,
-            "type": "Boolean Box",
-            "properties": {
-              "topic": "/photonvision/evan/hasTarget",
-              "period": 0.06,
-              "data_type": "boolean",
-              "true_color": 4283215696,
-              "false_color": 4294198070,
-              "true_icon": "None",
-              "false_icon": "None"
-            }
-          },
-          {
-            "title": "hasTarget",
-            "x": 832.0,
-            "y": 0.0,
-            "width": 96.0,
-            "height": 128.0,
-            "type": "Boolean Box",
-            "properties": {
-              "topic": "/photonvision/val/hasTarget",
-              "period": 0.06,
-              "data_type": "boolean",
-              "true_color": 4283215696,
-              "false_color": 4294198070,
-              "true_icon": "None",
-              "false_icon": "None"
-            }
-          },
-          {
-            "title": "Time Left Until Switch",
+            "title": "Time Until Shift Change",
             "x": 384.0,
             "y": 0.0,
-            "width": 256.0,
-            "height": 160.0,
+            "width": 416.0,
+            "height": 416.0,
             "type": "Match Time",
             "properties": {
-              "topic": "IO/Time Left Until Switch",
+              "topic": "/Telemetry/Match/TimeUntilSwitchSeconds",
               "period": 0.06,
               "data_type": "double",
               "time_display_mode": "Minutes and Seconds",
-              "red_start_time": 15,
+              "red_start_time": 20,
               "yellow_start_time": 30
             }
           },
           {
-            "title": "Shift Name",
+            "title": "ShiftName",
             "x": 384.0,
-            "y": 160.0,
-            "width": 256.0,
-            "height": 96.0,
-            "type": "Text Display",
+            "y": 608.0,
+            "width": 416.0,
+            "height": 160.0,
+            "type": "Large Text Display",
             "properties": {
-              "topic": "IO/Shift Name",
+              "topic": "/Telemetry/Match/ShiftName",
               "period": 0.06,
-              "data_type": "string",
-              "show_submit_button": false
+              "data_type": "string"
             }
           },
           {
-            "title": "Reset Odometry",
-            "x": 1024.0,
+            "title": "Daniil: Accepted",
+            "x": 928.0,
             "y": 0.0,
-            "width": 256.0,
-            "height": 256.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Reset Odometry",
-              "period": 0.06,
-              "show_type": false,
-              "maximize_button_space": true
-            }
-          },
-          {
-            "title": "Has Valid Pose",
-            "x": 1024.0,
-            "y": 256.0,
-            "width": 256.0,
-            "height": 256.0,
+            "width": 128.0,
+            "height": 224.0,
             "type": "Boolean Box",
             "properties": {
-              "topic": "/vision/Has Valid Pose",
-              "period": 0.06,
+              "topic": "/Telemetry/Vision/daniil/Accepted",
+              "period": 0.02,
+              "data_type": "boolean",
+              "true_color": 4283215696,
+              "false_color": 4294198070,
+              "true_icon": "None",
+              "false_icon": "None"
+            }
+          },
+          {
+            "title": "Evan: Accepted",
+            "x": 800.0,
+            "y": 0.0,
+            "width": 128.0,
+            "height": 224.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/Telemetry/Vision/evan/Accepted",
+              "period": 0.02,
+              "data_type": "boolean",
+              "true_color": 4283215696,
+              "false_color": 4294198070,
+              "true_icon": "None",
+              "false_icon": "None"
+            }
+          },
+          {
+            "title": "Val: Accepted",
+            "x": 1056.0,
+            "y": 0.0,
+            "width": 128.0,
+            "height": 224.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/Telemetry/Vision/val/Accepted",
+              "period": 0.02,
               "data_type": "boolean",
               "true_color": 4283215696,
               "false_color": 4294198070,
@@ -698,12 +483,12 @@
           {
             "title": "Win Auto?",
             "x": 384.0,
-            "y": 256.0,
-            "width": 256.0,
-            "height": 256.0,
+            "y": 416.0,
+            "width": 416.0,
+            "height": 192.0,
             "type": "Boolean Box",
             "properties": {
-              "topic": "IO/Current Alliance Selected",
+              "topic": "/Telemetry/Match/CurrentAllianceSelected",
               "period": 0.06,
               "data_type": "boolean",
               "true_color": 4283215696,
@@ -711,44 +496,647 @@
               "true_icon": "None",
               "false_icon": "None"
             }
+          },
+          {
+            "title": "CurrentZone",
+            "x": 800.0,
+            "y": 224.0,
+            "width": 384.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/Telemetry/Control/Superstructure/CurrentZone",
+              "period": 0.06,
+              "data_type": "string"
+            }
+          },
+          {
+            "title": "daniil-processed",
+            "x": 1184.0,
+            "y": 0.0,
+            "width": 352.0,
+            "height": 288.0,
+            "type": "Camera Stream",
+            "properties": {
+              "topic": "/CameraPublisher/daniil-processed",
+              "period": 0.06,
+              "rotation_turns": 0
+            }
+          },
+          {
+            "title": "evan-processed",
+            "x": 1184.0,
+            "y": 288.0,
+            "width": 352.0,
+            "height": 320.0,
+            "type": "Camera Stream",
+            "properties": {
+              "topic": "/CameraPublisher/evan-processed",
+              "period": 0.06,
+              "rotation_turns": 0
+            }
+          },
+          {
+            "title": "val-processed",
+            "x": 1184.0,
+            "y": 608.0,
+            "width": 352.0,
+            "height": 288.0,
+            "type": "Camera Stream",
+            "properties": {
+              "topic": "/CameraPublisher/val-processed",
+              "period": 0.06,
+              "rotation_turns": 0
+            }
+          },
+          {
+            "title": "Survey Field",
+            "x": 800.0,
+            "y": 352.0,
+            "width": 384.0,
+            "height": 544.0,
+            "type": "Field",
+            "properties": {
+              "topic": "/SmartDashboard/Auto Chooser/Survey Field",
+              "period": 0.06,
+              "field_game": "Rebuilt",
+              "robot_width": 0.85,
+              "robot_length": 0.85,
+              "show_other_objects": false,
+              "show_trajectories": false,
+              "field_rotation": 90.0,
+              "robot_color": 4281791543,
+              "trajectory_color": 4294967295,
+              "show_robot_outside_widget": true
+            }
           }
         ]
       }
     },
     {
-      "name": "Tab 4",
+      "name": "Emergency",
+      "grid_layout": {
+        "layouts": [
+          {
+            "title": "Position",
+            "x": 576.0,
+            "y": 640.0,
+            "width": 288.0,
+            "height": 128.0,
+            "type": "List Layout",
+            "properties": {
+              "label_position": "TOP"
+            },
+            "children": [
+              {
+                "title": "value",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 128.0,
+                "height": 128.0,
+                "type": "Large Text Display",
+                "properties": {
+                  "topic": "/Telemetry/Mechanisms/Pivot/Position",
+                  "period": 0.06,
+                  "data_type": "double",
+                  "struct_meta": {
+                    "path": [
+                      "value"
+                    ],
+                    "schema_name": "Rotation2d",
+                    "type": "double"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "title": "EncoderPosition",
+            "x": 576.0,
+            "y": 768.0,
+            "width": 288.0,
+            "height": 128.0,
+            "type": "List Layout",
+            "properties": {
+              "label_position": "TOP"
+            },
+            "children": [
+              {
+                "title": "value",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 128.0,
+                "height": 128.0,
+                "type": "Large Text Display",
+                "properties": {
+                  "topic": "/Telemetry/Mechanisms/Pivot/EncoderPosition",
+                  "period": 0.06,
+                  "data_type": "double",
+                  "struct_meta": {
+                    "path": [
+                      "value"
+                    ],
+                    "schema_name": "Rotation2d",
+                    "type": "double"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "containers": [
+          {
+            "title": "Pipeline On",
+            "x": 288.0,
+            "y": 640.0,
+            "width": 288.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Pipeline On",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Pipeline Off",
+            "x": 288.0,
+            "y": 768.0,
+            "width": 288.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Pipeline Off",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Hood Down",
+            "x": 0.0,
+            "y": 416.0,
+            "width": 288.0,
+            "height": 160.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Hood Down",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Hood Up",
+            "x": 0.0,
+            "y": 256.0,
+            "width": 288.0,
+            "height": 160.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Hood Up",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Intake Off",
+            "x": 0.0,
+            "y": 736.0,
+            "width": 288.0,
+            "height": 160.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Intake Off",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Intake On",
+            "x": 0.0,
+            "y": 576.0,
+            "width": 288.0,
+            "height": 160.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Intake On",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Pivot Ready",
+            "x": 576.0,
+            "y": 0.0,
+            "width": 288.0,
+            "height": 160.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Pivot Ready",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Pivot Reset",
+            "x": 576.0,
+            "y": 448.0,
+            "width": 288.0,
+            "height": 192.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Pivot Reset",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Pivot Stow",
+            "x": 576.0,
+            "y": 320.0,
+            "width": 288.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Pivot Stow",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Pivot Safe",
+            "x": 576.0,
+            "y": 160.0,
+            "width": 288.0,
+            "height": 160.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Pivot Safe",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Reset Dynamics",
+            "x": 288.0,
+            "y": 448.0,
+            "width": 288.0,
+            "height": 192.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Reset Dynamics",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Turret 0",
+            "x": 0.0,
+            "y": 0.0,
+            "width": 288.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Turret 0",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Turret 180",
+            "x": 0.0,
+            "y": 128.0,
+            "width": 288.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Turret 180",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Auto-Aim Toggle",
+            "x": 288.0,
+            "y": 224.0,
+            "width": 288.0,
+            "height": 224.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Auto-Aim Toggle",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Auto-Shoot Toggle",
+            "x": 288.0,
+            "y": 0.0,
+            "width": 288.0,
+            "height": 224.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Auto-Shoot Toggle",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Ball in Feeder?",
+            "x": 864.0,
+            "y": 448.0,
+            "width": 288.0,
+            "height": 448.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/Telemetry/Control/Superstructure/BallDetected",
+              "period": 0.06,
+              "data_type": "boolean",
+              "true_color": 4283215696,
+              "false_color": 4294198070,
+              "true_icon": "None",
+              "false_icon": "None"
+            }
+          },
+          {
+            "title": "CANBus Okay?",
+            "x": 864.0,
+            "y": 0.0,
+            "width": 288.0,
+            "height": 448.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/Telemetry/Performance/CanBusStatusOk",
+              "period": 0.06,
+              "data_type": "boolean",
+              "true_color": 4283215696,
+              "false_color": 4294198070,
+              "true_icon": "None",
+              "false_icon": "None"
+            }
+          },
+          {
+            "title": "Survey Field",
+            "x": 1152.0,
+            "y": 0.0,
+            "width": 384.0,
+            "height": 896.0,
+            "type": "Field",
+            "properties": {
+              "topic": "/SmartDashboard/Auto Chooser/Survey Field",
+              "period": 0.06,
+              "field_game": "Rebuilt",
+              "robot_width": 0.85,
+              "robot_length": 0.85,
+              "show_other_objects": false,
+              "show_trajectories": false,
+              "field_rotation": 90.0,
+              "robot_color": 4281791569,
+              "trajectory_color": 4294967295,
+              "show_robot_outside_widget": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Tuning",
       "grid_layout": {
         "layouts": [],
         "containers": [
           {
-            "title": "goal",
-            "x": 768.0,
+            "title": "Turret Motor",
+            "x": 0.0,
             "y": 0.0,
             "width": 256.0,
+            "height": 384.0,
+            "type": "ProfiledPIDController",
+            "properties": {
+              "topic": "/SmartDashboard/Turret Motor",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Hood Motor",
+            "x": 0.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 384.0,
+            "type": "ProfiledPIDController",
+            "properties": {
+              "topic": "/SmartDashboard/Hood Motor",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "s",
+            "x": 256.0,
+            "y": 384.0,
+            "width": 128.0,
             "height": 128.0,
             "type": "Text Display",
             "properties": {
-              "topic": "/SmartDashboard/Climber Motor/goal",
+              "topic": "/SmartDashboard/Hood Motor/s",
               "period": 0.06,
               "data_type": "double",
               "show_submit_button": true
             }
           },
           {
-            "title": "Climber Motor",
-            "x": 512.0,
+            "title": "v",
+            "x": 256.0,
+            "y": 512.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Hood Motor/v",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "v",
+            "x": 256.0,
+            "y": 128.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Turret Motor/v",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "goal",
+            "x": 256.0,
+            "y": 256.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Turret Motor/goal",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "goal",
+            "x": 256.0,
+            "y": 640.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Hood Motor/goal",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "s",
+            "x": 256.0,
             "y": 0.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Turret Motor/s",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "Intake Motor",
+            "x": 768.0,
+            "y": 384.0,
             "width": 256.0,
             "height": 384.0,
             "type": "ProfiledPIDController",
             "properties": {
-              "topic": "/SmartDashboard/Climber Motor",
+              "topic": "/SmartDashboard/Intake Motor",
               "period": 0.06
             }
           },
           {
+            "title": "s",
+            "x": 1024.0,
+            "y": 384.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Intake Motor/s",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "v",
+            "x": 1024.0,
+            "y": 512.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Intake Motor/v",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "goal",
+            "x": 1024.0,
+            "y": 640.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Intake Motor/goal",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "Indexer Motor",
+            "x": 384.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 384.0,
+            "type": "ProfiledPIDController",
+            "properties": {
+              "topic": "/SmartDashboard/Indexer Motor",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "s",
+            "x": 640.0,
+            "y": 384.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Indexer Motor/s",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "v",
+            "x": 640.0,
+            "y": 512.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Indexer Motor/v",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "goal",
+            "x": 640.0,
+            "y": 640.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Indexer Motor/goal",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": true
+            }
+          },
+          {
             "title": "Pivot Motor",
-            "x": 0.0,
+            "x": 384.0,
             "y": 0.0,
             "width": 256.0,
             "height": 384.0,
@@ -759,75 +1147,45 @@
             }
           },
           {
-            "title": "Max Acceleration",
-            "x": 256.0,
-            "y": 0.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Pivot Motor/Max Acceleration",
-              "period": 0.06,
-              "data_type": "double",
-              "show_submit_button": true
-            }
-          },
-          {
-            "title": "Max Velocity",
-            "x": 256.0,
-            "y": 128.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Pivot Motor/Max Velocity",
-              "period": 0.06,
-              "data_type": "double",
-              "show_submit_button": true
-            }
-          },
-          {
-            "title": "Hub Enabled",
-            "x": 896.0,
-            "y": 128.0,
-            "width": 128.0,
-            "height": 128.0,
-            "type": "Toggle Switch",
-            "properties": {
-              "topic": "IO/Hub Enabled",
-              "period": 0.06,
-              "data_type": "boolean"
-            }
-          },
-          {
-            "title": "Canbus OK",
-            "x": 768.0,
-            "y": 128.0,
-            "width": 128.0,
-            "height": 128.0,
-            "type": "Boolean Box",
-            "properties": {
-              "topic": "Canbus OK",
-              "period": 0.06,
-              "data_type": "boolean",
-              "true_color": 4283215696,
-              "false_color": 4294198070,
-              "true_icon": "None",
-              "false_icon": "None"
-            }
-          },
-          {
-            "title": "CAN Bus Utilization",
-            "x": 768.0,
+            "title": "goal",
+            "x": 640.0,
             "y": 256.0,
             "width": 128.0,
             "height": 128.0,
             "type": "Text Display",
             "properties": {
-              "topic": "CAN Bus Utilization",
+              "topic": "/SmartDashboard/Pivot Motor/goal",
               "period": 0.06,
               "data_type": "double",
-              "show_submit_button": false
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "s",
+            "x": 640.0,
+            "y": 0.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Pivot Motor/s",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "v",
+            "x": 640.0,
+            "y": 128.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Pivot Motor/v",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": true
             }
           }
         ]
@@ -839,179 +1197,14 @@
         "layouts": [],
         "containers": [
           {
-            "title": "Ball Detect",
-            "x": 0.0,
-            "y": 0.0,
-            "width": 448.0,
-            "height": 736.0,
-            "type": "Boolean Box",
-            "properties": {
-              "topic": "superstructure/Ball Detect",
-              "period": 0.06,
-              "data_type": "boolean",
-              "true_color": 4283215696,
-              "false_color": 4294198070,
-              "true_icon": "None",
-              "false_icon": "None"
-            }
-          },
-          {
-            "title": "Turret Motor",
-            "x": 448.0,
-            "y": 0.0,
-            "width": 256.0,
-            "height": 384.0,
-            "type": "ProfiledPIDController",
-            "properties": {
-              "topic": "/SmartDashboard/Turret Motor",
-              "period": 0.06
-            }
-          },
-          {
-            "title": "Pipeline On",
-            "x": 704.0,
-            "y": 0.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Pipeline On",
-              "period": 0.06,
-              "show_type": true,
-              "maximize_button_space": false
-            }
-          },
-          {
-            "title": "Pipeline Off",
-            "x": 704.0,
-            "y": 128.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Pipeline Off",
-              "period": 0.06,
-              "show_type": true,
-              "maximize_button_space": false
-            }
-          },
-          {
-            "title": "Hood Motor",
-            "x": 960.0,
-            "y": 0.0,
-            "width": 256.0,
-            "height": 384.0,
-            "type": "ProfiledPIDController",
-            "properties": {
-              "topic": "/SmartDashboard/Hood Motor",
-              "period": 0.06
-            }
-          },
-          {
-            "title": "Shooter Motor",
-            "x": 1216.0,
-            "y": 0.0,
-            "width": 256.0,
-            "height": 384.0,
-            "type": "ProfiledPIDController",
-            "properties": {
-              "topic": "/SmartDashboard/Shooter Motor",
-              "period": 0.06
-            }
-          },
-          {
-            "title": "Position",
-            "x": 544.0,
-            "y": 384.0,
+            "title": "goal",
+            "x": 384.0,
+            "y": 224.0,
             "width": 128.0,
             "height": 128.0,
             "type": "Text Display",
             "properties": {
-              "topic": "/SmartDashboard/Turret Motor/Position",
-              "period": 0.06,
-              "data_type": "double",
-              "show_submit_button": true
-            }
-          },
-          {
-            "title": "Pivot Safe",
-            "x": 704.0,
-            "y": 416.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Pivot Safe",
-              "period": 0.06,
-              "show_type": false,
-              "maximize_button_space": true
-            }
-          },
-          {
-            "title": "Pivot Ready",
-            "x": 704.0,
-            "y": 544.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Pivot Ready",
-              "period": 0.06,
-              "show_type": false,
-              "maximize_button_space": true
-            }
-          },
-          {
-            "title": "Intake On",
-            "x": 960.0,
-            "y": 416.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Intake On",
-              "period": 0.06,
-              "show_type": false,
-              "maximize_button_space": true
-            }
-          },
-          {
-            "title": "Intake Off",
-            "x": 960.0,
-            "y": 544.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Intake Off",
-              "period": 0.06,
-              "show_type": false,
-              "maximize_button_space": true
-            }
-          },
-          {
-            "title": "a",
-            "x": 544.0,
-            "y": 512.0,
-            "width": 128.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Feeder Motor/a",
-              "period": 0.06,
-              "data_type": "double",
-              "show_submit_button": true
-            }
-          },
-          {
-            "title": "p",
-            "x": 544.0,
-            "y": 640.0,
-            "width": 128.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Feeder Motor/p",
+              "topic": "/SmartDashboard/Shooter Motor/goal",
               "period": 0.06,
               "data_type": "double",
               "show_submit_button": true
