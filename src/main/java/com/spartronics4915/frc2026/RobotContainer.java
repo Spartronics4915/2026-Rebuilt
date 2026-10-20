@@ -88,6 +88,7 @@ public class RobotContainer {
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
     private final CommandXboxController operatorController = new CommandXboxController(OperatorConstants.OPERATOR_CONTROLLER_PORT);
     private final CommandXboxController debugController = new CommandXboxController(OperatorConstants.DEBUG_CONTROLLER_PORT);
+    private final CommandXboxController outreachController = new CommandXboxController(OperatorConstants.OUTREACH_CONTROLLER_PORT);
 
     public DriveCommand driveCommand = new DriveCommand(driverController, debugController, swerveSubsystem);
     public SuperstructureCommands superstructureCommands = new SuperstructureCommands(
@@ -447,7 +448,34 @@ public class RobotContainer {
         );
 
         //#endregion
+        //#region Outreach Controller
 
+        //Simple controls used for outreach (with no driving)
+
+        outreachController.leftTrigger().onTrue(
+            intakeSubsystem.setStateCommand(IntakeState.INTAKE)
+        ).onFalse(
+            intakeSubsystem.setStateCommand(IntakeState.OFF)
+        );
+
+        outreachController.rightTrigger().onTrue(
+            Commands.parallel(
+                indexerSubsystem.setSetpointCommand(3),
+                feederSubsystem.setSetpointCommand(6),
+                hoodSubsystem.setSetpointCommand(Rotation2d.fromDegrees(30)),
+                turretSubsystem.setSetpointCommand(Rotation2d.fromDegrees(-60)),
+                shooterSubsystem.setSetpointCommand(20)
+            )
+        ).onFalse(
+            Commands.parallel(
+                indexerSubsystem.setSetpointCommand(0),
+                feederSubsystem.setSetpointCommand(0),
+                // Don't set hood or turret so they stay in place
+                shooterSubsystem.setSetpointCommand(0)
+            )
+        );
+
+        ///#endregion
     }
 
     /**
