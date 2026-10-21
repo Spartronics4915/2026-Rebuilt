@@ -460,11 +460,11 @@ public class RobotContainer {
 
         outreachController.rightTrigger().onTrue(
             Commands.parallel(
-                indexerSubsystem.setSetpointCommand(3),
-                feederSubsystem.setSetpointCommand(6),
-                hoodSubsystem.setSetpointCommand(Rotation2d.fromDegrees(30)),
-                turretSubsystem.setSetpointCommand(Rotation2d.fromDegrees(-60)),
-                shooterSubsystem.setSetpointCommand(20)
+                indexerSubsystem.setSetpointCommand(2),
+                feederSubsystem.setSetpointCommand(8),
+                hoodSubsystem.setSetpointCommand(Rotation2d.fromDegrees(40)),
+                turretSubsystem.setSetpointCommand(Rotation2d.fromDegrees(-80)),
+                shooterSubsystem.setSetpointCommand(60)
             )
         ).onFalse(
             Commands.parallel(
@@ -473,6 +473,10 @@ public class RobotContainer {
                 // Don't set hood or turret so they stay in place
                 shooterSubsystem.setSetpointCommand(0)
             )
+        );
+
+        outreachController.back().onTrue(
+            superstructureCommands.resetDynamics()
         );
 
         ///#endregion
