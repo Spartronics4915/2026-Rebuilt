@@ -12,9 +12,7 @@ import com.spartronics4915.frc2026.autos.ComplexAutoChooser;
 import com.spartronics4915.frc2026.autos.DriveToPOI;
 import com.spartronics4915.frc2026.autos.NeutralZoneAutos;
 import com.spartronics4915.frc2026.autos.PreAlignment;
-import com.spartronics4915.frc2026.autos.DriveToPOI.POI;
 import com.spartronics4915.frc2026.autos.ZoneTransition;
-import com.spartronics4915.frc2026.Constants.VisionConstants;
 
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.hubPose;
 import static com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants.trenchTransform;
@@ -27,10 +25,8 @@ import com.spartronics4915.frc2026.commands.SuperstructureCommands.PipelineState
 import com.spartronics4915.frc2026.subsystems.control.AutoAimController;
 import com.spartronics4915.frc2026.subsystems.control.AutoAimController.ManualOverride;
 import com.spartronics4915.frc2026.subsystems.control.Superstructure;
-import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.PivotSubsystem;
-import com.spartronics4915.frc2026.subsystems.mechanisms.ClimberSubsystem.ClimberState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.IntakeSubsystem.IntakeState;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.HoodSubsystem;
 import com.spartronics4915.frc2026.subsystems.mechanisms.head.TurretSubsystem;
@@ -41,11 +37,13 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.IndexerSubsyst
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.subsystems.vision.VisionSubsystem;
+import com.spartronics4915.frc2026.util.simulation.FuelSimHandler;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -70,25 +68,27 @@ public class RobotContainer {
     public final FeederSubsystem feederSubsystem = new FeederSubsystem();
     public final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
     
-    public final SwerveSubsystem swerveSubsystem = new SwerveSubsystem(SwerveConfigurations.COMP_CHASSIS);
-    public final VisionSubsystem visionSubsystem = new VisionSubsystem(
-        VisionConstants.apriltagFieldLayout, 
-        swerveSubsystem::addVisionMeasurement, 
-        swerveSubsystem, 
-        VisionConstants.CameraConstants.primaryCameras, 
-        VisionConstants.CameraConstants.fallbackCameras
-    );
+    public final SwerveSubsystem swerveSubsystem = SwerveSubsystem.getInstance(SwerveConfigurations.COMP_CHASSIS);
+    public final VisionSubsystem visionSubsystem = VisionSubsystem.getInstance(swerveSubsystem);
     
     private final ZoneTransition transitionFactory = new ZoneTransition(swerveSubsystem, visionSubsystem);
     private final DriveToPOI POIFactory = new DriveToPOI(swerveSubsystem, null); // !CLIMBER!
     private final NeutralZoneAutos neutralZoneFactory = new NeutralZoneAutos(swerveSubsystem);
     private final PreAlignment preAlignmentFactory = new PreAlignment(swerveSubsystem);
 
-    private final AutoAimController autoAimController = new AutoAimController(hoodSubsystem, turretSubsystem, swerveSubsystem, shooterSubsystem);
+    private final AutoAimController autoAimController = new AutoAimController(
+        hoodSubsystem,
+        turretSubsystem,
+        swerveSubsystem,
+        shooterSubsystem
+    );
+
+    private final FuelSimHandler fuelSimHandler = new FuelSimHandler(swerveSubsystem, intakeSubsystem, autoAimController);
 
     private final CommandXboxController driverController = new CommandXboxController(OperatorConstants.DRIVER_CONTROLLER_PORT);
     private final CommandXboxController operatorController = new CommandXboxController(OperatorConstants.OPERATOR_CONTROLLER_PORT);
     private final CommandXboxController debugController = new CommandXboxController(OperatorConstants.DEBUG_CONTROLLER_PORT);
+    private final CommandXboxController outreachController = new CommandXboxController(OperatorConstants.OUTREACH_CONTROLLER_PORT);
 
     public DriveCommand driveCommand = new DriveCommand(driverController, debugController, swerveSubsystem);
     public SuperstructureCommands superstructureCommands = new SuperstructureCommands(
@@ -106,9 +106,7 @@ public class RobotContainer {
     public final Superstructure superstructure = new Superstructure(
         swerveSubsystem, 
         autoAimController, 
-        superstructureCommands,
-        driveCommand,
-        visionSubsystem
+        superstructureCommands
     );
 
     private final ComplexAutoChooser autoChooser = new ComplexAutoChooser(transitionFactory, POIFactory, neutralZoneFactory, preAlignmentFactory, superstructure, 20);
@@ -116,20 +114,23 @@ public class RobotContainer {
     public RobotContainer() {
         configureBindings();
 
-        // Register vision observer with turret to ensure accurate turret angle timestamps
-        turretSubsystem.setVisionObserver((turretAngle, timestamp) -> {
-            visionSubsystem.getCameras().forEach(camera -> {
-                if (camera.isTurreted()) {
-                    camera.updateTurretAngle(turretAngle, timestamp);
-                }
-            });
-        });
+        // Preserve turret history so a camera frame uses its capture-time transform.
+        visionSubsystem.recordTurretAngle(
+            turretSubsystem.getPosition(),
+            Timer.getFPGATimestamp());
+        turretSubsystem.setVisionObserver(visionSubsystem::recordTurretAngle);
+        visionSubsystem.configureDefaultCameras();
+
+        // Initialize hood with turret reference for 3D visualization
+        hoodSubsystem.setTurretSubsystem(turretSubsystem);
 
         feederSubsystem.setDistanceSupplier(autoAimController::getDistanceToTarget);
 
         SmartDashboard.putData("Auto-Aim Toggle", autoAimController.aimToggle());
         SmartDashboard.putData("Auto-Shoot Toggle", autoAimController.shootingToggle());
         SmartDashboard.putData("Reset Dynamics", superstructureCommands.resetDynamics());
+        SmartDashboard.putData("Fuel Sim/Reset", Commands.runOnce(fuelSimHandler::resetSimulatedFuel));
+        SmartDashboard.putData("Fuel Sim/Add Fuel", Commands.runOnce(fuelSimHandler::intakeSimulatedFuel));
         SmartDashboard.putData("Pipeline On", superstructureCommands.setPipelineState(PipelineState.ON));
         SmartDashboard.putData("Pipeline Off", superstructureCommands.setPipelineState(PipelineState.OFF));
         SmartDashboard.putData("Reset Odometry", Commands.runOnce(
@@ -229,11 +230,11 @@ public class RobotContainer {
             .withName("X Brake Swerve")
         );
 
-        driverController.start().onTrue(
-            Commands.runOnce(
-                () -> swerveSubsystem.resetPose(visionSubsystem.getVisionPose())
-            )
-        );
+        //driverController.start().onTrue(
+        //    Commands.runOnce(
+        //        () -> swerveSubsystem.resetPose(visionSubsystem.getVisionPose())
+        //    )
+        //);
 
         //#endregion
         //#region Operator Controller
@@ -245,11 +246,11 @@ public class RobotContainer {
         );
 
         operatorController.povLeft().whileTrue(
-            autoAimController.setManualOverride(ManualOverride.LEFT)
+            autoAimController.setManualOverride(ManualOverride.LEFT_CORNER)
         );
 
         operatorController.povRight().whileTrue(
-            autoAimController.setManualOverride(ManualOverride.RIGHT)
+            autoAimController.setManualOverride(ManualOverride.RIGHT_CORNER)
         );
 
         operatorController.povDown().whileTrue(
@@ -336,25 +337,40 @@ public class RobotContainer {
 
         // Driver nudge defs are in the driverController section
 
-        debugController.povUp().whileTrue(
-            Commands.run(() -> swerveSubsystem.drive(driverNudgeUp), swerveSubsystem)
-        );
+        /*
+            Left trigger: Intake
+            Right trigger: Shoot
 
-        debugController.povLeft().whileTrue(
-            Commands.run(() -> swerveSubsystem.drive(driverNudgeLeft), swerveSubsystem)
-        );
+            Left bumper: Reverse pipeline
+            Right bumper: Intake eject
 
-        debugController.povRight().whileTrue(
-            Commands.run(() -> swerveSubsystem.drive(driverNudgeRight), swerveSubsystem)
-        );
+            Left stick: Translate
+            Right stick: Rotate
 
-        debugController.povDown().whileTrue(
-            Commands.run(() -> swerveSubsystem.drive(driverNudgeDown), swerveSubsystem)
-        );
+            X: X-Brake
+            Y: 
+            B: Reset heading
+            A: 
 
-        debugController.leftTrigger().onTrue(
-            superstructureCommands.intakeOn()
-        ).onFalse(
+            back: Reset dynamics 
+            start: Toggle auto-aim
+
+            Left stick press:
+            Right stick press:
+
+            Pov-up: (Trench presets?) up and down?
+            Pov-down:
+            Pov-right: Shoot preset right
+            Pov-left: Shoot preset left
+        */
+
+        // Triggers:
+
+        debugController.leftTrigger().whileTrue(
+            Commands.parallel(
+                superstructureCommands.intakeOn(),
+                superstructure.getReturnToZoneCommand())
+        ).whileFalse(
             superstructureCommands.intakeOff()
         );
 
@@ -362,65 +378,108 @@ public class RobotContainer {
             autoAimController.overrideShootCommand()
         );
 
+        // Bumpers:
+
         debugController.leftBumper().onTrue(
-            Commands.runOnce(() -> {
-                swerveSubsystem.setMovementOverride(
-                    hubPose.minus(trenchTransform).getY()
-                );
-            })
+            Commands.parallel(
+                feederSubsystem.setStateCommand(FeederState.REVERSE),
+                indexerSubsystem.setStateCommand(IndexerState.REVERSE)
+            )
         ).onFalse(
-            Commands.runOnce(() -> {
-                swerveSubsystem.setMovementOverride(0.0);
-            })
+            Commands.parallel(
+                feederSubsystem.setStateCommand(FeederState.OFF),
+                indexerSubsystem.setStateCommand(IndexerState.OFF)
+            )
         );
 
         debugController.rightBumper().onTrue(
-            Commands.runOnce(() -> {
-                swerveSubsystem.setMovementOverride(
-                    hubPose.plus(trenchTransform).getY()
-                );
-            })
+            intakeSubsystem.setStateCommand(IntakeState.OUTTAKE)
         ).onFalse(
-            Commands.runOnce(() -> {
-                swerveSubsystem.setMovementOverride(0.0);
-            })
+            intakeSubsystem.setStateCommand(IntakeState.INTAKE)
         );
 
-        debugController.a().onTrue(
+        // Buttons:
+
+        debugController.x().whileTrue(
+            Commands.run(swerveSubsystem::lockModules, swerveSubsystem)
+                .withName("X Brake Swerve")
+        );
+
+        debugController.b().onTrue(
             Commands.runOnce(() -> {
                 swerveSubsystem.resetHeadingOffset();
             })
         );
 
-        debugController.b().onTrue(
-            Commands.runOnce(() -> {
-                swerveSubsystem.toggleFieldRelative();
-            })
+        debugController.a().onTrue(
+            autoAimController.setShootingState(false)
         );
-
-        debugController.x().onTrue(
-            autoAimController.shootingToggle()
-        );
-
-        // !CLIMBER!
-        // debugController.y().whileTrue(
-        //     POIFactory.generateCommand(POI.TOWER)
-        // );
 
         debugController.y().onTrue(
-            superstructureCommands.stowed()
-        );
-
-        debugController.back().onTrue(
-            superstructureCommands.resetDynamics()
+            Commands.runOnce(() -> {
+                swerveSubsystem.resetOdometry(visionSubsystem.getVisionPose());
+            })
         );
 
         debugController.start().onTrue(
             autoAimController.aimToggle()
         );
 
-        //#endregion
+        debugController.back().onTrue(
+            superstructureCommands.resetDynamics()
+        );
 
+        // D-Pad:
+
+        debugController.povUp().whileTrue(
+            autoAimController.setManualOverride(ManualOverride.LEFT_CORNER)
+        );
+
+        debugController.povLeft().whileTrue(
+            autoAimController.setManualOverride(ManualOverride.LEFT_TRENCH)
+        );
+
+        debugController.povRight().whileTrue(
+            autoAimController.setManualOverride(ManualOverride.RIGHT_TRENCH)
+        );
+
+        debugController.povDown().whileTrue(
+            autoAimController.setManualOverride(ManualOverride.RIGHT_CORNER)
+        );
+
+        //#endregion
+        //#region Outreach Controller
+
+        //Simple controls used for outreach (with no driving)
+
+        outreachController.leftTrigger().onTrue(
+            intakeSubsystem.setStateCommand(IntakeState.INTAKE)
+        ).onFalse(
+            intakeSubsystem.setStateCommand(IntakeState.OFF)
+        );
+
+        outreachController.rightTrigger().onTrue(
+            Commands.parallel(
+                indexerSubsystem.setSetpointCommand(2),
+                feederSubsystem.setSetpointCommand(8),
+                hoodSubsystem.setSetpointCommand(Rotation2d.fromDegrees(40)),
+                turretSubsystem.setSetpointCommand(Rotation2d.fromDegrees(-80)),
+                shooterSubsystem.setSetpointCommand(60)
+            )
+        ).onFalse(
+            Commands.parallel(
+                indexerSubsystem.setSetpointCommand(0),
+                feederSubsystem.setSetpointCommand(0),
+                // Don't set hood or turret so they stay in place
+                shooterSubsystem.setSetpointCommand(0)
+            )
+        );
+
+        outreachController.back().onTrue(
+            superstructureCommands.resetDynamics()
+        );
+
+        ///#endregion
     }
 
     /**

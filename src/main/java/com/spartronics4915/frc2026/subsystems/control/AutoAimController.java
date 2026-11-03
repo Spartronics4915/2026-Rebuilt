@@ -11,10 +11,11 @@ import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsyst
 import com.spartronics4915.frc2026.subsystems.mechanisms.pipeline.ShooterSubsystem.ShooterClamp;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
 import com.spartronics4915.frc2026.util.control.AutoAim;
+import com.spartronics4915.frc2026.util.control.TimeVarianceAuthority;
 import com.spartronics4915.frc2026.util.control.AutoAim.AutoAimResult;
 import com.spartronics4915.frc2026.util.control.TurretController;
-import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
-
+import com.spartronics4915.frc2026.util.logging.Telemetry;
+import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.filter.MedianFilter;
@@ -23,10 +24,8 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.networktables.BooleanPublisher;
-import edu.wpi.first.networktables.DoublePublisher;
-import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.RobotController;
 
 import static edu.wpi.first.units.Units.InchesPerSecond;
 import static edu.wpi.first.units.Units.Meters;
@@ -42,6 +41,8 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  */
 public class AutoAimController extends SubsystemBase {
 
+    private static final Scope LOG = Telemetry.scope("Control/AutoAim");
+
     private final HoodSubsystem hood;
     private final TurretSubsystem turret;
     private final ShooterSubsystem shooter;
@@ -50,7 +51,7 @@ public class AutoAimController extends SubsystemBase {
     private final AutoAim autoAim = new AutoAim(
         20, // 30
         50, // 100
-        0.001,
+        0.0005,
         turretTranslation3D,
         Rotation2d.fromDegrees(50),
         Rotation2d.fromDegrees(90),
@@ -67,13 +68,19 @@ public class AutoAimController extends SubsystemBase {
 
     private boolean isAimEnabled = false;
     private boolean isAutoShootingEnabled = false;
+    private long sampleTimestampUs;
+    private boolean hasValidResult;
+    private boolean requiresIdealSpeed;
+    private double distanceToTargetMeters;
     private AutoAimResult lastResult = null;
     private Translation3d targetOverride = null;
     private boolean shootOverride = false;
 
     public enum ManualOverride {
-        LEFT(Rotation2d.fromDegrees(-127.885), Rotation2d.fromDegrees(28.12), 8.382),
-        RIGHT(Rotation2d.fromDegrees(-48.015), Rotation2d.fromDegrees(28.78), 8.447);
+        LEFT_CORNER(Rotation2d.fromDegrees(-127.885), Rotation2d.fromDegrees(28.12), 8.382),
+        RIGHT_CORNER(Rotation2d.fromDegrees(-48.015), Rotation2d.fromDegrees(28.78), 8.447),
+        LEFT_TRENCH(Rotation2d.fromDegrees(186), Rotation2d.fromDegrees(27.215), 6.927),
+        RIGHT_TRENCH(Rotation2d.fromDegrees(-7.678), Rotation2d.fromDegrees(27.215), 6.927);
 
         public final Rotation2d yaw;
         public final Rotation2d pitch;
@@ -97,18 +104,7 @@ public class AutoAimController extends SubsystemBase {
     private final MedianFilter accelFilterY = new MedianFilter(5);
     private final MedianFilter accelFilterOmega = new MedianFilter(5);
 
-    private final MedianFilter flywheelFilter = new MedianFilter(10);
-
-    private final BooleanPublisher isAimEnabledPublisher = NetworkTableInstance.getDefault()
-            .getBooleanTopic("superstructure/AutoAim/AimEnabled").publish();
-    private final BooleanPublisher isShootingEnabledPublisher = NetworkTableInstance.getDefault()
-            .getBooleanTopic("superstructure/AutoAim/ShootingEnabled").publish();
-    private final BooleanPublisher hasValidResultPublisher = NetworkTableInstance.getDefault()
-            .getBooleanTopic("superstructure/AutoAim/HasValidResult").publish();
-    private final BooleanPublisher requiresIdealSpeedPublisher = NetworkTableInstance.getDefault()
-            .getBooleanTopic("superstructure/AutoAim/RequiresIdealSpeed").publish();
-    private final DoublePublisher distanceToTargetPublisher = NetworkTableInstance.getDefault()
-            .getDoubleTopic("superstructure/DistanceToTarget").publish();
+    private final MedianFilter flywheelFilter = new MedianFilter(3);
 
     public AutoAimController(
         HoodSubsystem hood,
@@ -133,13 +129,11 @@ public class AutoAimController extends SubsystemBase {
     }
 
     // Collision cache
-    private Double cachedCollisionDist = null;
+    private double cachedCollisionDist;
+    private boolean hasCachedCollisionDist;
 
     @Override
     public void periodic() {
-        isAimEnabledPublisher.accept(isAimEnabled);
-        isShootingEnabledPublisher.accept(isAutoShootingEnabled);
-
         isPossibleDebouncedValue = possibleDebouncer.calculate(isPhysicallyAligned());
 
         double dt = Math.max(dtCalc.update(), 0.001); // Prevent division by zero
@@ -166,8 +160,7 @@ public class AutoAimController extends SubsystemBase {
         }
 
         boolean hasResult = lastResult != null && lastResult.ToF() != -1;
-        hasValidResultPublisher.accept(hasResult);
-        requiresIdealSpeedPublisher.accept(hasResult && lastResult.requiresIdealSpeed());
+        updateTelemetry(hasResult);
 
         if (activeManualOverride != null) {
             if (shootOverride) {
@@ -188,8 +181,23 @@ public class AutoAimController extends SubsystemBase {
         if (lastResult == null) return;
 
         applyAimResult(lastResult);
+    }
 
-        distanceToTargetPublisher.accept(getDistanceToTarget());
+    private void updateTelemetry(boolean hasResult) {
+        hasValidResult = hasResult;
+        requiresIdealSpeed = hasResult && lastResult.requiresIdealSpeed();
+        distanceToTargetMeters = hasResult ? getDistanceToTarget() : 0.0;
+        sampleTimestampUs = RobotController.getFPGATime();
+        outputTelemetry();
+    }
+
+    private void outputTelemetry() {
+        LOG.critical.log("SampleTimestampUs", sampleTimestampUs);
+        LOG.critical.log("AimEnabled", isAimEnabled);
+        LOG.critical.log("ShootingEnabled", isAutoShootingEnabled);
+        LOG.critical.log("HasValidResult", hasValidResult);
+        LOG.critical.log("RequiresIdealSpeed", requiresIdealSpeed);
+        LOG.critical.log("DistanceToTargetMeters", distanceToTargetMeters);
     }
 
     //#endregion
@@ -223,7 +231,7 @@ public class AutoAimController extends SubsystemBase {
         }
 
         return autoAim.calculateDynamicAim(
-            swerve.getSmoothedRelativePose(),
+            swerve.getRelativePose(),
             adjFieldSpeeds,
             adjFieldAccelerations,
             target,
@@ -268,7 +276,7 @@ public class AutoAimController extends SubsystemBase {
 
         if (!readyToShoot) {
             result = autoAim.calculateDynamicAim(
-                swerve.getSmoothedRelativePose(),
+                swerve.getRelativePose(),
                 lastFieldSpeeds,
                 fieldAccelerations,
                 BOTTOM_FUNNEL_POSITION,
@@ -311,7 +319,7 @@ public class AutoAimController extends SubsystemBase {
     }
 
     private boolean checkHubCollision(Rotation2d pitch, double shotSpeed, boolean usePadding) {
-        if (cachedCollisionDist == null) return false;
+        if (!hasCachedCollisionDist) return false;
         double collisionDist = cachedCollisionDist;
 
         if (collisionDist <= 0) return true;
@@ -336,7 +344,7 @@ public class AutoAimController extends SubsystemBase {
     }
 
     private void updateCollisionCache() {
-        Translation2d robotPos2d = swerve.getSmoothedRelativePose().getTranslation()
+        Translation2d robotPos2d = swerve.getRelativePose().getTranslation()
             .plus(turretTranslation2D.rotateBy(swerve.getRelativePose().getRotation()));
 
         Translation2d targetPos2d = new Translation2d(hubPose.getX(), hubPose.getY());
@@ -351,6 +359,7 @@ public class AutoAimController extends SubsystemBase {
 
         double distCenterToWall = (absCos > absSin) ? halfSide / absCos : halfSide / absSin;
         cachedCollisionDist = distToTarget - distCenterToWall;
+        hasCachedCollisionDist = true;
     }
 
     //#endregion
@@ -381,7 +390,7 @@ public class AutoAimController extends SubsystemBase {
 
     public double getDistanceToTarget() {
         Translation3d target = (targetOverride != null) ? targetOverride : getDefaultTarget();
-        Translation2d robotPos2d = swerve.getSmoothedRelativePose().getTranslation()
+        Translation2d robotPos2d = swerve.getRelativePose().getTranslation()
             .plus(turretTranslation2D.rotateBy(swerve.getRelativePose().getRotation()));
         return robotPos2d.getDistance(target.toTranslation2d());
     }

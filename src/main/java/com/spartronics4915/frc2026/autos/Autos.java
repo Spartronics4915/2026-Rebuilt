@@ -16,7 +16,7 @@ import java.util.Optional;
 
 import com.spartronics4915.frc2026.Constants.SwerveConstants.AutoConstants;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
-import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
+import com.spartronics4915.frc2026.util.control.TimeVarianceAuthority;
 
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.geometry.Pose2d;

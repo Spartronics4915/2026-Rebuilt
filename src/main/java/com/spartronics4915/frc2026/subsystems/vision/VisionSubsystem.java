@@ -1,293 +1,482 @@
 package com.spartronics4915.frc2026.subsystems.vision;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
+import java.util.function.DoubleUnaryOperator;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.photonvision.PhotonCamera;
-import org.photonvision.simulation.PhotonCameraSim;
-import org.photonvision.simulation.VisionSystemSim;
+import static com.spartronics4915.frc2026.Constants.VisionConstants.*;
 
-import com.spartronics4915.frc2026.Constants.VisionConstants;
-import com.spartronics4915.frc2026.Constants.VisionConstants.FilterConstants;
+import com.ctre.phoenix6.Utils;
 import com.spartronics4915.frc2026.Robot;
 import com.spartronics4915.frc2026.subsystems.swerve.SwerveSubsystem;
-import com.spartronics4915.frc2026.subsystems.vision.cameras.LimelightProcessor;
-import com.spartronics4915.frc2026.subsystems.vision.cameras.ProcessorInterface;
-import com.spartronics4915.frc2026.subsystems.vision.filters.FilterInterface;
-import com.spartronics4915.frc2026.subsystems.vision.filters.PipelineFilter;
-import com.spartronics4915.frc2026.subsystems.vision.filters.ResultFilters;
-import com.spartronics4915.frc2026.subsystems.vision.processing.PoseFusionEngine;
-import com.spartronics4915.frc2026.subsystems.vision.results.ApriltagResult;
-import com.spartronics4915.frc2026.subsystems.vision.results.ResultInterface;
-import com.spartronics4915.frc2026.subsystems.vision.results.TrackedTag;
+import com.spartronics4915.frc2026.subsystems.vision.cameras.CameraIO;
+import com.spartronics4915.frc2026.subsystems.vision.cameras.CameraIO.CameraConfig;
+import com.spartronics4915.frc2026.subsystems.vision.cameras.limelight.LimelightCameraIO;
+import com.spartronics4915.frc2026.subsystems.vision.cameras.photon.PhotonCameraIO;
+import com.spartronics4915.frc2026.subsystems.vision.cameras.photon.SimulatedCameraIO;
+import com.spartronics4915.frc2026.util.vision.VisionEstimate;
+import com.spartronics4915.frc2026.util.vision.StdDevCalculator;
+import com.spartronics4915.frc2026.util.logging.Telemetry;
+import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
+
+import static edu.wpi.first.units.Units.Seconds;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.networktables.BooleanPublisher;
-import edu.wpi.first.networktables.DoublePublisher;
-import edu.wpi.first.networktables.NetworkTable;
-import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.StructArrayPublisher;
-import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-// sim.enableDrawWireframe(false);
-//                    sim.enableProcessedStream(false);
-//                    sim.enableRawStream(false);
-//                });
-//            }
-//        }
-//
-//        new Trigger(swerve::isFlatDebounced)
-//            .onTrue(Commands.runOnce(() -> {
-//                if (hasValidPose) {
-//                    swerve.resetPose(fusedPose);
-//                }
-//            }).withName("Relocalize On Flat"));
+import org.photonvision.simulation.SimCameraProperties;
+import org.photonvision.simulation.VisionSystemSim;
 
-/**
- * Manages all vision cameras and feeds fused pose estimates to the drive-train's
- * pose estimator.
- */
+/** Common AprilTag localization pipeline. */
 public class VisionSubsystem extends SubsystemBase {
-    private final List<ProcessorInterface> primaryCameras;
-    private final List<ProcessorInterface> fallbackCameras;
-    private final List<ProcessorInterface> cameras;
+    
+    private static final Scope LOG = Telemetry.scope("Vision");
 
-    private final PoseFusionEngine fusionEngine;
-    private final PipelineFilter resultFilter;
+    private static VisionSubsystem instance;
 
-    private final List<ResultInterface> primaryRaw = new ArrayList<>(8);
-    private final List<ApriltagResult> primaryFused = new ArrayList<>(8);
-
-    private final List<ResultInterface> fallbackRaw = new ArrayList<>(8);
-    private final List<ApriltagResult> fallbackFused = new ArrayList<>(8);
-
-    private volatile boolean hasValidPose = false;
-    private Pose2d visionPose;
-
-    private final VisionPoseConsumer poseConsumer;
     private final SwerveSubsystem swerve;
+    private final AprilTagFieldLayout fieldLayout = Robot.isReal() ? SIM_APRILTAG_FIELD_LAYOUT : SIM_APRILTAG_FIELD_LAYOUT;
+    private final List<CameraIO> cameras = new ArrayList<>();
+    private final Map<String, CameraSnapshot> cameraDiagnostics = new HashMap<>();
+    private final Map<String, Scope> cameraLogs = new HashMap<>();
+    private final VisionSystemSim visionSim;
+    private final TurretAngleHistory turretAngleHistory = new TurretAngleHistory(64);
 
-    private final VisionSystemSim visionSystemSim;
-    private final boolean isSimulation;
+    private Pose2d latestVisionPose;
+    private boolean camerasConfigured;
+    private long periodicDurationUs;
+    private long collectionDurationUs;
+    private long validationFusionDurationUs;
+    private long telemetryDurationUs;
 
-    private final Pose3d[] tagPoseScratch = new Pose3d[33];
-
-    private static final NetworkTable table = NetworkTableInstance.getDefault().getTable("vision");
-
-    private final StructPublisher<Pose2d> posePublisher = table.getStructTopic("Vision Pose", Pose2d.struct).publish();
-
-    private final DoublePublisher xyStdDevPublisher = table.getDoubleTopic("XY Std Devs").publish();
-    private final DoublePublisher thetaStdDevPublisher = table.getDoubleTopic("Theta Std Devs").publish();
-    private final DoublePublisher ambiguityPublisher = table.getDoubleTopic("Avg Ambiguity").publish();
-    private final DoublePublisher areaPublisher = table.getDoubleTopic("Avg Area").publish();
-    private final DoublePublisher latencyPublisher = table.getDoubleTopic("Latency").publish();
-    private final DoublePublisher targetCountPublisher = table.getDoubleTopic("Target Count").publish();
-
-    private final StructArrayPublisher<Pose3d> trackedTagsPublisher = table.getStructArrayTopic("Tracked Apriltags", Pose3d.struct).publish();
-    private final BooleanPublisher hasValidPosePublisher = table.getBooleanTopic("Has Valid Pose").publish();
-    private final BooleanPublisher currentPipelinePublisher = table.getBooleanTopic("Is Primary").publish();
-
-    // Debug
-    // private final StructPublisher<Pose3d> debugRobotPublisher = table.getStructTopic("Debug: Robot", Pose3d.struct).publish();
-    // private final StructPublisher<Translation3d> debugTurretPublisher = table.getStructTopic("Debug: Turret", Translation3d.struct).publish();
-    // private final StructPublisher<Transform3d> debugCameraPublisher = table.getStructTopic("Debug: Camera", Transform3d.struct).publish();
-
-    public VisionSubsystem(
-        AprilTagFieldLayout fieldLayout,
-        VisionPoseConsumer poseConsumer,
-        SwerveSubsystem swerve,
-        List<ProcessorInterface> primaryCameras,
-        List<ProcessorInterface> fallbackCameras
-    ) {
-        this.poseConsumer = poseConsumer;
+    private VisionSubsystem(SwerveSubsystem swerve) {
         this.swerve = swerve;
-        this.primaryCameras = List.copyOf(primaryCameras);
-        this.fallbackCameras = List.copyOf(fallbackCameras);
+        visionSim = Robot.isSimulation() ? new VisionSystemSim("vision") : null;
 
-        List<ProcessorInterface> combined = new ArrayList<>(primaryCameras);
-        combined.addAll(fallbackCameras);
+        if (visionSim != null) {
+            visionSim.addAprilTags(fieldLayout);
+            SmartDashboard.putData("Vision/Sim Field", visionSim.getDebugField());
+        }
+    }
 
-        this.cameras = List.copyOf(combined);
+    public static VisionSubsystem getInstance(SwerveSubsystem swerve) {
+        if (instance == null) {
+            instance = new VisionSubsystem(swerve);
+        } else if (instance.swerve != swerve) {
+            throw new IllegalStateException("VisionSubsystem was initialized with a different SwerveSubsystem instance.");
+        }
+        return instance;
+    }
 
-        this.fusionEngine = new PoseFusionEngine();
-        this.resultFilter = buildFilter(swerve);
 
-        this.isSimulation = Robot.isSimulation();
-        this.visionSystemSim = (isSimulation) ? new VisionSystemSim("main") : null;
-
-        if (isSimulation) {
-            visionSystemSim.addAprilTags(fieldLayout);
-            PhotonCamera.setVersionCheckEnabled(false);
+    /** Configures the robot's three fixed PhotonVision cameras and turreted MegaTag1 Limelight. */
+    public void configureDefaultCameras() {
+        if (camerasConfigured) {
+            return;
         }
 
-        for (ProcessorInterface camera : this.cameras) startCamera(camera);
+        addPhotonCamera(new CameraConfig("evan", frontCameraTransform));
+        addPhotonCamera(new CameraConfig("val", backCameraTransform));
+        addPhotonCamera(new CameraConfig("daniil", rioCameraTransform));
+
+        camerasConfigured = true;
     }
 
-    public VisionSubsystem(
-        AprilTagFieldLayout fieldLayout,
-        VisionPoseConsumer poseConsumer,
-        SwerveSubsystem swerve,
-        List<ProcessorInterface> primaryCameras
-    ) {
-        this(fieldLayout, poseConsumer, swerve, primaryCameras, List.of());
+    public Pose2d getVisionPose() {
+        return latestVisionPose != null ? latestVisionPose : swerve.getPose();
     }
 
-    private void startCamera(ProcessorInterface camera) {
+    public void addCamera(CameraIO camera) {
+        cameras.add(camera);
+        cameraDiagnostics.put(camera.getName(), new CameraSnapshot());
+        cameraLogs.put(camera.getName(), LOG.child(camera.getName()));
+        SmartDashboard.putData("Vision/" + camera.getName(), camera);
         camera.start();
-        if (isSimulation && visionSystemSim != null) {
-            PhotonCameraSim sim = camera.getCameraSim().get();
-                visionSystemSim.addCamera(sim, camera.getCameraTransform());
-                sim.enableDrawWireframe(false);
-                sim.enableProcessedStream(false);
-                sim.enableRawStream(false);
-        }
+    }
+
+    public CameraIO addPhotonCamera(CameraConfig config) {
+        CameraIO camera = Robot.isSimulation()
+            ? new SimulatedCameraIO(
+                config,
+                fieldLayout,
+                requireSimulation(),
+                createSimulationCameraProperties())
+            : new PhotonCameraIO(config, fieldLayout);
+        addCamera(camera);
+        return camera;
+    }
+
+    public CameraIO addLimelightCamera(CameraConfig config) {
+        CameraIO camera = Robot.isSimulation()
+            ? new SimulatedCameraIO(
+                config,
+                fieldLayout,
+                requireSimulation(),
+                createSimulationCameraProperties())
+            : new LimelightCameraIO(config, fieldLayout);
+        addCamera(camera);
+        return camera;
+    }
+
+    /** Adds a real MegaTag1 Limelight whose robot-space pose follows the current turret angle. */
+    public CameraIO addTurretedLimelight(
+            String name,
+            Transform3d robotToTurret,
+            Transform3d turretToCamera,
+            DoubleUnaryOperator turretYawDegreesAtTimestamp
+    ) {
+        CameraConfig config = CameraConfig.turreted(
+            name,
+            robotToTurret,
+            turretToCamera,
+            timestamp -> TURRET_CAMERA_YAW_SIGN
+                * turretYawDegreesAtTimestamp.applyAsDouble(timestamp)
+                + TURNTABLE_ZERO_OFFSET_DEGREES);
+        return addLimelightCamera(config);
+    }
+
+    public void recordTurretAngle(Rotation2d angle, double timestampSeconds) {
+        turretAngleHistory.add(timestampSeconds, angle.getRadians());
+    }
+
+    /** Adds a PhotonVision camera whose turret angle can be reconstructed at each frame timestamp. */
+    public CameraIO addTimestampedTurretedPhotonCamera(
+        String name,
+        Transform3d robotToTurret,
+        Transform3d turretToCamera,
+        DoubleUnaryOperator turretYawDegreesAtTimestamp
+    ) {
+        CameraConfig config = CameraConfig.turreted(
+            name,
+            robotToTurret,
+            turretToCamera,
+            timestamp -> TURRET_CAMERA_YAW_SIGN
+                * turretYawDegreesAtTimestamp.applyAsDouble(timestamp)
+                + TURNTABLE_ZERO_OFFSET_DEGREES);
+        return addPhotonCamera(config);
+    }
+
+    public SimulatedCameraIO addSimulatedCamera(
+        CameraConfig config,
+        SimCameraProperties cameraProperties
+    ) {
+        SimulatedCameraIO camera = new SimulatedCameraIO(
+            config,
+            fieldLayout,
+            requireSimulation(),
+            cameraProperties);
+        addCamera(camera);
+        return camera;
+    }
+
+    public AprilTagFieldLayout getFieldLayout() {
+        return fieldLayout;
+    }
+
+    public VisionSystemSim getVisionSim() {
+        return visionSim;
     }
 
     @Override
     public void periodic() {
-        if (swerve != null) {
-            double robotHeading = swerve.getGyroRotation3d().toRotation2d().getDegrees();
-            cameras.forEach(camera -> {
-                if (camera instanceof LimelightProcessor) camera.setRobotHeading(robotHeading);
-            });
+        long periodicStartUs = RobotController.getFPGATime();
+        long collectionStartUs = periodicStartUs;
+        List<CameraObservation> observations = new ArrayList<>();
+        for (CameraIO camera : cameras) {
+            CameraSnapshot diagnostics = cameraDiagnostics.get(camera.getName());
+            boolean enabled = camera.isEnabled();
+            if (diagnostics != null) {
+                diagnostics.updateCameraHealth(camera);
+                diagnostics.Enabled = enabled;
+                diagnostics.SampleTimestampUs = periodicStartUs;
+            }
+            if (!enabled) {
+                if (diagnostics != null) {
+                    diagnostics.clearObservation(periodicStartUs, false);
+                }
+                continue;
+            }
+
+            // A camera running slower than the scheduler must not keep reporting
+            // a prior frame as a fresh accepted measurement.
+            if (diagnostics != null) {
+                diagnostics.clearObservation(periodicStartUs, true);
+            }
+
+            for (VisionEstimate estimate : camera.consumeEstimates()) {
+                observations.add(new CameraObservation(camera.getName(), estimate));
+            }
+        }
+        collectionDurationUs = RobotController.getFPGATime() - collectionStartUs;
+
+        long validationFusionStartUs = RobotController.getFPGATime();
+        observations.sort(Comparator.comparingDouble(
+            observation -> observation.estimate().timestamp().in(Seconds)));
+
+        double now = Timer.getFPGATimestamp();
+        for (CameraObservation observation : observations) {
+            if (!StdDevCalculator.isValid(
+                    observation.estimate(),
+                    now,
+                    fieldLayout.getFieldLength(),
+                    fieldLayout.getFieldWidth())) {
+                CameraSnapshot diagnostics = cameraDiagnostics.get(observation.cameraName());
+                if (diagnostics != null) {
+                    diagnostics.Accepted = false;
+                    diagnostics.RejectedObservationCount++;
+                }
+                continue;
+            }
+
+            applyVisionMeasurement(observation.cameraName(), observation.estimate());
+        }
+        
+        validationFusionDurationUs = RobotController.getFPGATime() - validationFusionStartUs;
+
+        long telemetryStartUs = RobotController.getFPGATime();
+        outputTelemetry();
+        telemetryDurationUs = RobotController.getFPGATime() - telemetryStartUs;
+        periodicDurationUs = RobotController.getFPGATime() - periodicStartUs;
+
+        // These final timing writes intentionally sit outside the measured telemetry block so the
+        // current cycle, rather than the previous cycle, is published.
+        LOG.critical.log("PeriodicDurationUs", periodicDurationUs);
+        LOG.critical.log("CollectionDurationUs", collectionDurationUs);
+        LOG.critical.log("ValidationFusionDurationUs", validationFusionDurationUs);
+        LOG.critical.log("TelemetryDurationUs", telemetryDurationUs);
+    }
+
+    private void applyVisionMeasurement(String cameraName, VisionEstimate observation) {
+        Matrix<N3, N1> stdDevs = StdDevCalculator.calculate(observation);
+        double timestamp = Utils.fpgaToCurrentTime(observation.timestamp().in(Seconds));
+        Pose2d pose = observation.getPose2d();
+        swerve.addVisionMeasurement(pose, timestamp, stdDevs);
+        latestVisionPose = pose;
+        updateDiagnostics(cameraName, observation, stdDevs);
+    }
+
+    private record CameraObservation(String cameraName, VisionEstimate estimate) {}
+
+    private void updateDiagnostics(
+        String cameraName,
+        VisionEstimate observation,
+        Matrix<N3, N1> stdDevs
+    ) {
+        CameraSnapshot diagnostics = cameraDiagnostics.get(cameraName);
+        if (diagnostics == null) {
+            return;
         }
 
-        boolean primaryValid = processCameraPipeline(primaryCameras, resultFilter, primaryRaw, primaryFused);
-        boolean fallbackValid = false;
+        if (cameraLogs.get(cameraName).debug.isEnabled()) {
+            int[] tagIds = observation.tagIds();
+            List<Pose3d> tagPoses = new ArrayList<>();
+            for (int tagId : tagIds) {
+                fieldLayout.getTagPose(tagId).ifPresent(tagPoses::add);
+            }
 
-        if (!primaryValid && !fallbackCameras.isEmpty()) {
-            fallbackValid = processCameraPipeline(fallbackCameras, resultFilter, fallbackRaw, fallbackFused);
+            diagnostics.SeenTagIds = new long[tagIds.length];
+            for (int i = 0; i < tagIds.length; i++) {
+                diagnostics.SeenTagIds[i] = tagIds[i];
+            }
+            diagnostics.SeenTagPoses = tagPoses.toArray(Pose3d[]::new);
         }
+        diagnostics.EstimatedPose = observation.pose().toPose2d();
+        diagnostics.TagCount = observation.tagCount();
+        diagnostics.AverageTagDistanceMeters = observation.avgTagDistanceMeters();
+        diagnostics.AverageTagAmbiguity = observation.avgTagAmbiguity();
+        diagnostics.TagSpanMeters = observation.tagSpanMeters();
+        diagnostics.LatencyMs = observation.latencySeconds() * 1000.0;
+        diagnostics.StdDevXMeters = stdDevs.get(0, 0);
+        diagnostics.StdDevThetaDeg = Math.toDegrees(stdDevs.get(2, 0));
+        diagnostics.CaptureTimestampUs = Math.round(observation.timestamp().in(Seconds) * 1_000_000.0);
+        diagnostics.Enabled = true;
+        diagnostics.Accepted = true;
+        diagnostics.AcceptedObservationCount++;
+    }
 
-        hasValidPose = primaryValid || fallbackValid;
-        hasValidPosePublisher.accept(hasValidPose);
-        currentPipelinePublisher.accept(primaryValid);
+    public long getPeriodicDurationUs() {
+        return periodicDurationUs;
+    }
 
-        if (primaryValid) publishDiagnostics(primaryFused);
-        else if (fallbackValid) publishDiagnostics(fallbackFused);
-
-        if (isSimulation && swerve != null && visionSystemSim != null) {
-            visionSystemSim.update(swerve.getPose());
+    private void outputTelemetry() {
+        for (Map.Entry<String, CameraSnapshot> entry : cameraDiagnostics.entrySet()) {
+            Scope cameraLog = cameraLogs.get(entry.getKey());
+            CameraSnapshot camera = entry.getValue();
+            cameraLog.critical.log("SampleTimestampUs", camera.SampleTimestampUs);
+            cameraLog.critical.log("CaptureTimestampUs", camera.CaptureTimestampUs);
+            cameraLog.critical.log("Enabled", camera.Enabled);
+            cameraLog.critical.log("Accepted", camera.Accepted);
+            cameraLog.critical.log("AcceptedObservationCount", camera.AcceptedObservationCount);
+            cameraLog.critical.log("RejectedObservationCount", camera.RejectedObservationCount);
+            cameraLog.critical.log("EstimatedPose", camera.EstimatedPose);
+            cameraLog.critical.log("DroppedEstimateCount", camera.DroppedEstimateCount);
+            cameraLog.info.log("TagCount", camera.TagCount);
+            cameraLog.info.log("AverageTagDistanceMeters", camera.AverageTagDistanceMeters);
+            cameraLog.info.log("AverageTagAmbiguity", camera.AverageTagAmbiguity);
+            cameraLog.info.log("TagSpanMeters", camera.TagSpanMeters);
+            cameraLog.info.log("LatencyMs", camera.LatencyMs);
+            cameraLog.info.log("StdDevXMeters", camera.StdDevXMeters);
+            cameraLog.info.log("StdDevThetaDeg", camera.StdDevThetaDeg);
+            cameraLog.debug.log("SeenTagIds", camera.SeenTagIds);
+            cameraLog.debug.log("SeenTagPoses", camera.SeenTagPoses);
         }
     }
 
-    private boolean processCameraPipeline(
-        List<ProcessorInterface> cameras,
-        PipelineFilter filter,
-        List<ResultInterface> rawResults,
-        List<ApriltagResult> collectedTagList
-    ) {
-        rawResults.clear();
-        for (ProcessorInterface camera : cameras) camera.drainResultQueue(rawResults);
+    private static final class CameraSnapshot {
+        private static final long[] NO_TAG_IDS = new long[0];
+        private static final Pose3d[] NO_TAG_POSES = new Pose3d[0];
+        
+        long SampleTimestampUs;
+        long CaptureTimestampUs;
+        boolean Enabled;
+        boolean Accepted;
+        long AcceptedObservationCount;
+        long RejectedObservationCount;
+        long DroppedEstimateCount;
+        long[] SeenTagIds = NO_TAG_IDS;
+        Pose3d[] SeenTagPoses = NO_TAG_POSES;
+        Pose2d EstimatedPose = new Pose2d();
+        long TagCount;
+        double AverageTagDistanceMeters;
+        double AverageTagAmbiguity;
+        double TagSpanMeters;
+        double LatencyMs;
+        double StdDevXMeters;
+        double StdDevThetaDeg;
 
-        collectedTagList.clear();
-        for (ResultInterface result : rawResults) {
-            if (result instanceof ApriltagResult tagResult 
-                && tagResult.getStdDevs() != null 
-                && filter.test(tagResult)) {
-                collectedTagList.add(tagResult);
+        void updateCameraHealth(CameraIO camera) {
+            DroppedEstimateCount = camera.getDroppedEstimateCount();
+        }
+
+        void clearObservation(long sampleTimestampUs, boolean enabled) {
+            SampleTimestampUs = sampleTimestampUs;
+            CaptureTimestampUs = 0;
+            Enabled = enabled;
+            Accepted = false;
+            SeenTagIds = NO_TAG_IDS;
+            SeenTagPoses = NO_TAG_POSES;
+            EstimatedPose = new Pose2d();
+            TagCount = 0;
+            AverageTagDistanceMeters = 0;
+            AverageTagAmbiguity = 0;
+            TagSpanMeters = 0;
+            LatencyMs = 0;
+            StdDevXMeters = 0;
+            StdDevThetaDeg = 0;
+        }
+    }
+
+    @Override
+    public void simulationPeriodic() {
+        if (visionSim == null) {
+            return;
+        }
+
+        for (CameraIO camera : cameras) {
+            if (camera instanceof SimulatedCameraIO simulatedCamera) {
+                simulatedCamera.updateSimulationTransform();
             }
         }
 
-        if (collectedTagList.isEmpty()) return false;
-
-        Optional<ApriltagResult> fused = fusionEngine.fusePoses(collectedTagList);
-        if (fused.isEmpty()) return false;
-
-        ApriltagResult result = fused.get();
-        if (swerve != null && swerve.isFlatDebounced()) {
-            poseConsumer.accept(
-                result.getPose(),
-                result.getTimestampSeconds(),
-                result.getStdDevs()
-            );
-            return true;
-        }
-        return false;
+        //visionSim.update(swerve.getSimulatedTruthPose());
+        visionSim.update(swerve.getPose());
+        visionSim.getDebugField()
+            .getObject("TruthRobot")
+            .setPose(swerve.getPose());
+        visionSim.getDebugField()
+            .getObject("EstimatedRobot")
+            .setPose(swerve.getPose());
     }
 
-    @SuppressWarnings("unused")
-    private static PipelineFilter buildFilter(SwerveSubsystem swerve) {
-        List<FilterInterface> filter = new ArrayList<>();
-            filter.add(new ResultFilters.LatencyFilter(FilterConstants.maxLatencyMs));
-            filter.add(new ResultFilters.AmbiguityFilter(FilterConstants.maxAmbiguity));
-            filter.add(new ResultFilters.AreaFilter(FilterConstants.minArea, FilterConstants.maxArea));
-            filter.add(new ResultFilters.DistanceFilter(FilterConstants.maxSingleTagDistanceMeters));
-        if (FilterConstants.maxOdometryDeviationMeters < Double.MAX_VALUE) {
-            filter.add(
-                new ResultFilters.OdometryOutlierFilter(
-                    swerve::getPose,
-                    FilterConstants.maxOdometryDeviationMeters
-                )
-            );
+    private VisionSystemSim requireSimulation() {
+        if (visionSim == null) {
+            throw new IllegalStateException("A simulated camera can only be added in simulation.");
         }
-        return new PipelineFilter(filter);
+        return visionSim;
     }
 
-    private void updateTagPublishScratch(List<TrackedTag> tags) {
-        for (int i = 0; i < tags.size() && i < tagPoseScratch.length; i++) {
-            Optional<Pose3d> pose = VisionConstants.apriltagFieldLayout.getTagPose(tags.get(i).getFiducialId());
-            tagPoseScratch[i] = pose.orElse(new Pose3d());
+    /** Fixed-size, allocation-free history used by camera worker threads. */
+    static final class TurretAngleHistory {
+        private final double[] timestampsSeconds;
+        private final double[] yawRadians;
+        private int nextIndex;
+        private int size;
+
+        TurretAngleHistory(int capacity) {
+            if (capacity < 2) {
+                throw new IllegalArgumentException("Turret angle history needs at least two samples.");
+            }
+            timestampsSeconds = new double[capacity];
+            yawRadians = new double[capacity];
         }
 
-        for (int i = tags.size(); i < tagPoseScratch.length; i++) {
-            tagPoseScratch[i] = new Pose3d(0, 0, 0, new Rotation3d(0, 0, 0));
+        synchronized void add(double timestampSeconds, double angleRadians) {
+            if (!Double.isFinite(timestampSeconds) || !Double.isFinite(angleRadians)) {
+                return;
+            }
+
+            if (size > 0) {
+                int newestIndex = Math.floorMod(nextIndex - 1, timestampsSeconds.length);
+                double newestTimestamp = timestampsSeconds[newestIndex];
+                if (timestampSeconds < newestTimestamp) {
+                    return;
+                }
+                if (timestampSeconds == newestTimestamp) {
+                    yawRadians[newestIndex] = angleRadians;
+                    return;
+                }
+            }
+
+            timestampsSeconds[nextIndex] = timestampSeconds;
+            yawRadians[nextIndex] = angleRadians;
+            nextIndex = (nextIndex + 1) % timestampsSeconds.length;
+            size = Math.min(size + 1, timestampsSeconds.length);
+        }
+
+        synchronized double sampleDegrees(double timestampSeconds) {
+            if (size == 0) {
+                return 0.0;
+            }
+
+            int oldestIndex = Math.floorMod(nextIndex - size, timestampsSeconds.length);
+            int newestIndex = Math.floorMod(nextIndex - 1, timestampsSeconds.length);
+            if (timestampSeconds <= timestampsSeconds[oldestIndex]) {
+                return Math.toDegrees(yawRadians[oldestIndex]);
+            }
+            if (timestampSeconds >= timestampsSeconds[newestIndex]) {
+                return Math.toDegrees(yawRadians[newestIndex]);
+            }
+
+            int previousIndex = oldestIndex;
+            for (int offset = 1; offset < size; offset++) {
+                int currentIndex = (oldestIndex + offset) % timestampsSeconds.length;
+                double currentTimestamp = timestampsSeconds[currentIndex];
+                if (currentTimestamp >= timestampSeconds) {
+                    double previousTimestamp = timestampsSeconds[previousIndex];
+                    double interpolation = (timestampSeconds - previousTimestamp)
+                        / (currentTimestamp - previousTimestamp);
+                    double deltaRadians = MathUtil.angleModulus(
+                        yawRadians[currentIndex] - yawRadians[previousIndex]);
+                    return Math.toDegrees(yawRadians[previousIndex] + deltaRadians * interpolation);
+                }
+                previousIndex = currentIndex;
+            }
+
+            return Math.toDegrees(yawRadians[newestIndex]);
         }
     }
-
-    private void publishDiagnostics(List<ApriltagResult> results) {
-        if (results.isEmpty()) return;
-        ApriltagResult latest = results.stream()
-            .max((a, b) -> Double.compare(a.getTimestampSeconds(), b.getTimestampSeconds()))
-            .orElse(results.get(0));
-
-        updateTagPublishScratch(latest.getTrackedTags());
-
-        visionPose = latest.getPose();
-        posePublisher.set(latest.getPose());
-        xyStdDevPublisher.set(latest.getStdDevs().get(0, 0));
-        thetaStdDevPublisher.set(latest.getStdDevs().get(2, 0));
-        ambiguityPublisher.set(latest.getAmbiguity());
-        areaPublisher.accept(latest.getAverageArea());
-        latencyPublisher.set(latest.getLatencyMs());
-        targetCountPublisher.set(latest.getTargetCount());
-        trackedTagsPublisher.set(tagPoseScratch);
-    }
-
-    public Pose3d[] getTargetPoses(List<TrackedTag> tags) {
-        int count = 0;
-        for (TrackedTag tag : tags) {
-            Optional<Pose3d> pose = VisionConstants.apriltagFieldLayout.getTagPose(tag.getFiducialId());
-            if (pose.isPresent()) tagPoseScratch[count++] = pose.get();
-        }
-        Pose3d[] result = new Pose3d[count];
-        System.arraycopy(tagPoseScratch, 0, result, 0, count);
-        return result;
-    }
-
-    public Pose2d getVisionPose() { 
-        return hasValidPose ? visionPose : null; 
-    }
-
-    public List<ProcessorInterface> getCameras() {
-        return cameras;
-    }
-
-    public boolean hasAnyPose() { 
-        return hasValidPose; 
-    }
-
-    @FunctionalInterface
-    public interface VisionPoseConsumer {
-        void accept(Pose2d robotPose, double timestamp, Matrix<N3, N1> stdDevs);
-    }
-    
 }

@@ -1,122 +1,105 @@
 package com.spartronics4915.frc2026.subsystems.mechanisms.head;
 
-import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
-import static edu.wpi.first.units.Units.Volts;
-
 import static com.spartronics4915.frc2026.Constants.TurretConstants.*;
 import static com.spartronics4915.frc2026.Constants.GeneralConstants.CAN_BUS;
-
+import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
-import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
-import com.ctre.phoenix6.controls.TorqueCurrentFOC;
+import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
-
+import com.spartronics4915.frc2026.Robot;
+import com.spartronics4915.frc2026.util.control.TimeVarianceAuthority;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler;
 import com.spartronics4915.frc2026.util.general.ModeSwitchHandler.ModeSwitchInterface;
-import com.spartronics4915.frc2026.util.mechanism.TimeVarianceAuthority;
-import com.spartronics4915.frc2026.util.mechanism.MotorHelpers.CTRE.LoggedTalonFX;
-
+import com.spartronics4915.frc2026.util.logging.Telemetry;
+import com.spartronics4915.frc2026.util.logging.MotorHelpers.CTRE.LoggedTalonFX;
+import com.spartronics4915.frc2026.util.logging.Telemetry.Scope;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
-import edu.wpi.first.networktables.DoublePublisher;
-import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import java.util.function.BiConsumer;
 
 public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterface {
 
+    private static final Scope LOG = Telemetry.scope("Mechanisms/Turret");
+
     private LoggedTalonFX motor = new LoggedTalonFX(MOTOR_ID, CAN_BUS);
     private CANcoder encoder = new CANcoder(ENCODER_ID, CAN_BUS);
-    
+    private final StatusSignal<Angle> motorPositionSignal = motor.getPosition(false);
+    private final StatusSignal<Angle> encoderAbsolutePositionSignal = encoder.getAbsolutePosition(false);
+    private final StatusSignal<Double> dutyCycleSignal = motor.getDutyCycle(false);
+    private final BaseStatusSignal[] telemetrySignals = motor.createTelemetrySignalGroup(motorPositionSignal, encoderAbsolutePositionSignal, dutyCycleSignal);
+
     TimeVarianceAuthority dtCalc = new TimeVarianceAuthority();
 
     private State targetState = new State();
+    private long sampleTimestampUs;
+    private double appliedDutyCycle;
+    private Rotation2d loggedPosition = Rotation2d.kZero;
+    private Rotation2d loggedSetpoint = Rotation2d.kZero;
+    private Rotation2d profileSetpoint = Rotation2d.kZero;
+    private Rotation2d encoderPosition = Rotation2d.kZero;
+    private Pose3d mechanismPose = new Pose3d();
 
-    private final PositionTorqueCurrentFOC positionTorqueRequest = new PositionTorqueCurrentFOC(0.0);
+    private final PositionVoltage positionVoltageRequest = new PositionVoltage(0.0).withEnableFOC(true);
 
-    private final TorqueCurrentFOC sysIdControl = new TorqueCurrentFOC(0.0);
-    private boolean isCharacterizing = false;
-
-    private final SysIdRoutine sysIdRoutine = new SysIdRoutine(
-        new SysIdRoutine.Config(
-            null,
-            Volts.of(4),
-            null, 
-            null
-        ),
-        new SysIdRoutine.Mechanism(
-            (Voltage volts) -> motor.setControl(sysIdControl.withOutput(volts.in(Volts))),
-            (log) -> {
-                log.motor("Turret")
-                    .voltage(Volts.of(motor.getTorqueCurrent().getValueAsDouble()))
-                    .angularPosition(motor.getPosition().getValue())
-                    .angularVelocity(motor.getVelocity().getValue())
-                    .angularAcceleration(motor.getAcceleration().getValue());
-            },
-            this
-        )
-    );
-    
     private TurretClamp currentClamp;
     private Rotation2d minAngle;
     private Rotation2d maxAngle;
 
-    private final DoublePublisher appliedOutPublisher = NetworkTableInstance.getDefault().getTable("turret").getDoubleTopic("applied out").publish();
-    private final StructPublisher<Rotation2d> positionPublisher = NetworkTableInstance.getDefault().getTable("turret").getStructTopic("position", Rotation2d.struct).publish();
-    private final StructPublisher<Rotation2d> setpointPublisher = NetworkTableInstance.getDefault().getTable("turret").getStructTopic("setpoint", Rotation2d.struct).publish();
-
     // Vision observer: called during turret's periodic() with accurate timestamp
     private BiConsumer<Rotation2d, Double> visionObserver;
-    
+
     public TurretSubsystem() {
 
         TalonFXConfigurator motorConfigurator = motor.getConfigurator();
             motorConfigurator.apply(PID_CONFIG);
             motorConfigurator.apply(CURRENT_LIMITS_CONFIG);
             motorConfigurator.apply(FEEDBACK_CONFIG);
-            motorConfigurator.apply(MOTOR_OUTPUT_CONFIG); 
+            motorConfigurator.apply(MOTOR_OUTPUT_CONFIG);
 
         CANcoderConfiguration cancoderConfigurator = new CANcoderConfiguration();
             cancoderConfigurator.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 0.5;
             cancoderConfigurator.MagnetSensor.SensorDirection = ENCODER_SENSOR_DIRECTION;
             cancoderConfigurator.MagnetSensor.MagnetOffset = MAGNET_OFFSET;
-            encoder.getConfigurator().apply(cancoderConfigurator);
-        
+        encoder.getConfigurator().apply(cancoderConfigurator);
+
         currentClamp = TurretClamp.UNRESTRICTED;
             minAngle = currentClamp.minAngle;
             maxAngle = currentClamp.maxAngle;
 
-        setMechanismAngle(Rotation2d.fromDegrees(getEncoderPosition().getDegrees()));
+        encoderAbsolutePositionSignal.refresh();
+        Rotation2d initialAngle = Rotation2d.fromRotations(encoderAbsolutePositionSignal.getValueAsDouble() * ENCODER_MECHANISM_RATIO);
+        encoderPosition = initialAngle;
+        setMechanismAngle(initialAngle);
+
         ModeSwitchHandler.EnableModeSwitchHandler(this);
 
         motor.addSetpoint(() -> targetState.position, (setpoint) -> setSetpoint(Rotation2d.fromDegrees(setpoint)));
 
-        SmartDashboard.putData("Turret Quasistatic Forward", sysIdQuasistatic(Direction.kForward));
-        SmartDashboard.putData("Turret Quasistatic Reverse", sysIdQuasistatic(Direction.kReverse));
-        SmartDashboard.putData("Turret Dynamic Forward", sysIdDynamic(Direction.kForward));
-        SmartDashboard.putData("Turret Dynamic Reverse", sysIdDynamic(Direction.kReverse));
+        //SmartDashboard.putData("Turret Motor", motor);
 
         SmartDashboard.putData("Turret 0", setSetpointCommand(Rotation2d.fromDegrees(0)));
         SmartDashboard.putData("Turret 180", setSetpointCommand(Rotation2d.fromDegrees(180)));
-        SmartDashboard.putData("Turret Motor", motor);
     }
- 
+
     @Override
-    public void periodic(){
+    public void periodic() {
+        BaseStatusSignal.refreshAll(telemetrySignals);
+
         targetState.position = MathUtil.clamp(
-            targetState.position, 
-            minAngle.getRotations(), 
+            targetState.position,
+            minAngle.getRotations(),
             maxAngle.getRotations()
         );
 
@@ -124,32 +107,54 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
             targetState.velocity = 0;
         }
 
-        positionTorqueRequest
+        positionVoltageRequest
             .withPosition(targetState.position)
             .withVelocity(targetState.velocity);
-            
-        if (!isCharacterizing) {
-            motor.setControl(positionTorqueRequest);
-        }
 
-        appliedOutPublisher.accept(motor.getDutyCycle().getValueAsDouble());
-        positionPublisher.accept(getPosition());
-        setpointPublisher.accept(Rotation2d.fromRotations(targetState.position));
+        motor.setControl(positionVoltageRequest);
+
+        Rotation2d position = Robot.isSimulation()? Rotation2d.fromRotations(targetState.position) : Rotation2d.fromRotations(motorPositionSignal.getValueAsDouble());
+        Rotation2d setpoint = Rotation2d.fromRotations(targetState.position);
+
+        appliedDutyCycle = dutyCycleSignal.getValueAsDouble();
+        loggedPosition = position;
+        loggedSetpoint = setpoint;
+        profileSetpoint = setpoint;
+        encoderPosition = Rotation2d.fromRotations(encoderAbsolutePositionSignal.getValueAsDouble() * ENCODER_MECHANISM_RATIO);
+        mechanismPose = new Pose3d(
+            -0.118295, -0.143695, 0.362276,
+            new Rotation3d(0, 0, position.getRadians())
+        );
+
+        sampleTimestampUs = RobotController.getFPGATime();
 
         // Notify vision of turret angle with accurate FPGA timestamp
         if (visionObserver != null) {
-            visionObserver.accept(getPosition(), Timer.getFPGATimestamp());
+            visionObserver.accept(position, sampleTimestampUs / 1_000_000.0);
         }
+
+        outputTelemetry();
+    }
+
+    private void outputTelemetry() {
+        LOG.critical.log("SampleTimestampUs", sampleTimestampUs);
+        LOG.critical.log("Position", loggedPosition, Rotation2d.struct);
+        LOG.critical.log("Setpoint", loggedSetpoint, Rotation2d.struct);
+        LOG.critical.log("ProfileSetpoint", profileSetpoint, Rotation2d.struct);
+        LOG.info.log("AppliedDutyCycle", appliedDutyCycle);
+        LOG.info.log("EncoderPosition", encoderPosition, Rotation2d.struct);
+        LOG.debug.log("MechanismPose", mechanismPose);
     }
 
     public Rotation2d getPosition() {
-        double position = motor.getPosition().getValue().in(Rotations);
-        return Rotation2d.fromRotations(position);
+        if (Robot.isSimulation()) {
+            return Rotation2d.fromRotations(targetState.position);
+        }
+        return loggedPosition;
     }
 
     public Rotation2d getEncoderPosition() {
-        double position = encoder.getAbsolutePosition().getValue().in(Rotations) * ENCODER_MECHANISM_RATIO;
-        return Rotation2d.fromRotations(position);
+        return encoderPosition;
     }
 
     public Rotation2d getCurrentSetpoint() {
@@ -159,50 +164,53 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
     public TurretClamp getClamp() {
         return currentClamp;
     }
-    
-    public void setSetpoint(Rotation2d setpoint){
+
+    public void setSetpoint(Rotation2d setpoint) {
         targetState.position = setpoint.getRotations();
         targetState.velocity = 0.0;
     }
 
-    public void setComplexSetpoint(Rotation2d setPoint, AngularVelocity velocity){
+    public void setComplexSetpoint(Rotation2d setPoint, AngularVelocity velocity) {
         targetState.position = setPoint.getRotations();
         targetState.velocity = velocity.in(RotationsPerSecond);
     }
 
-    public void setClamp(TurretClamp clamp){
+    public void setClamp(TurretClamp clamp) {
         currentClamp = clamp;
             minAngle = currentClamp.minAngle;
             maxAngle = currentClamp.maxAngle;
     }
 
-    private void setMechanismAngle(Rotation2d angle){
+    private void setMechanismAngle(Rotation2d angle) {
         motor.setPosition(angle.getRotations());
+        loggedPosition = angle;
         resetMechanism(angle);
     }
 
-    public void resetMechanism(){
+    public void resetMechanism() {
         resetMechanism(getPosition());
     }
 
-    public void resetMechanism(Rotation2d angle){
+    public void resetMechanism(Rotation2d angle) {
         setSetpoint(angle);
     }
 
     /**
      * Registers a vision observer to receive turret angle updates with accurate timestamps.
      * Called by VisionSubsystem during initialization.
-     * @param observer BiConsumer that takes (turretAngle, fpgaTimestamp)
+     * 
+     * @param observer
+     *            BiConsumer that takes (turretAngle, fpgaTimestamp)
      */
     public void setVisionObserver(BiConsumer<Rotation2d, Double> observer) {
         this.visionObserver = observer;
     }
 
-    //#endregion
+    // #endregion
 
-    //#region Commands
+    // #region Commands
 
-    public Command setSetpointCommand(Rotation2d newSetpoint){
+    public Command setSetpointCommand(Rotation2d newSetpoint) {
         return this.runOnce(() -> setSetpoint(newSetpoint));
     }
 
@@ -210,23 +218,11 @@ public class TurretSubsystem extends SubsystemBase implements ModeSwitchInterfac
         return this.runOnce(() -> setClamp(newClamp));
     }
 
-    public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
-        return sysIdRoutine.quasistatic(direction)
-            .beforeStarting(() -> isCharacterizing = true)
-            .finallyDo(() -> isCharacterizing = false);
-    }
-
-    public Command sysIdDynamic(SysIdRoutine.Direction direction) {
-        return sysIdRoutine.dynamic(direction)
-            .beforeStarting(() -> isCharacterizing = true)
-            .finallyDo(() -> isCharacterizing = false);
-    }
-
-    //#endregion
+    // #endregion
 
     public enum TurretClamp {
-        RESTRICTED(Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
-        UNRESTRICTED(Rotation2d.fromDegrees(-180), Rotation2d.fromDegrees(230));
+        RESTRICTED(Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)), 
+        UNRESTRICTED(Rotation2d.fromDegrees(-172), Rotation2d.fromDegrees(220));
 
         public Rotation2d minAngle;
         public Rotation2d maxAngle;
